@@ -25,7 +25,7 @@ export default function LoginPage() {
   };
 
   return (
-    <Card className="w-full max-w-[420px] rounded-xl shadow border-0 overflow-hidden">
+    <Card className="w-full max-w-[420px] rounded-md shadow border-0 overflow-hidden">
       <CardContent className="p-8 sm:p-10">
         <div className="mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Welcome back</h2>

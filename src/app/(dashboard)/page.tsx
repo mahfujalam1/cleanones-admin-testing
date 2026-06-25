@@ -1,14 +1,28 @@
 "use client";
 
 import React from 'react';
-import { 
+import {
   MdShowChart, MdCalendarToday, MdCheckCircleOutline, MdPeopleOutline,
   MdPhotoCamera, MdWarningAmber, MdLocationOn, MdAdd, MdArrowForward
 } from 'react-icons/md';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
+const liveOperationsData = [
+  { id: 1, initials: 'LV', name: 'Lisa Visser', location: 'NH Hotel Amsterdam', checkIn: '08:00', progress: 75, status: 'On Time', color: 'bg-[#10b981]' },
+  { id: 2, initials: 'ES', name: 'Emma Smit', location: 'Hilton Rotterdam', checkIn: '08:12', progress: 90, status: 'Late', color: 'bg-[#f59e0b]' },
+  { id: 3, initials: 'NB', name: 'Noah Bos', location: 'UMC Utrecht', checkIn: '—', progress: 15, status: 'Missing', color: 'bg-[#ef4444]' },
+  { id: 4, initials: 'SB', name: 'Sophie de Boer', location: 'Van der Valk Eindhoven', checkIn: '07:02', progress: 55, status: 'On Time', color: 'bg-[#10b981]' },
+  { id: 5, initials: 'LM', name: 'Lucas Meijer', location: 'NH Hotel Groningen', checkIn: '06:05', progress: 100, status: 'On Time', color: 'bg-[#10b981]' },
+];
+
 export default function DashboardPage() {
+  const [activeTab, setActiveTab] = React.useState('All');
+
+  const filteredOperations = liveOperationsData.filter(op => {
+    if (activeTab === 'All') return true;
+    return op.status === activeTab;
+  });
   return (
     <div className="space-y-8 max-w-7xl mx-auto pb-10">
       {/* Header */}
@@ -88,26 +102,42 @@ export default function DashboardPage() {
             Live Operations
           </h3>
           <div className="flex items-center gap-2">
-            <div className="flex bg-gray-100 p-1 rounded text-xs font-medium">
-              <button className="px-3 py-1 bg-[#0ea5e9] text-white rounded cursor-pointer shadow-sm">All</button>
-              <button className="px-3 py-1 text-gray-600 hover:text-gray-900 cursor-pointer">On Time</button>
-              <button className="px-3 py-1 text-gray-600 hover:text-gray-900 cursor-pointer">Late</button>
-              <button className="px-3 py-1 text-gray-600 hover:text-gray-900 cursor-pointer">Missing</button>
+            <div className="flex bg-gray-100 p-1 rounded text-xs font-medium relative">
+              {['All', 'On Time', 'Late', 'Missing'].map(tab => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`px-3 py-1 rounded cursor-pointer transition-all duration-300 ease-in-out z-10 ${activeTab === tab ? 'bg-[#0ea5e9] text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}
+                >
+                  {tab}
+                </button>
+              ))}
             </div>
             <button className="text-xs text-[#0ea5e9] font-medium ml-4 flex items-center hover:underline cursor-pointer">
               View all <MdArrowForward className="ml-1" />
             </button>
           </div>
         </div>
-        <div className="divide-y divide-gray-100 bg-white">
-          <LiveOperationRow 
-            initials="LV" name="Lisa Visser" location="NH Hotel Amsterdam"
-            checkIn="08:00" progress={75} status="On Time" color="bg-[#10b981]"
-          />
-          <LiveOperationRow 
-            initials="ES" name="Emma Smit" location="Hilton Rotterdam"
-            checkIn="08:12" progress={90} status="Late" color="bg-[#f59e0b]"
-          />
+        <div className="divide-y divide-gray-100 bg-white transition-all duration-300 min-h-[300px]">
+          {filteredOperations.length > 0 ? (
+            filteredOperations.map(op => (
+              <div key={op.id} className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+                <LiveOperationRow
+                  initials={op.initials}
+                  name={op.name}
+                  location={op.location}
+                  checkIn={op.checkIn}
+                  progress={op.progress}
+                  status={op.status}
+                  color={op.color}
+                />
+              </div>
+            ))
+          ) : (
+            <div className="py-8 text-center text-sm text-gray-500">
+              No operations found for this filter.
+            </div>
+          )}
         </div>
       </Card>
     </div>
@@ -144,13 +174,13 @@ function LiveOperationRow({ initials, name, location, checkIn, progress, status,
           </div>
         </div>
       </div>
-      
+
       <div className="flex items-center gap-12">
         <div className="text-right">
           <div className="text-[10px] text-gray-400 mb-0.5">Check-In</div>
           <div className="text-sm font-medium text-gray-900">{checkIn}</div>
         </div>
-        
+
         <div className="w-32">
           <div className="flex justify-between text-[10px] font-medium mb-1.5">
             <span className="text-gray-400">Progress</span>
@@ -160,14 +190,14 @@ function LiveOperationRow({ initials, name, location, checkIn, progress, status,
             <div className={`h-full ${color}`} style={{ width: `${progress}%` }}></div>
           </div>
         </div>
-        
+
         <div className="w-24 flex justify-end">
           <div className="flex items-center gap-1.5 text-xs font-semibold">
             <span className={`w-2 h-2 rounded-full ${color}`}></span>
             <span className={status === 'On Time' ? 'text-[#10b981]' : 'text-[#f59e0b]'}>{status}</span>
           </div>
         </div>
-        
+
         <MdArrowForward className="text-gray-300 group-hover:text-gray-500 transition-colors" />
       </div>
     </div>
