@@ -1,0 +1,44 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-inter);
+
+  --color-background: #f8fafc;
+  --color-foreground: #0f172a;
+
+  --color-sidebar: #1e293b;
+  --color-sidebar-foreground: #f8fafc;
+  
+  --color-primary: #0ea5e9;
+  --color-primary-foreground: #ffffff;
+
+  --color-card: #ffffff;
+  --color-card-foreground: #0f172a;
+  
+  --color-border: #e2e8f0;
+  
+  --color-success: #10b981;
+  --color-success-foreground: #ffffff;
+  
+  --color-warning: #f59e0b;
+  --color-warning-foreground: #ffffff;
+
+  --color-danger: #ef4444;
+  --color-danger-foreground: #ffffff;
+}
+
+/* Base styles to apply fonts */
+@layer base {
+  body {
+    @apply bg-[var(--color-background)] text-[var(--color-foreground)] font-sans;
+  }
+}
+
+/* Custom utilities based on requirements */
+@utility shadow {
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+}
+@utility shadow-md {
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+}
+/* Ensure no other shadows or border radius are used unless specified but we can't easily remove them in v4. We just won't use them in our components. */
