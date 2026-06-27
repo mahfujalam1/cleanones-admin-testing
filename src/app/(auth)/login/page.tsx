@@ -3,9 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { MdOutlineMailOutline, MdLockOutline, MdVisibility, MdVisibilityOff, MdAutoAwesome } from 'react-icons/md';
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
-import { Card, CardContent } from '@/components/ui/Card';
+import { Input } from '@/components/ui/input';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -106,3 +104,70 @@ export default function LoginPage() {
     </Card>
   );
 }
+
+// Local UI Components
+interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  children: React.ReactNode;
+  variant?: 'default' | 'ghost' | 'outline';
+  size?: 'sm' | 'md' | 'lg';
+}
+
+function Button({
+  children,
+  className = '',
+  variant = 'default',
+  size = 'md',
+  ...props
+}: ButtonProps) {
+  const variantClasses = {
+    default: '',
+    ghost: 'bg-transparent hover:bg-gray-100',
+    outline: 'border border-gray-300 bg-white hover:bg-gray-50',
+  };
+  const sizeClasses = {
+    sm: 'h-8 px-3 text-xs',
+    md: 'px-4 py-2 text-sm',
+    lg: 'h-11 px-5 text-base',
+  };
+
+  return (
+    <button
+      className={`inline-flex items-center justify-center rounded-md font-medium transition-all duration-200 disabled:opacity-50 disabled:pointer-events-none ${variantClasses[variant]} ${sizeClasses[size]} ${className}`}
+      {...props}
+    >
+      {children}
+    </button>
+  );
+}
+
+interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
+  children: React.ReactNode;
+}
+
+function Card({
+  children,
+  className = '',
+  ...props
+}: CardProps) {
+  return (
+    <div
+      className={`bg-white rounded-lg border border-gray-200 ${className}`}
+      {...props}
+    >
+      {children}
+    </div>
+  );
+}
+
+function CardContent({
+  children,
+  className = '',
+  ...props
+}: CardProps) {
+  return (
+    <div className={className} {...props}>
+      {children}
+    </div>
+  );
+}
+
