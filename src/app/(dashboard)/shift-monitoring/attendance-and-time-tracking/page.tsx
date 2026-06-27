@@ -9,17 +9,17 @@ export default function AttendanceTimeTrackingPage() {
   const [selectedWorker, setSelectedWorker] = useState<WorkerInfo | null>(null);
 
   return (
-    <>
-      <AttendanceTimeTracking 
-        onWorkerSelect={(worker) => setSelectedWorker(worker)} 
+    <div className='space-y-6 max-w-7xl mx-auto pb-10'>
+      <AttendanceTimeTracking
+        onWorkerSelect={(worker) => setSelectedWorker(worker)}
         selectedWorkerId={selectedWorker?.id || null}
       />
       {selectedWorker && (
-        <AttendanceSidebar 
-          worker={selectedWorker} 
-          onClose={() => setSelectedWorker(null)} 
+        <AttendanceSidebar
+          worker={selectedWorker}
+          onClose={() => setSelectedWorker(null)}
         />
       )}
-    </>
+    </div>
   );
 }

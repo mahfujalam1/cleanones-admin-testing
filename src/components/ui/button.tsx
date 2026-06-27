@@ -1,36 +1,38 @@
-import * as React from "react"
-import { cn } from "@/lib/utils"
+import React from "react";
 
-export interface ButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'default' | 'outline' | 'ghost' | 'link';
-  size?: 'default' | 'sm' | 'lg' | 'icon';
+interface ButtonProps
+    extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+    children: React.ReactNode;
+    variant?: "default" | "ghost" | "outline";
+    size?: "sm" | "md" | "lg";
 }
 
-const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant = "default", size = "default", ...props }, ref) => {
-    return (
-      <button
-        ref={ref}
-        className={cn(
-          "inline-flex items-center justify-center whitespace-nowrap rounded text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gray-400 disabled:pointer-events-none disabled:opacity-50 cursor-pointer shadow hover:shadow-md",
-          {
-            "bg-[#0ea5e9] text-white hover:bg-[#0284c7] border border-transparent": variant === "default",
-            "border border-gray-300 bg-transparent hover:bg-gray-100 text-gray-700": variant === "outline",
-            "hover:bg-gray-100 hover:text-gray-900 shadow-none hover:shadow-none": variant === "ghost",
-            "text-[#0ea5e9] underline-offset-4 hover:underline shadow-none hover:shadow-none": variant === "link",
-            "h-9 px-4 py-2": size === "default",
-            "h-8 px-3 text-xs": size === "sm",
-            "h-10 px-8": size === "lg",
-            "h-9 w-9": size === "icon",
-          },
-          className
-        )}
-        {...props}
-      />
-    )
-  }
-)
-Button.displayName = "Button"
+export function Button({
+    children,
+    className = "",
+    variant = "default",
+    size = "md",
+    ...props
+}: ButtonProps) {
+    const variantClasses = {
+        default: "",
+        ghost: "bg-transparent hover:bg-gray-100",
+        outline: "border border-gray-300 bg-white hover:bg-gray-50",
+    };
+    const sizeClasses = {
+        sm: "h-8 px-3 text-xs",
+        md: "px-4 py-2 text-sm",
+        lg: "h-11 px-5 text-base",
+    };
 
-export { Button }
+    return (
+        <button
+            className={`inline-flex items-center justify-center rounded-md font-medium transition-all duration-200 disabled:opacity-50 disabled:pointer-events-none ${variantClasses[variant]} ${sizeClasses[size]} ${className}`}
+            {...props}
+        >
+            {children}
+        </button>
+    );
+}
+
+export default Button;

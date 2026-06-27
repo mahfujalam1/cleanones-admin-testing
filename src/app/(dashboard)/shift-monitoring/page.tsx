@@ -22,32 +22,31 @@ export default function LiveStatusPage() {
   const missingCount = WORKERS.filter(w => w.status === 'Missing').length;
 
   return (
-    <div className="h-full flex relative animate-in fade-in duration-300">
+    <div className="h-full flex relative animate-in fade-in duration-300 space-y-6 max-w-7xl mx-auto pb-10">
       <div className="flex-1 transition-all duration-300 w-full flex flex-col h-full">
-        
+
         {/* Filters */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
             <div className="relative">
               <MdSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg" />
-              <input 
-                type="text" 
-                placeholder="Search employee..." 
+              <input
+                type="text"
+                placeholder="Search employee..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                className="pl-9 pr-4 py-2 border border-gray-200 rounded-md text-sm w-64 focus:outline-none shadow-sm bg-gray-50"
+                className="pl-9 pr-4 py-2 border border-gray-200 rounded text-sm w-64 focus:outline-none shadow-sm bg-gray-50"
               />
             </div>
-            <div className="flex bg-gray-100 p-1 rounded-md">
+            <div className="flex bg-gray-100 p-1 rounded">
               {(['All', 'On Time', 'Late', 'Missing'] as const).map(filter => (
-                <button 
+                <button
                   key={filter}
                   onClick={() => setStatusFilter(filter)}
-                  className={`px-4 py-1.5 rounded-md text-xs font-semibold cursor-pointer transition-colors ${
-                    statusFilter === filter 
-                      ? 'bg-[#0ea5e9] text-white shadow-sm' 
+                  className={`px-4 py-1.5 rounded text-xs font-semibold cursor-pointer transition-colors ${statusFilter === filter
+                      ? 'bg-[#0ea5e9] text-white shadow-sm'
                       : 'text-gray-600 hover:text-gray-900'
-                  }`}
+                    }`}
                 >
                   {filter}
                 </button>
@@ -55,20 +54,20 @@ export default function LiveStatusPage() {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-[#ecfdf5] border border-[#a7f3d0] rounded-md text-xs font-bold text-[#10b981]">
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-[#ecfdf5] border border-[#a7f3d0] rounded text-xs font-bold text-[#10b981]">
               <span className="w-1.5 h-1.5 rounded-full bg-[#10b981]"></span> {onTimeCount} On Time
             </div>
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-[#fffbeb] border border-[#fde68a] rounded-md text-xs font-bold text-[#f59e0b]">
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-[#fffbeb] border border-[#fde68a] rounded text-xs font-bold text-[#f59e0b]">
               <span className="w-1.5 h-1.5 rounded-full bg-[#f59e0b]"></span> {lateCount} Late
             </div>
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-[#fef2f2] border border-[#fecaca] rounded-md text-xs font-bold text-[#ef4444]">
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-[#fef2f2] border border-[#fecaca] rounded text-xs font-bold text-[#ef4444]">
               <span className="w-1.5 h-1.5 rounded-full bg-[#ef4444]"></span> {missingCount} Missing
             </div>
           </div>
         </div>
 
         {/* Table */}
-        <div className="bg-white rounded-md border border-gray-100 shadow-sm overflow-hidden flex-1">
+        <div className="bg-white rounded  shadow-sm overflow-hidden flex-1 ">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-gray-100 text-[10px] font-semibold text-gray-400 uppercase tracking-wider bg-white">
@@ -80,8 +79,8 @@ export default function LiveStatusPage() {
             </thead>
             <tbody className="divide-y divide-gray-100 text-sm bg-white">
               {filteredWorkers.map((worker) => (
-                <tr 
-                  key={worker.id} 
+                <tr
+                  key={worker.id}
                   className={`hover:bg-gray-50 transition-colors cursor-pointer ${selectedWorker?.id === worker.id ? 'bg-[#f0fdfa]' : ''}`}
                   onClick={() => setSelectedWorker(worker)}
                 >
@@ -107,11 +106,10 @@ export default function LiveStatusPage() {
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-6">
                       <div className="flex items-center gap-1.5 font-semibold text-xs">
-                        <span className={`w-2 h-2 rounded-full ${
-                          worker.status === 'On Time' ? 'bg-[#10b981]' : 
-                          worker.status === 'Late' ? 'bg-[#f59e0b]' : 
-                          'bg-[#ef4444]'
-                        }`}></span>
+                        <span className={`w-2 h-2 rounded-full ${worker.status === 'On Time' ? 'bg-[#10b981]' :
+                            worker.status === 'Late' ? 'bg-[#f59e0b]' :
+                              'bg-[#ef4444]'
+                          }`}></span>
                         <span className={worker.statusColor}>{worker.status}</span>
                       </div>
                       <button className="text-[#0ea5e9] text-xs font-medium hover:underline cursor-pointer">View &gt;</button>
@@ -126,9 +124,9 @@ export default function LiveStatusPage() {
 
       {/* Slide-over Panel using EmployeeSidebar component */}
       {selectedWorker && (
-        <EmployeeSidebar 
-          worker={selectedWorker} 
-          onClose={() => setSelectedWorker(null)} 
+        <EmployeeSidebar
+          worker={selectedWorker}
+          onClose={() => setSelectedWorker(null)}
         />
       )}
     </div>

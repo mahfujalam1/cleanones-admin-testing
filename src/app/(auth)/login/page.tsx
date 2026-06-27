@@ -3,9 +3,9 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { MdOutlineMailOutline, MdLockOutline, MdVisibility, MdVisibilityOff, MdAutoAwesome } from 'react-icons/md';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Card, CardContent } from '@/components/ui/Card';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');

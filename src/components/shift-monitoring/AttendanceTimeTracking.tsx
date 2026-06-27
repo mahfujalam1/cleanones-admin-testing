@@ -24,7 +24,7 @@ export function AttendanceTimeTracking({ onWorkerSelect, selectedWorkerId }: Pro
       {/* Controls Row */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">
-          <div className="flex bg-gray-100 p-1 rounded-md">
+          <div className="flex bg-gray-100 p-1 rounded">
             {(['Today', 'Weekly', 'Monthly'] as const).map(tr => (
               <button
                 key={tr}
@@ -47,7 +47,7 @@ export function AttendanceTimeTracking({ onWorkerSelect, selectedWorkerId }: Pro
             />
           </div>
 
-          <div className="flex bg-gray-100 p-1 rounded-md">
+          <div className="flex bg-gray-100 p-1 rounded">
             {(['All', 'Employee', 'Freelancer'] as const).map(r => (
               <button
                 key={r}
@@ -61,14 +61,14 @@ export function AttendanceTimeTracking({ onWorkerSelect, selectedWorkerId }: Pro
         </div>
         
         <div className="flex items-center gap-2">
-          <div className="bg-white border border-gray-200 rounded-md px-3 py-1.5 text-xs font-semibold text-gray-600 flex items-center gap-2 shadow-sm">
+          <div className="bg-white border border-gray-200 rounded px-3 py-1.5 text-xs font-semibold text-gray-600 flex items-center gap-2 shadow-sm">
             01/06/2026 - 09/06/2026
           </div>
         </div>
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden flex-1">
+      <div className="bg-white rounded shadow-sm overflow-hidden flex-1">
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="border-b border-gray-100 bg-white text-[10px] font-bold text-gray-400 uppercase tracking-wider">

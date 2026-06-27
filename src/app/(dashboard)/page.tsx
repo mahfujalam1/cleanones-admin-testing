@@ -5,8 +5,9 @@ import {
   MdShowChart, MdCalendarToday, MdCheckCircleOutline, MdPeopleOutline,
   MdPhotoCamera, MdWarningAmber, MdLocationOn, MdAdd, MdArrowForward
 } from 'react-icons/md';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import Link from 'next/link';
+import Button from '@/components/ui/Button';
+import { Card, CardContent } from '@/components/ui/Card';
 
 const liveOperationsData = [
   { id: 1, initials: 'LV', name: 'Lisa Visser', location: 'NH Hotel Amsterdam', checkIn: '08:00', progress: 75, status: 'On Time', color: 'bg-[#10b981]' },
@@ -54,18 +55,22 @@ export default function DashboardPage() {
           <MdAdd className="text-[#0ea5e9] text-lg" /> Quick Actions
         </h3>
         <div className="flex flex-wrap gap-3">
-          <Button className="bg-[#0ea5e9] hover:bg-[#0284c7] text-white rounded text-xs px-4 h-8 shadow hover:shadow-md">
+          <Link href='/shift-monitoring'><Button className="bg-[#0ea5e9] hover:bg-[#0284c7] text-white rounded text-xs px-4 h-8 shadow hover:shadow-md">
             + Create Shift
           </Button>
-          <Button className="bg-[#8b5cf6] hover:bg-[#7c3aed] text-white rounded text-xs px-4 h-8 shadow hover:shadow-md">
+          </Link>
+          <Link href='/clients'><Button className="bg-[#8b5cf6] hover:bg-[#7c3aed] text-white rounded text-xs px-4 h-8 shadow hover:shadow-md">
             <MdAdd className="mr-1" /> Add Client
           </Button>
-          <Button className="bg-[#0d9488] hover:bg-[#0f766e] text-white rounded text-xs px-4 h-8 shadow hover:shadow-md">
+          </Link>
+          <Link href='/locations'><Button className="bg-[#0d9488] hover:bg-[#0f766e] text-white rounded text-xs px-4 h-8 shadow hover:shadow-md">
             <MdAdd className="mr-1" /> Add Location
           </Button>
-          <Button className="bg-[#ec4899] hover:bg-[#db2777] text-white rounded text-xs px-4 h-8 shadow hover:shadow-md">
+          </Link>
+          <Link href='/photo-reviews'><Button className="bg-[#ec4899] hover:bg-[#db2777] text-white rounded text-xs px-4 h-8 shadow hover:shadow-md">
             <MdPhotoCamera className="mr-1" /> Review Photos
           </Button>
+          </Link>
         </div>
       </div>
 
@@ -113,9 +118,9 @@ export default function DashboardPage() {
                 </button>
               ))}
             </div>
-            <button className="text-xs text-[#0ea5e9] font-medium ml-4 flex items-center hover:underline cursor-pointer">
+            <Link href="/shift-monitoring" className="text-xs text-[#0ea5e9] font-medium ml-4 flex items-center hover:underline cursor-pointer">
               View all <MdArrowForward className="ml-1" />
-            </button>
+            </Link>
           </div>
         </div>
         <div className="divide-y divide-gray-100 bg-white transition-all duration-300 min-h-[300px]">

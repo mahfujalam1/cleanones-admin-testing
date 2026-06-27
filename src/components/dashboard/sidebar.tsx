@@ -26,7 +26,7 @@ const mainLinks = [
 const qcLinks = [
   { name: 'Photo Reviews', href: '/photo-reviews', icon: MdPhotoCamera },
   { name: 'Escalations', href: '/escalations', icon: MdWarning },
-  { name: 'Reports', href: '/analytics', icon: MdAssessment },
+  { name: 'Reports', href: '/reports', icon: MdAssessment },
   { name: 'Notifications', href: '/notifications', icon: MdNotifications },
   { name: 'Settings', href: '/settings', icon: MdSettings },
 ];
