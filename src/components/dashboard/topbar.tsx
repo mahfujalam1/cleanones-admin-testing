@@ -19,7 +19,7 @@ import {
   MdSupportAgent,
 } from "react-icons/md";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { toggleSidebar } from "@/store/slices/ui.slice";
+import { toggleSidebar, toggleMobileSidebar } from "@/store/slices/ui.slice";
 
 const languages = ["English", "French", "Spanish"];
 
@@ -87,24 +87,34 @@ export default function Topbar() {
 
   return (
     <>
-      <header className="h-16 bg-white border-b border-[var(--color-border)] flex items-center justify-between px-6 shrink-0 z-30 shadow-sm">
-        <div className="flex items-center gap-4">
+      <header className="h-16 bg-white border-b border-[var(--color-border)] flex items-center justify-between px-4 sm:px-6 shrink-0 z-30 shadow-sm">
+        <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+          {/* Mobile/tablet hamburger - always visible below lg */}
+          <button
+            type="button"
+            onClick={() => dispatch(toggleMobileSidebar())}
+            className="lg:hidden text-gray-500 hover:text-gray-700 cursor-pointer p-1 shrink-0"
+          >
+            <MdMenu className="text-2xl" />
+          </button>
+
+          {/* Desktop collapse-expand hamburger - only when sidebar collapsed at lg+ */}
           {!sidebarOpen && (
             <button
               type="button"
               onClick={() => dispatch(toggleSidebar())}
-              className="text-gray-500 hover:text-gray-700 cursor-pointer p-1"
+              className="hidden lg:block text-gray-500 hover:text-gray-700 cursor-pointer p-1"
             >
               <MdMenu className="text-2xl" />
             </button>
           )}
-          <h1 className="text-lg font-semibold text-[var(--color-foreground)]">
+          <h1 className="text-lg font-semibold text-[var(--color-foreground)] truncate">
             {getTitle()}
           </h1>
         </div>
 
-        <div className="flex items-center gap-4">
-          <div className="relative">
+        <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+          <div className="relative hidden sm:block">
             <button
               type="button"
               onClick={() => {
@@ -129,11 +139,10 @@ export default function Topbar() {
                       setSelectedLanguage(language);
                       setLanguageOpen(false);
                     }}
-                    className={`block w-full px-4 py-3 text-left text-sm transition-colors ${
-                      selectedLanguage === language
+                    className={`block w-full px-4 py-3 text-left text-sm transition-colors ${selectedLanguage === language
                         ? "bg-[#e0f2fe] text-[#0ea5e9]"
                         : "text-slate-800 hover:bg-gray-50"
-                    }`}
+                      }`}
                   >
                     {language}
                   </button>
@@ -169,9 +178,9 @@ export default function Topbar() {
                 setLanguageOpen(false);
                 setNotificationsOpen(false);
               }}
-              className="flex h-10 items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 px-3 shadow-sm transition-colors hover:bg-gray-100"
+              className="flex h-10 items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 px-2 sm:px-3 shadow-sm transition-colors hover:bg-gray-100"
             >
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#0ea5e9] text-xs font-bold text-white shadow-sm">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#0ea5e9] text-xs font-bold text-white shadow-sm shrink-0">
                 KP
               </div>
               <div className="hidden text-left md:block">
@@ -180,7 +189,7 @@ export default function Topbar() {
                 </div>
                 <div className="mt-1 text-[10px] text-gray-500">Admin</div>
               </div>
-              <MdKeyboardArrowDown className="text-base text-gray-400" />
+              <MdKeyboardArrowDown className="hidden text-base text-gray-400 sm:block" />
             </button>
 
             {profileOpen && (
@@ -202,7 +211,7 @@ export default function Topbar() {
 
 function NotificationsPopover() {
   return (
-    <div className="absolute right-0 top-11 w-[360px] overflow-hidden rounded-xl border border-gray-200 bg-white shadow-2xl">
+    <div className="absolute right-0 top-11 w-[calc(100vw-2rem)] max-w-[360px] overflow-hidden rounded-xl border border-gray-200 bg-white shadow-2xl">
       <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
         <h2 className="text-sm font-bold text-slate-950">Notifications</h2>
         <Link
