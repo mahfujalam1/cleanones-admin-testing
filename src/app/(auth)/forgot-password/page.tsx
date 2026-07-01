@@ -26,7 +26,7 @@ export default function ForgotPasswordPage() {
       </div>
 
       <h2 className="text-[28px] font-bold text-gray-900 mb-3 tracking-tight">Forgot password?</h2>
-      <p className="text-[15px] text-gray-500 mb-8">Enter your email and we'll send you a reset link.</p>
+      <p className="text-[15px] text-gray-500 mb-8">Enter your email and we&apos;ll send you a reset link.</p>
 
       <form onSubmit={handleSendLink} className="space-y-6">
         <div className="space-y-2">

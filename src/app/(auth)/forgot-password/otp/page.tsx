@@ -77,7 +77,7 @@ export default function OTPPage() {
       </form>
       
       <div className="mt-8 text-center text-[14px] text-gray-500">
-        Didn't receive the email? <button className="text-[#0ea5e9] font-semibold hover:underline ml-1">Click to resend</button>
+        Didn&apos;t receive the email? <button className="text-[#0ea5e9] font-semibold hover:underline ml-1">Click to resend</button>
       </div>
     </div>
   );
