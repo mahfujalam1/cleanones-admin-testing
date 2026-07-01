@@ -52,7 +52,7 @@ export default function LoginPage() {
         <form onSubmit={handleSignIn} className="space-y-5">
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-gray-700 ml-1">Email Address</label>
-            <Input 
+            <Input
               type="email" 
               placeholder="name@company.com" 
               icon={<MdOutlineMailOutline className="text-lg" />}
