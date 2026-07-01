@@ -211,7 +211,7 @@ export default function Topbar() {
 
 function NotificationsPopover() {
   return (
-    <div className="absolute right-0 top-11 w-[calc(100vw-2rem)] max-w-[360px] overflow-hidden rounded-xl border border-gray-200 bg-white shadow-2xl">
+    <div className="absolute -right-12 sm:right-0 top-11 w-[300px] sm:w-[360px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border border-gray-200 bg-white shadow-2xl">
       <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
         <h2 className="text-sm font-bold text-slate-950">Notifications</h2>
         <Link

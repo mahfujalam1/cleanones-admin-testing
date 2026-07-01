@@ -99,13 +99,13 @@ export default function DashboardPage() {
 
       {/* Live Operations */}
       <Card className="border-0 shadow-sm border border-gray-100 rounded-lg overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-white">
-          <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+        <div className="px-6 py-4 border-b border-gray-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white">
+          <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2 shrink-0">
             <span className="w-2 h-2 rounded-full bg-[#0ea5e9]"></span>
             Live Operations
           </h3>
-          <div className="flex items-center gap-2">
-            <div className="flex bg-gray-100 p-1 rounded text-xs font-medium relative">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full sm:w-auto">
+            <div className="flex bg-gray-100 p-1 rounded text-xs font-medium relative overflow-x-auto max-w-full">
               {['All', 'On Time', 'Late', 'Missing'].map(tab => (
                 <button
                   key={tab}
@@ -121,26 +121,28 @@ export default function DashboardPage() {
             </Link>
           </div>
         </div>
-        <div className="divide-y divide-gray-100 bg-white transition-all duration-300 min-h-[300px]">
-          {filteredOperations.length > 0 ? (
-            filteredOperations.map(op => (
-              <div key={op.id} className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-                <LiveOperationRow
-                  initials={op.initials}
-                  name={op.name}
-                  location={op.location}
-                  checkIn={op.checkIn}
-                  progress={op.progress}
-                  status={op.status}
-                  color={op.color}
-                />
+        <div className="overflow-x-auto w-full">
+          <div className="divide-y divide-gray-100 bg-white transition-all duration-300 min-h-[300px] min-w-[700px]">
+            {filteredOperations.length > 0 ? (
+              filteredOperations.map(op => (
+                <div key={op.id} className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+                  <LiveOperationRow
+                    initials={op.initials}
+                    name={op.name}
+                    location={op.location}
+                    checkIn={op.checkIn}
+                    progress={op.progress}
+                    status={op.status}
+                    color={op.color}
+                  />
+                </div>
+              ))
+            ) : (
+              <div className="py-8 text-center text-sm text-gray-500">
+                No operations found for this filter.
               </div>
-            ))
-          ) : (
-            <div className="py-8 text-center text-sm text-gray-500">
-              No operations found for this filter.
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </Card>
     </div>

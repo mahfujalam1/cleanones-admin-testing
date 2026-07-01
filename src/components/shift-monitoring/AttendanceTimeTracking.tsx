@@ -68,8 +68,9 @@ export function AttendanceTimeTracking({ onWorkerSelect, selectedWorkerId }: Pro
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded shadow-sm overflow-hidden flex-1">
-        <table className="w-full text-left border-collapse">
+      <div className="bg-white rounded shadow-sm overflow-hidden flex-1 flex flex-col">
+        <div className="overflow-x-auto w-full">
+          <table className="w-full text-left border-collapse min-w-[600px]">
           <thead>
             <tr className="border-b border-gray-100 bg-white text-[10px] font-bold text-gray-400 uppercase tracking-wider">
               <th className="px-6 py-4">Employee</th>
@@ -122,6 +123,7 @@ export function AttendanceTimeTracking({ onWorkerSelect, selectedWorkerId }: Pro
             ))}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   );

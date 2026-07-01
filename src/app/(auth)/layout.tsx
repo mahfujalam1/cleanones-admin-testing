@@ -62,7 +62,7 @@ export default function AuthLayout({
       </div>
 
       {/* Right Panel */}
-      <div className="flex-1 flex flex-col items-center justify-center bg-[#f8fafc] p-6">
+      <div className="flex-1 flex flex-col items-center justify-center bg-[#f8fafc] p-4 sm:p-6">
         {children}
         <p className="text-xs text-gray-400 mt-8 text-center">
           © 2026 CleanOnes BV - Keizersgracht 123, Amsterdam

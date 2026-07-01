@@ -26,8 +26,8 @@ export default function LiveStatusPage() {
       <div className="flex-1 transition-all duration-300 w-full flex flex-col h-full">
 
         {/* Filters */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-4">
+        <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4 mb-6 w-full">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full xl:w-auto">
             <div className="relative">
               <MdSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg" />
               <input
@@ -67,8 +67,9 @@ export default function LiveStatusPage() {
         </div>
 
         {/* Table */}
-        <div className="bg-white rounded  shadow-sm overflow-hidden flex-1 ">
-          <table className="w-full text-left border-collapse">
+        <div className="bg-white rounded border border-gray-200 shadow-sm overflow-hidden flex-1 flex flex-col">
+          <div className="overflow-x-auto w-full">
+            <table className="w-full text-left border-collapse min-w-[1000px]">
             <thead>
               <tr className="border-b border-gray-100 text-[10px] font-semibold text-gray-400 uppercase tracking-wider bg-white">
                 <th className="px-6 py-4">Employee Name</th>
@@ -119,6 +120,7 @@ export default function LiveStatusPage() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       </div>
 

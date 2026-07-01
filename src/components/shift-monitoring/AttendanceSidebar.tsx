@@ -48,7 +48,7 @@ export function AttendanceSidebar({ worker, onClose }: AttendanceSidebarProps) {
       />
       
       {/* Sidebar Panel */}
-      <div className="fixed inset-y-0 right-0 w-[400px] bg-white  shadow-2xl z-50 flex flex-col transform transition-transform animate-in slide-in-from-right duration-300">
+      <div className="fixed inset-y-0 right-0 w-full sm:w-[400px] bg-white  shadow-2xl z-50 flex flex-col transform transition-transform animate-in slide-in-from-right duration-300">
         
         {/* Header */}
         <div className="bg-[#1a2332] text-white p-6 relative flex-shrink-0">

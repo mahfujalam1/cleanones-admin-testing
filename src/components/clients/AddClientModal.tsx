@@ -82,7 +82,7 @@ export function AddClientModal({ onClose, onAdd }: AddClientModalProps) {
           </div>
 
           {/* Industry + Status */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="text-xs font-semibold text-gray-700 mb-1.5 block">Industry</label>
               <select
@@ -122,7 +122,7 @@ export function AddClientModal({ onClose, onAdd }: AddClientModalProps) {
           </div>
 
           {/* Email + Phone */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="text-xs font-semibold text-gray-700 mb-1.5 block">Email *</label>
               <input

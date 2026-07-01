@@ -31,7 +31,7 @@ export default function HistoryPage({ params }: { params: Promise<{ workerId: st
   return (
     <div className="h-full flex flex-col space-y-6 animate-in fade-in duration-300 pb-10">
       {/* Header */}
-      <div className="flex items-center gap-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
         <button 
           onClick={() => router.back()}
           className="px-4 py-2 border border-gray-200 rounded-full text-sm font-medium text-gray-600 hover:bg-gray-50 flex items-center gap-2 transition-colors cursor-pointer"
@@ -50,7 +50,7 @@ export default function HistoryPage({ params }: { params: Promise<{ workerId: st
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-[#f0f9ff] border border-[#e0f2fe] rounded-md p-5">
           <div className="text-xs font-semibold text-[#0ea5e9] mb-1">Total Hours</div>
           <div className="text-3xl font-bold text-[#0ea5e9]">56h</div>
@@ -70,8 +70,9 @@ export default function HistoryPage({ params }: { params: Promise<{ workerId: st
       </div>
 
       {/* History Table */}
-      <div className="bg-white border border-gray-200 rounded-md shadow-sm overflow-hidden flex-1">
-        <table className="w-full text-left border-collapse">
+      <div className="bg-white border border-gray-200 rounded-md shadow-sm overflow-hidden flex-1 flex flex-col">
+        <div className="overflow-x-auto w-full">
+          <table className="w-full text-left border-collapse min-w-[1000px]">
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50 text-[10px] font-bold text-gray-500 uppercase tracking-wider">
               <th className="px-6 py-4">Date</th>
@@ -107,6 +108,7 @@ export default function HistoryPage({ params }: { params: Promise<{ workerId: st
           </tbody>
         </table>
       </div>
+    </div>
     </div>
   );
 }

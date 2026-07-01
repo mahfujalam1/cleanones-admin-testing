@@ -138,7 +138,7 @@ export function CreateShiftModal({ onClose, onSave }: CreateShiftModalProps) {
           {step === 1 ? (
             <div className="space-y-5 animate-in fade-in slide-in-from-left-4 duration-300">
               {/* Client & Location */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-gray-700 mb-1.5">Client</label>
                   <select
@@ -164,7 +164,7 @@ export function CreateShiftModal({ onClose, onSave }: CreateShiftModalProps) {
               </div>
 
               {/* Date & Time */}
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-gray-700 mb-1.5">Date</label>
                   <input
@@ -224,7 +224,7 @@ export function CreateShiftModal({ onClose, onSave }: CreateShiftModalProps) {
               </div>
 
               {/* Search & Filter */}
-              <div className="flex items-center gap-3">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                 <div className="flex-1 relative">
                   <MdSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                   <input
@@ -235,7 +235,7 @@ export function CreateShiftModal({ onClose, onSave }: CreateShiftModalProps) {
                     className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0ea5e9]/30 focus:border-[#0ea5e9]"
                   />
                 </div>
-                <div className="flex bg-gray-100 p-1 rounded-lg text-xs font-medium">
+                <div className="flex bg-gray-100 p-1 rounded-lg text-xs font-medium overflow-x-auto max-w-full">
                   {(['All', 'Employee', 'Freelancer'] as const).map(r => (
                     <button
                       key={r}
@@ -249,7 +249,7 @@ export function CreateShiftModal({ onClose, onSave }: CreateShiftModalProps) {
               </div>
 
               {/* Select All / Clear */}
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-3">
                 <button onClick={selectAll} className="text-xs font-semibold text-[#0ea5e9] border border-[#0ea5e9] px-3 py-1 rounded-full hover:bg-[#e0f2fe] transition-colors cursor-pointer">
                   Select All
                 </button>
@@ -266,7 +266,7 @@ export function CreateShiftModal({ onClose, onSave }: CreateShiftModalProps) {
               </div>
 
               {/* Worker Grid */}
-              <div className="grid grid-cols-2 gap-3 max-h-[280px] overflow-y-auto pr-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[280px] overflow-y-auto pr-1">
                 {filteredWorkers.map(worker => {
                   const isSelected = selectedWorkerIds.includes(worker.id);
                   return (

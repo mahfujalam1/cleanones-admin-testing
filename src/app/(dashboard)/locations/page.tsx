@@ -36,11 +36,9 @@ export default function LocationsPage() {
     return (
         <div className="min-h-screen  max-w-7xl mx-auto">
             {/* Top Bar */}
-            <div className="flex items-center justify-between mb-5">
-
-
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-5 px-6">
                 {/* Search */}
-                <div className="px-6">
+                <div className="w-full sm:w-auto">
                     <div className="relative w-full max-w-sm">
                         <MdSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg" />
                         <input
@@ -48,15 +46,15 @@ export default function LocationsPage() {
                             placeholder="Search locations..."
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            className="pl-9 pr-4 py-2 border border-gray-200 rounded-md text-sm w-64 focus:outline-none shadow-sm bg-gray-50 focus:bg-white transition-colors"
+                            className="pl-9 pr-4 py-2 border border-gray-200 rounded-md text-sm w-full sm:w-64 focus:outline-none shadow-sm bg-gray-50 focus:bg-white transition-colors"
                         />
                     </div>
                 </div>
 
-                <div className="flex items-center justify-between px-6">
+                <div>
                     <button
                         onClick={() => setShowModal(true)}
-                        className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold text-white bg-[#0ea5e9] hover:bg-[#0284c7] rounded-lg shadow-sm transition-colors cursor-pointer"
+                        className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold text-white bg-[#0ea5e9] hover:bg-[#0284c7] rounded-lg shadow-sm transition-colors cursor-pointer w-full sm:w-auto justify-center"
                     >
                         + Add Location
                     </button>

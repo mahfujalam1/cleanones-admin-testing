@@ -36,7 +36,7 @@ export function RoomDetailSidebar({ room, onClose }: RoomDetailSidebarProps) {
             />
 
             {/* Sidebar */}
-            <div className="fixed top-0 right-0 h-full w-[400px] bg-white z-[65] shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
+            <div className="fixed top-0 right-0 h-full w-full sm:w-[400px] bg-white z-[65] shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
                 {/* Header */}
                 <div className="flex items-center gap-3 px-5 py-5 border-b border-gray-100 bg-[#1A2332]">
                     <div className={`w-10 h-10 rounded-lg ${colors.bg} flex items-center justify-center shrink-0`}>

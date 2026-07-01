@@ -23,21 +23,23 @@ export function WorkersTable({ workers, onViewWorker }: WorkersTableProps) {
       : 'bg-[#8b5cf6]/10 text-[#8b5cf6]';
 
   return (
-    <div className="bg-white rounded  shadow-sm overflow-hidden">
-      {/* Header row */}
-      <div className="grid grid-cols-[2fr_1.2fr_1.2fr_1.4fr_1.4fr_0.8fr_0.8fr_0.6fr] gap-2 px-6 py-3 border-b border-gray-100 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-        <div>Name</div>
-        <div>Worker Type</div>
-        <div>Position</div>
-        <div>Location</div>
-        <div>Languages</div>
-        <div>Hours</div>
-        <div>Status</div>
-        <div></div>
-      </div>
+    <div className="bg-white rounded border border-gray-200 shadow-sm overflow-hidden">
+      <div className="overflow-x-auto w-full">
+        <div className="min-w-[1000px]">
+          {/* Header row */}
+          <div className="grid grid-cols-[2fr_1.2fr_1.2fr_1.4fr_1.4fr_0.8fr_0.8fr_0.6fr] gap-2 px-6 py-3 border-b border-gray-100 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+            <div>Name</div>
+            <div>Worker Type</div>
+            <div>Position</div>
+            <div>Location</div>
+            <div>Languages</div>
+            <div>Hours</div>
+            <div>Status</div>
+            <div></div>
+          </div>
 
-      {/* Rows */}
-      <div className="divide-y divide-gray-50">
+          {/* Rows */}
+          <div className="divide-y divide-gray-50">
         {workers.map((worker) => (
           <div
             key={worker.id}
@@ -97,6 +99,8 @@ export function WorkersTable({ workers, onViewWorker }: WorkersTableProps) {
             </div>
           </div>
         ))}
+          </div>
+        </div>
       </div>
     </div>
   );
