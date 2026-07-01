@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { MdOutlineMailOutline, MdLockOutline, MdVisibility, MdVisibilityOff, MdAutoAwesome } from 'react-icons/md';
-import { Input } from '@/components/ui/Input';
+import { Input } from '@/components/ui/input';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
