@@ -42,7 +42,7 @@ export default function RoomsPage() {
     };
 
     return (
-        <div className="min-h-screen max-w-7xl mx-auto">
+        <div className="min-h-screen">
             {/* Top Bar */}
             <div className="flex items-center justify-between mb-5">
                 {/* Search */}
@@ -122,7 +122,7 @@ function RoomCard({ room, onClick, isSelected }: RoomCardProps) {
     return (
         <div
             onClick={onClick}
-            className={`bg-white rounded  transition-all cursor-pointer hover:shadow-md  ${isSelected ? 'border-[#0ea5e9]/50 shadow-md ring-1 ring-[#0ea5e9]/20' : 'border-gray-200 shadow-sm'
+            className={`dashboard-card cursor-pointer transition-[border-color,box-shadow] hover:border-[#d7dbe4] hover:shadow-md ${isSelected ? 'border-[#0ea5e9]/50 shadow-md ring-1 ring-[#0ea5e9]/20' : ''
                 }`}
         >
             {/* Card Header */}

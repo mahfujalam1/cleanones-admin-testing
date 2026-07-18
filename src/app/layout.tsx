@@ -6,9 +6,8 @@ import { Providers } from "@/components/shared/providers";
 import "./globals.css";
 
 const inter = Inter({
-  subsets: ["latin"],
   variable: "--font-inter",
-  display: "swap",
+  subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
@@ -26,7 +25,7 @@ export default function RootLayout({
       lang="en"
       className={`${inter.variable} antialiased h-full`}
     >
-      <body className="min-h-full flex flex-col font-sans bg-[var(--color-background)]">
+      <body className="min-h-full bg-slate-100 text-slate-800">
         <Providers>
           {children}
         </Providers>

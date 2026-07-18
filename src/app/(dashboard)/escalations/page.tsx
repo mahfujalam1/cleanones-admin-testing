@@ -137,7 +137,7 @@ export default function EscalationsPage() {
   }, [search]);
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6 pb-10">
+    <div className="space-y-6 pb-10">
       <div className="relative w-full max-w-[280px]">
         <MdSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg" />
         <input

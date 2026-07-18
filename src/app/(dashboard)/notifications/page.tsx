@@ -83,7 +83,7 @@ export default function NotificationsPage() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto space-y-5 pb-10">
+    <div className="space-y-5 pb-10">
       <div className="flex items-center justify-between border-b border-gray-200 pb-5">
         <div className="flex items-center gap-2">
           <MdNotificationsNone className="text-xl text-slate-800" />

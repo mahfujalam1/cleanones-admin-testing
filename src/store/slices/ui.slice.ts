@@ -4,12 +4,14 @@ interface UiState {
   sidebarOpen: boolean;
   mobileSidebarOpen: boolean;
   theme: 'light' | 'dark' | 'system';
+  signOutModalOpen: boolean;
 }
 
 const initialState: UiState = {
   sidebarOpen: true,
   mobileSidebarOpen: false,
   theme: 'system',
+  signOutModalOpen: false,
 };
 
 const uiSlice = createSlice({
@@ -31,6 +33,9 @@ const uiSlice = createSlice({
     closeMobileSidebar(state) {
       state.mobileSidebarOpen = false;
     },
+    setSignOutModalOpen(state, action: PayloadAction<boolean>) {
+      state.signOutModalOpen = action.payload;
+    },
   },
 });
 
@@ -40,6 +45,7 @@ export const {
   setTheme,
   toggleMobileSidebar,
   closeMobileSidebar,
+  setSignOutModalOpen,
 } = uiSlice.actions;
 
 export default uiSlice.reducer;

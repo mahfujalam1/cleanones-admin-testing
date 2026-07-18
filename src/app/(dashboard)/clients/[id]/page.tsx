@@ -58,7 +58,7 @@ export default function ClientDetailPage({ params }: ClientDetailPageProps) {
   }
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-10">
+    <div className="space-y-6 pb-10">
       {/* Header bar */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">

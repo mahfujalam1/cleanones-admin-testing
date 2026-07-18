@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { getLocale, localizePath, stripLocale } from "@/lib/locale";
 import {
   MdChevronRight,
   MdClose,
@@ -18,10 +19,14 @@ import {
   MdSend,
   MdSupportAgent,
 } from "react-icons/md";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { toggleSidebar, toggleMobileSidebar } from "@/store/slices/ui.slice";
+import { useAppDispatch } from "@/store/hooks";
+import { setSignOutModalOpen, toggleMobileSidebar } from "@/store/slices/ui.slice";
 
-const languages = ["English", "French", "Spanish"];
+const languages = [
+  { label: "English", code: "en" },
+  { label: "French", code: "fr" },
+  { label: "Spanish", code: "es" },
+];
 
 const notificationPreview = [
   {
@@ -61,17 +66,21 @@ const faqs = [
 
 export default function Topbar() {
   const pathname = usePathname();
+  const router = useRouter();
+  const locale = getLocale(pathname);
+  const routePath = stripLocale(pathname);
   const dispatch = useAppDispatch();
-  const sidebarOpen = useAppSelector((state) => state.ui.sidebarOpen);
-  const [selectedLanguage, setSelectedLanguage] = useState("English");
   const [languageOpen, setLanguageOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
+  const languageRef = useRef<HTMLDivElement>(null);
+  const notificationsRef = useRef<HTMLDivElement>(null);
+  const profileRef = useRef<HTMLDivElement>(null);
 
   const getTitle = () => {
-    if (pathname === "/") return "Dashboard";
-    const path = pathname?.split("/")[1];
+    if (routePath === "/") return "Dashboard";
+    const path = routePath.split("/")[1];
     if (!path) return "Dashboard";
     return path
       .split("-")
@@ -85,9 +94,36 @@ export default function Topbar() {
     setProfileOpen(false);
   };
 
+  useEffect(() => {
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target as Node;
+      if (
+        !languageRef.current?.contains(target) &&
+        !notificationsRef.current?.contains(target) &&
+        !profileRef.current?.contains(target)
+      ) {
+        closeMenus();
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        closeMenus();
+        setHelpOpen(false);
+      }
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
+
   return (
     <>
-      <header className="h-16 bg-white border-b border-[var(--color-border)] flex items-center justify-between px-4 sm:px-6 shrink-0 z-30 shadow-sm">
+      <header className="custom-shadow h-14 bg-sidebar/95 border-b border-sidebar-border flex items-center justify-between px-4 sm:px-6 shrink-0 z-30 backdrop-blur-xl">
         <div className="flex items-center gap-2 sm:gap-4 min-w-0">
           {/* Mobile/tablet hamburger - always visible below lg */}
           <button
@@ -98,23 +134,16 @@ export default function Topbar() {
             <MdMenu className="text-2xl" />
           </button>
 
-          {/* Desktop collapse-expand hamburger - only when sidebar collapsed at lg+ */}
-          {!sidebarOpen && (
-            <button
-              type="button"
-              onClick={() => dispatch(toggleSidebar())}
-              className="hidden lg:block text-gray-500 hover:text-gray-700 cursor-pointer p-1"
-            >
-              <MdMenu className="text-2xl" />
-            </button>
-          )}
+          <img src="/cleanones.png" className="h-auto w-14 shrink-0 object-contain sm:w-16" alt="CleanOnes" />
+          <span className="hidden h-6 w-px bg-border sm:block" />
+
           <h1 className="text-lg font-semibold text-[var(--color-foreground)] truncate">
             {getTitle()}
           </h1>
         </div>
 
-        <div className="flex items-center gap-2 sm:gap-4 shrink-0">
-          <div className="relative hidden sm:block">
+        <div className="flex shrink-0 items-center gap-2 sm:gap-3.5">
+          <div ref={languageRef} className="relative hidden sm:block">
             <button
               type="button"
               onClick={() => {
@@ -122,36 +151,36 @@ export default function Topbar() {
                 setNotificationsOpen(false);
                 setProfileOpen(false);
               }}
-              className="flex h-9 items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm text-gray-700 shadow-sm transition-colors hover:bg-gray-100"
+              className="flex h-8 items-center gap-1.5 rounded-md border border-border bg-white px-2 text-[11px] font-semibold text-muted-foreground shadow-[var(--shadow-xs)] transition-colors hover:bg-muted/60 hover:text-foreground"
             >
-              <MdLanguage className="text-lg" />
-              <span>{selectedLanguage}</span>
-              <MdKeyboardArrowDown className="text-base text-gray-500" />
+              <MdLanguage className="text-sm" />
+              <span>{locale.toUpperCase()}</span>
+              <MdKeyboardArrowDown className="text-sm text-muted-foreground" />
             </button>
 
             {languageOpen && (
-              <div className="absolute right-0 top-11 w-36 overflow-hidden rounded-xl border border-gray-200 bg-white py-1 shadow-xl">
+              <div className="custom-shadow-lg absolute right-0 top-10 w-36 overflow-hidden rounded-lg border border-border bg-white py-1">
                 {languages.map((language) => (
                   <button
-                    key={language}
+                    key={language.code}
                     type="button"
                     onClick={() => {
-                      setSelectedLanguage(language);
+                      router.push(localizePath(routePath, language.code));
                       setLanguageOpen(false);
                     }}
-                    className={`block w-full px-4 py-3 text-left text-sm transition-colors ${selectedLanguage === language
+                    className={`block w-full px-4 py-3 text-left text-sm transition-colors ${locale === language.code
                         ? "bg-[#e0f2fe] text-[#0ea5e9]"
                         : "text-slate-800 hover:bg-gray-50"
                       }`}
                   >
-                    {language}
+                    {language.label}
                   </button>
                 ))}
               </div>
             )}
           </div>
 
-          <div className="relative">
+          <div ref={notificationsRef} className="relative">
             <button
               type="button"
               onClick={() => {
@@ -159,18 +188,16 @@ export default function Topbar() {
                 setLanguageOpen(false);
                 setProfileOpen(false);
               }}
-              className="relative flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 bg-gray-50 text-gray-500 shadow-sm transition-colors hover:bg-gray-100 hover:text-gray-700"
+              className="relative flex h-8 w-8 items-center justify-center rounded-md border border-border bg-white text-muted-foreground shadow-[var(--shadow-xs)] transition-colors hover:bg-muted/60 hover:text-foreground"
             >
-              <MdNotificationsNone className="text-2xl" />
-              <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full border-2 border-white bg-red-500 text-[10px] font-bold text-white">
-                5
-              </span>
+              <MdNotificationsNone className="text-lg" />
+              <span className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-primary" />
             </button>
 
-            {notificationsOpen && <NotificationsPopover />}
+            {notificationsOpen && <NotificationsPopover locale={locale} />}
           </div>
 
-          <div className="relative">
+          <div ref={profileRef} className="relative">
             <button
               type="button"
               onClick={() => {
@@ -178,25 +205,28 @@ export default function Topbar() {
                 setLanguageOpen(false);
                 setNotificationsOpen(false);
               }}
-              className="flex h-10 items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 px-2 sm:px-3 shadow-sm transition-colors hover:bg-gray-100"
+              className="flex h-8 items-center gap-2 rounded-md border border-transparent bg-transparent px-1.5 text-left transition-colors hover:bg-white/70"
             >
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#0ea5e9] text-xs font-bold text-white shadow-sm shrink-0">
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-white">
                 KP
               </div>
               <div className="hidden text-left md:block">
-                <div className="text-sm font-semibold leading-none text-gray-700">
+                <div className="text-xs font-semibold leading-none text-foreground">
                   Kaz Putters
                 </div>
-                <div className="mt-1 text-[10px] text-gray-500">Admin</div>
               </div>
-              <MdKeyboardArrowDown className="hidden text-base text-gray-400 sm:block" />
+              <MdKeyboardArrowDown className="hidden text-sm text-muted-foreground sm:block" />
             </button>
 
             {profileOpen && (
-              <ProfileMenu
+              <ProfileMenu locale={locale}
                 onHelp={() => {
                   closeMenus();
                   setHelpOpen(true);
+                }}
+                onSignOut={() => {
+                  closeMenus();
+                  dispatch(setSignOutModalOpen(true));
                 }}
               />
             )}
@@ -209,13 +239,13 @@ export default function Topbar() {
   );
 }
 
-function NotificationsPopover() {
+function NotificationsPopover({ locale }: { locale: string }) {
   return (
-    <div className="absolute -right-12 sm:right-0 top-11 w-[300px] sm:w-[360px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border border-gray-200 bg-white shadow-2xl">
+    <div className="custom-shadow-lg absolute -right-12 top-11 w-[300px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border border-gray-200 bg-white sm:right-0 sm:w-[360px]">
       <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
         <h2 className="text-sm font-bold text-slate-950">Notifications</h2>
         <Link
-          href="/notifications"
+          href={localizePath("/notifications", locale)}
           className="text-xs font-semibold text-[#0ea5e9] hover:underline"
         >
           View all
@@ -239,15 +269,15 @@ function NotificationsPopover() {
   );
 }
 
-function ProfileMenu({ onHelp }: { onHelp: () => void }) {
+function ProfileMenu({ locale, onHelp, onSignOut }: { locale: string; onHelp: () => void; onSignOut: () => void }) {
   return (
-    <div className="absolute right-0 top-12 w-44 overflow-hidden rounded-xl border border-gray-200 bg-white py-1 shadow-2xl">
+    <div className="custom-shadow-lg absolute right-0 top-10 w-44 overflow-hidden rounded-xl border border-gray-200 bg-white py-1">
       <button className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-slate-800 hover:bg-gray-50">
         <MdOutlinePerson className="text-base" />
         Profile
       </button>
       <Link
-        href="/settings"
+        href={localizePath("/settings", locale)}
         className="flex items-center gap-3 px-4 py-3 text-sm text-slate-800 hover:bg-gray-50"
       >
         <MdOutlineSettings className="text-base" />
@@ -261,13 +291,14 @@ function ProfileMenu({ onHelp }: { onHelp: () => void }) {
         <MdHelpOutline className="text-base" />
         Help Center
       </button>
-      <Link
-        href="/login"
-        className="flex items-center gap-3 px-4 py-3 text-sm text-red-500 hover:bg-red-50"
+      <button
+        type="button"
+        onClick={onSignOut}
+        className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-red-500 hover:bg-red-50"
       >
         <MdLogout className="text-base" />
         Sign Out
-      </Link>
+      </button>
     </div>
   );
 }
@@ -284,7 +315,7 @@ function HelpCenterModal({ onClose }: { onClose: () => void }) {
         onClick={onClose}
       />
 
-      <section className="relative z-10 flex max-h-[86vh] w-full max-w-[560px] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+      <section className="custom-shadow-lg relative z-10 flex max-h-[86vh] w-full max-w-[560px] flex-col overflow-hidden rounded-2xl bg-white">
         <div className="flex items-start justify-between border-b border-gray-200 px-5 py-4">
           <div className="flex items-center gap-3">
             <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#e0f2fe] text-[#0ea5e9]">

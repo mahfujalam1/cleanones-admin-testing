@@ -23,7 +23,7 @@ export function LocationStatistics() {
           return (
             <div 
               key={loc.name}
-              className="bg-white rounded shadow-sm p-5 hover:shadow-md transition-shadow"
+              className="dashboard-card p-5 transition-[border-color,box-shadow] hover:border-[#d7dbe4] hover:shadow-md"
             >
               {/* Header */}
               <div className="flex items-center gap-3 mb-6">

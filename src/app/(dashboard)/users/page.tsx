@@ -70,7 +70,7 @@ export default function WorkersPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-10">
+    <div className="space-y-6 pb-10">
       {/* Search + Filters + Add */}
       <div className="flex items-center gap-3 flex-wrap">
         <div className="relative">

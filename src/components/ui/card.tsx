@@ -11,7 +11,7 @@ export function Card({
 }: CardProps) {
     return (
         <div
-            className={`bg-white rounded-lg border border-gray-200 ${className}`}
+            className={`dashboard-card text-card-foreground ${className}`}
             {...props}
         >
             {children}

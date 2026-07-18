@@ -22,7 +22,7 @@ export default function LiveStatusPage() {
   const missingCount = WORKERS.filter(w => w.status === 'Missing').length;
 
   return (
-    <div className="h-full flex relative animate-in fade-in duration-300 space-y-6 max-w-7xl mx-auto pb-10">
+    <div className="relative flex h-full animate-in space-y-6 pb-10 fade-in duration-300">
       <div className="flex-1 transition-all duration-300 w-full flex flex-col h-full">
 
         {/* Filters */}
@@ -67,7 +67,7 @@ export default function LiveStatusPage() {
         </div>
 
         {/* Table */}
-        <div className="bg-white rounded border border-gray-200 shadow-sm overflow-hidden flex-1 flex flex-col">
+        <div className="dashboard-card flex flex-1 flex-col overflow-hidden">
           <div className="overflow-x-auto w-full">
             <table className="w-full text-left border-collapse min-w-[1000px]">
             <thead>

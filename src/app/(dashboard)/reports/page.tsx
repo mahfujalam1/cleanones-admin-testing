@@ -38,7 +38,7 @@ export default function ReportsPage() {
   const [activeRange, setActiveRange] = useState<ReportRange>("Month");
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6 pb-10">
+    <div className="space-y-6 pb-10">
       <div className="flex items-center justify-between">
         <div className="flex rounded-md bg-gray-100 p-1 text-xs font-medium text-slate-500">
           {ranges.map((range) => (
@@ -73,7 +73,7 @@ export default function ReportsPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_1fr]">
-        <section className="rounded-md  bg-white p-5 shadow-sm">
+        <section className="dashboard-card p-5">
           <h2 className="mb-5 text-sm font-bold text-slate-950">
             Monthly Shift Trends
           </h2>
@@ -107,7 +107,7 @@ export default function ReportsPage() {
           </div>
         </section>
 
-        <section className="rounded-md  bg-white p-5 shadow-sm">
+        <section className="dashboard-card p-5">
           <h2 className="mb-5 text-sm font-bold text-slate-950">
             Photo Quality Distribution
           </h2>
@@ -162,7 +162,7 @@ export default function ReportsPage() {
 
 function MetricCard({ label, value }: { label: string; value: string }) {
   return (
-    <section className="rounded-md  bg-white px-5 py-6 shadow-sm">
+    <section className="dashboard-card px-5 py-6">
       <p className="text-xs font-medium text-slate-500">{label}</p>
       <p className="mt-2 text-3xl font-bold tracking-tight text-slate-950">{value}</p>
     </section>

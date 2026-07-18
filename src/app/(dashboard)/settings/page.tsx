@@ -19,11 +19,13 @@ const companyFields = [
 
 export default function SettingsPage() {
   return (
-    <div className="max-w-7xl mx-auto space-y-6 pb-10">
-      <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1fr_1fr]">
-        <section>
-          <h2 className="mb-2 text-lg font-bold text-slate-950">Company Profile</h2>
-          <div className="rounded  bg-white p-5 shadow">
+    <div className="space-y-6 pb-10">
+      <div className="grid grid-cols-1 items-start gap-5 xl:grid-cols-2">
+        <section className="flex min-w-0 flex-col">
+          <h2 className="mb-3 flex h-7 items-center text-lg font-bold leading-none text-slate-950">
+            Company Profile
+          </h2>
+          <div className="dashboard-card p-5">
             <div className="space-y-4">
               {companyFields.map((field) => (
                 <label key={field.label} className="block">
@@ -47,12 +49,12 @@ export default function SettingsPage() {
           </div>
         </section>
 
-        <section>
-          <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-slate-950">
+        <section className="flex min-w-0 flex-col">
+          <h2 className="mb-3 flex h-7 items-center gap-2 text-lg font-bold leading-none text-slate-950">
             <MdVpnKey className="text-xl" />
             Change Password
           </h2>
-          <div className="rounded  bg-white p-5 shadow">
+          <div className="dashboard-card p-5">
             <div className="space-y-4">
               {["Current Password", "New Password", "Confirm New Password"].map((label) => (
                 <label key={label} className="block">
@@ -81,8 +83,8 @@ export default function SettingsPage() {
       </div>
 
       <section>
-        <h2 className="mb-2 text-lg font-bold text-slate-950">Legal</h2>
-        <div className="overflow-hidden rounded bg-white shadow-sm">
+        <h2 className="mb-3 flex h-7 items-center text-lg font-bold leading-none text-slate-950">Legal</h2>
+        <div className="dashboard-card overflow-hidden">
           <LegalRow
             icon={<MdSecurity />}
             iconClassName="bg-[#e0f2fe] text-[#0ea5e9]"

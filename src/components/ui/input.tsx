@@ -13,7 +13,7 @@ export function Input({ className = "", icon, ...props }: InputProps) {
                 </div>
             )}
             <input
-                className={`flex h-10 w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow transition-colors placeholder:text-gray-400 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#0ea5e9] focus-visible:border-[#0ea5e9] ${icon ? "pl-10" : ""} ${className}`}
+                className={`flex h-9 w-full rounded-md border border-border bg-white px-3 py-2 text-sm text-foreground shadow-[var(--shadow-xs)] transition-[border-color,box-shadow] duration-150 placeholder:text-muted-foreground focus-visible:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 ${icon ? "pl-10" : ""} ${className}`}
                 {...props}
             />
         </div>

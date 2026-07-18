@@ -2,88 +2,35 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { MdLockOutline, MdVisibility, MdVisibilityOff, MdArrowBack } from 'react-icons/md';
-import Link from 'next/link';
 
 export default function ResetPasswordPage() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState('');
   const router = useRouter();
 
-  const handleReset = (e: React.FormEvent) => {
+  const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (password !== confirmPassword) {
-      alert("Passwords don't match!");
-      return;
-    }
+    if (!password || !confirmPassword) return setError('Please fill in all fields');
+    if (password !== confirmPassword) return setError('Passwords do not match');
+    if (password.length < 6) return setError('Password must be at least 6 characters long');
     router.push('/login');
   };
 
+  const fieldClass = "h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-900 shadow-sm outline-none transition-colors placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/10";
   return (
-    <div className="w-full max-w-[420px] bg-white rounded shadow p-8 sm:p-10 relative">
-      <div className="w-14 h-14 bg-[#e0f2fe] rounded-2xl flex items-center justify-center mb-6">
-        <MdLockOutline className="text-2xl text-[#0ea5e9]" />
+    <div className="w-full max-w-md space-y-6 rounded-xl border border-slate-200 bg-white p-8 shadow-[0_2px_8px_rgba(15,23,42,0.06)] sm:p-10">
+      <div className="flex select-none flex-col items-center">
+        <div className="mb-4 flex items-center justify-center"><img src="/cleanones.png" className="h-auto w-24 object-contain" alt="CleanOnes" /></div>
+        <h2 className="text-xl font-bold tracking-tight text-slate-900">Set New Password</h2>
+        <p className="mt-1 text-center text-xs text-slate-500">Choose a secure password. Make sure it is at least 6 characters long.</p>
       </div>
-
-      <h2 className="text-[28px] font-bold text-gray-900 mb-3 tracking-tight">Set new password</h2>
-      <p className="text-[15px] text-gray-500 mb-8">Your new password must be different to previously used passwords.</p>
-
-      <form onSubmit={handleReset} className="space-y-5">
-        <div className="space-y-2">
-          <label className="text-sm font-semibold text-gray-700 ml-1">Password</label>
-          <div className="relative flex items-center">
-            <div className="absolute left-4 text-gray-400 pointer-events-none z-10 flex items-center justify-center">
-              <MdLockOutline className="text-[20px]" />
-            </div>
-            <input
-              type={showPassword ? 'text' : 'password'}
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="flex h-12 w-full rounded border border-gray-200 bg-white px-4 py-2 pl-12 pr-12 text-[15px] text-gray-900 shadow-sm transition-all placeholder:text-gray-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0ea5e9]/20 focus-visible:border-[#0ea5e9]"
-              required
-            />
-            <button 
-              type="button"
-              className="absolute right-4 text-gray-400 hover:text-gray-600 cursor-pointer z-10 flex items-center justify-center"
-              onClick={() => setShowPassword(!showPassword)}
-            >
-              {showPassword ? <MdVisibilityOff className="text-[20px]" /> : <MdVisibility className="text-[20px]" />}
-            </button>
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <label className="text-sm font-semibold text-gray-700 ml-1">Confirm Password</label>
-          <div className="relative flex items-center">
-            <div className="absolute left-4 text-gray-400 pointer-events-none z-10 flex items-center justify-center">
-              <MdLockOutline className="text-[20px]" />
-            </div>
-            <input
-              type={showPassword ? 'text' : 'password'}
-              placeholder="••••••••"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              className="flex h-12 w-full rounded border border-gray-200 bg-white px-4 py-2 pl-12 pr-12 text-[15px] text-gray-900 shadow-sm transition-all placeholder:text-gray-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0ea5e9]/20 focus-visible:border-[#0ea5e9]"
-              required
-            />
-          </div>
-        </div>
-
-        <button 
-          type="submit" 
-          className="w-full h-12 mt-4 text-[15px] rounded bg-[#0ea5e9] hover:bg-[#0284c7] text-white shadow hover:shadow-md transition-all font-bold cursor-pointer"
-        >
-          Reset Password
-        </button>
+      <form onSubmit={submit} className="space-y-4">
+        <div className="space-y-1.5"><label className="text-xs font-semibold text-slate-800">New Password</label><input type="password" value={password} onChange={(e) => { setPassword(e.target.value); setError(''); }} placeholder="••••••••" className={fieldClass} required /></div>
+        <div className="space-y-1.5"><label className="text-xs font-semibold text-slate-800">Confirm New Password</label><input type="password" value={confirmPassword} onChange={(e) => { setConfirmPassword(e.target.value); setError(''); }} placeholder="••••••••" className={fieldClass} required /></div>
+        {error && <p className="text-center text-xs font-medium text-red-500">{error}</p>}
+        <button type="submit" className="h-10 w-full cursor-pointer rounded-md bg-primary text-sm font-semibold text-white shadow-sm hover:bg-[#0284c7]">Reset Password</button>
       </form>
-      
-      <div className="mt-8 text-center text-[14px]">
-        <Link href="/login" className="text-[#0ea5e9] font-semibold hover:underline flex items-center justify-center gap-1.5">
-          <MdArrowBack className="text-lg" /> Back to Sign In
-        </Link>
-      </div>
     </div>
   );
 }

@@ -23,7 +23,7 @@ export function WorkersTable({ workers, onViewWorker }: WorkersTableProps) {
       : 'bg-[#8b5cf6]/10 text-[#8b5cf6]';
 
   return (
-    <div className="bg-white rounded border border-gray-200 shadow-sm overflow-hidden">
+    <div className="dashboard-card overflow-hidden">
       <div className="overflow-x-auto w-full">
         <div className="min-w-[1000px]">
           {/* Header row */}
@@ -35,7 +35,7 @@ export function WorkersTable({ workers, onViewWorker }: WorkersTableProps) {
             <div>Languages</div>
             <div>Hours</div>
             <div>Status</div>
-            <div></div>
+            <div>Action</div>
           </div>
 
           {/* Rows */}

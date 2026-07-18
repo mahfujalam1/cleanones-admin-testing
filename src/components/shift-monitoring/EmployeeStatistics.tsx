@@ -21,7 +21,7 @@ export function EmployeeStatistics({ onWorkerSelect, selectedWorkerId }: Props) 
             <div 
               key={worker.id}
               onClick={() => onWorkerSelect(worker)}
-              className={`bg-white rounded-md border p-5 cursor-pointer transition-all hover:shadow-md ${isSelected ? 'border-[#0ea5e9] shadow-md ring-1 ring-[#0ea5e9]' : 'border-gray-200 shadow-sm'}`}
+              className={`dashboard-card cursor-pointer p-5 transition-[border-color,box-shadow] hover:border-[#d7dbe4] hover:shadow-md ${isSelected ? 'border-[#0ea5e9] shadow-md ring-1 ring-[#0ea5e9]' : ''}`}
             >
               {/* Header */}
               <div className="flex items-center gap-3 mb-6">

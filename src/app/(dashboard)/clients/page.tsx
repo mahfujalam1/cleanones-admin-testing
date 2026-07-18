@@ -47,7 +47,7 @@ export default function ClientsPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-10">
+    <div className="space-y-6 pb-10">
       {/* Search & Actions */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="relative">
@@ -75,7 +75,7 @@ export default function ClientsPage() {
           <div
             key={client.id}
             onClick={() => router.push(`/clients/${client.id}`)}
-            className="bg-white rounded border-gray-100 shadow-sm p-6 hover:shadow-md transition-shadow cursor-pointer flex flex-col justify-between space-y-4"
+            className="dashboard-card flex cursor-pointer flex-col justify-between space-y-4 p-5 transition-[border-color,box-shadow] hover:border-[#d7dbe4] hover:shadow-md"
           >
             {/* Top row */}
             <div className="flex items-start justify-between gap-3">

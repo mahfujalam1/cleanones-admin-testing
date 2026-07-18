@@ -1,84 +1,40 @@
 "use client";
 
-import React, { useState, useRef } from 'react';
-import Link from 'next/link';
+import React, { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { MdArrowBack, MdLockOutline } from 'react-icons/md';
 
 export default function OTPPage() {
-  const [otp, setOtp] = useState(['', '', '', '']);
-  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const [otp, setOtp] = useState(['', '', '', '', '', '']);
+  const [error, setError] = useState('');
+  const refs = useRef<(HTMLInputElement | null)[]>([]);
   const router = useRouter();
 
-  const handleChange = (index: number, value: string) => {
-    if (value.length > 1) return; // one char only
-
-    const newOtp = [...otp];
-    newOtp[index] = value;
-    setOtp(newOtp);
-
-    // auto-advance
-    if (value !== '' && index < 3) {
-      inputRefs.current[index + 1]?.focus();
-    }
+  const change = (value: string, index: number) => {
+    if (!/^\d?$/.test(value)) return;
+    const next = [...otp]; next[index] = value.slice(-1); setOtp(next); setError('');
+    if (value && index < 5) refs.current[index + 1]?.focus();
   };
-
-  const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Backspace' && otp[index] === '' && index > 0) {
-      inputRefs.current[index - 1]?.focus();
-    }
-  };
-
-  const handleVerify = (e: React.FormEvent) => {
+  const submit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (otp.join('').length !== 6) return setError('Please enter the complete 6-digit code');
     router.push('/forgot-password/reset');
   };
 
   return (
-    <div className="w-full max-w-[420px] bg-white rounded shadow p-8 sm:p-10 relative">
-      <Link href="/forgot-password" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 transition-colors mb-8 font-medium">
-        <MdArrowBack className="text-lg" />
-        Back
-      </Link>
-      
-      <div className="w-14 h-14 bg-[#e0f2fe] rounded-2xl flex items-center justify-center mb-6">
-        <MdLockOutline className="text-2xl text-[#0ea5e9]" />
+    <div className="w-full max-w-md space-y-6 rounded-xl border border-slate-200 bg-white p-8 shadow-[0_2px_8px_rgba(15,23,42,0.06)] sm:p-10">
+      <div className="flex select-none flex-col items-center">
+        <div className="mb-4 flex items-center justify-center"><img src="/cleanones.png" className="h-auto w-24 object-contain" alt="CleanOnes" /></div>
+        <h2 className="text-xl font-bold tracking-tight text-slate-900">Enter OTP Code</h2>
+        <p className="mt-1 text-center text-xs text-slate-500">We sent a verification code to your email. Type the 6-digit code below.</p>
       </div>
-
-      <h2 className="text-[28px] font-bold text-gray-900 mb-3 tracking-tight">Check your email</h2>
-      <p className="text-[15px] text-gray-500 mb-8">We sent a reset code to your email. Enter it below to verify.</p>
-
-      <form onSubmit={handleVerify} className="space-y-8">
-        <div className="flex justify-between gap-3">
-          {otp.map((digit, index) => (
-            <input
-              key={index}
-              ref={(el) => {
-                inputRefs.current[index] = el;
-              }}
-              type="text"
-              inputMode="numeric"
-              maxLength={1}
-              value={digit}
-              onChange={(e) => handleChange(index, e.target.value)}
-              onKeyDown={(e) => handleKeyDown(index, e)}
-              className="w-16 h-16 text-center text-3xl font-bold rounded border border-gray-200 bg-white shadow-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0ea5e9]/20 focus-visible:border-[#0ea5e9]"
-              required
-            />
-          ))}
+      <form onSubmit={submit} className="space-y-4">
+        <div className="flex items-center justify-between gap-2">
+          {otp.map((digit, index) => <input key={index} ref={(el) => { refs.current[index] = el; }} value={digit} onChange={(e) => change(e.target.value, index)} onKeyDown={(e) => { if (e.key === 'Backspace' && !digit && index > 0) refs.current[index - 1]?.focus(); }} inputMode="numeric" maxLength={1} className="h-12 w-11 rounded-md border border-slate-200 bg-white text-center text-lg font-bold text-slate-800 outline-none transition-colors focus:border-primary" required />)}
         </div>
-
-        <button 
-          type="submit" 
-          className="w-full h-12 text-[15px] rounded bg-[#0ea5e9] hover:bg-[#0284c7] text-white shadow hover:shadow-md transition-all font-bold cursor-pointer"
-        >
-          Verify Code
-        </button>
+        {error && <p className="text-center text-xs font-medium text-red-500">{error}</p>}
+        <button type="submit" className="h-10 w-full cursor-pointer rounded-md bg-primary text-sm font-semibold text-white shadow-sm hover:bg-[#0284c7]">Verify Code</button>
       </form>
-      
-      <div className="mt-8 text-center text-[14px] text-gray-500">
-        Didn&apos;t receive the email? <button className="text-[#0ea5e9] font-semibold hover:underline ml-1">Click to resend</button>
-      </div>
+      <p className="text-center text-[11px] text-slate-400">Didn&apos;t receive the code? <button type="button" className="font-semibold text-primary hover:underline">Resend Code</button></p>
     </div>
   );
 }

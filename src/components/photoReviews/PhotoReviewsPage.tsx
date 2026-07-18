@@ -200,7 +200,7 @@ export function PhotoReviewsPage() {
                     </div>
 
                     {/* Table */}
-                    <div className="bg-white rounded shadow-sm overflow-x-auto">
+                    <div className="dashboard-card overflow-x-auto">
                         <table className="w-full text-sm border-collapse min-w-[720px]">
                             <thead>
                                 <tr className="bg-gray-50">

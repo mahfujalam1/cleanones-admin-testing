@@ -3,13 +3,14 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { getLocale, localizePath, stripLocale } from '@/lib/locale';
 import { useAppSelector, useAppDispatch } from '@/store/hooks';
-import { toggleSidebar, closeMobileSidebar } from '@/store/slices/ui.slice';
+import { toggleSidebar, closeMobileSidebar, setSignOutModalOpen } from '@/store/slices/ui.slice';
 import {
   MdDashboard, MdCalendarToday, MdAccessTime, MdPeople,
   MdBusinessCenter, MdLocationOn, MdMeetingRoom, MdAssignment,
   MdPhotoCamera, MdWarning, MdAssessment, MdNotifications, MdSettings,
-  MdChevronLeft
+  MdChevronLeft, MdChevronRight, MdLogout
 } from 'react-icons/md';
 
 const mainLinks = [
@@ -33,9 +34,12 @@ const qcLinks = [
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const locale = getLocale(pathname);
+  const routePath = stripLocale(pathname);
   const dispatch = useAppDispatch();
   const sidebarOpen = useAppSelector((state) => state.ui.sidebarOpen);
   const mobileSidebarOpen = useAppSelector((state) => state.ui.mobileSidebarOpen);
+  const collapsed = !sidebarOpen;
 
   return (
     <>
@@ -50,64 +54,62 @@ export default function Sidebar() {
       <aside
         className={`
           fixed lg:static inset-y-0 left-0 z-50 h-full
-          w-64 bg-[#1a2332] text-gray-300 flex flex-col overflow-hidden shrink-0
-          transition-transform duration-300 ease-in-out
+          relative bg-sidebar text-sidebar-foreground border-r border-sidebar-border flex flex-col shrink-0
+          transition-[width,transform] duration-200 ease-[var(--ease-out)]
+          ${collapsed ? 'w-64 lg:w-16' : 'w-64'}
           ${mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-          ${sidebarOpen ? 'lg:translate-x-0 lg:flex' : 'lg:hidden'}
+          lg:translate-x-0 lg:flex
         `}
       >
-        {/* Header */}
-        <div className="h-16 flex items-center px-6 border-b border-white/5 shrink-0">
-          <div className="w-8 h-8 bg-[#0ea5e9] rounded flex items-center justify-center font-bold text-white text-sm mr-3">
-            CO
-          </div>
-          <div>
-            <div className="text-white font-semibold text-sm leading-none">CleanOnes</div>
-            <div className="text-[10px] text-gray-400 mt-1">Manager Dashboard</div>
-          </div>
-        </div>
+        <button
+          type="button"
+          onClick={() => dispatch(toggleSidebar())}
+          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          className="absolute -right-3 top-[14px] z-10 hidden h-6 w-6 cursor-pointer items-center justify-center rounded-full border border-border bg-white text-muted-foreground shadow-sm transition-colors hover:text-foreground lg:flex"
+        >
+          {collapsed ? <MdChevronRight /> : <MdChevronLeft />}
+        </button>
 
         {/* Navigation */}
-        <div className="flex-1 overflow-y-auto py-4 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto py-2 custom-scrollbar">
           <nav className="space-y-1 px-3">
             {mainLinks.map((link) => {
-              const isActive = pathname === link.href || (link.href !== '/' && pathname?.startsWith(link.href));
+              const isActive = routePath === link.href || (link.href !== '/' && routePath.startsWith(link.href));
               return (
                 <Link
                   key={link.name}
-                  href={link.href}
+                  href={localizePath(link.href, locale)}
                   onClick={() => dispatch(closeMobileSidebar())}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded text-sm font-medium transition-colors ${isActive
-                      ? 'bg-[#0ea5e9]/10 text-[#0ea5e9] border-l-2 border-[#0ea5e9]'
-                      : 'hover:bg-white/5 hover:text-white border-l-2 border-transparent'
+                  className={`flex h-9 items-center gap-2.5 rounded-md px-3 text-sm font-medium transition-colors ${isActive
+                      ? 'bg-white text-primary shadow-[var(--shadow-xs)]'
+                      : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-foreground'
                     }`}
                 >
-                  <link.icon className={`text-lg ${isActive ? 'text-[#0ea5e9]' : 'text-gray-400'}`} />
-                  {link.name}
+                  <link.icon className={`text-base ${isActive ? 'text-primary' : 'text-sidebar-foreground'}`} />
+                  <span className={collapsed ? 'lg:hidden' : 'block'}>{link.name}</span>
                 </Link>
               );
             })}
           </nav>
 
-          <div className="mt-8 mb-2 px-6 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">
-            Quality Control
-          </div>
+          <div className="mx-3 my-4 border-t border-sidebar-border" />
+          <div className={`mb-2 px-6 text-xs font-medium text-sidebar-foreground/70 uppercase tracking-wider ${collapsed ? 'lg:hidden' : 'block'}`}>Quality Control</div>
 
           <nav className="space-y-1 px-3">
             {qcLinks.map((link) => {
-              const isActive = pathname === link.href || (pathname?.startsWith(link.href) && link.href !== '/');
+              const isActive = routePath === link.href || (routePath.startsWith(link.href) && link.href !== '/');
               return (
                 <Link
                   key={link.name}
-                  href={link.href}
+                  href={localizePath(link.href, locale)}
                   onClick={() => dispatch(closeMobileSidebar())}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded text-sm font-medium transition-colors ${isActive
-                      ? 'bg-[#0ea5e9]/10 text-[#0ea5e9] border-l-2 border-[#0ea5e9]'
-                      : 'hover:bg-white/5 hover:text-white border-l-2 border-transparent'
+                  className={`flex h-9 items-center gap-2.5 rounded-md px-3 text-sm font-medium transition-colors ${isActive
+                      ? 'bg-white text-primary shadow-[var(--shadow-xs)]'
+                      : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-foreground'
                     }`}
                 >
-                  <link.icon className={`text-lg ${isActive ? 'text-[#0ea5e9]' : 'text-gray-400'}`} />
-                  {link.name}
+                  <link.icon className={`text-base ${isActive ? 'text-primary' : 'text-sidebar-foreground'}`} />
+                  <span className={collapsed ? 'lg:hidden' : 'block'}>{link.name}</span>
                 </Link>
               );
             })}
@@ -115,19 +117,10 @@ export default function Sidebar() {
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-white/5 shrink-0">
-          <div className="flex items-center gap-3 mb-4 cursor-pointer hover:bg-white/5 p-2 rounded transition-colors">
-            <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-xs font-bold text-gray-400 border border-white/20">
-              Admin
-            </div>
-          </div>
-
-          <button
-            onClick={() => dispatch(toggleSidebar())}
-            className="hidden lg:flex w-full items-center gap-2 text-xs text-gray-400 hover:text-white transition-colors cursor-pointer"
-          >
-            <MdChevronLeft className="text-lg" />
-            Collapse
+        <div className="shrink-0 border-t border-sidebar-border p-3">
+          <button onClick={() => dispatch(setSignOutModalOpen(true))} className="flex h-9 w-full cursor-pointer items-center gap-3 rounded-md px-3 text-sm font-medium text-sidebar-foreground hover:bg-sidebar-accent hover:text-foreground">
+            <MdLogout className="shrink-0 text-lg" />
+            <span className={collapsed ? 'lg:hidden' : 'block'}>Sign Out</span>
           </button>
         </div>
 

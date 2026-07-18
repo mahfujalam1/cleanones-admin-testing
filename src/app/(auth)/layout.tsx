@@ -1,73 +1,31 @@
 import React from 'react';
-import { FaCheckCircle } from 'react-icons/fa';
+import { MdCheck, MdLockOutline, MdOutlineAutoAwesome } from 'react-icons/md';
 
-export default function AuthLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex min-h-screen">
-      {/* Left Panel */}
-      <div className="hidden lg:flex flex-col justify-between w-[480px] bg-[#1a2332] text-white p-12 relative overflow-hidden">
-        {/* Decorative background circle */}
-        <div className="absolute -bottom-[20%] -left-[20%] w-[140%] h-[140%] rounded-full bg-white/5 blur-3xl pointer-events-none" />
-        
-        <div className="relative z-10">
-          <div className="flex items-center gap-3 mb-16">
-            <div className="w-10 h-10 bg-[#0ea5e9] rounded flex items-center justify-center font-bold text-lg">
-              CO
-            </div>
-            <span className="text-xl font-semibold">CleanOnes</span>
+    <main className="flex min-h-screen bg-[#f7f8fa]">
+      <aside className="relative hidden w-1/2 overflow-hidden border-r border-white/10 bg-[#03071b] p-14 text-slate-300 lg:flex lg:flex-col lg:justify-between">
+        <div className="pointer-events-none absolute -right-36 top-24 h-72 w-72 rounded-full border border-white/60" />
+        <div className="pointer-events-none absolute -right-20 top-40 h-48 w-48 rounded-full border border-white/60" />
+        <div className="relative z-10"><img src="/cleanones.png" className="h-auto w-32 object-contain" alt="CleanOnes" /></div>
+        <div className="relative z-10 my-auto max-w-md space-y-8">
+          <div>
+            <span className="inline-flex items-center gap-2 rounded-full border border-white/70 px-3 py-1.5 text-[11px] font-medium text-white"><MdOutlineAutoAwesome className="text-primary" /> One dashboard for every cleaning workflow</span>
+            <h1 className="mt-9 text-4xl font-semibold leading-[1.18] tracking-tight text-white xl:text-5xl">Run cleaner operations from one intelligent workspace.</h1>
+            <p className="mt-5 max-w-md text-sm leading-6 text-slate-300">Manage live shifts, cleaning teams, quality reviews, and every location from one secure dashboard.</p>
           </div>
-
-          <h1 className="text-4xl font-bold leading-tight mb-6">
-            Cleaning workforce<br />
-            management on <span className="text-[#0ea5e9]">one<br />platform</span>
-          </h1>
-          
-          <p className="text-gray-400 mb-12 max-w-sm">
-            Manage your cleaning teams, shifts, and locations from one powerful dashboard.
-          </p>
-
-          <ul className="space-y-4">
-            {[
-              "Real-time shift monitoring",
-              "AI-powered photo review",
-              "GPS location validation",
-              "Automated performance reports"
-            ].map((feature, i) => (
-              <li key={i} className="flex items-center gap-3 text-sm text-gray-300">
-                <FaCheckCircle className="text-[#0ea5e9]" />
-                {feature}
-              </li>
-            ))}
+          <ul className="space-y-3 text-sm text-white">
+            {['Plan and monitor every shift', 'Manage teams and locations in real time', 'Turn quality data into clear decisions'].map((label) => <li key={label} className="flex items-center gap-3"><MdCheck className="h-4 w-4 rounded-full border border-primary p-0.5 text-primary" />{label}</li>)}
           </ul>
-        </div>
-
-        <div className="relative z-10 bg-white/5 border border-white/10 rounded-lg p-4 backdrop-blur-sm mt-8">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-8 h-8 rounded-full bg-[#0ea5e9] flex items-center justify-center text-xs font-bold">
-              KP
-            </div>
-            <div>
-              <div className="text-sm font-medium">Kaz Putters</div>
-              <div className="text-xs text-gray-400">Operations Manager - Amsterdam</div>
-            </div>
+          <div className="max-w-md rounded-lg border border-white/15 bg-white/5 p-4">
+            <div className="mb-3 flex items-center justify-between text-xs text-white"><span className="font-semibold">Live Operations</span><span className="flex items-center gap-1.5 font-medium text-emerald-400"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> Active</span></div>
+            <div className="mb-2 flex justify-between text-xs text-white"><span>Amsterdam Region</span><span className="font-semibold">76%</span></div>
+            <div className="h-1.5 overflow-hidden rounded-full bg-white/15"><div className="h-full w-3/4 rounded-full bg-primary" /></div>
           </div>
-          <p className="text-xs text-gray-300 italic">
-            &quot;CleanOnes gives me complete visibility over all our teams and locations.&quot;
-          </p>
         </div>
-      </div>
-
-      {/* Right Panel */}
-      <div className="flex-1 flex flex-col items-center justify-center bg-[#f8fafc] p-4 sm:p-6">
-        {children}
-        <p className="text-xs text-gray-400 mt-8 text-center">
-          © 2026 CleanOnes BV - Keizersgracht 123, Amsterdam
-        </p>
-      </div>
-    </div>
+        <div className="relative z-10 flex items-center gap-2 text-[10px] text-slate-400"><MdLockOutline /> Secure, encrypted connection · Trusted by 200+ businesses</div>
+      </aside>
+      <section className="flex w-full flex-col items-center justify-center px-6 py-10 lg:w-1/2 lg:px-12">{children}</section>
+    </main>
   );
 }

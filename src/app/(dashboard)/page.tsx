@@ -3,7 +3,7 @@
 import React from 'react';
 import {
   MdShowChart, MdCalendarToday, MdCheckCircleOutline, MdPeopleOutline,
-  MdPhotoCamera, MdWarningAmber, MdLocationOn, MdAdd, MdArrowForward
+  MdPhotoCamera, MdWarningAmber, MdLocationOn, MdArrowForward
 } from 'react-icons/md';
 import Link from 'next/link';
 
@@ -23,7 +23,7 @@ export default function DashboardPage() {
     return op.status === activeTab;
   });
   return (
-    <div className="space-y-8 max-w-7xl mx-auto pb-10">
+    <div className="space-y-8 pb-10">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -49,24 +49,22 @@ export default function DashboardPage() {
 
       {/* Quick Actions */}
       <div>
-        <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-          <MdAdd className="text-[#0ea5e9] text-lg" /> Quick Actions
-        </h3>
-        <div className="flex flex-wrap gap-3">
-          <Link href='/shift-monitoring'><Button className="bg-[#0ea5e9] hover:bg-[#0284c7] text-white rounded text-xs px-4 h-8 shadow hover:shadow-md">
-            + Create Shift
+        <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-slate-400">Quick Actions</h3>
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          <Link href='/shift-monitoring' className="block"><Button className="h-11 w-full justify-center rounded-md bg-[#0ea5e9] px-4 text-xs font-semibold text-white shadow hover:bg-[#0284c7] hover:shadow-md">
+            Create Shift
           </Button>
           </Link>
-          <Link href='/clients'><Button className="bg-[#8b5cf6] hover:bg-[#7c3aed] text-white rounded text-xs px-4 h-8 shadow hover:shadow-md">
-            <MdAdd className="mr-1" /> Add Client
+          <Link href='/clients' className="block"><Button className="h-11 w-full justify-center rounded-md bg-[#8b5cf6] px-4 text-xs font-semibold text-white shadow hover:bg-[#7c3aed] hover:shadow-md">
+            Add Client
           </Button>
           </Link>
-          <Link href='/locations'><Button className="bg-[#0d9488] hover:bg-[#0f766e] text-white rounded text-xs px-4 h-8 shadow hover:shadow-md">
-            <MdAdd className="mr-1" /> Add Location
+          <Link href='/locations' className="block"><Button className="h-11 w-full justify-center rounded-md bg-[#0d9488] px-4 text-xs font-semibold text-white shadow hover:bg-[#0f766e] hover:shadow-md">
+            Add Location
           </Button>
           </Link>
-          <Link href='/photo-reviews'><Button className="bg-[#ec4899] hover:bg-[#db2777] text-white rounded text-xs px-4 h-8 shadow hover:shadow-md">
-            <MdPhotoCamera className="mr-1" /> Review Photos
+          <Link href='/photo-reviews' className="block"><Button className="h-11 w-full justify-center rounded-md bg-[#ec4899] px-4 text-xs font-semibold text-white shadow hover:bg-[#db2777] hover:shadow-md">
+            Review Photos
           </Button>
           </Link>
         </div>
@@ -74,21 +72,21 @@ export default function DashboardPage() {
 
       {/* Status Summary */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-[#ecfdf5] border border-[#a7f3d0] rounded p-4 shadow-sm flex flex-col justify-center">
+        <div className="dashboard-card flex flex-col justify-center border-[#a7f3d0] bg-[#ecfdf5] p-4">
           <div className="text-xl font-bold text-[#10b981] flex items-center gap-2">
             <div className="w-2.5 h-2.5 rounded-full bg-[#10b981]"></div>
             4
           </div>
           <div className="text-xs text-[#059669] font-medium mt-1">Checked In / On Time</div>
         </div>
-        <div className="bg-[#fffbeb] border border-[#fde68a] rounded p-4 shadow-sm flex flex-col justify-center">
+        <div className="dashboard-card flex flex-col justify-center border-[#fde68a] bg-[#fffbeb] p-4">
           <div className="text-xl font-bold text-[#f59e0b] flex items-center gap-2">
             <div className="w-2.5 h-2.5 rounded-full bg-[#f59e0b]"></div>
             2
           </div>
           <div className="text-xs text-[#d97706] font-medium mt-1">Late</div>
         </div>
-        <div className="bg-[#fef2f2] border border-[#fecaca] rounded p-4 shadow-sm flex flex-col justify-center">
+        <div className="dashboard-card flex flex-col justify-center border-[#fecaca] bg-[#fef2f2] p-4">
           <div className="text-xl font-bold text-[#ef4444] flex items-center gap-2">
             <div className="w-2.5 h-2.5 rounded-full bg-[#ef4444]"></div>
             2
@@ -98,7 +96,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Live Operations */}
-      <Card className="border-0 shadow-sm border border-gray-100 rounded-lg overflow-hidden">
+      <Card className="overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white">
           <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2 shrink-0">
             <span className="w-2 h-2 rounded-full bg-[#0ea5e9]"></span>
@@ -151,7 +149,7 @@ export default function DashboardPage() {
 
 function StatCard({ icon, value, label }: { icon: React.ReactNode, value: string, label: string }) {
   return (
-    <Card className="rounded-lg shadow border-gray-100 hover:shadow-md transition-shadow cursor-pointer">
+    <Card className="cursor-pointer transition-[border-color,box-shadow] hover:border-[#cfd6e2] hover:shadow-[0_2px_4px_rgb(16_24_40/0.06),0_6px_14px_rgb(16_24_40/0.08)]">
       <CardContent className="p-5">
         <div className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-xl mb-4">
           {icon}
@@ -255,7 +253,7 @@ function Card({
 }: CardProps) {
   return (
     <div
-      className={`bg-white rounded-lg border border-gray-200 ${className}`}
+      className={`dashboard-card ${className}`}
       {...props}
     >
       {children}

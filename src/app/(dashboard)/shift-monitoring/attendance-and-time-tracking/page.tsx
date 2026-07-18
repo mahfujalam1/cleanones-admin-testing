@@ -9,7 +9,7 @@ export default function AttendanceTimeTrackingPage() {
   const [selectedWorker, setSelectedWorker] = useState<WorkerInfo | null>(null);
 
   return (
-    <div className='space-y-6 max-w-7xl mx-auto pb-10'>
+    <div className='space-y-6 pb-10'>
       <AttendanceTimeTracking
         onWorkerSelect={(worker) => setSelectedWorker(worker)}
         selectedWorkerId={selectedWorker?.id || null}
