@@ -30,8 +30,8 @@ export default function DashboardLayout({
       <Topbar />
       <div className="flex min-h-0 flex-1 overflow-hidden">
         <Sidebar />
-        <main className="min-w-0 flex-1 overflow-auto bg-white p-4 sm:p-6">
-          <div className="w-full min-w-0 md:mx-16 md:w-auto">{children}</div>
+        <main className="min-h-0 min-w-0 flex-1 overflow-auto overscroll-contain bg-white p-3 sm:p-4 lg:p-6">
+          <div className="w-full min-w-0 lg:px-16">{children}</div>
         </main>
       </div>
       <SignOutConfirmation />

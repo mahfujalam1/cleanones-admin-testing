@@ -123,7 +123,7 @@ export default function Topbar() {
 
   return (
     <>
-      <header className="custom-shadow h-14 bg-sidebar/95 border-b border-sidebar-border flex items-center justify-between px-4 sm:px-6 shrink-0 z-30 backdrop-blur-xl">
+      <header className="custom-shadow z-30 flex h-14 shrink-0 items-center justify-between gap-2 border-b border-sidebar-border bg-sidebar/95 px-3 backdrop-blur-xl sm:px-4 lg:px-6">
         <div className="flex items-center gap-2 sm:gap-4 min-w-0">
           {/* Mobile/tablet hamburger - always visible below lg */}
           <button
@@ -134,10 +134,10 @@ export default function Topbar() {
             <MdMenu className="text-2xl" />
           </button>
 
-          <img src="/cleanones.png" className="h-auto w-14 shrink-0 object-contain sm:w-16" alt="CleanOnes" />
+          <img src="/cleanones.png" className="hidden h-auto w-16 shrink-0 object-contain sm:block" alt="CleanOnes" />
           <span className="hidden h-6 w-px bg-border sm:block" />
 
-          <h1 className="text-lg font-semibold text-[var(--color-foreground)] truncate">
+          <h1 className="truncate text-sm font-semibold text-[var(--color-foreground)] sm:text-lg">
             {getTitle()}
           </h1>
         </div>

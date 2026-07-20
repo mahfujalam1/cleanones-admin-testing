@@ -109,7 +109,7 @@ export function CreateLocationModal({ onClose, onAdd }: CreateLocationModalProps
                     </div>
 
                     {/* Floors + Rooms */}
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <div>
                             <label className="text-xs font-semibold text-gray-700 mb-1.5 block">Number of Floors *</label>
                             <input

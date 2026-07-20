@@ -152,7 +152,7 @@ export function PhotoReviewsPage() {
     // ── Main layout ──────────────────────────────────────────────────────────
 
     return (
-        <div className="flex h-screen overflow-hidden">
+        <div className="flex h-full min-h-0 overflow-hidden">
 
 
             {/* Main */}

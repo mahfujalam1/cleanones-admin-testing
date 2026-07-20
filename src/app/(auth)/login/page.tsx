@@ -28,7 +28,7 @@ export default function LoginPage() {
 
   return (
     <div className="w-full max-w-md overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_2px_8px_rgba(15,23,42,0.06)]">
-      <div className="p-8 sm:p-10">
+      <div className="p-5 sm:p-10">
         <div className="mb-8 flex flex-col items-center text-center">
           <div className="mb-3 flex items-center justify-center">
             <img src="/cleanones.png" className="h-auto w-24 object-contain" alt="CleanOnes" />

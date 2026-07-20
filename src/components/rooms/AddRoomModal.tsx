@@ -84,7 +84,7 @@ export function AddRoomModal({ onClose, onAdd }: AddRoomModalProps) {
                     </div>
 
                     {/* Room Type + Location */}
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <div>
                             <label className="text-xs font-semibold text-gray-700 mb-1.5 block">Room Type</label>
                             <select
@@ -126,7 +126,7 @@ export function AddRoomModal({ onClose, onAdd }: AddRoomModalProps) {
                     </div>
 
                     {/* Duration + Photos + Tasks */}
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                         <div>
                             <label className="text-xs font-semibold text-gray-700 mb-1.5 block">Duration (min) *</label>
                             <input

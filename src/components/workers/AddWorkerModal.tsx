@@ -115,7 +115,7 @@ export function AddWorkerModal({ onClose, onAdd }: AddWorkerModalProps) {
             </div>
 
             {/* Worker Type + Position */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
                 <label className="text-xs font-semibold text-gray-700 mb-1.5 block">Worker Type</label>
                 <select
@@ -143,7 +143,7 @@ export function AddWorkerModal({ onClose, onAdd }: AddWorkerModalProps) {
             </div>
 
             {/* Email + Phone */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
                 <label className="text-xs font-semibold text-gray-700 mb-1.5 block">Email *</label>
                 <input
@@ -169,7 +169,7 @@ export function AddWorkerModal({ onClose, onAdd }: AddWorkerModalProps) {
             </div>
 
             {/* Status + Base Location */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
                 <label className="text-xs font-semibold text-gray-700 mb-1.5 block">Status</label>
                 <select

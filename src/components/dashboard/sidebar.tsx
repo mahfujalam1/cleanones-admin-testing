@@ -44,34 +44,43 @@ export default function Sidebar() {
   return (
     <>
       {/* Mobile/tablet backdrop */}
-      {mobileSidebarOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
-          onClick={() => dispatch(closeMobileSidebar())}
-        />
-      )}
+      <button
+        type="button"
+        aria-label="Close navigation"
+        className={`fixed inset-0 z-40 bg-black/50 transition-opacity duration-500 ease-out lg:hidden ${mobileSidebarOpen ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'}`}
+        onClick={() => dispatch(closeMobileSidebar())}
+      />
 
       <aside
+        data-mobile-open={mobileSidebarOpen}
         className={`
-          fixed lg:static inset-y-0 left-0 z-50 h-full
-          relative bg-sidebar text-sidebar-foreground border-r border-sidebar-border flex flex-col shrink-0
-          transition-[width,transform] duration-200 ease-[var(--ease-out)]
+          mobile-sidebar-panel
+          fixed inset-y-0 left-0 z-50 flex h-dvh shrink-0 flex-col overflow-visible border-r border-sidebar-border bg-sidebar text-sidebar-foreground lg:static lg:z-20 lg:h-full
+          will-change-transform transition-[width] duration-300 ease-out
           ${collapsed ? 'w-64 lg:w-16' : 'w-64'}
-          ${mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-          lg:translate-x-0 lg:flex
+          ${mobileSidebarOpen ? 'pointer-events-auto' : 'pointer-events-none lg:pointer-events-auto'}
+          lg:flex
         `}
       >
+        <div className="flex h-16 shrink-0 items-center border-b border-sidebar-border px-5 lg:hidden">
+          <img
+            src="/cleanones.png"
+            alt="CleanOnes"
+            className="h-auto w-24 object-contain"
+          />
+        </div>
+
         <button
           type="button"
           onClick={() => dispatch(toggleSidebar())}
           aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          className="absolute -right-3 top-[14px] z-10 hidden h-6 w-6 cursor-pointer items-center justify-center rounded-full border border-border bg-white text-muted-foreground shadow-sm transition-colors hover:text-foreground lg:flex"
+          className="absolute -right-3 top-[14px] z-[60] hidden h-6 w-6 cursor-pointer items-center justify-center rounded-full border border-border bg-white text-muted-foreground shadow-sm transition-colors hover:text-foreground lg:flex"
         >
           {collapsed ? <MdChevronRight /> : <MdChevronLeft />}
         </button>
 
         {/* Navigation */}
-        <div className="flex-1 overflow-y-auto py-2 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto py-3 custom-scrollbar lg:py-2">
           <nav className="space-y-1 px-3">
             {mainLinks.map((link) => {
               const isActive = routePath === link.href || (link.href !== '/' && routePath.startsWith(link.href));
@@ -125,6 +134,21 @@ export default function Sidebar() {
         </div>
 
         <style jsx global>{`
+          .mobile-sidebar-panel {
+            transform: translate3d(-100%, 0, 0);
+            transition-property: transform, width;
+            transition-duration: 480ms, 300ms;
+            transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1), ease-out;
+          }
+          .mobile-sidebar-panel[data-mobile-open="true"] {
+            transform: translate3d(0, 0, 0);
+          }
+          @media (min-width: 1024px) {
+            .mobile-sidebar-panel,
+            .mobile-sidebar-panel[data-mobile-open="true"] {
+              transform: none;
+            }
+          }
           .custom-scrollbar::-webkit-scrollbar {
             width: 4px;
           }
