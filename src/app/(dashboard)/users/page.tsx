@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState, useMemo } from 'react';
-import { MdSearch, MdPeople, MdBadge, MdWorkOutline, MdAdd } from 'react-icons/md';
+import { MdSearch, MdPeople, MdBadge, MdWorkOutline, MdAdd, MdUploadFile } from 'react-icons/md';
+import { BulkImportModal } from '@/components/shared/BulkImportModal';
 import { WorkerFilter, StatusFilter } from '@/components/workers/types';
 import { WorkersTable } from '@/components/workers/WorkersTable';
 import { WorkerDetailSidebar } from '@/components/workers/WorkerDetailSidebar';
@@ -28,6 +29,7 @@ export default function WorkersPage() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('All');
   const [selectedWorkerId, setSelectedWorkerId] = useState<string | null>(null);
   const [addModalOpen, setAddModalOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
 
   const selectedWorker = useMemo(() => {
     return workers.find(w => w.id === selectedWorkerId) || null;
@@ -117,7 +119,10 @@ export default function WorkersPage() {
         </div>
 
         {/* Spacer + Add */}
-        <div className="ml-auto">
+        <div className="ml-auto flex gap-2">
+          <button onClick={() => setImportOpen(true)} className="flex h-9 items-center gap-1.5 rounded border border-gray-200 bg-white px-4 text-sm font-semibold text-gray-700 shadow-sm hover:border-sky-300">
+            <MdUploadFile className="text-lg text-sky-500" /> Bulk Import
+          </button>
           <button
             onClick={() => setAddModalOpen(true)}
             className="flex items-center gap-1.5 h-9 px-4 bg-[#0ea5e9] hover:bg-[#0284c7] text-white text-sm font-semibold rounded shadow-sm transition-colors cursor-pointer"
@@ -153,6 +158,7 @@ export default function WorkersPage() {
           onAdd={handleAddWorker}
         />
       )}
+      {importOpen && <BulkImportModal onClose={() => setImportOpen(false)} />}
     </div>
   );
 }

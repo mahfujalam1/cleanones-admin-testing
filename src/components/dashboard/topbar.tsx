@@ -123,7 +123,7 @@ export default function Topbar() {
 
   return (
     <>
-      <header className="custom-shadow z-30 flex h-14 shrink-0 items-center justify-between gap-2 border-b border-sidebar-border bg-sidebar/95 px-3 backdrop-blur-xl sm:px-4 lg:px-6">
+      <header className="z-30 flex h-14 shrink-0 items-center justify-between gap-2 border-b border-sidebar-border bg-sidebar/95 px-3 shadow-none backdrop-blur-xl sm:px-4 lg:px-6">
         <div className="flex items-center gap-2 sm:gap-4 min-w-0">
           {/* Mobile/tablet hamburger - always visible below lg */}
           <button

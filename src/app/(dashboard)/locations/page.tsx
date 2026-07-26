@@ -3,7 +3,8 @@
 import { LocationDetailSidebar } from '@/components/locations/LocationDetailsSidebar';
 import { mockLocations } from '@/components/locations/MockData';
 import React, { useState, useMemo } from 'react';
-import { MdOutlineLocationOn, MdSearch } from 'react-icons/md';
+import { MdOutlineLocationOn, MdSearch, MdUploadFile } from 'react-icons/md';
+import { BulkImportModal } from '@/components/shared/BulkImportModal';
 import { TbBuilding } from 'react-icons/tb';
 import { Location } from '../../../components/locations/types';
 import { CreateLocationModal } from '@/components/locations/CreateLocationModal';
@@ -13,6 +14,7 @@ export default function LocationsPage() {
     const [search, setSearch] = useState('');
     const [showModal, setShowModal] = useState(false);
     const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
+    const [importOpen, setImportOpen] = useState(false);
 
     const filtered = useMemo(() => {
         const q = search.toLowerCase();
@@ -51,7 +53,8 @@ export default function LocationsPage() {
                     </div>
                 </div>
 
-                <div>
+                <div className="flex gap-2">
+                    <button onClick={() => setImportOpen(true)} className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 shadow-sm hover:border-sky-300"><MdUploadFile className="text-lg text-sky-500" /> Bulk Import</button>
                     <button
                         onClick={() => setShowModal(true)}
                         className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold text-white bg-[#0ea5e9] hover:bg-[#0284c7] rounded-lg shadow-sm transition-colors cursor-pointer w-full sm:w-auto justify-center"
@@ -98,6 +101,7 @@ export default function LocationsPage() {
                     onClose={() => setSelectedLocation(null)}
                 />
             )}
+            {importOpen && <BulkImportModal onClose={() => setImportOpen(false)} />}
         </div>
     );
 }

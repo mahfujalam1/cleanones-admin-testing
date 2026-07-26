@@ -1,275 +1,112 @@
 "use client";
 
-import React from 'react';
+import React from "react";
+import Link from "next/link";
 import {
-  MdShowChart, MdCalendarToday, MdCheckCircleOutline, MdPeopleOutline,
-  MdPhotoCamera, MdWarningAmber, MdLocationOn, MdArrowForward
-} from 'react-icons/md';
-import Link from 'next/link';
+  MdAccessTime, MdAdd, MdArrowForward, MdBusiness, MdCalendarToday,
+  MdCall, MdCheckCircle, MdClose, MdLocationOn,
+  MdPeople, MdUploadFile, MdWarningAmber,
+} from "react-icons/md";
 
-const liveOperationsData = [
-  { id: 1, initials: 'LV', name: 'Lisa Visser', location: 'NH Hotel Amsterdam', checkIn: '08:00', progress: 75, status: 'On Time', color: 'bg-[#10b981]' },
-  { id: 2, initials: 'ES', name: 'Emma Smit', location: 'Hilton Rotterdam', checkIn: '08:12', progress: 90, status: 'Late', color: 'bg-[#f59e0b]' },
-  { id: 3, initials: 'NB', name: 'Noah Bos', location: 'UMC Utrecht', checkIn: '—', progress: 15, status: 'Missing', color: 'bg-[#ef4444]' },
-  { id: 4, initials: 'SB', name: 'Sophie de Boer', location: 'Van der Valk Eindhoven', checkIn: '07:02', progress: 55, status: 'On Time', color: 'bg-[#10b981]' },
-  { id: 5, initials: 'LM', name: 'Lucas Meijer', location: 'NH Hotel Groningen', checkIn: '06:05', progress: 100, status: 'On Time', color: 'bg-[#10b981]' },
+type Worker = {
+  name: string; initials: string; phone: string; shift: string; status: "On time" | "Late" | "No show";
+  late?: number; reason?: string;
+};
+
+const sites: { client: string; location: string; workers: Worker[] }[] = [
+  { client: "NH Hotels", location: "NH Hotel Amsterdam", workers: [
+    { name: "Lisa Visser", initials: "LV", phone: "+31 6 12 34 56 78", shift: "08:00–16:00", status: "On time" },
+    { name: "Emma Smit", initials: "ES", phone: "+31 6 98 76 54 32", shift: "08:00–16:00", status: "Late", late: 42, reason: "Train delay" },
+  ]},
+  { client: "UMC Utrecht", location: "Main building · Floor 2", workers: [
+    { name: "Noah Bos", initials: "NB", phone: "+31 6 45 67 89 10", shift: "07:30–15:30", status: "No show", late: 68, reason: "No reason received" },
+    { name: "Sophie de Boer", initials: "SB", phone: "+31 6 22 44 66 88", shift: "07:30–15:30", status: "On time" },
+  ]},
+  { client: "Hilton Group", location: "Hilton Rotterdam", workers: [
+    { name: "Lucas Meijer", initials: "LM", phone: "+31 6 11 33 55 77", shift: "09:00–17:00", status: "Late", late: 31, reason: "Traffic" },
+  ]},
 ];
 
 export default function DashboardPage() {
-  const [activeTab, setActiveTab] = React.useState('All');
+  const [filter, setFilter] = React.useState<"All" | Worker["status"]>("All");
+  const [actionsOpen, setActionsOpen] = React.useState(false);
+  const [selected, setSelected] = React.useState<Worker | null>(null);
+  const urgent = sites.flatMap(s => s.workers).filter(w => (w.late ?? 0) >= 30);
 
-  const filteredOperations = liveOperationsData.filter(op => {
-    if (activeTab === 'All') return true;
-    return op.status === activeTab;
-  });
   return (
-    <div className="space-y-8 pb-10">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="space-y-6 pb-10">
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-1">Good morning, Kaz 👋</h2>
-          <p className="text-sm text-gray-500">Monday, 9 June 2026 · Here&apos;s what&apos;s happening today</p>
+          <p className="text-xs font-semibold uppercase tracking-[.18em] text-sky-600">Operations overview</p>
+          <h1 className="mt-1 text-2xl font-bold text-slate-950">Good morning, Kaz</h1>
+          <p className="mt-1 text-sm text-slate-500">Saturday, 25 July · Live status across all locations</p>
         </div>
-        <div className="flex items-center gap-2 px-3 py-1.5 bg-[#e0f2fe] text-[#0ea5e9] rounded-full text-xs font-semibold shadow-sm cursor-pointer border border-[#bae6fd]">
-          <span className="w-2 h-2 rounded-full bg-[#0ea5e9] animate-pulse"></span>
-          Live Operations Active
-        </div>
-      </div>
-
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard icon={<MdShowChart className="text-[#0ea5e9]" />} value="14" label="Active Shifts" />
-        <StatCard icon={<MdCalendarToday className="text-[#8b5cf6]" />} value="38" label="Scheduled Today" />
-        <StatCard icon={<MdCheckCircleOutline className="text-[#10b981]" />} value="22" label="Completed Shifts" />
-        <StatCard icon={<MdPeopleOutline className="text-[#6366f1]" />} value="8" label="Active Workers" />
-        <StatCard icon={<MdPhotoCamera className="text-[#ec4899]" />} value="12" label="Pending Reviews" />
-        <StatCard icon={<MdWarningAmber className="text-[#ef4444]" />} value="2" label="Open Escalations" />
-        <StatCard icon={<MdLocationOn className="text-[#0ea5e9]" />} value="18" label="Active Locations" />
-      </div>
-
-      {/* Quick Actions */}
-      <div>
-        <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-slate-400">Quick Actions</h3>
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          <Link href='/shift-monitoring' className="block"><Button className="h-11 w-full justify-center rounded-md bg-[#0ea5e9] px-4 text-xs font-semibold text-white shadow hover:bg-[#0284c7] hover:shadow-md">
-            Create Shift
-          </Button>
-          </Link>
-          <Link href='/clients' className="block"><Button className="h-11 w-full justify-center rounded-md bg-[#8b5cf6] px-4 text-xs font-semibold text-white shadow hover:bg-[#7c3aed] hover:shadow-md">
-            Add Client
-          </Button>
-          </Link>
-          <Link href='/locations' className="block"><Button className="h-11 w-full justify-center rounded-md bg-[#0d9488] px-4 text-xs font-semibold text-white shadow hover:bg-[#0f766e] hover:shadow-md">
-            Add Location
-          </Button>
-          </Link>
-          <Link href='/photo-reviews' className="block"><Button className="h-11 w-full justify-center rounded-md bg-[#ec4899] px-4 text-xs font-semibold text-white shadow hover:bg-[#db2777] hover:shadow-md">
-            Review Photos
-          </Button>
-          </Link>
-        </div>
-      </div>
-
-      {/* Status Summary */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="dashboard-card flex flex-col justify-center border-[#a7f3d0] bg-[#ecfdf5] p-4">
-          <div className="text-xl font-bold text-[#10b981] flex items-center gap-2">
-            <div className="w-2.5 h-2.5 rounded-full bg-[#10b981]"></div>
-            4
-          </div>
-          <div className="text-xs text-[#059669] font-medium mt-1">Checked In / On Time</div>
-        </div>
-        <div className="dashboard-card flex flex-col justify-center border-[#fde68a] bg-[#fffbeb] p-4">
-          <div className="text-xl font-bold text-[#f59e0b] flex items-center gap-2">
-            <div className="w-2.5 h-2.5 rounded-full bg-[#f59e0b]"></div>
-            2
-          </div>
-          <div className="text-xs text-[#d97706] font-medium mt-1">Late</div>
-        </div>
-        <div className="dashboard-card flex flex-col justify-center border-[#fecaca] bg-[#fef2f2] p-4">
-          <div className="text-xl font-bold text-[#ef4444] flex items-center gap-2">
-            <div className="w-2.5 h-2.5 rounded-full bg-[#ef4444]"></div>
-            2
-          </div>
-          <div className="text-xs text-[#dc2626] font-medium mt-1">Missing / Not in</div>
-        </div>
-      </div>
-
-      {/* Live Operations */}
-      <Card className="overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white">
-          <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2 shrink-0">
-            <span className="w-2 h-2 rounded-full bg-[#0ea5e9]"></span>
-            Live Operations
-          </h3>
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full sm:w-auto">
-            <div className="flex bg-gray-100 p-1 rounded text-xs font-medium relative overflow-x-auto max-w-full">
-              {['All', 'On Time', 'Late', 'Missing'].map(tab => (
-                <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  className={`px-3 py-1 rounded cursor-pointer transition-all duration-300 ease-in-out z-10 ${activeTab === tab ? 'bg-[#0ea5e9] text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}
-                >
-                  {tab}
-                </button>
-              ))}
-            </div>
-            <Link href="/shift-monitoring" className="text-xs text-[#0ea5e9] font-medium ml-4 flex items-center hover:underline cursor-pointer">
-              View all <MdArrowForward className="ml-1" />
-            </Link>
-          </div>
-        </div>
-        <div className="overflow-x-auto w-full">
-          <div className="divide-y divide-gray-100 bg-white transition-all duration-300 min-h-[300px] min-w-[700px]">
-            {filteredOperations.length > 0 ? (
-              filteredOperations.map(op => (
-                <div key={op.id} className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-                  <LiveOperationRow
-                    initials={op.initials}
-                    name={op.name}
-                    location={op.location}
-                    checkIn={op.checkIn}
-                    progress={op.progress}
-                    status={op.status}
-                    color={op.color}
-                  />
-                </div>
-              ))
-            ) : (
-              <div className="py-8 text-center text-sm text-gray-500">
-                No operations found for this filter.
-              </div>
+        <div className="relative">
+          <button onClick={() => setActionsOpen(v => !v)} className="flex h-10 items-center gap-2 rounded-lg bg-sky-500 px-4 text-sm font-semibold text-white shadow-sm hover:bg-sky-600">
+            <MdAdd className="text-lg" /> Create or add
+          </button>
+          {actionsOpen && <div className="absolute right-0 z-20 mt-2 w-56 overflow-hidden rounded-xl border bg-white p-1.5 shadow-xl">
+            {[["Create a shift", "/roster", MdCalendarToday], ["Add client or location", "/clients", MdBusiness], ["Bulk import data", "/users", MdUploadFile]].map(([label, href, Icon]) =>
+              <Link key={label as string} href={href as string} className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-700 hover:bg-slate-50"><Icon className="text-lg text-sky-500" />{label as string}</Link>
             )}
-          </div>
+          </div>}
         </div>
-      </Card>
-    </div>
-  );
-}
+      </header>
 
-function StatCard({ icon, value, label }: { icon: React.ReactNode, value: string, label: string }) {
-  return (
-    <Card className="cursor-pointer transition-[border-color,box-shadow] hover:border-[#cfd6e2] hover:shadow-[0_2px_4px_rgb(16_24_40/0.06),0_6px_14px_rgb(16_24_40/0.08)]">
-      <CardContent className="p-5">
-        <div className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-xl mb-4">
-          {icon}
-        </div>
-        <div>
-          <div className="text-2xl font-bold text-gray-900 leading-none mb-1">{value}</div>
-          <div className="text-xs text-gray-500 font-medium">{label}</div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function LiveOperationRow({ initials, name, location, checkIn, progress, status, color }: { initials: React.ReactNode, name: React.ReactNode, location: React.ReactNode, checkIn: React.ReactNode, progress: number, status: React.ReactNode, color: string }) {
-  return (
-    <div className="flex items-center justify-between px-6 py-4 hover:bg-gray-50 transition-colors cursor-pointer group">
-      <div className="flex items-center gap-4">
-        <div className="w-10 h-10 rounded-full bg-[#0ea5e9] text-white flex items-center justify-center text-sm font-bold shadow-sm">
-          {initials}
-        </div>
-        <div>
-          <div className="text-sm font-semibold text-gray-900">{name}</div>
-          <div className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
-            <MdLocationOn className="text-gray-400" /> {location}
+      <section className="rounded-lg border border-red-200 bg-red-50 p-4 shadow-sm">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex items-start gap-4">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-red-500 text-white"><MdWarningAmber className="text-2xl" /></div>
+            <div><div className="flex items-center gap-2"><h2 className="text-lg font-bold text-red-950">{urgent.length} people need attention</h2><span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-bold text-red-700">30+ min late</span></div>
+            <p className="mt-1 text-sm text-red-700">Contact them now or arrange a replacement.</p></div>
           </div>
+          <div className="flex flex-wrap gap-2">{urgent.map(w => <button key={w.name} onClick={() => setSelected(w)} className="flex items-center gap-2 rounded-lg border border-red-200 bg-white px-3 py-2 text-sm font-semibold text-red-800 hover:border-red-400"><span>{w.initials}</span><span>{w.late} min</span><MdCall /></button>)}</div>
         </div>
+      </section>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Metric icon={<MdAccessTime />} value="14" label="Active shifts" tone="text-sky-600 bg-sky-50" />
+        <Metric icon={<MdPeople />} value="8" label="Workers on site" tone="text-violet-600 bg-violet-50" />
+        <Metric icon={<MdWarningAmber />} value="3" label="Late / no show" tone="text-red-600 bg-red-50" />
+        <Metric icon={<MdCheckCircle />} value="12" label="Reviews pending" tone="text-amber-600 bg-amber-50" />
       </div>
 
-      <div className="flex items-center gap-12">
-        <div className="text-right">
-          <div className="text-[10px] text-gray-400 mb-0.5">Check-In</div>
-          <div className="text-sm font-medium text-gray-900">{checkIn}</div>
+      <section className="dashboard-card overflow-hidden rounded-lg">
+        <div className="flex flex-col gap-3 border-b px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <div><h2 className="font-bold text-slate-900">Live operations by client</h2><p className="text-xs text-slate-500">Locations first, then the people working there</p></div>
+          <div className="flex rounded-lg bg-slate-100 p-1">{(["All", "On time", "Late", "No show"] as const).map(f => <button key={f} onClick={() => setFilter(f)} className={`rounded-md px-3 py-1.5 text-xs font-semibold ${filter === f ? "bg-white text-sky-600 shadow-sm" : "text-slate-500"}`}>{f}</button>)}</div>
         </div>
-
-        <div className="w-32">
-          <div className="flex justify-between text-[10px] font-medium mb-1.5">
-            <span className="text-gray-400">Progress</span>
-            <span className="text-gray-700">{progress}%</span>
-          </div>
-          <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
-            <div className={`h-full ${color}`} style={{ width: `${progress}%` }}></div>
-          </div>
+        <div className="divide-y">
+          {sites.map(site => {
+            const workers = site.workers.filter(w => filter === "All" || w.status === filter);
+            if (!workers.length) return null;
+            return <div key={site.location} className="p-5">
+              <div className="mb-3 flex items-center gap-3"><div className="rounded-lg bg-sky-50 p-2 text-sky-600"><MdLocationOn /></div><div><h3 className="text-sm font-bold text-slate-900">{site.client}</h3><p className="text-xs text-slate-500">{site.location}</p></div><span className="ml-auto text-xs text-slate-400">{workers.length} on roster</span></div>
+              <div className="space-y-1">{workers.map(w => <div key={w.name} className="flex items-center gap-3 rounded-md border border-slate-100 bg-white p-3 text-left hover:bg-slate-50">
+                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-800 text-xs font-bold text-white">{w.initials}</span>
+                <span className="min-w-0 flex-1"><span className="block text-sm font-semibold text-slate-800">{w.name}</span><span className="block text-xs text-slate-500">{w.shift}{w.reason ? ` · ${w.reason}` : ""}</span></span>
+                <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${w.status === "On time" ? "bg-emerald-100 text-emerald-700" : w.status === "Late" ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-700"}`}>{w.late ? `${w.late}m late` : w.status}</span>
+                {w.status !== "On time" && <a href={`tel:${w.phone.replace(/\s/g, "")}`} onClick={(e) => e.stopPropagation()} className="flex h-9 items-center gap-1.5 rounded-md bg-emerald-600 px-3 text-xs font-bold text-white hover:bg-emerald-700"><MdCall /> Call</a>}
+                <button onClick={() => setSelected(w)} className="text-slate-300 hover:text-sky-500"><MdArrowForward /></button>
+              </div>)}</div>
+            </div>;
+          })}
         </div>
+      </section>
 
-        <div className="w-24 flex justify-end">
-          <div className="flex items-center gap-1.5 text-xs font-semibold">
-            <span className={`w-2 h-2 rounded-full ${color}`}></span>
-            <span className={status === 'On Time' ? 'text-[#10b981]' : 'text-[#f59e0b]'}>{status}</span>
-          </div>
-        </div>
-
-        <MdArrowForward className="text-gray-300 group-hover:text-gray-500 transition-colors" />
+      <div>
+        <Link href="/escalations" className="dashboard-card flex items-center gap-4 p-5 hover:border-amber-300"><MdWarningAmber className="text-2xl text-amber-500" /><div><p className="font-bold">2 open escalations</p><p className="text-xs text-slate-500">One requires a response today</p></div><MdArrowForward className="ml-auto" /></Link>
       </div>
+
+      {selected && <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/30 p-4" onMouseDown={() => setSelected(null)}><div onMouseDown={e => e.stopPropagation()} className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+        <div className="flex justify-between"><div><p className="text-xs font-bold uppercase tracking-wider text-red-500">Attendance alert</p><h2 className="mt-1 text-xl font-bold">{selected.name}</h2></div><button onClick={() => setSelected(null)}><MdClose /></button></div>
+        <div className="my-5 rounded-xl bg-red-50 p-4"><p className="text-2xl font-bold text-red-700">{selected.late} minutes late</p><p className="mt-1 text-sm text-red-600">Reason: {selected.reason}</p></div>
+        <a href={`tel:${selected.phone.replace(/\s/g, "")}`} className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3 font-bold text-white hover:bg-emerald-700"><MdCall /> Call {selected.phone}</a>
+      </div></div>}
     </div>
   );
 }
 
-// Local UI Components
-interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  children: React.ReactNode;
-  variant?: 'default' | 'ghost' | 'outline';
-  size?: 'sm' | 'md' | 'lg';
+function Metric({ icon, value, label, tone }: { icon: React.ReactNode; value: string; label: string; tone: string }) {
+  return <div className="dashboard-card min-h-32 p-5"><span className={`flex h-10 w-10 items-center justify-center rounded-full text-xl ${tone}`}>{icon}</span><div className="mt-4"><p className="text-2xl font-bold">{value}</p><p className="text-xs text-slate-500">{label}</p></div></div>;
 }
-
-function Button({
-  children,
-  className = '',
-  variant = 'default',
-  size = 'md',
-  ...props
-}: ButtonProps) {
-  const variantClasses = {
-    default: '',
-    ghost: 'bg-transparent hover:bg-gray-100',
-    outline: 'border border-gray-300 bg-white hover:bg-gray-50',
-  };
-  const sizeClasses = {
-    sm: 'h-8 px-3 text-xs',
-    md: 'px-4 py-2 text-sm',
-    lg: 'h-11 px-5 text-base',
-  };
-
-  return (
-    <button
-      className={`inline-flex items-center justify-center rounded-md font-medium transition-all duration-200 disabled:opacity-50 disabled:pointer-events-none ${variantClasses[variant]} ${sizeClasses[size]} ${className}`}
-      {...props}
-    >
-      {children}
-    </button>
-  );
-}
-
-interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
-  children: React.ReactNode;
-}
-
-function Card({
-  children,
-  className = '',
-  ...props
-}: CardProps) {
-  return (
-    <div
-      className={`dashboard-card ${className}`}
-      {...props}
-    >
-      {children}
-    </div>
-  );
-}
-
-function CardContent({
-  children,
-  className = '',
-  ...props
-}: CardProps) {
-  return (
-    <div className={className} {...props}>
-      {children}
-    </div>
-  );
-}
-
