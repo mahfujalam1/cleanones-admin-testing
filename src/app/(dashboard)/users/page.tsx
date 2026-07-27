@@ -82,7 +82,7 @@ export default function WorkersPage() {
             placeholder="Search workers..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-9 pr-4 py-2 border border-gray-200 rounded-md text-sm w-64 focus:outline-none shadow-sm bg-gray-50"
+            className="pl-9 pr-4 py-2 border border-gray-200 rounded text-sm w-64 focus:outline-none shadow-sm bg-gray-50"
           />
         </div>
 
@@ -92,7 +92,7 @@ export default function WorkersPage() {
             <button
               key={f}
               onClick={() => setWorkerFilter(f)}
-              className={`px-3 py-1.5 rounded-md cursor-pointer transition-all duration-200 ${workerFilter === f
+              className={`px-3 py-1.5 rounded cursor-pointer transition-all duration-200 ${workerFilter === f
                   ? 'bg-[#0ea5e9] text-white shadow-sm'
                   : 'text-gray-600 hover:text-gray-900'
                 }`}
@@ -108,7 +108,7 @@ export default function WorkersPage() {
             <button
               key={f}
               onClick={() => setStatusFilter(f)}
-              className={`px-3 py-1.5 rounded-md cursor-pointer transition-all duration-200 ${statusFilter === f
+              className={`px-3 py-1.5 rounded cursor-pointer transition-all duration-200 ${statusFilter === f
                   ? 'bg-[#0ea5e9] text-white shadow-sm'
                   : 'text-gray-600 hover:text-gray-900'
                 }`}
@@ -167,8 +167,8 @@ export default function WorkersPage() {
 
 function StatCard({ icon, value, label }: { icon: React.ReactNode; value: number; label: string }) {
   return (
-    <div className="bg-white rounded border border-gray-100 shadow-sm px-6 py-5 flex items-center gap-4 hover:shadow-md transition-shadow">
-      <div className="w-12 h-12 rounded-xl bg-gray-50 border border-gray-100 flex items-center justify-center">
+    <div className="bg-white rounded border border-gray-100 shadow-sm px-6 py-5 flex items-center gap-4 hover:shadow transition-shadow">
+      <div className="w-12 h-12 rounded bg-gray-50 border border-gray-100 flex items-center justify-center">
         {icon}
       </div>
       <div>

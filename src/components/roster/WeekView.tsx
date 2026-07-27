@@ -42,7 +42,7 @@ export function WeekView({ currentDate, shifts, onShiftClick }: WeekViewProps) {
   const getDayName = (date: Date) => date.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase();
 
   return (
-    <div className="flex flex-col bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
+    <div className="flex flex-col overflow-hidden rounded border border-gray-200 bg-white">
       {/* Header */}
       <div className="flex border-b border-gray-200 bg-white">
         <div className="w-16 flex-shrink-0 border-r border-gray-200"></div>
@@ -50,7 +50,7 @@ export function WeekView({ currentDate, shifts, onShiftClick }: WeekViewProps) {
           {days.map((date, i) => {
             const isToday = date.toDateString() === new Date().toDateString();
             return (
-              <div key={i} className="text-center py-3 border-r border-gray-200 last:border-r-0">
+              <div key={i} className={`border-r border-gray-200 py-2.5 text-center last:border-r-0 ${isToday ? 'bg-sky-50/60' : ''}`}>
                 <div className={`text-[10px] font-semibold mb-1 ${isToday ? 'text-[#0ea5e9]' : 'text-gray-400'}`}>
                   {getDayName(date)}
                 </div>
@@ -64,7 +64,7 @@ export function WeekView({ currentDate, shifts, onShiftClick }: WeekViewProps) {
       </div>
 
       {/* Grid */}
-      <div className="flex flex-1 overflow-y-auto relative bg-[#fafafa]">
+      <div className="relative flex flex-1 overflow-y-auto bg-[#fbfcfd]">
         {/* Time Labels */}
         <div className="w-16 flex-shrink-0 border-r border-gray-200 bg-white">
           {hours.map(hour => (
@@ -85,8 +85,8 @@ export function WeekView({ currentDate, shifts, onShiftClick }: WeekViewProps) {
 
           {/* Vertical Lines */}
           <div className="absolute inset-0 grid grid-cols-7 pointer-events-none">
-            {days.map((_, i) => (
-              <div key={i} className="border-r border-gray-100 last:border-r-0 h-full"></div>
+            {days.map((date, i) => (
+              <div key={i} className={`h-full border-r border-gray-100 last:border-r-0 ${date.toDateString() === new Date().toDateString() ? 'bg-sky-50/35' : ''}`}></div>
             ))}
           </div>
 
@@ -101,11 +101,12 @@ export function WeekView({ currentDate, shifts, onShiftClick }: WeekViewProps) {
                 <div 
                   key={shift.id}
                   onClick={() => onShiftClick(shift)}
-                  className={`absolute rounded cursor-pointer transition-all hover:brightness-95 hover:shadow-md border-l-4 overflow-hidden p-2 shadow-sm ${theme.bg} ${theme.border} ${theme.text}`}
+                  className={`absolute cursor-pointer overflow-hidden rounded border border-l-[3px] p-2 transition-colors hover:brightness-95 ${theme.bg} ${theme.border} ${theme.text}`}
                   style={getShiftStyle(shift, dayIndex)}
                 >
                   <div className="text-[10px] font-bold leading-tight">{shift.workerName}</div>
-                  <div className="text-[10px] leading-tight opacity-80">{shift.startTime}-{shift.endTime}</div>
+                  <div className="mt-0.5 truncate text-[9px] leading-tight opacity-75">{shift.location}</div>
+                  <div className="mt-0.5 text-[9px] leading-tight opacity-70">{shift.startTime}–{shift.endTime}</div>
                 </div>
               );
             });

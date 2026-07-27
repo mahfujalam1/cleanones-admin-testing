@@ -32,7 +32,7 @@ export function AddContactModal({ onClose, onSave }: AddContactModalProps) {
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 z-[60] bg-black/40 animate-in fade-in duration-200"
+        className="modal-backdrop fixed inset-0 z-[60] animate-in fade-in duration-200"
         onClick={onClose}
       />
 
@@ -40,7 +40,7 @@ export function AddContactModal({ onClose, onSave }: AddContactModalProps) {
       <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
         <form
           onSubmit={handleSubmit}
-          className="bg-white rounded-xl shadow-2xl w-full max-w-[420px] overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-200"
+          className="bg-white rounded-md shadow w-full max-w-[420px] overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-200"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
@@ -68,7 +68,7 @@ export function AddContactModal({ onClose, onSave }: AddContactModalProps) {
                 placeholder="e.g. Johan Brouwer"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full h-10 rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#0ea5e9] focus:border-[#0ea5e9] transition-colors"
+                className="w-full h-10 rounded border border-gray-300 bg-white px-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#0ea5e9] focus:border-[#0ea5e9] transition-colors"
               />
             </div>
 
@@ -77,7 +77,7 @@ export function AddContactModal({ onClose, onSave }: AddContactModalProps) {
               <select
                 value={role}
                 onChange={(e) => setRole(e.target.value)}
-                className="w-full h-10 rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#0ea5e9] focus:border-[#0ea5e9] transition-colors appearance-none cursor-pointer"
+                className="w-full h-10 rounded border border-gray-300 bg-white px-3 text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#0ea5e9] focus:border-[#0ea5e9] transition-colors appearance-none cursor-pointer"
               >
                 <option value="Facility Manager">Facility Manager</option>
                 <option value="Operations Contact">Operations Contact</option>
@@ -93,7 +93,7 @@ export function AddContactModal({ onClose, onSave }: AddContactModalProps) {
                 placeholder="johndoe@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full h-10 rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#0ea5e9] focus:border-[#0ea5e9] transition-colors"
+                className="w-full h-10 rounded border border-gray-300 bg-white px-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#0ea5e9] focus:border-[#0ea5e9] transition-colors"
               />
             </div>
 
@@ -105,7 +105,7 @@ export function AddContactModal({ onClose, onSave }: AddContactModalProps) {
                 placeholder="+31 20 123 4567"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                className="w-full h-10 rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#0ea5e9] focus:border-[#0ea5e9] transition-colors"
+                className="w-full h-10 rounded border border-gray-300 bg-white px-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#0ea5e9] focus:border-[#0ea5e9] transition-colors"
               />
             </div>
 
@@ -114,13 +114,13 @@ export function AddContactModal({ onClose, onSave }: AddContactModalProps) {
               <button
                 type="button"
                 onClick={onClose}
-                className="px-5 py-2.5 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+                className="px-5 py-2.5 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded hover:bg-gray-50 transition-colors cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="px-5 py-2.5 text-sm font-semibold text-white bg-[#0ea5e9] hover:bg-[#0284c7] rounded-lg shadow-sm transition-colors cursor-pointer"
+                className="px-5 py-2.5 text-sm font-semibold text-white bg-[#0ea5e9] hover:bg-[#0284c7] rounded shadow-sm transition-colors cursor-pointer"
               >
                 + Add Contact
               </button>

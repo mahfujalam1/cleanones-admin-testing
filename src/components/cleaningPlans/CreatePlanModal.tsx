@@ -62,16 +62,16 @@ export function CreatePlanModal({ onClose, onAdd }: CreatePlanModalProps) {
     return (
         <div
             onClick={onClose}
-            className="fixed inset-0 z-[70]  flex items-center justify-center p-4 bg-black/40 animate-in fade-in duration-200"
+            className="modal-backdrop fixed inset-0 z-[70] flex items-center justify-center p-4 animate-in fade-in duration-200"
         >
             <form
                 onSubmit={handleSubmit}
                 onClick={(e) => e.stopPropagation()}
-                className="bg-white rounded-md shadow-2xl w-full max-w-[520px] max-h-[90vh] flex flex-col animate-in fade-in zoom-in-95 duration-200"
+                className="bg-white rounded-md shadow w-full max-w-[520px] max-h-[90vh] flex flex-col animate-in fade-in zoom-in-95 duration-200"
             >
                 {/* Header */}
                 <div className="flex items-center gap-3 px-6 pt-6 pb-4 border-b border-gray-100 shrink-0">
-                    <div className="w-9 h-9 rounded-lg bg-[#e0f2fe] flex items-center justify-center shrink-0">
+                    <div className="w-9 h-9 rounded bg-[#e0f2fe] flex items-center justify-center shrink-0">
                         <TbClipboardList className="text-[#0ea5e9] text-lg" />
                     </div>
                     <div className="flex-1">

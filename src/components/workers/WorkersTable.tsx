@@ -47,9 +47,7 @@ export function WorkersTable({ workers, onViewWorker }: WorkersTableProps) {
           >
             {/* Name */}
             <div className="flex items-center gap-3 min-w-0">
-              <div className={`w-9 h-9 rounded-full ${worker.avatarColor} text-white flex items-center justify-center text-xs font-bold shrink-0 shadow-sm`}>
-                {worker.initials}
-              </div>
+              <img src="/avatar-placeholder.svg" alt={worker.name} className="h-9 w-9 shrink-0 rounded-full border border-gray-200 object-cover" />
               <span className="text-sm font-semibold text-gray-900 truncate">{worker.name}</span>
             </div>
 

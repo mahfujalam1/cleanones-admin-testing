@@ -123,7 +123,7 @@ export default function Topbar() {
 
   return (
     <>
-      <header className="z-30 flex h-14 shrink-0 items-center justify-between gap-2 border-b border-sidebar-border bg-sidebar/95 px-3 shadow-none backdrop-blur-xl sm:px-4 lg:px-6">
+      <header className="z-30 flex h-14 shrink-0 items-center justify-between gap-2 border-b border-sidebar-border bg-sidebar px-3 shadow-none sm:px-4 lg:px-6">
         <div className="flex items-center gap-2 sm:gap-4 min-w-0">
           {/* Mobile/tablet hamburger - always visible below lg */}
           <button
@@ -151,7 +151,7 @@ export default function Topbar() {
                 setNotificationsOpen(false);
                 setProfileOpen(false);
               }}
-              className="flex h-8 items-center gap-1.5 rounded-md border border-border bg-white px-2 text-[11px] font-semibold text-muted-foreground shadow-[var(--shadow-xs)] transition-colors hover:bg-muted/60 hover:text-foreground"
+              className="flex h-8 items-center gap-1.5 rounded border border-border bg-white px-2 text-[11px] font-semibold text-muted-foreground shadow-[var(--shadow-xs)] transition-colors hover:bg-muted/60 hover:text-foreground"
             >
               <MdLanguage className="text-sm" />
               <span>{locale.toUpperCase()}</span>
@@ -159,7 +159,7 @@ export default function Topbar() {
             </button>
 
             {languageOpen && (
-              <div className="custom-shadow-lg absolute right-0 top-10 w-36 overflow-hidden rounded-lg border border-border bg-white py-1">
+              <div className="shadow absolute right-0 top-10 w-36 overflow-hidden rounded border border-border bg-white py-1">
                 {languages.map((language) => (
                   <button
                     key={language.code}
@@ -188,7 +188,7 @@ export default function Topbar() {
                 setLanguageOpen(false);
                 setProfileOpen(false);
               }}
-              className="relative flex h-8 w-8 items-center justify-center rounded-md border border-border bg-white text-muted-foreground shadow-[var(--shadow-xs)] transition-colors hover:bg-muted/60 hover:text-foreground"
+              className="relative flex h-8 w-8 items-center justify-center rounded border border-border bg-white text-muted-foreground shadow-[var(--shadow-xs)] transition-colors hover:bg-muted/60 hover:text-foreground"
             >
               <MdNotificationsNone className="text-lg" />
               <span className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-primary" />
@@ -205,11 +205,9 @@ export default function Topbar() {
                 setLanguageOpen(false);
                 setNotificationsOpen(false);
               }}
-              className="flex h-8 items-center gap-2 rounded-md border border-transparent bg-transparent px-1.5 text-left transition-colors hover:bg-white/70"
+              className="flex h-8 items-center gap-2 rounded border border-transparent bg-transparent px-1.5 text-left transition-colors hover:bg-white/70"
             >
-              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-white">
-                KP
-              </div>
+              <img src="/avatar-placeholder.svg" alt="Kaz Putters" className="h-7 w-7 shrink-0 rounded-full border border-gray-200 object-cover" />
               <div className="hidden text-left md:block">
                 <div className="text-xs font-semibold leading-none text-foreground">
                   Kaz Putters
@@ -241,7 +239,7 @@ export default function Topbar() {
 
 function NotificationsPopover({ locale }: { locale: string }) {
   return (
-    <div className="custom-shadow-lg absolute -right-12 top-11 w-[300px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border border-gray-200 bg-white sm:right-0 sm:w-[360px]">
+    <div className="shadow absolute -right-12 top-11 w-[300px] max-w-[calc(100vw-2rem)] overflow-hidden rounded border border-gray-200 bg-white sm:right-0 sm:w-[360px]">
       <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
         <h2 className="text-sm font-bold text-slate-950">Notifications</h2>
         <Link
@@ -271,7 +269,7 @@ function NotificationsPopover({ locale }: { locale: string }) {
 
 function ProfileMenu({ locale, onHelp, onSignOut }: { locale: string; onHelp: () => void; onSignOut: () => void }) {
   return (
-    <div className="custom-shadow-lg absolute right-0 top-10 w-44 overflow-hidden rounded-xl border border-gray-200 bg-white py-1">
+    <div className="shadow absolute right-0 top-10 w-44 overflow-hidden rounded border border-gray-200 bg-white py-1">
       <button className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-slate-800 hover:bg-gray-50">
         <MdOutlinePerson className="text-base" />
         Profile
@@ -307,7 +305,7 @@ function HelpCenterModal({ onClose }: { onClose: () => void }) {
   const [chatOpen, setChatOpen] = useState(false);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+    <div className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4">
       <button
         type="button"
         aria-label="Close help center"
@@ -315,10 +313,10 @@ function HelpCenterModal({ onClose }: { onClose: () => void }) {
         onClick={onClose}
       />
 
-      <section className="custom-shadow-lg relative z-10 flex max-h-[86vh] w-full max-w-[560px] flex-col overflow-hidden rounded-2xl bg-white">
+      <section className="shadow relative z-10 flex max-h-[86vh] w-full max-w-[560px] flex-col overflow-hidden rounded-md bg-white">
         <div className="flex items-start justify-between border-b border-gray-200 px-5 py-4">
           <div className="flex items-center gap-3">
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#e0f2fe] text-[#0ea5e9]">
+            <span className="flex h-10 w-10 items-center justify-center rounded bg-[#e0f2fe] text-[#0ea5e9]">
               <MdHelpOutline className="text-2xl" />
             </span>
             <div>
@@ -333,7 +331,7 @@ function HelpCenterModal({ onClose }: { onClose: () => void }) {
           <button
             type="button"
             onClick={onClose}
-            className="rounded-md p-1 text-slate-400 transition-colors hover:bg-gray-100 hover:text-slate-600"
+            className="rounded p-1 text-slate-400 transition-colors hover:bg-gray-100 hover:text-slate-600"
             aria-label="Close"
           >
             <MdClose className="text-2xl" />
@@ -345,9 +343,9 @@ function HelpCenterModal({ onClose }: { onClose: () => void }) {
             <button
               type="button"
               onClick={() => setChatOpen(true)}
-              className="flex min-h-[120px] flex-col items-center justify-center rounded-xl border border-[#bae6fd] bg-[#e0f2fe] text-center shadow-sm transition-colors hover:bg-[#d8f1ff]"
+              className="flex min-h-[120px] flex-col items-center justify-center rounded border border-[#bae6fd] bg-[#e0f2fe] text-center shadow-sm transition-colors hover:bg-[#d8f1ff]"
             >
-              <span className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-white text-[#0ea5e9]">
+              <span className="mb-3 flex h-10 w-10 items-center justify-center rounded bg-white text-[#0ea5e9]">
                 <MdSupportAgent className="text-2xl" />
               </span>
               <span className="text-sm font-bold text-slate-950">Live Chat</span>
@@ -356,9 +354,9 @@ function HelpCenterModal({ onClose }: { onClose: () => void }) {
 
             <button
               type="button"
-              className="flex min-h-[120px] flex-col items-center justify-center rounded-xl border border-[#ddd6fe] bg-[#f5f3ff] text-center transition-colors hover:bg-[#ede9fe]"
+              className="flex min-h-[120px] flex-col items-center justify-center rounded border border-[#ddd6fe] bg-[#f5f3ff] text-center transition-colors hover:bg-[#ede9fe]"
             >
-              <span className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-white text-[#8b5cf6]">
+              <span className="mb-3 flex h-10 w-10 items-center justify-center rounded bg-white text-[#8b5cf6]">
                 <MdOutlineEmail className="text-2xl" />
               </span>
               <span className="text-sm font-bold text-slate-950">Email Support</span>
@@ -376,7 +374,7 @@ function HelpCenterModal({ onClose }: { onClose: () => void }) {
               <button
                 key={question}
                 type="button"
-                className="flex w-full items-center justify-between rounded-xl border border-gray-200 bg-white px-4 py-3 text-left text-sm font-medium text-slate-950 transition-colors hover:bg-gray-50"
+                className="flex w-full items-center justify-between rounded border border-gray-200 bg-white px-4 py-3 text-left text-sm font-medium text-slate-950 transition-colors hover:bg-gray-50"
               >
                 {question}
                 <MdChevronRight className="text-xl text-slate-400" />
@@ -395,7 +393,7 @@ function HelpCenterModal({ onClose }: { onClose: () => void }) {
 
 function SupportChat({ onClose }: { onClose: () => void }) {
   return (
-    <div className="mt-5 overflow-hidden rounded-xl border border-[#0ea5e9]/30 bg-white shadow-sm">
+    <div className="mt-5 overflow-hidden rounded border border-[#0ea5e9]/30 bg-white shadow-sm">
       <div className="flex items-center justify-between bg-[#0ea5e9] px-4 py-3 text-white">
         <div className="flex items-center gap-2 text-sm font-bold">
           <span className="h-2 w-2 rounded-full bg-white" />
@@ -420,11 +418,11 @@ function SupportChat({ onClose }: { onClose: () => void }) {
       <div className="flex items-center gap-2 border-t border-gray-100 p-3">
         <input
           placeholder="Type a message..."
-          className="h-10 min-w-0 flex-1 rounded-xl border border-gray-200 bg-gray-50 px-3 text-sm outline-none transition-colors placeholder:text-slate-400 focus:border-[#0ea5e9] focus:bg-white focus:ring-1 focus:ring-[#0ea5e9]"
+          className="h-10 min-w-0 flex-1 rounded border border-gray-200 bg-gray-50 px-3 text-sm outline-none transition-colors placeholder:text-slate-400 focus:border-[#0ea5e9] focus:bg-white focus:ring-1 focus:ring-[#0ea5e9]"
         />
         <button
           type="button"
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#0ea5e9] text-white transition-colors hover:bg-[#0284c7]"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded bg-[#0ea5e9] text-white transition-colors hover:bg-[#0284c7]"
           aria-label="Send message"
         >
           <MdSend className="text-xl" />

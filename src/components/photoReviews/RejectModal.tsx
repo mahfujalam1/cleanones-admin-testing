@@ -59,12 +59,12 @@ export function RejectModal({ review, open, onClose, onConfirm }: RejectModalPro
         <div
             ref={dialogRef}
             onClick={handleBackdrop}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
+            className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center px-4"
             role="dialog"
             aria-modal="true"
             aria-labelledby="reject-modal-title"
         >
-            <div className="bg-white rounded w-full max-w-md shadow-lg">
+            <div className="bg-white rounded-md w-full max-w-md shadow">
                 {/* Header */}
                 <div className="flex items-start justify-between p-6 pb-0">
                     <div>

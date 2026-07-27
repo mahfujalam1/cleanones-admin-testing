@@ -34,7 +34,7 @@ export default function SettingsPage() {
                   </span>
                   <input
                     defaultValue={field.value}
-                    className="h-10 w-full rounded-lg border border-gray-200 bg-gray-100 px-4 text-sm text-slate-800 shadow-sm outline-none transition-colors focus:border-[#0ea5e9] focus:bg-white focus:ring-1 focus:ring-[#0ea5e9]"
+                    className="h-10 w-full rounded border border-gray-200 bg-gray-100 px-4 text-sm text-slate-800 shadow-sm outline-none transition-colors focus:border-[#0ea5e9] focus:bg-white focus:ring-1 focus:ring-[#0ea5e9]"
                   />
                 </label>
               ))}
@@ -42,7 +42,7 @@ export default function SettingsPage() {
 
             <button
               type="button"
-              className="mt-4 h-10 rounded-lg bg-[#0ea5e9] px-5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-[#0284c7]"
+              className="mt-4 h-10 rounded bg-[#0ea5e9] px-5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-[#0284c7]"
             >
               Save Changes
             </button>
@@ -64,7 +64,7 @@ export default function SettingsPage() {
                   <div className="relative">
                     <input
                       type="password"
-                      className="h-10 w-full rounded-lg border border-gray-200 bg-gray-100 px-4 pr-10 text-sm text-slate-800 shadow-sm outline-none transition-colors focus:border-[#0ea5e9] focus:bg-white focus:ring-1 focus:ring-[#0ea5e9]"
+                      className="h-10 w-full rounded border border-gray-200 bg-gray-100 px-4 pr-10 text-sm text-slate-800 shadow-sm outline-none transition-colors focus:border-[#0ea5e9] focus:bg-white focus:ring-1 focus:ring-[#0ea5e9]"
                     />
                     <MdOutlineRemoveRedEye className="absolute right-3 top-1/2 -translate-y-1/2 text-lg text-slate-400" />
                   </div>
@@ -74,7 +74,7 @@ export default function SettingsPage() {
 
             <button
               type="button"
-              className="mt-4 h-10 rounded-lg bg-[#0ea5e9] px-5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-[#0284c7]"
+              className="mt-4 h-10 rounded bg-[#0ea5e9] px-5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-[#0284c7]"
             >
               Update Password
             </button>

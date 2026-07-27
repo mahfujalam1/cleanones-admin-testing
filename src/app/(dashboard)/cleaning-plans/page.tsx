@@ -43,7 +43,7 @@ export default function CleaningPlansPage() {
         <div className="min-h-screen">
             {/* Top Bar */}
             <div className="flex items-center justify-between mb-5">
-                <div className="px-6">
+                <div>
                     <div className="relative">
                         <MdSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg" />
                         <input
@@ -55,7 +55,7 @@ export default function CleaningPlansPage() {
                         />
                     </div>
                 </div>
-                <div className="px-6">
+                <div>
                     <button
                         onClick={() => setShowModal(true)}
                         className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold text-white bg-[#0ea5e9] hover:bg-[#0284c7] rounded shadow-sm transition-colors cursor-pointer"
@@ -66,7 +66,7 @@ export default function CleaningPlansPage() {
             </div>
 
             {/* Cards Grid */}
-            <div className="px-6">
+            <div>
                 {filtered.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-24 text-center">
                         <TbClipboardList className="text-5xl text-gray-300 mb-3" />
@@ -114,12 +114,12 @@ function PlanCard({ plan, onClick, isSelected, onDelete }: PlanCardProps) {
     return (
         <div
             onClick={onClick}
-            className={`dashboard-card cursor-pointer transition-[border-color,box-shadow] hover:border-[#d7dbe4] hover:shadow-md ${isSelected ? 'border-[#0ea5e9]/50 shadow-md ring-1 ring-[#0ea5e9]/20' : ''
+            className={`dashboard-card cursor-pointer transition-[border-color,box-shadow] hover:border-[#d7dbe4] hover:shadow ${isSelected ? 'border-[#0ea5e9]/50 shadow ring-1 ring-[#0ea5e9]/20' : ''
                 }`}
         >
             {/* Header */}
             <div className="px-4 pt-4 pb-3 flex items-start gap-3">
-                <div className="w-9 h-9 rounded-lg bg-[#e0f2fe] flex items-center justify-center shrink-0 mt-0.5">
+                <div className="w-9 h-9 rounded bg-[#e0f2fe] flex items-center justify-center shrink-0 mt-0.5">
                     <TbClipboardList className="text-[#0ea5e9] text-lg" />
                 </div>
                 <div className="min-w-0 flex-1">

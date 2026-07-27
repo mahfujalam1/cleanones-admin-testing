@@ -52,14 +52,14 @@ export function CreateLocationModal({ onClose, onSave }: CreateLocationModalProp
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 z-[60] bg-black/40 animate-in fade-in duration-200"
+        className="modal-backdrop fixed inset-0 z-[60] animate-in fade-in duration-200"
         onClick={onClose}
       />
 
       {/* Modal */}
       <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
         <div
-          className="bg-white rounded-xl shadow-2xl w-full max-w-[500px] overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-200"
+          className="bg-white rounded-md shadow w-full max-w-[500px] overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-200"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
@@ -88,7 +88,7 @@ export function CreateLocationModal({ onClose, onSave }: CreateLocationModalProp
                 placeholder="e.g. Amsterdam Hoofdkantoor"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full h-10 rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#0ea5e9] focus:border-[#0ea5e9] transition-colors"
+                className="w-full h-10 rounded border border-gray-300 bg-white px-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#0ea5e9] focus:border-[#0ea5e9] transition-colors"
               />
             </div>
 
@@ -98,7 +98,7 @@ export function CreateLocationModal({ onClose, onSave }: CreateLocationModalProp
               <select
                 value={type}
                 onChange={(e) => setType(e.target.value)}
-                className="w-full h-10 rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#0ea5e9] focus:border-[#0ea5e9] transition-colors appearance-none cursor-pointer"
+                className="w-full h-10 rounded border border-gray-300 bg-white px-3 text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#0ea5e9] focus:border-[#0ea5e9] transition-colors appearance-none cursor-pointer"
               >
                 <option value="Room">Room</option>
                 <option value="Office">Office</option>
@@ -116,7 +116,7 @@ export function CreateLocationModal({ onClose, onSave }: CreateLocationModalProp
                   placeholder="e.g. Herengracht 500"
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
-                  className="w-full h-10 rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#0ea5e9] focus:border-[#0ea5e9] transition-colors"
+                  className="w-full h-10 rounded border border-gray-300 bg-white px-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#0ea5e9] focus:border-[#0ea5e9] transition-colors"
                 />
               </div>
               <div>
@@ -126,7 +126,7 @@ export function CreateLocationModal({ onClose, onSave }: CreateLocationModalProp
                   placeholder="e.g. 24"
                   value={roomsCount || ''}
                   onChange={(e) => setRoomsCount(parseInt(e.target.value) || 0)}
-                  className="w-full h-10 rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#0ea5e9] focus:border-[#0ea5e9] transition-colors"
+                  className="w-full h-10 rounded border border-gray-300 bg-white px-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#0ea5e9] focus:border-[#0ea5e9] transition-colors"
                 />
               </div>
             </div>
@@ -139,7 +139,7 @@ export function CreateLocationModal({ onClose, onSave }: CreateLocationModalProp
                 rows={3}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                className="w-full rounded-lg border border-gray-300 bg-white p-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#0ea5e9] focus:border-[#0ea5e9] transition-colors resize-none"
+                className="w-full rounded border border-gray-300 bg-white p-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#0ea5e9] focus:border-[#0ea5e9] transition-colors resize-none"
               />
             </div>
 
@@ -148,7 +148,7 @@ export function CreateLocationModal({ onClose, onSave }: CreateLocationModalProp
               <label className="text-xs font-semibold text-gray-700 mb-1.5 block">Reference Image</label>
               <div
                 onClick={handleUploadClick}
-                className="border-2 border-dashed border-gray-200 rounded-lg p-5 flex flex-col items-center justify-center gap-1 hover:border-[#0ea5e9]/40 transition-colors cursor-pointer group bg-gray-50/50"
+                className="border-2 border-dashed border-gray-200 rounded p-5 flex flex-col items-center justify-center gap-1 hover:border-[#0ea5e9]/40 transition-colors cursor-pointer group bg-gray-50/50"
               >
                 <input
                   type="file"
@@ -180,13 +180,13 @@ export function CreateLocationModal({ onClose, onSave }: CreateLocationModalProp
               <button
                 type="button"
                 onClick={onClose}
-                className="px-5 py-2.5 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+                className="px-5 py-2.5 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded hover:bg-gray-50 transition-colors cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="px-5 py-2.5 text-sm font-semibold text-white bg-[#0ea5e9] hover:bg-[#0284c7] rounded-lg shadow-sm transition-colors cursor-pointer"
+                className="px-5 py-2.5 text-sm font-semibold text-white bg-[#0ea5e9] hover:bg-[#0284c7] rounded shadow-sm transition-colors cursor-pointer"
               >
                 + Save Location
               </button>

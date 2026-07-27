@@ -15,15 +15,15 @@ export function LocationDetailSidebar({ location, onClose }: LocationDetailSideb
         <>
             {/* Backdrop */}
             <div
-                className="fixed inset-0 z-[60] bg-black/40 animate-in fade-in duration-200"
+                className="modal-backdrop fixed inset-0 z-[60] animate-in fade-in duration-200"
                 onClick={onClose}
             />
 
             {/* Sidebar */}
-            <div className="fixed top-0 right-0 h-full w-full max-w-[400px] bg-white z-[65] shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
+            <div className="fixed top-0 right-0 h-full w-full max-w-[400px] bg-white z-[65] shadow flex flex-col animate-in slide-in-from-right duration-300">
                 {/* Header */}
                 <div className="flex items-center gap-3 px-5 py-5 border-b border-gray-100 bg-[#1A2332]">
-                    <div className="w-10 h-10 rounded-lg bg-[#e0f2fe] flex items-center justify-center shrink-0">
+                    <div className="w-10 h-10 rounded bg-[#e0f2fe] flex items-center justify-center shrink-0">
                         <TbBuilding className="text-[#0ea5e9] text-xl" />
                     </div>
                     <div className="flex-1 min-w-0">
@@ -41,7 +41,7 @@ export function LocationDetailSidebar({ location, onClose }: LocationDetailSideb
                 {/* Body */}
                 <div className="flex-1 overflow-y-auto px-5 py-5 space-y-3">
                     {/* Client */}
-                    <div className="rounded-xl border border-gray-100 bg-gray-50/60 px-4 py-3.5 flex items-start gap-3">
+                    <div className="rounded border border-gray-100 bg-gray-50/60 px-4 py-3.5 flex items-start gap-3">
                         <MdOutlinePeople className="text-[#0ea5e9] text-lg mt-0.5 shrink-0" />
                         <div>
                             <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-0.5">Client</p>
@@ -50,7 +50,7 @@ export function LocationDetailSidebar({ location, onClose }: LocationDetailSideb
                     </div>
 
                     {/* Address */}
-                    <div className="rounded-xl border border-gray-100 bg-gray-50/60 px-4 py-3.5 flex items-start gap-3">
+                    <div className="rounded border border-gray-100 bg-gray-50/60 px-4 py-3.5 flex items-start gap-3">
                         <MdOutlineLocationOn className="text-[#0ea5e9] text-lg mt-0.5 shrink-0" />
                         <div>
                             <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-0.5">Address</p>
@@ -60,11 +60,11 @@ export function LocationDetailSidebar({ location, onClose }: LocationDetailSideb
 
                     {/* Stats */}
                     <div className="grid grid-cols-2 gap-3">
-                        <div className="rounded-xl border border-gray-100 bg-gray-50/60 px-4 py-4 text-center">
+                        <div className="rounded border border-gray-100 bg-gray-50/60 px-4 py-4 text-center">
                             <p className="text-2xl font-bold text-gray-900">{location.floors}</p>
                             <p className="text-xs text-gray-400 mt-0.5">Floors</p>
                         </div>
-                        <div className="rounded-xl border border-gray-100 bg-gray-50/60 px-4 py-4 text-center">
+                        <div className="rounded border border-gray-100 bg-gray-50/60 px-4 py-4 text-center">
                             <p className="text-2xl font-bold text-gray-900">{location.rooms}</p>
                             <p className="text-xs text-gray-400 mt-0.5">Rooms</p>
                         </div>

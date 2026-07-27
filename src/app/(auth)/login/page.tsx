@@ -27,8 +27,8 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="w-full max-w-md overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_2px_8px_rgba(15,23,42,0.06)]">
-      <div className="p-5 sm:p-10">
+    <div className="w-full max-w-md overflow-hidden rounded border border-slate-200 bg-white shadow-[0_2px_8px_rgba(15,23,42,0.06)]">
+      <div className="p-5 sm:p-8">
         <div className="mb-8 flex flex-col items-center text-center">
           <div className="mb-3 flex items-center justify-center">
             <img src="/cleanones.png" className="h-auto w-24 object-contain" alt="CleanOnes" />
@@ -45,7 +45,7 @@ export default function LoginPage() {
               placeholder="name@company.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-900 shadow-sm outline-none transition-colors placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/10"
+              className="h-10 w-full rounded border border-slate-200 bg-white px-3 text-sm text-slate-900 shadow-sm outline-none transition-colors placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/10"
               required
             />
           </div>
@@ -57,7 +57,7 @@ export default function LoginPage() {
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-900 shadow-sm outline-none transition-colors placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/10"
+              className="h-10 w-full rounded border border-slate-200 bg-white px-3 text-sm text-slate-900 shadow-sm outline-none transition-colors placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/10"
               required
             />
           </div>
@@ -71,7 +71,7 @@ export default function LoginPage() {
             </Link>
           </div>
 
-          <button type="submit" className="h-10 w-full cursor-pointer rounded-md bg-primary text-sm font-semibold text-white shadow-sm transition-all hover:bg-[#0284c7] hover:shadow-md">
+          <button type="submit" className="h-10 w-full cursor-pointer rounded bg-primary text-sm font-semibold text-white shadow-sm transition-all hover:bg-[#0284c7] hover:shadow">
             Sign In
           </button>
         </form>

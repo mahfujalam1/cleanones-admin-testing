@@ -44,11 +44,11 @@ export function AddClientModal({ onClose, onAdd }: AddClientModalProps) {
   return (
     <div
       onClick={onClose}
-      className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/40 animate-in fade-in duration-200"
+      className="modal-backdrop fixed inset-0 z-[70] flex items-center justify-center p-4 animate-in fade-in duration-200"
     >
       <form
         onSubmit={handleSubmit}
-        className="bg-white rounded-xl shadow-2xl w-full max-w-[480px] flex flex-col animate-in fade-in zoom-in-95 duration-200"
+        className="bg-white rounded-md shadow w-full max-w-[480px] flex flex-col animate-in fade-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -77,7 +77,7 @@ export function AddClientModal({ onClose, onAdd }: AddClientModalProps) {
               placeholder="bijv. Schoonmaak Amsterdam BV"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full h-10 rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#0ea5e9] focus:border-[#0ea5e9] transition-colors"
+              className="w-full h-10 rounded border border-gray-300 bg-white px-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#0ea5e9] focus:border-[#0ea5e9] transition-colors"
             />
           </div>
 
@@ -88,7 +88,7 @@ export function AddClientModal({ onClose, onAdd }: AddClientModalProps) {
               <select
                 value={industry}
                 onChange={(e) => setIndustry(e.target.value as NewClient['industry'])}
-                className="w-full h-10 rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#0ea5e9] focus:border-[#0ea5e9] transition-colors appearance-none cursor-pointer"
+                className="w-full h-10 rounded border border-gray-300 bg-white px-3 text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#0ea5e9] focus:border-[#0ea5e9] transition-colors appearance-none cursor-pointer"
               >
                 <option value="Corporate">Corporate</option>
                 <option value="Healthcare">Healthcare</option>
@@ -100,7 +100,7 @@ export function AddClientModal({ onClose, onAdd }: AddClientModalProps) {
               <select
                 value={status}
                 onChange={(e) => setStatus(e.target.value as NewClient['status'])}
-                className="w-full h-10 rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#0ea5e9] focus:border-[#0ea5e9] transition-colors appearance-none cursor-pointer"
+                className="w-full h-10 rounded border border-gray-300 bg-white px-3 text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#0ea5e9] focus:border-[#0ea5e9] transition-colors appearance-none cursor-pointer"
               >
                 <option value="Active">Active</option>
                 <option value="Inactive">Inactive</option>
@@ -117,7 +117,7 @@ export function AddClientModal({ onClose, onAdd }: AddClientModalProps) {
               placeholder="bijv. Johan Brouwer"
               value={mainContactName}
               onChange={(e) => setMainContactName(e.target.value)}
-              className="w-full h-10 rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#0ea5e9] focus:border-[#0ea5e9] transition-colors"
+              className="w-full h-10 rounded border border-gray-300 bg-white px-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#0ea5e9] focus:border-[#0ea5e9] transition-colors"
             />
           </div>
 
@@ -131,7 +131,7 @@ export function AddClientModal({ onClose, onAdd }: AddClientModalProps) {
                 placeholder="email@company.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full h-10 rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#0ea5e9] focus:border-[#0ea5e9] transition-colors"
+                className="w-full h-10 rounded border border-gray-300 bg-white px-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#0ea5e9] focus:border-[#0ea5e9] transition-colors"
               />
             </div>
             <div>
@@ -142,7 +142,7 @@ export function AddClientModal({ onClose, onAdd }: AddClientModalProps) {
                 placeholder="+31 20 000 0000"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                className="w-full h-10 rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#0ea5e9] focus:border-[#0ea5e9] transition-colors"
+                className="w-full h-10 rounded border border-gray-300 bg-white px-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#0ea5e9] focus:border-[#0ea5e9] transition-colors"
               />
             </div>
           </div>
@@ -153,13 +153,13 @@ export function AddClientModal({ onClose, onAdd }: AddClientModalProps) {
           <button
             type="button"
             onClick={onClose}
-            className="px-5 py-2.5 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+            className="px-5 py-2.5 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded hover:bg-gray-50 transition-colors cursor-pointer"
           >
             Cancel
           </button>
           <button
             type="submit"
-            className="px-5 py-2.5 text-sm font-semibold text-white bg-[#0ea5e9] hover:bg-[#0284c7] rounded-lg shadow-sm transition-colors cursor-pointer"
+            className="px-5 py-2.5 text-sm font-semibold text-white bg-[#0ea5e9] hover:bg-[#0284c7] rounded shadow-sm transition-colors cursor-pointer"
           >
             + Add Client
           </button>

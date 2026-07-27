@@ -41,16 +41,16 @@ export function CreateLocationModal({ onClose, onAdd }: CreateLocationModalProps
     return (
         <div
             onClick={onClose}
-            className="fixed inset-0 z-[70] overflow-y-auto scrollbar-hidden flex items-center justify-center p-4 bg-black/40 animate-in fade-in duration-200"
+            className="modal-backdrop fixed inset-0 z-[70] flex items-center justify-center overflow-y-auto p-4 scrollbar-hidden animate-in fade-in duration-200"
         >
             <form
                 onSubmit={handleSubmit}
                 onClick={(e) => e.stopPropagation()}
-                className="bg-white rounded-md shadow-2xl w-full max-w-[480px] flex flex-col animate-in fade-in zoom-in-95 duration-200"
+                className="bg-white rounded-md shadow w-full max-w-[480px] flex flex-col animate-in fade-in zoom-in-95 duration-200"
             >
                 {/* Header */}
                 <div className="flex items-center gap-3 px-6 pt-6 pb-4 border-b border-gray-100">
-                    <div className="w-9 h-9 rounded-lg bg-[#e0f2fe] flex items-center justify-center shrink-0">
+                    <div className="w-9 h-9 rounded bg-[#e0f2fe] flex items-center justify-center shrink-0">
                         <MdOutlineLocationOn className="text-[#0ea5e9] text-lg" />
                     </div>
                     <div className="flex-1">
@@ -77,7 +77,7 @@ export function CreateLocationModal({ onClose, onAdd }: CreateLocationModalProps
                             placeholder="bijv. NH Hotel Amsterdam - Vleugel B"
                             value={name}
                             onChange={(e) => setName(e.target.value)}
-                            className="w-full h-10 rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#0ea5e9] focus:border-[#0ea5e9] transition-colors"
+                            className="w-full h-10 rounded border border-gray-300 bg-white px-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#0ea5e9] focus:border-[#0ea5e9] transition-colors"
                         />
                     </div>
 
@@ -87,7 +87,7 @@ export function CreateLocationModal({ onClose, onAdd }: CreateLocationModalProps
                         <select
                             value={client}
                             onChange={(e) => setClient(e.target.value)}
-                            className="w-full h-10 rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#0ea5e9] focus:border-[#0ea5e9] transition-colors appearance-none cursor-pointer"
+                            className="w-full h-10 rounded border border-gray-300 bg-white px-3 text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#0ea5e9] focus:border-[#0ea5e9] transition-colors appearance-none cursor-pointer"
                         >
                             {mockClients.map((c) => (
                                 <option key={c} value={c}>{c}</option>
@@ -104,7 +104,7 @@ export function CreateLocationModal({ onClose, onAdd }: CreateLocationModalProps
                             placeholder="bijv. Keizersgracht 123, Amsterdam"
                             value={address}
                             onChange={(e) => setAddress(e.target.value)}
-                            className="w-full h-10 rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#0ea5e9] focus:border-[#0ea5e9] transition-colors"
+                            className="w-full h-10 rounded border border-gray-300 bg-white px-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#0ea5e9] focus:border-[#0ea5e9] transition-colors"
                         />
                     </div>
 
@@ -119,7 +119,7 @@ export function CreateLocationModal({ onClose, onAdd }: CreateLocationModalProps
                                 placeholder="e.g. 4"
                                 value={floors}
                                 onChange={(e) => setFloors(e.target.value)}
-                                className="w-full h-10 rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#0ea5e9] focus:border-[#0ea5e9] transition-colors"
+                                className="w-full h-10 rounded border border-gray-300 bg-white px-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#0ea5e9] focus:border-[#0ea5e9] transition-colors"
                             />
                         </div>
                         <div>
@@ -131,7 +131,7 @@ export function CreateLocationModal({ onClose, onAdd }: CreateLocationModalProps
                                 placeholder="e.g. 48"
                                 value={rooms}
                                 onChange={(e) => setRooms(e.target.value)}
-                                className="w-full h-10 rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#0ea5e9] focus:border-[#0ea5e9] transition-colors"
+                                className="w-full h-10 rounded border border-gray-300 bg-white px-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#0ea5e9] focus:border-[#0ea5e9] transition-colors"
                             />
                         </div>
                     </div>
@@ -142,13 +142,13 @@ export function CreateLocationModal({ onClose, onAdd }: CreateLocationModalProps
                     <button
                         type="button"
                         onClick={onClose}
-                        className="px-5 py-2.5 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+                        className="px-5 py-2.5 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded hover:bg-gray-50 transition-colors cursor-pointer"
                     >
                         Cancel
                     </button>
                     <button
                         type="submit"
-                        className="px-5 py-2.5 text-sm font-semibold text-white bg-[#0ea5e9] hover:bg-[#0284c7] rounded-lg shadow-sm transition-colors cursor-pointer"
+                        className="px-5 py-2.5 text-sm font-semibold text-white bg-[#0ea5e9] hover:bg-[#0284c7] rounded shadow-sm transition-colors cursor-pointer"
                     >
                         + Add Location
                     </button>

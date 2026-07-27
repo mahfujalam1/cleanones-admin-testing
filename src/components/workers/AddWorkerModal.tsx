@@ -77,11 +77,11 @@ export function AddWorkerModal({ onClose, onAdd }: AddWorkerModalProps) {
       {/* Modal Wrapper / Backdrop overlay */}
       <div
         onClick={onClose}
-        className="fixed inset-0 z-[70] flex items-center justify-center p-4 overflow-y-auto bg-black/40 animate-in fade-in duration-200"
+        className="modal-backdrop fixed inset-0 z-[70] flex items-center justify-center overflow-y-auto p-4 animate-in fade-in duration-200"
       >
         <form
           onSubmit={handleSubmit}
-          className="bg-white rounded-xl shadow-2xl w-full max-w-[560px] max-h-[90vh] flex flex-col animate-in fade-in zoom-in-95 duration-200 my-auto"
+          className="bg-white rounded-md shadow w-full max-w-[560px] max-h-[90vh] flex flex-col animate-in fade-in zoom-in-95 duration-200 my-auto"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
@@ -110,7 +110,7 @@ export function AddWorkerModal({ onClose, onAdd }: AddWorkerModalProps) {
                 placeholder="e.g. Lisa Visser"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full h-10 rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#0ea5e9] focus:border-[#0ea5e9] transition-colors"
+                className="w-full h-10 rounded border border-gray-300 bg-white px-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#0ea5e9] focus:border-[#0ea5e9] transition-colors"
               />
             </div>
 
@@ -121,7 +121,7 @@ export function AddWorkerModal({ onClose, onAdd }: AddWorkerModalProps) {
                 <select
                   value={workerType}
                   onChange={(e) => setWorkerType(e.target.value as NewWorker['workerType'])}
-                  className="w-full h-10 rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#0ea5e9] focus:border-[#0ea5e9] transition-colors appearance-none cursor-pointer"
+                  className="w-full h-10 rounded border border-gray-300 bg-white px-3 text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#0ea5e9] focus:border-[#0ea5e9] transition-colors appearance-none cursor-pointer"
                 >
                   <option value="Employee">Employee</option>
                   <option value="Freelancer">Freelancer</option>
@@ -132,7 +132,7 @@ export function AddWorkerModal({ onClose, onAdd }: AddWorkerModalProps) {
                 <select
                   value={position}
                   onChange={(e) => setPosition(e.target.value)}
-                  className="w-full h-10 rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#0ea5e9] focus:border-[#0ea5e9] transition-colors appearance-none cursor-pointer"
+                  className="w-full h-10 rounded border border-gray-300 bg-white px-3 text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#0ea5e9] focus:border-[#0ea5e9] transition-colors appearance-none cursor-pointer"
                 >
                   <option value="Cleaner">Cleaner</option>
                   <option value="Senior Cleaner">Senior Cleaner</option>
@@ -152,7 +152,7 @@ export function AddWorkerModal({ onClose, onAdd }: AddWorkerModalProps) {
                   placeholder="name@cleanones.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full h-10 rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#0ea5e9] focus:border-[#0ea5e9] transition-colors"
+                  className="w-full h-10 rounded border border-gray-300 bg-white px-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#0ea5e9] focus:border-[#0ea5e9] transition-colors"
                 />
               </div>
               <div>
@@ -163,7 +163,7 @@ export function AddWorkerModal({ onClose, onAdd }: AddWorkerModalProps) {
                   placeholder="+31 20 000 0000"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  className="w-full h-10 rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#0ea5e9] focus:border-[#0ea5e9] transition-colors"
+                  className="w-full h-10 rounded border border-gray-300 bg-white px-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#0ea5e9] focus:border-[#0ea5e9] transition-colors"
                 />
               </div>
             </div>
@@ -175,7 +175,7 @@ export function AddWorkerModal({ onClose, onAdd }: AddWorkerModalProps) {
                 <select
                   value={status}
                   onChange={(e) => setStatus(e.target.value as NewWorker['status'])}
-                  className="w-full h-10 rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#0ea5e9] focus:border-[#0ea5e9] transition-colors appearance-none cursor-pointer"
+                  className="w-full h-10 rounded border border-gray-300 bg-white px-3 text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#0ea5e9] focus:border-[#0ea5e9] transition-colors appearance-none cursor-pointer"
                 >
                   <option value="Active">Active</option>
                   <option value="On Shift">On Shift</option>
@@ -187,7 +187,7 @@ export function AddWorkerModal({ onClose, onAdd }: AddWorkerModalProps) {
                 <select
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
-                  className="w-full h-10 rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#0ea5e9] focus:border-[#0ea5e9] transition-colors appearance-none cursor-pointer"
+                  className="w-full h-10 rounded border border-gray-300 bg-white px-3 text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#0ea5e9] focus:border-[#0ea5e9] transition-colors appearance-none cursor-pointer"
                 >
                   <option value="Amsterdam-Centrum">Amsterdam-Centrum</option>
                   <option value="Rotterdam-Noord">Rotterdam-Noord</option>
@@ -265,13 +265,13 @@ export function AddWorkerModal({ onClose, onAdd }: AddWorkerModalProps) {
             <button
               type="button"
               onClick={onClose}
-              className="px-5 py-2.5 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+              className="px-5 py-2.5 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded hover:bg-gray-50 transition-colors cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-5 py-2.5 text-sm font-semibold text-white bg-[#0ea5e9] hover:bg-[#0284c7] rounded-lg shadow-sm transition-colors cursor-pointer flex items-center gap-1.5"
+              className="px-5 py-2.5 text-sm font-semibold text-white bg-[#0ea5e9] hover:bg-[#0284c7] rounded shadow-sm transition-colors cursor-pointer flex items-center gap-1.5"
             >
               + Add Worker
             </button>
@@ -304,7 +304,7 @@ function FileUploadArea({ onFileSelect, selectedFileName }: FileUploadAreaProps)
   return (
     <div
       onClick={handleClick}
-      className="border-2 border-dashed border-gray-200 rounded-lg p-5 flex flex-col items-center justify-center gap-1.5 hover:border-[#0ea5e9]/40 transition-colors cursor-pointer group bg-gray-50/50"
+      className="border-2 border-dashed border-gray-200 rounded p-5 flex flex-col items-center justify-center gap-1.5 hover:border-[#0ea5e9]/40 transition-colors cursor-pointer group bg-gray-50/50"
     >
       <input
         type="file"

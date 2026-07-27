@@ -100,8 +100,8 @@ export function CreateShiftModal({ onClose, onSave }: CreateShiftModalProps) {
   const canProceedToStep2 = location.length > 0;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm">
-      <div className="bg-white rounded-md shadow-2xl w-full max-w-[640px] max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+    <div className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="flex max-h-[90vh] w-full max-w-[640px] flex-col overflow-hidden rounded-md border border-gray-200 bg-white animate-in fade-in zoom-in-95 duration-150">
         {/* Header */}
         <div className="bg-[#1a2332] text-white px-6 py-4 flex items-start justify-between flex-shrink-0">
           <div>
@@ -144,7 +144,7 @@ export function CreateShiftModal({ onClose, onSave }: CreateShiftModalProps) {
                   <select
                     value={client}
                     onChange={e => setClient(e.target.value)}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#0ea5e9]/30 focus:border-[#0ea5e9] appearance-none bg-white cursor-pointer"
+                    className="w-full border border-gray-300 rounded px-3 py-2.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#0ea5e9]/30 focus:border-[#0ea5e9] appearance-none bg-white cursor-pointer"
                   >
                     <option value="">Select client...</option>
                     {CLIENTS.map(c => <option key={c} value={c}>{c}</option>)}
@@ -155,7 +155,7 @@ export function CreateShiftModal({ onClose, onSave }: CreateShiftModalProps) {
                   <select
                     value={location}
                     onChange={e => setLocation(e.target.value)}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#0ea5e9]/30 focus:border-[#0ea5e9] appearance-none bg-white cursor-pointer"
+                    className="w-full border border-gray-300 rounded px-3 py-2.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#0ea5e9]/30 focus:border-[#0ea5e9] appearance-none bg-white cursor-pointer"
                   >
                     <option value="">Select location...</option>
                     {LOCATIONS.map(l => <option key={l} value={l}>{l}</option>)}
@@ -171,7 +171,7 @@ export function CreateShiftModal({ onClose, onSave }: CreateShiftModalProps) {
                     type="date"
                     value={date}
                     onChange={e => setDate(e.target.value)}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#0ea5e9]/30 focus:border-[#0ea5e9]"
+                    className="w-full border border-gray-300 rounded px-3 py-2.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#0ea5e9]/30 focus:border-[#0ea5e9]"
                   />
                 </div>
                 <div>
@@ -180,7 +180,7 @@ export function CreateShiftModal({ onClose, onSave }: CreateShiftModalProps) {
                     type="time"
                     value={startTime}
                     onChange={e => setStartTime(e.target.value)}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#0ea5e9]/30 focus:border-[#0ea5e9]"
+                    className="w-full border border-gray-300 rounded px-3 py-2.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#0ea5e9]/30 focus:border-[#0ea5e9]"
                   />
                 </div>
                 <div>
@@ -189,7 +189,7 @@ export function CreateShiftModal({ onClose, onSave }: CreateShiftModalProps) {
                     type="time"
                     value={endTime}
                     onChange={e => setEndTime(e.target.value)}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#0ea5e9]/30 focus:border-[#0ea5e9]"
+                    className="w-full border border-gray-300 rounded px-3 py-2.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#0ea5e9]/30 focus:border-[#0ea5e9]"
                   />
                 </div>
               </div>
@@ -202,7 +202,7 @@ export function CreateShiftModal({ onClose, onSave }: CreateShiftModalProps) {
                   onChange={e => setNotes(e.target.value)}
                   placeholder="Any special instructions..."
                   rows={3}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#0ea5e9]/30 focus:border-[#0ea5e9] resize-none"
+                  className="w-full border border-gray-300 rounded px-3 py-2.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#0ea5e9]/30 focus:border-[#0ea5e9] resize-none"
                 />
               </div>
             </div>
@@ -214,7 +214,7 @@ export function CreateShiftModal({ onClose, onSave }: CreateShiftModalProps) {
                 <select
                   value={teamLeader}
                   onChange={e => setTeamLeader(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#0ea5e9]/30 focus:border-[#0ea5e9] appearance-none bg-white cursor-pointer"
+                  className="w-full border border-gray-300 rounded px-3 py-2.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#0ea5e9]/30 focus:border-[#0ea5e9] appearance-none bg-white cursor-pointer"
                 >
                   <option value="">Select team leader...</option>
                   {WORKERS.filter(w => w.role === 'Employee').map(w => (
@@ -232,15 +232,15 @@ export function CreateShiftModal({ onClose, onSave }: CreateShiftModalProps) {
                     placeholder="Search employees..."
                     value={searchQuery}
                     onChange={e => setSearchQuery(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0ea5e9]/30 focus:border-[#0ea5e9]"
+                    className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#0ea5e9]/30 focus:border-[#0ea5e9]"
                   />
                 </div>
-                <div className="flex bg-gray-100 p-1 rounded-lg text-xs font-medium overflow-x-auto max-w-full">
+                <div className="flex bg-gray-100 p-1 rounded text-xs font-medium overflow-x-auto max-w-full">
                   {(['All', 'Employee', 'Freelancer'] as const).map(r => (
                     <button
                       key={r}
                       onClick={() => setRoleFilter(r)}
-                      className={`px-3 py-1.5 rounded-md transition-all duration-200 cursor-pointer ${roleFilter === r ? 'bg-[#0ea5e9] text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}
+                      className={`px-3 py-1.5 rounded transition-all duration-200 cursor-pointer ${roleFilter === r ? 'bg-[#0ea5e9] text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}
                     >
                       {r}
                     </button>
@@ -273,10 +273,10 @@ export function CreateShiftModal({ onClose, onSave }: CreateShiftModalProps) {
                     <button
                       key={worker.id}
                       onClick={() => toggleWorker(worker.id)}
-                      className={`flex items-center gap-3 p-3 rounded-md border-2 transition-all duration-200 text-left cursor-pointer ${isSelected ? 'border-[#0ea5e9] bg-[#f0f9ff] shadow-sm' : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'}`}
+                      className={`flex items-center gap-3 p-3 rounded border-2 transition-all duration-200 text-left cursor-pointer ${isSelected ? 'border-[#0ea5e9] bg-[#f0f9ff] shadow-sm' : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'}`}
                     >
-                      <div className={`w-10 h-10 rounded-full ${worker.color} text-white flex items-center justify-center text-xs font-bold shadow-sm flex-shrink-0 relative`}>
-                        {worker.initials}
+                      <div className="relative h-10 w-10 flex-shrink-0">
+                        <img src="/avatar-placeholder.svg" alt={worker.name} className="h-10 w-10 rounded-full border border-gray-200 object-cover" />
                         {isSelected && (
                           <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-[#0ea5e9] rounded-full flex items-center justify-center border-2 border-white">
                             <MdCheck className="text-white text-[8px]" />
@@ -316,26 +316,26 @@ export function CreateShiftModal({ onClose, onSave }: CreateShiftModalProps) {
         <div className="border-t border-gray-200 px-6 py-4 flex items-center justify-between bg-gray-50 flex-shrink-0">
           {step === 1 ? (
             <>
-              <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer">
+              <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-gray-600 border border-gray-300 rounded hover:bg-gray-100 transition-colors cursor-pointer">
                 Cancel
               </button>
               <button
                 onClick={() => setStep(2)}
                 disabled={!canProceedToStep2}
-                className={`px-5 py-2 text-sm font-semibold rounded-lg transition-all shadow-sm cursor-pointer ${canProceedToStep2 ? 'bg-[#0ea5e9] hover:bg-[#0284c7] text-white' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
+                className={`px-5 py-2 text-sm font-semibold rounded transition-all shadow-sm cursor-pointer ${canProceedToStep2 ? 'bg-[#0ea5e9] hover:bg-[#0284c7] text-white' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
               >
                 Next: Assign Employees →
               </button>
             </>
           ) : (
             <>
-              <button onClick={() => setStep(1)} className="px-4 py-2 text-sm font-medium text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer">
+              <button onClick={() => setStep(1)} className="px-4 py-2 text-sm font-medium text-gray-600 border border-gray-300 rounded hover:bg-gray-100 transition-colors cursor-pointer">
                 ← Back
               </button>
               <button
                 onClick={handleSave}
                 disabled={selectedWorkerIds.length === 0}
-                className={`px-5 py-2 text-sm font-semibold rounded-lg transition-all shadow-sm cursor-pointer ${selectedWorkerIds.length > 0 ? 'bg-[#0ea5e9] hover:bg-[#0284c7] text-white' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
+                className={`px-5 py-2 text-sm font-semibold rounded transition-all shadow-sm cursor-pointer ${selectedWorkerIds.length > 0 ? 'bg-[#0ea5e9] hover:bg-[#0284c7] text-white' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
               >
                 Save Shift ({selectedWorkerIds.length} assigned)
               </button>

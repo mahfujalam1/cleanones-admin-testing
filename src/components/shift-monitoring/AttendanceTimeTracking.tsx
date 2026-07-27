@@ -43,7 +43,7 @@ export function AttendanceTimeTracking({ onWorkerSelect, selectedWorkerId }: Pro
               placeholder="Search employee..." 
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm w-64 focus:outline-none shadow-sm bg-gray-50"
+              className="pl-9 pr-4 py-2 border border-gray-200 rounded text-sm w-64 focus:outline-none shadow-sm bg-gray-50"
             />
           </div>
 
@@ -89,9 +89,7 @@ export function AttendanceTimeTracking({ onWorkerSelect, selectedWorkerId }: Pro
               >
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-3">
-                    <div className={`w-8 h-8 rounded-full ${worker.color} text-white flex items-center justify-center text-xs font-bold shadow-sm`}>
-                      {worker.initials}
-                    </div>
+                    <img src="/avatar-placeholder.svg" alt={worker.name} className="h-8 w-8 rounded-full border border-gray-200 object-cover" />
                     <div className="font-semibold text-gray-900">{worker.name}</div>
                   </div>
                 </td>

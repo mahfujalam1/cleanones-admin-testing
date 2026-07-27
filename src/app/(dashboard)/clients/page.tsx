@@ -57,12 +57,12 @@ export default function ClientsPage() {
             placeholder="Search clients..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-9 pr-4 py-2 border border-gray-200 rounded-md text-sm w-64 focus:outline-none shadow-sm bg-gray-50 focus:bg-white transition-colors"
+            className="pl-9 pr-4 py-2 border border-gray-200 rounded text-sm w-64 focus:outline-none shadow-sm bg-gray-50 focus:bg-white transition-colors"
           />
         </div>
         <button
           onClick={() => setAddModalOpen(true)}
-          className="flex items-center gap-1.5 h-9 px-4 bg-[#0ea5e9] hover:bg-[#0284c7] text-white text-sm font-semibold rounded-lg shadow-sm transition-colors cursor-pointer"
+          className="flex items-center gap-1.5 h-9 px-4 bg-[#0ea5e9] hover:bg-[#0284c7] text-white text-sm font-semibold rounded shadow-sm transition-colors cursor-pointer"
         >
           <MdAdd className="text-lg" />
           Add Client
@@ -75,12 +75,12 @@ export default function ClientsPage() {
           <div
             key={client.id}
             onClick={() => router.push(`/clients/${client.id}`)}
-            className="dashboard-card flex cursor-pointer flex-col justify-between space-y-4 p-5 transition-[border-color,box-shadow] hover:border-[#d7dbe4] hover:shadow-md"
+            className="dashboard-card flex cursor-pointer flex-col justify-between space-y-4 p-5 transition-[border-color,box-shadow] hover:border-[#d7dbe4] hover:shadow"
           >
             {/* Top row */}
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
+                <div className={`w-10 h-10 rounded flex items-center justify-center shrink-0 ${
                   client.industry === 'Healthcare' ? 'bg-[#fef2f2]' : 'bg-[#f0fdf4]'
                 }`}>
                   <MdBusinessCenter className={`text-xl ${

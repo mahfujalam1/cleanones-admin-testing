@@ -47,7 +47,7 @@ export function MonthView({ currentDate, shifts, onShiftClick }: MonthViewProps)
   const daysOfWeek = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
 
   return (
-    <div className="flex flex-col bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm h-[600px]">
+    <div className="flex h-[620px] flex-col overflow-hidden rounded border border-gray-200 bg-white">
       {/* Header */}
       <div className="grid grid-cols-7 border-b border-gray-200 bg-white">
         {daysOfWeek.map((day) => (
@@ -68,7 +68,7 @@ export function MonthView({ currentDate, shifts, onShiftClick }: MonthViewProps)
               const dayShifts = shifts.filter(s => s.date === dateStr);
 
               return (
-                <div key={dayIndex} className="border-r border-gray-200 last:border-r-0 p-1 flex flex-col relative group hover:bg-gray-50 transition-colors">
+                <div key={dayIndex} className={`group relative flex flex-col border-r border-gray-200 p-1.5 transition-colors last:border-r-0 hover:bg-gray-50 ${isToday ? 'bg-sky-50/40' : ''}`}>
                   <div className={`text-xs font-medium p-1 ml-1 mb-1 w-6 h-6 flex items-center justify-center rounded-full ${isToday ? 'bg-[#0ea5e9] text-white' : isCurrentMonth ? 'text-gray-700' : 'text-gray-300'}`}>
                     {date.getDate()}
                   </div>
@@ -79,7 +79,7 @@ export function MonthView({ currentDate, shifts, onShiftClick }: MonthViewProps)
                         <div 
                           key={shift.id}
                           onClick={() => onShiftClick(shift)}
-                          className={`text-[10px] truncate px-1.5 py-0.5 rounded cursor-pointer border-l-2 ${theme.bg} ${theme.border} ${theme.text} hover:opacity-80`}
+                          className={`cursor-pointer truncate rounded border border-l-[3px] px-1.5 py-1 text-[9px] transition-opacity hover:opacity-80 ${theme.bg} ${theme.border} ${theme.text}`}
                         >
                           <span className="font-semibold">{shift.workerName}</span>
                         </div>

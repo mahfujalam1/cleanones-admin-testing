@@ -23,11 +23,11 @@ export function LocationStatistics() {
           return (
             <div 
               key={loc.name}
-              className="dashboard-card p-5 transition-[border-color,box-shadow] hover:border-[#d7dbe4] hover:shadow-md"
+              className="dashboard-card p-5 transition-[border-color,box-shadow] hover:border-[#d7dbe4] hover:shadow"
             >
               {/* Header */}
               <div className="flex items-center gap-3 mb-6">
-                <div className={`w-10 h-10 rounded-lg ${theme.bg} ${theme.text} flex items-center justify-center text-lg shadow-sm`}>
+                <div className={`w-10 h-10 rounded ${theme.bg} ${theme.text} flex items-center justify-center text-lg shadow-sm`}>
                   <MdLocationOn />
                 </div>
                 <h3 className="font-semibold text-gray-900 leading-tight flex-1">{loc.name}</h3>

@@ -21,12 +21,11 @@ export function CleanerAvatar({
 }: CleanerAvatarProps) {
     return (
         <div className={`flex items-center gap-2 ${className}`}>
-            <span
-                className={`rounded-full flex items-center justify-center text-white font-semibold shrink-0 ${SIZE_MAP[size]}`}
-                style={{ backgroundColor: avatarColor }}
-            >
-                {initials}
-            </span>
+            <img
+                src="/avatar-placeholder.svg"
+                alt={name}
+                className={`shrink-0 rounded-full border border-gray-200 object-cover ${SIZE_MAP[size]}`}
+            />
             <span className="text-sm font-medium text-gray-800 truncate">{name}</span>
         </div>
     );

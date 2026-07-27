@@ -26,12 +26,12 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="flex h-dvh w-full flex-col overflow-hidden bg-white">
+    <div className="flex h-dvh w-full flex-col overflow-hidden bg-[#f4f5f7]">
       <Topbar />
       <div className="flex min-h-0 flex-1 overflow-hidden">
         <Sidebar />
-        <main className="min-h-0 min-w-0 flex-1 overflow-auto overscroll-contain bg-white p-3 sm:p-4 lg:p-6">
-          <div className="w-full min-w-0 lg:px-16">{children}</div>
+        <main className="min-h-0 min-w-0 flex-1 overflow-auto overscroll-contain bg-[#f4f5f7] p-3 sm:p-4 lg:p-5">
+          <div className="w-full min-w-0 lg:px-8">{children}</div>
         </main>
       </div>
       <SignOutConfirmation />

@@ -34,7 +34,7 @@ export function DayView({ currentDate, shifts, onShiftClick }: DayViewProps) {
   };
 
   return (
-    <div className="flex flex-col bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
+    <div className="flex flex-col overflow-hidden rounded border border-gray-200 bg-white">
       {/* Header */}
       <div className="flex border-b border-gray-200 bg-white">
         <div className="w-16 flex-shrink-0 border-r border-gray-200"></div>
@@ -49,7 +49,7 @@ export function DayView({ currentDate, shifts, onShiftClick }: DayViewProps) {
       </div>
 
       {/* Grid */}
-      <div className="flex flex-1 overflow-y-auto relative bg-[#fafafa]">
+      <div className="relative flex flex-1 overflow-y-auto bg-[#fbfcfd]">
         {/* Time Labels */}
         <div className="w-16 flex-shrink-0 border-r border-gray-200 bg-white">
           {hours.map(hour => (
@@ -80,7 +80,7 @@ export function DayView({ currentDate, shifts, onShiftClick }: DayViewProps) {
               <div
                 key={shift.id}
                 onClick={() => onShiftClick(shift)}
-                className={`absolute left-2 right-2 rounded cursor-pointer transition-all hover:brightness-95 hover:shadow-md border-l-4 overflow-hidden p-3 shadow-sm ${theme.bg} ${theme.border} ${theme.text}`}
+                className={`absolute left-2 right-2 cursor-pointer overflow-hidden rounded border border-l-[3px] p-3 transition-colors hover:brightness-95 ${theme.bg} ${theme.border} ${theme.text}`}
                 style={getShiftStyle(shift)}
               >
                 <div className="text-xs font-bold leading-tight">{shift.workerName}</div>

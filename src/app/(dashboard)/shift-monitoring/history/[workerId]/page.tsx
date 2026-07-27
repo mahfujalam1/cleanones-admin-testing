@@ -39,9 +39,7 @@ export default function HistoryPage({ params }: { params: Promise<{ workerId: st
           <span>←</span> Back
         </button>
         <div className="flex items-center gap-3">
-          <div className={`w-10 h-10 rounded-full ${worker.color} text-white flex items-center justify-center text-sm font-bold shadow-sm`}>
-            {worker.initials}
-          </div>
+          <img src="/avatar-placeholder.svg" alt={worker.name} className="h-10 w-10 rounded-full border border-gray-200 object-cover" />
           <div>
             <h2 className="text-xl font-bold text-gray-800 leading-tight">{worker.name} — Daily Activity</h2>
             <div className="text-sm text-gray-500">June 2026</div>
@@ -51,26 +49,26 @@ export default function HistoryPage({ params }: { params: Promise<{ workerId: st
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-[#f0f9ff] border border-[#e0f2fe] rounded-md p-5">
+        <div className="bg-[#f0f9ff] border border-[#e0f2fe] rounded p-5">
           <div className="text-xs font-semibold text-[#0ea5e9] mb-1">Total Hours</div>
           <div className="text-3xl font-bold text-[#0ea5e9]">56h</div>
         </div>
-        <div className="bg-[#ecfdf5] border border-[#d1fae5] rounded-md p-5">
+        <div className="bg-[#ecfdf5] border border-[#d1fae5] rounded p-5">
           <div className="text-xs font-semibold text-[#10b981] mb-1">Attendance %</div>
           <div className="text-3xl font-bold text-[#10b981]">100%</div>
         </div>
-        <div className="bg-[#fffbeb] border border-[#fef3c7] rounded-md p-5">
+        <div className="bg-[#fffbeb] border border-[#fef3c7] rounded p-5">
           <div className="text-xs font-semibold text-[#f59e0b] mb-1">Late Days</div>
           <div className="text-3xl font-bold text-[#f59e0b]">2</div>
         </div>
-        <div className="bg-[#fef2f2] border border-[#fee2e2] rounded-md p-5">
+        <div className="bg-[#fef2f2] border border-[#fee2e2] rounded p-5">
           <div className="text-xs font-semibold text-[#ef4444] mb-1">Absent Days</div>
           <div className="text-3xl font-bold text-[#ef4444]">0</div>
         </div>
       </div>
 
       {/* History Table */}
-      <div className="bg-white border border-gray-200 rounded-md shadow-sm overflow-hidden flex-1 flex flex-col">
+      <div className="bg-white border border-gray-200 rounded shadow-sm overflow-hidden flex-1 flex flex-col">
         <div className="overflow-x-auto w-full">
           <table className="w-full text-left border-collapse min-w-[1000px]">
           <thead>

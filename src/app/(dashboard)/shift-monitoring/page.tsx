@@ -22,7 +22,7 @@ export default function LiveStatusPage() {
   const missingCount = WORKERS.filter(w => w.status === 'Missing').length;
 
   return (
-    <div className="relative flex h-full animate-in space-y-6 pb-10 fade-in duration-300">
+    <div className="relative flex h-full w-full">
       <div className="flex-1 transition-all duration-300 w-full flex flex-col h-full">
 
         {/* Filters */}
@@ -87,9 +87,7 @@ export default function LiveStatusPage() {
                 >
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
-                      <div className={`w-9 h-9 rounded-full ${worker.color} text-white flex items-center justify-center text-xs font-bold shadow-sm`}>
-                        {worker.initials}
-                      </div>
+                      <img src="/avatar-placeholder.svg" alt={worker.name} className="h-9 w-9 rounded-full border border-gray-200 object-cover" />
                       <div>
                         <div className="font-semibold text-gray-900">{worker.name}</div>
                         <div className="text-[11px] text-gray-500">{worker.role} · Shift {worker.shiftId}</div>

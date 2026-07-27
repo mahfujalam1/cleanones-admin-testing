@@ -26,15 +26,15 @@ export function PlanDetailSidebar({ plan, onClose, onDelete }: PlanDetailSidebar
         <>
             {/* Backdrop */}
             <div
-                className="fixed inset-0 z-[60] bg-black/40 animate-in fade-in duration-200"
+                className="modal-backdrop fixed inset-0 z-[60] animate-in fade-in duration-200"
                 onClick={onClose}
             />
 
             {/* Sidebar */}
-            <div className="fixed top-0 right-0 h-full w-full sm:w-[400px] bg-white z-[65] shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
+            <div className="fixed top-0 right-0 h-full w-full sm:w-[400px] bg-white z-[65] shadow flex flex-col animate-in slide-in-from-right duration-300">
                 {/* Dark Header */}
                 <div className="flex items-center gap-3 px-5 py-5 border-b border-gray-100 bg-[#1A2332] shrink-0">
-                    <div className="w-10 h-10 rounded-lg bg-[#e0f2fe] flex items-center justify-center shrink-0">
+                    <div className="w-10 h-10 rounded bg-[#e0f2fe] flex items-center justify-center shrink-0">
                         <TbClipboardList className="text-[#0ea5e9] text-xl" />
                     </div>
                     <div className="flex-1 min-w-0">

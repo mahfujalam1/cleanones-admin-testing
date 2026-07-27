@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { MdOutlineClose, MdEmail, MdPhone, MdLocationOn, MdDescription } from 'react-icons/md';
 import { Worker, WorkerSidebarTab } from './types';
 
@@ -50,16 +51,18 @@ export function WorkerDetailSidebar({ worker, onClose }: WorkerDetailSidebarProp
       ? 'bg-[#0ea5e9]/15 text-[#0ea5e9]'
       : 'bg-[#8b5cf6]/15 text-[#8b5cf6]';
 
-  return (
+  if (typeof document === 'undefined') return null;
+
+  return createPortal(
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 z-40 bg-black/10 animate-in fade-in duration-300"
+        className="modal-backdrop fixed inset-0 z-40 animate-in fade-in duration-300"
         onClick={onClose}
       />
 
       {/* Panel */}
-      <div className="fixed inset-y-0 right-0 w-full sm:w-[420px] bg-white border-l border-gray-200 shadow-2xl z-50 flex flex-col transform transition-transform animate-in slide-in-from-right duration-300">
+      <div className="fixed inset-y-0 right-0 z-50 flex h-dvh w-full flex-col border-l border-gray-200 bg-white sm:w-[420px] animate-in slide-in-from-right duration-300">
         {/* Header */}
         <div className="bg-[#1a2332] text-white p-5 relative flex-shrink-0">
           <button
@@ -70,11 +73,7 @@ export function WorkerDetailSidebar({ worker, onClose }: WorkerDetailSidebarProp
           </button>
 
           <div className="flex items-center gap-3">
-            <div
-              className={`w-12 h-12 rounded-full ${worker.avatarColor} text-white flex items-center justify-center text-lg font-bold shadow-md`}
-            >
-              {worker.initials}
-            </div>
+            <img src="/avatar-placeholder.svg" alt={worker.name} className="h-12 w-12 shrink-0 rounded-full border border-white/20 object-cover" />
             <div className="flex-1 min-w-0">
               <h3 className="font-bold text-lg leading-tight truncate">{worker.name}</h3>
               <div className="text-xs text-gray-400 font-medium mt-0.5">
@@ -141,7 +140,8 @@ export function WorkerDetailSidebar({ worker, onClose }: WorkerDetailSidebarProp
           scrollbar-color: #cbd5e1 #f1f5f9;
         }
       `}</style>
-    </>
+    </>,
+    document.body
   );
 }
 
@@ -206,7 +206,7 @@ function InfoCard({
   value: React.ReactNode;
 }) {
   return (
-    <div className="bg-gray-50 border border-gray-100 rounded-lg p-4 flex items-start gap-3">
+    <div className="bg-gray-50 border border-gray-100 rounded p-4 flex items-start gap-3">
       <div className="w-9 h-9 rounded-full bg-white border border-gray-100 flex items-center justify-center text-lg shrink-0 shadow-sm">
         {icon}
       </div>
@@ -223,12 +223,12 @@ function InfoCard({
 function PerformanceTab({ worker }: { worker: Worker }) {
   return (
     <div className="p-5 space-y-4">
-      <div className="bg-gray-50 border border-gray-100 rounded-lg p-5">
+      <div className="bg-gray-50 border border-gray-100 rounded p-5">
         <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Completed Shifts</div>
         <div className="text-3xl font-bold text-gray-900">{worker.completedShifts}</div>
       </div>
 
-      <div className="bg-gray-50 border border-gray-100 rounded-lg p-5">
+      <div className="bg-gray-50 border border-gray-100 rounded p-5">
         <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Avg Photo Score</div>
         <div className="text-3xl font-bold text-gray-900">
           {worker.avgPhotoScore}
@@ -259,22 +259,22 @@ function ShiftsTab({ worker }: { worker: Worker }) {
     <div className="p-5 space-y-5">
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3">
-        <div className="bg-gray-50 border border-gray-100 rounded-xl p-4 text-center">
+        <div className="bg-gray-50 border border-gray-100 rounded p-4 text-center">
           <div className="text-xl font-bold text-gray-900">{completed}</div>
           <div className="text-[10px] text-gray-400 font-semibold mt-1">Completed</div>
         </div>
-        <div className="bg-gray-50 border border-gray-100 rounded-xl p-4 text-center">
+        <div className="bg-gray-50 border border-gray-100 rounded p-4 text-center">
           <div className="text-xl font-bold text-[#0ea5e9]">{inProgress}</div>
           <div className="text-[10px] text-gray-400 font-semibold mt-1">In Progress</div>
         </div>
-        <div className="bg-gray-50 border border-gray-100 rounded-xl p-4 text-center">
+        <div className="bg-gray-50 border border-gray-100 rounded p-4 text-center">
           <div className="text-xl font-bold text-[#f59e0b]">{upcoming}</div>
           <div className="text-[10px] text-gray-400 font-semibold mt-1">Upcoming</div>
         </div>
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+      <div className="bg-white rounded border border-gray-100 overflow-hidden">
         <div className="grid grid-cols-[1fr_1fr_0.7fr_0.8fr] gap-1 px-4 py-3 border-b border-gray-100 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
           <div>Date</div>
           <div>Location</div>
@@ -315,22 +315,22 @@ function AttendanceTab({ worker }: { worker: Worker }) {
     <div className="p-5 space-y-5">
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3">
-        <div className="bg-gray-50 border border-gray-100 rounded-xl p-4 text-center">
+        <div className="bg-gray-50 border border-gray-100 rounded p-4 text-center">
           <div className="text-xl font-bold text-gray-900">{worker.monthlyHours}</div>
           <div className="text-[10px] text-[#0ea5e9] font-semibold mt-1">This Month</div>
         </div>
-        <div className="bg-gray-50 border border-gray-100 rounded-xl p-4 text-center">
+        <div className="bg-gray-50 border border-gray-100 rounded p-4 text-center">
           <div className="text-xl font-bold text-gray-900">{worker.lateDays}</div>
           <div className="text-[10px] text-[#f59e0b] font-semibold mt-1">Late Days</div>
         </div>
-        <div className="bg-gray-50 border border-gray-100 rounded-xl p-4 text-center">
+        <div className="bg-gray-50 border border-gray-100 rounded p-4 text-center">
           <div className="text-xl font-bold text-gray-900">{worker.absentDays}</div>
           <div className="text-[10px] text-[#ef4444] font-semibold mt-1">Absent Days</div>
         </div>
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+      <div className="bg-white rounded border border-gray-100 overflow-hidden">
         <div className="grid grid-cols-[1.2fr_0.8fr_0.8fr_0.6fr_0.8fr] gap-1 px-4 py-3 border-b border-gray-100 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
           <div>Date</div>
           <div>Check-In</div>
@@ -362,9 +362,9 @@ function DocumentsTab({ worker }: { worker: Worker }) {
       {worker.documents.map((doc, i) => (
         <div
           key={i}
-          className="bg-gray-50 border border-gray-100 rounded-xl p-4 flex items-center gap-3 hover:bg-gray-100/60 transition-colors cursor-pointer"
+          className="bg-gray-50 border border-gray-100 rounded p-4 flex items-center gap-3 hover:bg-gray-100/60 transition-colors cursor-pointer"
         >
-          <div className="w-10 h-10 rounded-lg bg-[#e0f2fe] flex items-center justify-center shrink-0">
+          <div className="w-10 h-10 rounded bg-[#e0f2fe] flex items-center justify-center shrink-0">
             <MdDescription className="text-[#0ea5e9] text-xl" />
           </div>
           <div className="flex-1 min-w-0">
@@ -385,22 +385,22 @@ function InvoicesTab({ worker }: { worker: Worker }) {
     <div className="p-5 space-y-5">
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3">
-        <div className="bg-[#e0f7fa] border border-[#b2ebf2] rounded-xl p-4 text-center">
+        <div className="bg-[#e0f7fa] border border-[#b2ebf2] rounded p-4 text-center">
           <div className="text-lg font-bold text-[#0ea5e9]">€{worker.totalEarned}</div>
           <div className="text-[10px] text-[#0ea5e9] font-semibold mt-1">Total Earned</div>
         </div>
-        <div className="bg-[#e8f5e9] border border-[#c8e6c9] rounded-xl p-4 text-center">
+        <div className="bg-[#e8f5e9] border border-[#c8e6c9] rounded p-4 text-center">
           <div className="text-lg font-bold text-[#10b981]">€{worker.totalPaid}</div>
           <div className="text-[10px] text-[#10b981] font-semibold mt-1">Paid</div>
         </div>
-        <div className="bg-[#fff3e0] border border-[#ffe0b2] rounded-xl p-4 text-center">
+        <div className="bg-[#fff3e0] border border-[#ffe0b2] rounded p-4 text-center">
           <div className="text-lg font-bold text-[#f59e0b]">€{worker.remaining}</div>
           <div className="text-[10px] text-[#f59e0b] font-semibold mt-1">Remaining</div>
         </div>
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+      <div className="bg-white rounded border border-gray-100 overflow-hidden">
         <div className="grid grid-cols-[1.2fr_0.6fr_0.6fr_0.7fr_0.8fr] gap-1 px-4 py-3 border-b border-gray-100 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
           <div>Invoice #</div>
           <div>Hours</div>
@@ -440,7 +440,7 @@ function InvoicesTab({ worker }: { worker: Worker }) {
 function AvailabilityTab({ worker }: { worker: Worker }) {
   return (
     <div className="p-5">
-      <div className="bg-gray-50 border border-gray-100 rounded-xl p-5">
+      <div className="bg-gray-50 border border-gray-100 rounded p-5">
         <div className="text-xs font-semibold text-gray-600 mb-4">Weekly Availability</div>
         <div className="flex gap-2 flex-wrap">
           {DAY_LABELS.map((day, i) => {

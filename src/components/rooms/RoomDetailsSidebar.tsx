@@ -31,15 +31,15 @@ export function RoomDetailSidebar({ room, onClose }: RoomDetailSidebarProps) {
         <>
             {/* Backdrop */}
             <div
-                className="fixed inset-0 z-[60] bg-black/40 animate-in fade-in duration-200"
+                className="modal-backdrop fixed inset-0 z-[60] animate-in fade-in duration-200"
                 onClick={onClose}
             />
 
             {/* Sidebar */}
-            <div className="fixed top-0 right-0 h-full w-full sm:w-[400px] bg-white z-[65] shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
+            <div className="fixed top-0 right-0 h-full w-full sm:w-[400px] bg-white z-[65] shadow flex flex-col animate-in slide-in-from-right duration-300">
                 {/* Header */}
                 <div className="flex items-center gap-3 px-5 py-5 border-b border-gray-100 bg-[#1A2332]">
-                    <div className={`w-10 h-10 rounded-lg ${colors.bg} flex items-center justify-center shrink-0`}>
+                    <div className={`w-10 h-10 rounded ${colors.bg} flex items-center justify-center shrink-0`}>
                         <TbDoor className={`${typeIconColors[room.type]} text-xl`} />
                     </div>
                     <div className="flex-1 min-w-0">
@@ -58,18 +58,18 @@ export function RoomDetailSidebar({ room, onClose }: RoomDetailSidebarProps) {
                 <div className="flex-1 overflow-y-auto px-5 py-5 space-y-3">
                     {/* Room Type + Floor */}
                     <div className="grid grid-cols-2 gap-3">
-                        <div className="rounded-xl border border-gray-100 bg-gray-50/60 px-4 py-3.5">
+                        <div className="rounded border border-gray-100 bg-gray-50/60 px-4 py-3.5">
                             <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">Room Type</p>
                             <p className={`text-sm font-semibold ${colors.text}`}>{room.type}</p>
                         </div>
-                        <div className="rounded-xl border border-gray-100 bg-gray-50/60 px-4 py-3.5">
+                        <div className="rounded border border-gray-100 bg-gray-50/60 px-4 py-3.5">
                             <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">Floor</p>
                             <p className="text-sm font-medium text-gray-800">{room.floor}</p>
                         </div>
                     </div>
 
                     {/* Location */}
-                    <div className="rounded-xl border border-gray-100 bg-gray-50/60 px-4 py-3.5 flex items-start gap-3">
+                    <div className="rounded border border-gray-100 bg-gray-50/60 px-4 py-3.5 flex items-start gap-3">
                         <TbMapPin className="text-[#0ea5e9] text-lg mt-0.5 shrink-0" />
                         <div>
                             <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-0.5">Location</p>
@@ -78,7 +78,7 @@ export function RoomDetailSidebar({ room, onClose }: RoomDetailSidebarProps) {
                     </div>
 
                     {/* Cleaning Plan */}
-                    <div className="rounded-xl border border-gray-100 bg-gray-50/60 px-4 py-3.5 flex items-start gap-3">
+                    <div className="rounded border border-gray-100 bg-gray-50/60 px-4 py-3.5 flex items-start gap-3">
                         <TbLayersLinked className="text-[#0ea5e9] text-lg mt-0.5 shrink-0" />
                         <div>
                             <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-0.5">Cleaning Plan</p>
@@ -88,17 +88,17 @@ export function RoomDetailSidebar({ room, onClose }: RoomDetailSidebarProps) {
 
                     {/* Stats — Duration / Photos / Tasks */}
                     <div className="grid grid-cols-3 gap-3">
-                        <div className="rounded-xl border border-gray-100 bg-gray-50/60 px-3 py-4 flex flex-col items-center gap-1.5">
+                        <div className="rounded border border-gray-100 bg-gray-50/60 px-3 py-4 flex flex-col items-center gap-1.5">
                             <TbClock className="text-gray-400 text-lg" />
                             <p className="text-lg font-bold text-gray-900">{room.duration}m</p>
                             <p className="text-[11px] text-gray-400">Duration</p>
                         </div>
-                        <div className="rounded-xl border border-gray-100 bg-gray-50/60 px-3 py-4 flex flex-col items-center gap-1.5">
+                        <div className="rounded border border-gray-100 bg-gray-50/60 px-3 py-4 flex flex-col items-center gap-1.5">
                             <TbCamera className="text-gray-400 text-lg" />
                             <p className="text-lg font-bold text-gray-900">{room.photos}</p>
                             <p className="text-[11px] text-gray-400">Photos</p>
                         </div>
-                        <div className="rounded-xl border border-gray-100 bg-gray-50/60 px-3 py-4 flex flex-col items-center gap-1.5">
+                        <div className="rounded border border-gray-100 bg-gray-50/60 px-3 py-4 flex flex-col items-center gap-1.5">
                             <TbChecklist className="text-gray-400 text-lg" />
                             <p className="text-lg font-bold text-gray-900">{room.tasks}</p>
                             <p className="text-[11px] text-gray-400">Tasks</p>

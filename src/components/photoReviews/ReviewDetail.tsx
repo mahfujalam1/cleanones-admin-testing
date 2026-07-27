@@ -133,7 +133,7 @@ export function ReviewDetail({ review, onClose, onApprove, onReject }: ReviewDet
 
                         {/* Overall score */}
                         <div className="bg-blue-50 rounded p-4 text-center">
-                            <p className="text-5xl font-bold text-blue-600">{ai.overallScore}</p>
+                            <p className="text-4xl font-bold text-blue-600">{ai.overallScore}</p>
                             <p className="text-xs text-gray-500 mt-1">Overall Quality Score</p>
                             <p className={`text-xs font-semibold mt-1 ${SUGGESTION_COLOR[ai.suggestion] ?? "text-gray-500"}`}>
                                 AI suggests: {ai.suggestion}

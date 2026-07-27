@@ -64,14 +64,14 @@ export default function ClientDetailPage({ params }: ClientDetailPageProps) {
         <div className="flex items-center gap-4">
           <button
             onClick={() => router.push('/clients')}
-            className="flex items-center gap-1 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-md shadow-sm transition-colors cursor-pointer"
+            className="flex items-center gap-1 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded shadow-sm transition-colors cursor-pointer"
           >
             <ArrowBack className="text-base" />
             Back
           </button>
           
           <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+            <div className={`w-10 h-10 rounded flex items-center justify-center ${
               client.industry === 'Healthcare' ? 'bg-[#fef2f2]' : 'bg-[#f0fdf4]'
             }`}>
               <BusinessCenter className={`text-xl ${
@@ -232,7 +232,7 @@ function ContactsTab({ client }: { client: Client }) {
 
       <button
         onClick={() => setModalOpen(true)}
-        className="flex items-center gap-1.5 h-9 px-4 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 text-xs font-semibold rounded-lg shadow-sm transition-colors cursor-pointer"
+        className="flex items-center gap-1.5 h-9 px-4 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 text-xs font-semibold rounded shadow-sm transition-colors cursor-pointer"
       >
         <AddIcon className="text-base" />
         Add Contact
@@ -270,10 +270,10 @@ function LocationsTab({ client }: { client: Client }) {
         {client.locations.map((loc) => (
           <div
             key={loc.id}
-            className="bg-white rounded border border-gray-100 p-6 flex items-center justify-between shadow-sm hover:shadow-md transition-shadow cursor-pointer relative group"
+            className="bg-white rounded border border-gray-100 p-6 flex items-center justify-between shadow-sm hover:shadow transition-shadow cursor-pointer relative group"
           >
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-[#e0f2fe] flex items-center justify-center shrink-0">
+              <div className="w-10 h-10 rounded bg-[#e0f2fe] flex items-center justify-center shrink-0">
                 <LocationOn className="text-[#0ea5e9] text-xl" />
               </div>
               <div>
@@ -299,7 +299,7 @@ function LocationsTab({ client }: { client: Client }) {
 
       <button
         onClick={() => setModalOpen(true)}
-        className="flex items-center gap-1.5 h-9 px-4 bg-[#0ea5e9] hover:bg-[#0284c7] text-white text-xs font-semibold rounded-lg shadow-sm transition-colors cursor-pointer"
+        className="flex items-center gap-1.5 h-9 px-4 bg-[#0ea5e9] hover:bg-[#0284c7] text-white text-xs font-semibold rounded shadow-sm transition-colors cursor-pointer"
       >
         <AddIcon className="text-base" />
         Add Location
@@ -404,7 +404,7 @@ function CleaningPlanTab() {
         {/* Task List */}
         <div className="space-y-2">
           {tasks.map((task, i) => (
-            <div key={i} className="flex items-center justify-between px-4 py-3 rounded-lg bg-gray-50 border border-gray-100 text-sm font-medium text-gray-700">
+            <div key={i} className="flex items-center justify-between px-4 py-3 rounded bg-gray-50 border border-gray-100 text-sm font-medium text-gray-700">
               <div className="flex items-center gap-3">
                 <MdCheckCircle className="text-[#0ea5e9] text-lg shrink-0" />
                 <span>{task}</span>
@@ -429,12 +429,12 @@ function CleaningPlanTab() {
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}
-            className="flex-1 h-9 rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#0ea5e9] focus:border-[#0ea5e9] transition-colors"
+            className="flex-1 h-9 rounded border border-gray-300 bg-white px-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#0ea5e9] focus:border-[#0ea5e9] transition-colors"
           />
           <button
             type="button"
             onClick={handleAddTask}
-            className="flex items-center gap-1.5 h-9 px-4 bg-[#0ea5e9] hover:bg-[#0284c7] text-white text-xs font-semibold rounded-lg shadow-sm transition-colors cursor-pointer shrink-0"
+            className="flex items-center gap-1.5 h-9 px-4 bg-[#0ea5e9] hover:bg-[#0284c7] text-white text-xs font-semibold rounded shadow-sm transition-colors cursor-pointer shrink-0"
           >
             <AddIcon className="text-base" />
             Add Task
@@ -444,10 +444,10 @@ function CleaningPlanTab() {
 
       {/* Action buttons */}
       <div className="flex items-center gap-3">
-        <button className="h-9 px-5 bg-[#0ea5e9] hover:bg-[#0284c7] text-white text-xs font-bold rounded-lg shadow-sm transition-colors cursor-pointer">
+        <button className="h-9 px-5 bg-[#0ea5e9] hover:bg-[#0284c7] text-white text-xs font-bold rounded shadow-sm transition-colors cursor-pointer">
           Save Plan
         </button>
-        <button className="h-9 px-5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-lg shadow-sm transition-colors cursor-pointer">
+        <button className="h-9 px-5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded shadow-sm transition-colors cursor-pointer">
           Assign to Location
         </button>
       </div>
@@ -493,7 +493,7 @@ function ReportsTab() {
         <h3 className="text-xs font-bold text-gray-700 uppercase tracking-wider">Recent Reports</h3>
         <div className="divide-y divide-gray-100">
           {reports.map((rep, i) => (
-            <div key={i} className="flex items-center justify-between py-3.5 hover:bg-gray-50/50 px-2 rounded-lg transition-colors">
+            <div key={i} className="flex items-center justify-between py-3.5 hover:bg-gray-50/50 px-2 rounded transition-colors">
               <div>
                 <div className="text-sm font-semibold text-gray-800">{rep.title}</div>
                 <div className="text-[11px] text-gray-400 mt-0.5">{rep.date}</div>
@@ -504,7 +504,7 @@ function ReportsTab() {
                 }`}>
                   {rep.status}
                 </span>
-                <button className="p-1.5 rounded-md hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors cursor-pointer">
+                <button className="p-1.5 rounded hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors cursor-pointer">
                   <MdFileDownload className="text-base" />
                 </button>
               </div>
@@ -520,13 +520,13 @@ function ReportActionBox({ icon, title, desc, btnText }: { icon: React.ReactNode
   return (
     <div className="bg-white rounded border border-gray-100 p-6 flex flex-col justify-between min-h-[140px] shadow-sm">
       <div>
-        <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center mb-3">
+        <div className="w-8 h-8 rounded bg-gray-50 flex items-center justify-center mb-3">
           {icon}
         </div>
         <h4 className="text-sm font-bold text-gray-800 leading-snug">{title}</h4>
         <p className="text-[11px] text-gray-400 mt-1">{desc}</p>
       </div>
-      <button className="mt-4 self-start px-4 h-7 bg-white border border-gray-200 hover:bg-gray-50 text-[11px] font-semibold rounded-md shadow-sm transition-colors cursor-pointer text-[#0ea5e9]">
+      <button className="mt-4 self-start px-4 h-7 bg-white border border-gray-200 hover:bg-gray-50 text-[11px] font-semibold rounded shadow-sm transition-colors cursor-pointer text-[#0ea5e9]">
         {btnText}
       </button>
     </div>

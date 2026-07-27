@@ -40,13 +40,13 @@ export default function ReportsPage() {
   return (
     <div className="space-y-6 pb-10">
       <div className="flex items-center justify-between">
-        <div className="flex rounded-md bg-gray-100 p-1 text-xs font-medium text-slate-500">
+        <div className="flex rounded bg-gray-100 p-1 text-xs font-medium text-slate-500">
           {ranges.map((range) => (
             <button
               key={range}
               type="button"
               onClick={() => setActiveRange(range)}
-              className={`h-8 min-w-14 rounded-md px-3 transition-all ${
+              className={`h-8 min-w-14 rounded px-3 transition-all ${
                 activeRange === range
                   ? "bg-white text-slate-900 shadow"
                   : "hover:text-slate-800"
@@ -59,7 +59,7 @@ export default function ReportsPage() {
 
         <button
           type="button"
-          className="flex h-9 items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-100 px-3 text-sm font-semibold text-slate-500 shadow-sm transition-colors hover:bg-white"
+          className="flex h-9 items-center gap-1.5 rounded border border-gray-200 bg-gray-100 px-3 text-sm font-semibold text-slate-500 shadow-sm transition-colors hover:bg-white"
         >
           <MdInsertDriveFile className="text-base" />
           PDF

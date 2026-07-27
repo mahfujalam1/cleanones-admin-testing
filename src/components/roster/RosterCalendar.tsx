@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { MdChevronLeft, MdChevronRight } from 'react-icons/md';
+import { MdAdd, MdCalendarToday, MdChevronLeft, MdChevronRight } from 'react-icons/md';
 import { DayView } from './DayView';
 import { WeekView } from './WeekView';
 import { MonthView } from './MonthView';
@@ -62,32 +62,56 @@ export function RosterCalendar() {
     return currentDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
   };
 
+  const todayKey = new Date().toISOString().split('T')[0];
+  const todayShiftCount = shifts.filter(shift => shift.date === todayKey).length;
+
   return (
-    <div className="flex flex-col h-full space-y-4 animate-in fade-in duration-300">
-      {/* Controls Header */}
-      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between bg-white p-3 rounded-lg border border-gray-200 shadow-sm gap-4">
-        <div className="flex flex-wrap items-center gap-2 sm:gap-4 w-full lg:w-auto">
-          <button onClick={handleToday} className="px-4 py-1.5 text-sm font-medium border border-gray-300 rounded hover:bg-gray-50 transition-colors cursor-pointer">
+    <div className="flex h-full flex-col gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="flex h-8 w-8 items-center justify-center rounded border border-sky-200 bg-sky-50 text-primary">
+              <MdCalendarToday className="text-base" />
+            </span>
+            <div>
+              <h1 className="text-lg font-semibold tracking-tight text-slate-800">Roster</h1>
+              <p className="text-xs text-slate-500">Plan shifts and coordinate team coverage.</p>
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 text-xs text-slate-500">
+          <span className="rounded border border-gray-200 bg-white px-2.5 py-1.5">
+            <strong className="font-semibold text-slate-700">{shifts.length}</strong> scheduled
+          </span>
+          <span className="rounded border border-gray-200 bg-white px-2.5 py-1.5">
+            <strong className="font-semibold text-slate-700">{todayShiftCount}</strong> today
+          </span>
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-3 rounded border border-gray-200 bg-white p-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex w-full flex-wrap items-center gap-2 lg:w-auto">
+          <button onClick={handleToday} className="h-8 rounded border border-gray-300 bg-white px-3 text-xs font-semibold text-slate-700 transition-colors hover:bg-gray-50">
             Today
           </button>
-          <div className="flex items-center gap-1 shrink-0">
-            <button onClick={handlePrev} className="p-1 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors cursor-pointer">
-              <MdChevronLeft className="text-xl" />
+          <div className="flex shrink-0 overflow-hidden rounded border border-gray-300 bg-white">
+            <button onClick={handlePrev} aria-label="Previous period" className="flex h-8 w-8 items-center justify-center border-r border-gray-300 text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-800">
+              <MdChevronLeft className="text-lg" />
             </button>
-            <button onClick={handleNext} className="p-1 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors cursor-pointer">
-              <MdChevronRight className="text-xl" />
+            <button onClick={handleNext} aria-label="Next period" className="flex h-8 w-8 items-center justify-center text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-800">
+              <MdChevronRight className="text-lg" />
             </button>
           </div>
-          <h2 className="text-lg font-semibold text-gray-800 min-w-[200px] truncate">{formatDateRange()}</h2>
+          <h2 className="min-w-[190px] truncate text-sm font-semibold text-slate-800 sm:text-base">{formatDateRange()}</h2>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 sm:gap-4 w-full lg:w-auto">
-          <div className="flex bg-gray-100 p-1 rounded-md text-sm font-medium overflow-x-auto max-w-full">
+        <div className="flex w-full flex-wrap items-center gap-2 lg:w-auto">
+          <div className="flex max-w-full overflow-x-auto rounded border border-gray-200 bg-gray-50 p-0.5 text-xs font-medium">
             {(['Day', 'Week', 'Month'] as const).map(v => (
               <button
                 key={v}
                 onClick={() => setView(v)}
-                className={`px-3 sm:px-4 py-1.5 rounded transition-all duration-200 cursor-pointer ${view === v ? 'bg-[#0ea5e9] text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}
+                className={`h-7 rounded px-3 transition-colors ${view === v ? 'border border-gray-200 bg-white text-primary' : 'border border-transparent text-gray-500 hover:text-gray-800'}`}
               >
                 {v}
               </button>
@@ -95,15 +119,14 @@ export function RosterCalendar() {
           </div>
           <button
             onClick={() => setShowCreateModal(true)}
-            className="bg-[#0ea5e9] hover:bg-[#0284c7] text-white px-4 py-1.5 rounded text-sm font-medium shadow-sm transition-colors flex items-center gap-1 cursor-pointer shrink-0 ml-auto lg:ml-0"
+            className="ml-auto flex h-8 shrink-0 items-center gap-1.5 rounded border border-primary bg-primary px-3 text-xs font-semibold text-white transition-colors hover:bg-[#008bc7] lg:ml-0"
           >
-            <span>+</span> Create Shift
+            <MdAdd className="text-base" /> Create Shift
           </button>
         </div>
       </div>
 
-      {/* Calendar Grid Container */}
-      <div className="flex-1 min-h-[600px]">
+      <div className="min-h-[600px] flex-1">
         {view === 'Day' && <DayView currentDate={currentDate} shifts={shifts} onShiftClick={setSelectedShift} />}
         {view === 'Week' && <WeekView currentDate={currentDate} shifts={shifts} onShiftClick={setSelectedShift} />}
         {view === 'Month' && <MonthView currentDate={currentDate} shifts={shifts} onShiftClick={setSelectedShift} />}

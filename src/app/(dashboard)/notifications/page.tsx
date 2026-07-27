@@ -108,7 +108,7 @@ export default function NotificationsPage() {
         {notifications.map((item) => (
           <article
             key={item.id}
-            className={`relative rounded-md border px-4 py-4 pr-12 shadow-sm ${
+            className={`relative rounded border px-4 py-4 pr-12 shadow-sm ${
               item.unread
                 ? "border-[#a5e9ff] bg-[#ecfdf5]"
                 : "border-gray-200 bg-white"

@@ -10,7 +10,7 @@ import {
   MdDashboard, MdCalendarToday, MdAccessTime, MdPeople,
   MdBusinessCenter, MdLocationOn, MdMeetingRoom, MdAssignment,
   MdPhotoCamera, MdWarning, MdAssessment, MdNotifications, MdSettings,
-  MdChevronLeft, MdChevronRight, MdLogout
+  MdChevronLeft, MdChevronRight, MdLogout, MdChatBubbleOutline
 } from 'react-icons/md';
 
 const mainLinks = [
@@ -19,6 +19,7 @@ const mainLinks = [
   { name: 'Shift Monitoring', href: '/shift-monitoring', icon: MdAccessTime },
   { name: 'Workers', href: '/users', icon: MdPeople },
   { name: 'Clients', href: '/clients', icon: MdBusinessCenter },
+  { name: 'Chat', href: '/chat', icon: MdChatBubbleOutline },
   { name: 'Locations', href: '/locations', icon: MdLocationOn },
   { name: 'Rooms', href: '/rooms', icon: MdMeetingRoom },
   { name: 'Cleaning Plans', href: '/cleaning-plans', icon: MdAssignment },
@@ -89,13 +90,16 @@ export default function Sidebar() {
                   key={link.name}
                   href={localizePath(link.href, locale)}
                   onClick={() => dispatch(closeMobileSidebar())}
-                  className={`flex h-9 items-center gap-2.5 rounded-md px-3 text-sm font-medium transition-colors ${isActive
-                      ? 'bg-white text-primary shadow-[var(--shadow-xs)]'
-                      : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-foreground'
+                  className={`flex h-9 items-center justify-between rounded px-3 text-sm font-medium transition-colors ${isActive
+                      ? 'bg-[#e5f6fc] text-primary'
+                      : 'text-sidebar-foreground hover:bg-[#f2f9fc] hover:text-foreground'
                     }`}
                 >
-                  <link.icon className={`text-base ${isActive ? 'text-primary' : 'text-sidebar-foreground'}`} />
-                  <span className={collapsed ? 'lg:hidden' : 'block'}>{link.name}</span>
+                  <span className="flex items-center gap-2.5">
+                    <link.icon className={`text-base ${isActive ? 'text-primary' : 'text-sidebar-foreground'}`} />
+                    <span className={collapsed ? 'lg:hidden' : 'block'}>{link.name}</span>
+                  </span>
+                  {isActive && <span className={`h-1.5 w-1.5 rounded-full bg-primary ${collapsed ? 'lg:hidden' : 'block'}`} aria-hidden="true" />}
                 </Link>
               );
             })}
@@ -112,13 +116,16 @@ export default function Sidebar() {
                   key={link.name}
                   href={localizePath(link.href, locale)}
                   onClick={() => dispatch(closeMobileSidebar())}
-                  className={`flex h-9 items-center gap-2.5 rounded-md px-3 text-sm font-medium transition-colors ${isActive
-                      ? 'bg-white text-primary shadow-[var(--shadow-xs)]'
-                      : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-foreground'
+                  className={`flex h-9 items-center justify-between rounded px-3 text-sm font-medium transition-colors ${isActive
+                      ? 'bg-[#e5f6fc] text-primary'
+                      : 'text-sidebar-foreground hover:bg-[#f2f9fc] hover:text-foreground'
                     }`}
                 >
-                  <link.icon className={`text-base ${isActive ? 'text-primary' : 'text-sidebar-foreground'}`} />
-                  <span className={collapsed ? 'lg:hidden' : 'block'}>{link.name}</span>
+                  <span className="flex items-center gap-2.5">
+                    <link.icon className={`text-base ${isActive ? 'text-primary' : 'text-sidebar-foreground'}`} />
+                    <span className={collapsed ? 'lg:hidden' : 'block'}>{link.name}</span>
+                  </span>
+                  {isActive && <span className={`h-1.5 w-1.5 rounded-full bg-primary ${collapsed ? 'lg:hidden' : 'block'}`} aria-hidden="true" />}
                 </Link>
               );
             })}
@@ -127,7 +134,7 @@ export default function Sidebar() {
 
         {/* Footer */}
         <div className="shrink-0 border-t border-sidebar-border p-3">
-          <button onClick={() => dispatch(setSignOutModalOpen(true))} className="flex h-9 w-full cursor-pointer items-center gap-3 rounded-md px-3 text-sm font-medium text-sidebar-foreground hover:bg-sidebar-accent hover:text-foreground">
+          <button onClick={() => dispatch(setSignOutModalOpen(true))} className="flex h-9 w-full cursor-pointer items-center gap-3 rounded px-3 text-sm font-medium text-sidebar-foreground hover:bg-sidebar-accent hover:text-foreground">
             <MdLogout className="shrink-0 text-lg" />
             <span className={collapsed ? 'lg:hidden' : 'block'}>Sign Out</span>
           </button>

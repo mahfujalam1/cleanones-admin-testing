@@ -46,7 +46,7 @@ export default function RoomsPage() {
             {/* Top Bar */}
             <div className="flex items-center justify-between mb-5">
                 {/* Search */}
-                <div className="px-6">
+                <div>
                     <div className="relative w-full max-w-sm">
                         <MdSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg" />
                         <input
@@ -54,15 +54,15 @@ export default function RoomsPage() {
                             placeholder="Search rooms..."
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            className="pl-9 pr-4 py-2 border border-gray-200 rounded-md text-sm w-64 focus:outline-none shadow-sm bg-gray-50 focus:bg-white transition-colors"
+                            className="pl-9 pr-4 py-2 border border-gray-200 rounded text-sm w-64 focus:outline-none shadow-sm bg-gray-50 focus:bg-white transition-colors"
                         />
                     </div>
                 </div>
 
-                <div className="flex items-center justify-between px-6">
+                <div className="flex items-center justify-between">
                     <button
                         onClick={() => setShowModal(true)}
-                        className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold text-white bg-[#0ea5e9] hover:bg-[#0284c7] rounded-lg shadow-sm transition-colors cursor-pointer"
+                        className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold text-white bg-[#0ea5e9] hover:bg-[#0284c7] rounded shadow-sm transition-colors cursor-pointer"
                     >
                         + Add Room
                     </button>
@@ -70,7 +70,7 @@ export default function RoomsPage() {
             </div>
 
             {/* Cards Grid */}
-            <div className="px-6">
+            <div>
                 {filtered.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-24 text-center">
                         <TbDoor className="text-5xl text-gray-300 mb-3" />
@@ -122,12 +122,12 @@ function RoomCard({ room, onClick, isSelected }: RoomCardProps) {
     return (
         <div
             onClick={onClick}
-            className={`dashboard-card cursor-pointer transition-[border-color,box-shadow] hover:border-[#d7dbe4] hover:shadow-md ${isSelected ? 'border-[#0ea5e9]/50 shadow-md ring-1 ring-[#0ea5e9]/20' : ''
+            className={`dashboard-card cursor-pointer transition-[border-color,box-shadow] hover:border-[#d7dbe4] hover:shadow ${isSelected ? 'border-[#0ea5e9]/50 shadow ring-1 ring-[#0ea5e9]/20' : ''
                 }`}
         >
             {/* Card Header */}
             <div className="px-4 pt-4 pb-2 flex items-start gap-3">
-                <div className={`w-9 h-9 rounded-lg ${colors.bg} flex items-center justify-center shrink-0 mt-0.5`}>
+                <div className={`w-9 h-9 rounded ${colors.bg} flex items-center justify-center shrink-0 mt-0.5`}>
                     <TbDoor className={`${colors.text} text-lg`} />
                 </div>
                 <div className="min-w-0 flex-1">

@@ -3,7 +3,7 @@ import { RosterCalendar } from '@/components/roster/RosterCalendar';
 
 export default function RosterPage() {
   return (
-    <div className="flex h-full flex-col pb-10">
+    <div className="flex h-full flex-col pb-6">
       <RosterCalendar />
     </div>
   );

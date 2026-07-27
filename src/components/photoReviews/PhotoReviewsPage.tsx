@@ -160,7 +160,7 @@ export function PhotoReviewsPage() {
 
 
                 {/* Content */}
-                <main className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
+                <main className="flex-1 overflow-y-auto space-y-4">
                     {/* Toolbar */}
                     <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center flex-wrap">
                         {/* Search */}

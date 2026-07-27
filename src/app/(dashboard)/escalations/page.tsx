@@ -145,7 +145,7 @@ export default function EscalationsPage() {
           placeholder="Search issues..."
           value={search}
           onChange={(event) => setSearch(event.target.value)}
-          className="h-9 w-full rounded-lg border border-gray-200 bg-gray-50 pl-9 pr-4 text-sm text-gray-700 shadow-sm transition-colors placeholder:text-gray-400 focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#0ea5e9]"
+          className="h-9 w-full rounded border border-gray-200 bg-gray-50 pl-9 pr-4 text-sm text-gray-700 shadow-sm transition-colors placeholder:text-gray-400 focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#0ea5e9]"
         />
       </div>
 
@@ -160,7 +160,7 @@ export default function EscalationsPage() {
       </div>
 
       {filteredEscalations.length === 0 && (
-        <div className="rounded-lg border border-gray-200 bg-white py-16 text-center shadow-sm">
+        <div className="rounded border border-gray-200 bg-white py-16 text-center shadow-sm">
           <p className="text-sm font-semibold text-gray-500">No escalations found</p>
           <p className="mt-1 text-xs text-gray-400">Try a different search term.</p>
         </div>
@@ -190,7 +190,7 @@ function EscalationCard({
     <button
       type="button"
       onClick={onClick}
-      className={`w-full rounded-md border border-gray-200 border-l-4 ${style.accent} bg-white p-5 text-left shadow-sm transition-all hover:border-gray-300 hover:shadow-md`}
+      className={`w-full rounded border border-gray-200 border-l-4 ${style.accent} bg-white p-5 text-left shadow-sm transition-all hover:border-gray-300 hover:shadow`}
     >
       <div className="flex min-h-[96px] flex-col gap-4 md:flex-row md:justify-between cursor-pointer">
         <div className="flex gap-4">
@@ -215,9 +215,7 @@ function EscalationCard({
             </p>
 
             <div className="flex items-center gap-2">
-              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#0ea5e9] text-[9px] font-bold text-white">
-                {issue.reporterInitials}
-              </span>
+              <img src="/avatar-placeholder.svg" alt={issue.reporter} className="h-5 w-5 rounded-full border border-gray-200 object-cover" />
               <span className="text-xs font-medium text-slate-500">
                 {issue.reporter}
               </span>
@@ -254,7 +252,7 @@ function IssueDrawer({
   const style = severityStyles[issue.severity];
 
   return (
-    <div className="fixed inset-0 z-40 flex justify-end bg-black/40">
+    <div className="modal-backdrop fixed inset-0 z-40 flex justify-end">
       <button
         type="button"
         aria-label="Close issue details"
@@ -262,7 +260,7 @@ function IssueDrawer({
         onClick={onClose}
       />
 
-      <aside className="relative z-10 flex h-full w-full max-w-[500px] flex-col bg-white shadow-2xl animate-in slide-in-from-right duration-200">
+      <aside className="relative z-10 flex h-full w-full max-w-[500px] flex-col bg-white shadow animate-in slide-in-from-right duration-200">
         <div className="flex items-start justify-between border-b border-gray-200 px-6 py-5">
           <div>
             <h2 className="text-lg font-bold text-slate-800">Issue {issue.id}</h2>
@@ -273,7 +271,7 @@ function IssueDrawer({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-md p-1 text-slate-400 transition-colors hover:bg-gray-100 hover:text-slate-600"
+            className="rounded p-1 text-slate-400 transition-colors hover:bg-gray-100 hover:text-slate-600"
             aria-label="Close"
           >
             <MdClose className="text-2xl" />
@@ -292,14 +290,14 @@ function IssueDrawer({
             <button
               type="button"
               onClick={onResolve}
-              className="h-10 rounded-xl border border-emerald-200 bg-emerald-50 text-sm font-semibold text-emerald-600 transition-colors hover:bg-emerald-100"
+              className="h-10 rounded border border-emerald-200 bg-emerald-50 text-sm font-semibold text-emerald-600 transition-colors hover:bg-emerald-100"
             >
               Resolve
             </button>
             <button
               type="button"
               onClick={onClose}
-              className="h-10 rounded-xl border border-gray-300 bg-gray-50 text-sm font-semibold text-slate-500 transition-colors hover:bg-gray-100"
+              className="h-10 rounded border border-gray-300 bg-gray-50 text-sm font-semibold text-slate-500 transition-colors hover:bg-gray-100"
             >
               Close
             </button>

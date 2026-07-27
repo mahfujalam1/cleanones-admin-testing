@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { MdOutlineClose } from 'react-icons/md';
 import { useRouter } from 'next/navigation';
 import { WorkerInfo } from './types';
@@ -40,16 +41,18 @@ export function EmployeeSidebar({ worker, onClose }: EmployeeSidebarProps) {
     { date: 'W4', checkIn: '08:00', checkOut: '16:00', hours: '40h' },
   ];
 
-  return (
+  if (typeof document === 'undefined') return null;
+
+  return createPortal(
     <>
       {/* Invisible backdrop to detect outside clicks */}
       <div 
-        className="fixed inset-0 z-40 bg-black/10 animate-in fade-in duration-300"
+        className="modal-backdrop fixed inset-0 z-40 animate-in fade-in duration-300"
         onClick={onClose}
       />
       
       {/* Sidebar Panel */}
-      <div className="fixed inset-y-0 right-0 w-full sm:w-[400px] bg-white border-l border-gray-200 shadow-2xl z-50 flex flex-col transform transition-transform animate-in slide-in-from-right duration-300">
+      <div className="fixed inset-y-0 right-0 z-50 flex h-dvh w-full flex-col border-l border-gray-200 bg-white sm:w-[400px] animate-in slide-in-from-right duration-300">
         
         {/* Header */}
         <div className="bg-[#1a2332] text-white p-6 relative flex-shrink-0">
@@ -62,9 +65,7 @@ export function EmployeeSidebar({ worker, onClose }: EmployeeSidebarProps) {
           
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className={`w-12 h-12 rounded-full ${worker.color} text-white flex items-center justify-center text-lg font-bold shadow-md`}>
-                {worker.initials}
-              </div>
+              <img src="/avatar-placeholder.svg" alt={worker.name} className="h-12 w-12 rounded-full border border-white/20 object-cover" />
               <div>
                 <h3 className="font-bold text-xl leading-tight">{worker.name}</h3>
                 <div className="text-sm text-gray-400 font-medium">{worker.role} · Shift {worker.shiftId}</div>
@@ -101,19 +102,19 @@ export function EmployeeSidebar({ worker, onClose }: EmployeeSidebarProps) {
             
             {/* Top Summary Stats */}
             <div className="grid grid-cols-3 gap-3">
-              <div className="bg-gray-50 border border-gray-100 rounded-md p-4 text-center shadow-sm">
+              <div className="bg-gray-50 border border-gray-100 rounded p-4 text-center shadow-sm">
                 <div className="text-xl font-bold text-gray-900">
                   {activeTab === 'Monthly' ? '160h' : activeTab === 'Weekly' ? '40h' : '8h'}
                 </div>
                 <div className="text-[10px] text-gray-400 uppercase font-semibold mt-1">Hours Worked</div>
               </div>
-              <div className="bg-gray-50 border border-gray-100 rounded-md p-4 text-center shadow-sm">
+              <div className="bg-gray-50 border border-gray-100 rounded p-4 text-center shadow-sm">
                 <div className="text-xl font-bold text-gray-900">
                   {activeTab === 'Monthly' ? '4' : activeTab === 'Weekly' ? '5' : '1'}
                 </div>
                 <div className="text-[10px] text-gray-400 uppercase font-semibold mt-1">Shifts</div>
               </div>
-              <div className="bg-gray-50 border border-gray-100 rounded-md p-4 text-center shadow-sm">
+              <div className="bg-gray-50 border border-gray-100 rounded p-4 text-center shadow-sm">
                 <div className="text-xl font-bold text-gray-900">
                   {activeTab === 'Monthly' ? '40.0h' : '8.0h'}
                 </div>
@@ -123,7 +124,7 @@ export function EmployeeSidebar({ worker, onClose }: EmployeeSidebarProps) {
 
             {/* Today View - Shift Details */}
             {activeTab === 'Today' && (
-              <div className="border border-gray-100 rounded-md shadow-sm flex-1 overflow-hidden flex flex-col bg-white">
+              <div className="border border-gray-100 rounded shadow-sm flex-1 overflow-hidden flex flex-col bg-white">
                 <div className="px-5 py-3 border-b border-gray-100 text-[10px] font-bold text-gray-500 uppercase tracking-wider">
                   Shift Details
                 </div>
@@ -150,7 +151,7 @@ export function EmployeeSidebar({ worker, onClose }: EmployeeSidebarProps) {
 
             {/* Weekly / Monthly View - Table */}
             {activeTab !== 'Today' && (
-              <div className="border border-gray-100 rounded-md shadow-sm flex-1 overflow-hidden flex flex-col">
+              <div className="border border-gray-100 rounded shadow-sm flex-1 overflow-hidden flex flex-col">
                 <div className="px-4 py-3 bg-white border-b border-gray-100 flex items-center justify-between text-[10px] font-bold text-gray-500 uppercase tracking-wider">
                   <div className="w-24">Date</div>
                   <div className="flex-1 text-center">Check-In</div>
@@ -174,7 +175,7 @@ export function EmployeeSidebar({ worker, onClose }: EmployeeSidebarProps) {
             {/* View Activity History Button */}
             <button 
               onClick={() => router.push(`/shift-monitoring/history/${worker.id}`)}
-              className="w-full bg-[#0ea5e9] hover:bg-[#0284c7] text-white font-semibold py-3.5 rounded-md transition-colors shadow-sm flex items-center justify-center gap-2 cursor-pointer mt-auto"
+              className="w-full bg-[#0ea5e9] hover:bg-[#0284c7] text-white font-semibold py-3.5 rounded transition-colors shadow-sm flex items-center justify-center gap-2 cursor-pointer mt-auto"
             >
               View Activity History
             </button>
@@ -182,6 +183,7 @@ export function EmployeeSidebar({ worker, onClose }: EmployeeSidebarProps) {
           </div>
         </div>
       </div>
-    </>
+    </>,
+    document.body
   );
 }
