@@ -176,7 +176,7 @@ export function PhotoReviewsPage() {
                         </div>
 
                         {/* Filter tabs */}
-                        <div className="flex gap-1 flex-wrap">
+                        <div className="flex gap-1 flex-wrap rounded border border-gray-200 bg-white p-1">
                             {FILTER_TABS.map((tab) => (
                                 <button
                                     key={tab.value}

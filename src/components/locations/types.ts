@@ -5,4 +5,6 @@ export interface Location {
     address: string;
     floors: number;
     rooms: number;
+    requiredHours: number;
+    assignedEmployees: string[];
 }

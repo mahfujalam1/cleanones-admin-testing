@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import {
   MdChevronRight,
   MdDescription,
@@ -86,12 +87,14 @@ export default function SettingsPage() {
         <h2 className="mb-3 flex h-7 items-center text-lg font-bold leading-none text-slate-950">Legal</h2>
         <div className="dashboard-card overflow-hidden">
           <LegalRow
+            href="/settings/legal/privacy-policy"
             icon={<MdSecurity />}
             iconClassName="bg-[#e0f2fe] text-[#0ea5e9]"
             title="Privacy Policy"
             subtitle="How we collect and protect your data"
           />
           <LegalRow
+            href="/settings/legal/terms-and-conditions"
             icon={<MdDescription />}
             iconClassName="bg-[#ede9fe] text-[#8b5cf6]"
             title="Terms & Conditions"
@@ -104,19 +107,21 @@ export default function SettingsPage() {
 }
 
 function LegalRow({
+  href,
   icon,
   iconClassName,
   title,
   subtitle,
 }: {
+  href: string;
   icon: React.ReactNode;
   iconClassName: string;
   title: string;
   subtitle: string;
 }) {
   return (
-    <button
-      type="button"
+    <Link
+      href={href}
       className="flex w-full items-center justify-between border-b border-gray-100 px-5 py-4 text-left last:border-b-0 transition-colors hover:bg-gray-50"
     >
       <div className="flex items-center gap-3">
@@ -131,6 +136,6 @@ function LegalRow({
         </span>
       </div>
       <MdChevronRight className="text-xl text-slate-400" />
-    </button>
+    </Link>
   );
 }

@@ -9,6 +9,8 @@ export const mockLocations: Location[] = [
         address: 'Stadhouderskade 7, Amsterdam',
         floors: 4,
         rooms: 48,
+        requiredHours: 240,
+        assignedEmployees: ['Lisa Visser', 'Emma Smit', 'Milan Dekker'],
     },
     {
         id: 'L002',
@@ -17,6 +19,8 @@ export const mockLocations: Location[] = [
         address: 'Weena 10, Rotterdam',
         floors: 3,
         rooms: 36,
+        requiredHours: 192,
+        assignedEmployees: ['Emma Smit', 'Daan van den Berg'],
     },
     {
         id: 'L003',
@@ -25,6 +29,8 @@ export const mockLocations: Location[] = [
         address: 'Heidelberglaan 100, Utrecht',
         floors: 15,
         rooms: 120,
+        requiredHours: 304,
+        assignedEmployees: ['Noah Bos', 'Sophie de Boer', 'Anna Mulder'],
     },
     {
         id: 'L004',
@@ -33,6 +39,8 @@ export const mockLocations: Location[] = [
         address: 'Aalsterweg 322, Eindhoven',
         floors: 2,
         rooms: 24,
+        requiredHours: 120,
+        assignedEmployees: ['Sophie de Boer', 'Lucas Meijer'],
     },
     {
         id: 'L005',
@@ -41,6 +49,8 @@ export const mockLocations: Location[] = [
         address: 'Hanzeplein 132, Groningen',
         floors: 5,
         rooms: 60,
+        requiredHours: 168,
+        assignedEmployees: ['Lucas Meijer', 'Milan Dekker'],
     },
     {
         id: 'L006',
@@ -49,6 +59,8 @@ export const mockLocations: Location[] = [
         address: 'Grote Markt 15, Haarlem',
         floors: 3,
         rooms: 42,
+        requiredHours: 104,
+        assignedEmployees: ['Daan van den Berg', 'Anna Mulder'],
     },
 ];
 

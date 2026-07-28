@@ -34,7 +34,7 @@ export function LocationStatistics() {
               </div>
 
               {/* Stats */}
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-4 gap-2">
                 <div className="text-center">
                   <div className="text-lg font-bold text-gray-800">{loc.workers}</div>
                   <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-0.5">Workers</div>
@@ -46,6 +46,10 @@ export function LocationStatistics() {
                 <div className="text-center border-l border-gray-100">
                   <div className="text-lg font-bold text-gray-800">{loc.shifts}</div>
                   <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-0.5">Shifts</div>
+                </div>
+                <div className="text-center border-l border-gray-100">
+                  <div className="text-lg font-bold text-gray-800">{loc.requiredHours ?? Math.round(loc.hours * 1.08)}h</div>
+                  <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-0.5">Required</div>
                 </div>
               </div>
             </div>

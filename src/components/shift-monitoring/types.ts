@@ -24,5 +24,6 @@ export interface LocationInfo {
   name: string;
   workers: number;
   hours: number;
+  requiredHours?: number;
   shifts: number;
 }

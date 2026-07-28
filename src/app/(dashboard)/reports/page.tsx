@@ -40,17 +40,16 @@ export default function ReportsPage() {
   return (
     <div className="space-y-6 pb-10">
       <div className="flex items-center justify-between">
-        <div className="flex rounded bg-gray-100 p-1 text-xs font-medium text-slate-500">
+        <div className="flex rounded border border-gray-200 bg-white p-1">
           {ranges.map((range) => (
             <button
               key={range}
               type="button"
               onClick={() => setActiveRange(range)}
-              className={`h-8 min-w-14 rounded px-3 transition-all ${
-                activeRange === range
-                  ? "bg-white text-slate-900 shadow"
-                  : "hover:text-slate-800"
-              }`}
+              className={`text-xs px-3 py-1.5 rounded font-medium transition-colors ${activeRange === range
+                ? "bg-cyan-500 text-white"
+                : "text-gray-600 hover:bg-gray-100"
+                }`}
             >
               {range}
             </button>

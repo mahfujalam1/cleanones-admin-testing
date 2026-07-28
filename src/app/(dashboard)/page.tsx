@@ -27,11 +27,35 @@ const sites: { client: string; location: string; workers: Worker[] }[] = [
   ]},
 ];
 
+const replacementCandidates: Worker[] = [
+  { name: "Milan Dekker", initials: "MD", phone: "+31 6 30 21 44 80", shift: "Available until 18:00", status: "On time" },
+  { name: "Anna Mulder", initials: "AM", phone: "+31 6 72 18 64 20", shift: "Available now", status: "On time" },
+  { name: "Daan van den Berg", initials: "DB", phone: "+31 6 11 09 54 66", shift: "Available from 10:00", status: "On time" },
+];
+
 export default function DashboardPage() {
   const [filter, setFilter] = React.useState<"All" | Worker["status"]>("All");
   const [actionsOpen, setActionsOpen] = React.useState(false);
   const [selected, setSelected] = React.useState<Worker | null>(null);
-  const urgent = sites.flatMap(s => s.workers).filter(w => (w.late ?? 0) >= 30);
+  const [replacementMode, setReplacementMode] = React.useState(false);
+  const [selectedReplacement, setSelectedReplacement] = React.useState<Worker | null>(null);
+  const [operationalSites, setOperationalSites] = React.useState(sites);
+  const [notice, setNotice] = React.useState("");
+  const urgent = operationalSites.flatMap(s => s.workers).filter(w => (w.late ?? 0) >= 30);
+
+  const assignReplacement = () => {
+    if (!selected || !selectedReplacement) return;
+    setOperationalSites((current) => current.map((site) => ({
+      ...site,
+      workers: site.workers.map((worker) => worker.name === selected.name
+        ? { ...selectedReplacement, shift: worker.shift, status: "On time", reason: `Replacement for ${selected.name}`, late: undefined }
+        : worker),
+    })));
+    setNotice(`${selectedReplacement.name} assigned to ${selected.name}'s shift. Both employees have been notified.`);
+    setSelected(null);
+    setReplacementMode(false);
+    setSelectedReplacement(null);
+  };
 
   return (
     <div className="space-y-6 pb-10">
@@ -77,7 +101,7 @@ export default function DashboardPage() {
           <div className="flex rounded bg-slate-100 p-1">{(["All", "On time", "Late", "No show"] as const).map(f => <button key={f} onClick={() => setFilter(f)} className={`rounded px-3 py-1.5 text-xs font-semibold ${filter === f ? "bg-white text-sky-600 shadow-sm" : "text-slate-500"}`}>{f}</button>)}</div>
         </div>
         <div className="divide-y">
-          {sites.map(site => {
+          {operationalSites.map(site => {
             const workers = site.workers.filter(w => filter === "All" || w.status === filter);
             if (!workers.length) return null;
             return <div key={site.location} className="p-5">
@@ -98,10 +122,13 @@ export default function DashboardPage() {
         <Link href="/escalations" className="dashboard-card flex items-center gap-4 p-5 hover:border-amber-300"><MdWarningAmber className="text-2xl text-amber-500" /><div><p className="font-bold">2 open escalations</p><p className="text-xs text-slate-500">One requires a response today</p></div><MdArrowForward className="ml-auto" /></Link>
       </div>
 
-      {selected && <div className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4" onMouseDown={() => setSelected(null)}><div onMouseDown={e => e.stopPropagation()} className="w-full max-w-md rounded-md bg-white p-6 shadow">
+      {notice && <div className="fixed bottom-5 right-5 z-40 max-w-sm rounded border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs font-medium text-emerald-800"><div className="flex gap-3"><MdCheckCircle className="shrink-0 text-lg" /><span>{notice}</span><button onClick={() => setNotice("")} className="ml-auto text-emerald-700"><MdClose /></button></div></div>}
+
+      {selected && <div className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4" onMouseDown={() => setSelected(null)}><div onMouseDown={e => e.stopPropagation()} className="w-full max-w-md rounded-md border border-slate-200 bg-white p-5">
         <div className="flex justify-between"><div><p className="text-xs font-bold uppercase tracking-wider text-red-500">Attendance alert</p><h2 className="mt-1 text-xl font-bold">{selected.name}</h2></div><button onClick={() => setSelected(null)}><MdClose /></button></div>
-        <div className="my-5 rounded bg-red-50 p-4"><p className="text-2xl font-bold text-red-700">{selected.late} minutes late</p><p className="mt-1 text-sm text-red-600">Reason: {selected.reason}</p></div>
-        <a href={`tel:${selected.phone.replace(/\s/g, "")}`} className="flex w-full items-center justify-center gap-2 rounded bg-emerald-600 py-3 font-bold text-white hover:bg-emerald-700"><MdCall /> Call {selected.phone}</a>
+        {!replacementMode ? <><div className="my-4 rounded border border-red-100 bg-red-50 p-4"><p className="text-xl font-bold text-red-700">{selected.late} minutes late</p><p className="mt-1 text-xs text-red-600">Reason: {selected.reason}</p></div>
+        <div className="grid gap-2 sm:grid-cols-2"><a href={`tel:${selected.phone.replace(/\s/g, "")}`} className="flex h-10 items-center justify-center gap-2 rounded border border-emerald-600 text-xs font-bold text-emerald-700 hover:bg-emerald-50"><MdCall /> Call employee</a><button onClick={() => setReplacementMode(true)} className="h-10 rounded bg-sky-500 px-3 text-xs font-bold text-white hover:bg-sky-600">Mark sick & replace</button></div></> :
+        <><div className="my-4"><p className="text-sm font-semibold text-slate-800">Choose an available replacement</p><p className="mt-1 text-xs text-slate-500">The original shift, location and working hours will be reassigned.</p></div><div className="space-y-2">{replacementCandidates.map((candidate) => <button key={candidate.name} onClick={() => setSelectedReplacement(candidate)} className={`flex w-full items-center gap-3 rounded border p-3 text-left ${selectedReplacement?.name === candidate.name ? "border-sky-400 bg-sky-50" : "border-slate-200"}`}><img src="/avatar-placeholder.svg" alt={candidate.name} className="h-9 w-9 rounded-full border border-slate-200 object-cover" /><span className="flex-1"><b className="block text-xs text-slate-800">{candidate.name}</b><small className="text-[10px] text-slate-500">{candidate.shift}</small></span>{selectedReplacement?.name === candidate.name && <MdCheckCircle className="text-sky-500" />}</button>)}</div><div className="mt-4 flex justify-end gap-2"><button onClick={() => setReplacementMode(false)} className="h-9 rounded border border-slate-200 px-3 text-xs font-semibold text-slate-600">Back</button><button disabled={!selectedReplacement} onClick={assignReplacement} className="h-9 rounded bg-sky-500 px-4 text-xs font-semibold text-white disabled:bg-slate-200">Confirm replacement</button></div></>}
       </div></div>}
     </div>
   );

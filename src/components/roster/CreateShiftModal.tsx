@@ -51,6 +51,13 @@ export function CreateShiftModal({ onClose, onSave }: CreateShiftModalProps) {
   });
   const [startTime, setStartTime] = useState('08:00');
   const [endTime, setEndTime] = useState('16:00');
+  const [repeat, setRepeat] = useState<'none' | 'daily' | 'weekly'>('none');
+  const [repeatUntil, setRepeatUntil] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 28);
+    return d.toISOString().split('T')[0];
+  });
+  const [weekdays, setWeekdays] = useState<number[]>([1, 2, 3, 4, 5]);
   const [notes, setNotes] = useState('');
 
   // Step 2 state
@@ -86,14 +93,24 @@ export function CreateShiftModal({ onClose, onSave }: CreateShiftModalProps) {
   };
 
   const handleSave = () => {
-    const newShifts = selectedWorkers.map((w, i) => ({
+    const dates = [date];
+    if (repeat !== 'none') {
+      const cursor = new Date(`${date}T12:00:00`);
+      const end = new Date(`${repeatUntil}T12:00:00`);
+      dates.length = 0;
+      while (cursor <= end && dates.length < 90) {
+        if (repeat === 'daily' || weekdays.includes(cursor.getDay())) dates.push(cursor.toISOString().split('T')[0]);
+        cursor.setDate(cursor.getDate() + 1);
+      }
+    }
+    const newShifts = dates.flatMap((shiftDate) => selectedWorkers.map((w, i) => ({
       workerName: w.name,
       location: location || 'Unassigned Location',
-      date,
+      date: shiftDate,
       startTime,
       endTime,
       theme: THEME_OPTIONS[i % THEME_OPTIONS.length],
-    }));
+    })));
     onSave(newShifts);
   };
 
@@ -192,6 +209,22 @@ export function CreateShiftModal({ onClose, onSave }: CreateShiftModalProps) {
                     className="w-full border border-gray-300 rounded px-3 py-2.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#0ea5e9]/30 focus:border-[#0ea5e9]"
                   />
                 </div>
+              </div>
+
+              <div className="rounded border border-gray-200 bg-gray-50 p-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+                  <div className="flex-1">
+                    <label className="mb-1.5 block text-xs font-semibold text-gray-700">Repeat shift</label>
+                    <select value={repeat} onChange={(event) => setRepeat(event.target.value as typeof repeat)} className="h-9 w-full rounded border border-gray-300 bg-white px-3 text-sm text-gray-700 outline-none focus:border-sky-400">
+                      <option value="none">Does not repeat</option>
+                      <option value="daily">Every day</option>
+                      <option value="weekly">Standard working week</option>
+                    </select>
+                  </div>
+                  {repeat !== 'none' && <div className="flex-1"><label className="mb-1.5 block text-xs font-semibold text-gray-700">Repeat until</label><input type="date" min={date} value={repeatUntil} onChange={(event) => setRepeatUntil(event.target.value)} className="h-9 w-full rounded border border-gray-300 bg-white px-3 text-sm text-gray-700 outline-none focus:border-sky-400" /></div>}
+                </div>
+                {repeat === 'weekly' && <div className="mt-3"><p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-gray-400">Working days</p><div className="flex flex-wrap gap-1.5">{['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((label, day) => <button type="button" key={label} onClick={() => setWeekdays((items) => items.includes(day) ? items.filter((item) => item !== day) : [...items, day])} className={`h-8 rounded border px-2.5 text-xs font-semibold ${weekdays.includes(day) ? 'border-sky-500 bg-sky-50 text-sky-700' : 'border-gray-200 bg-white text-gray-500'}`}>{label}</button>)}</div></div>}
+                {repeat !== 'none' && <p className="mt-3 text-[10px] text-gray-500">Creates the full recurring series. You can still open individual occurrences from the roster.</p>}
               </div>
 
               {/* Notes */}
@@ -337,7 +370,7 @@ export function CreateShiftModal({ onClose, onSave }: CreateShiftModalProps) {
                 disabled={selectedWorkerIds.length === 0}
                 className={`px-5 py-2 text-sm font-semibold rounded transition-all shadow-sm cursor-pointer ${selectedWorkerIds.length > 0 ? 'bg-[#0ea5e9] hover:bg-[#0284c7] text-white' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
               >
-                Save Shift ({selectedWorkerIds.length} assigned)
+                Save {repeat === 'none' ? 'Shift' : 'Shift Series'} ({selectedWorkerIds.length} assigned)
               </button>
             </>
           )}

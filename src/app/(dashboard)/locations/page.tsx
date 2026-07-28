@@ -140,7 +140,7 @@ function LocationCard({ location, onClick, isSelected }: LocationCardProps) {
             <div className="border-t border-gray-100 mx-4" />
 
             {/* Stats */}
-            <div className="grid grid-cols-2 divide-x divide-gray-100">
+            <div className="grid grid-cols-3 divide-x divide-gray-100">
                 <div className="px-4 py-3 text-center">
                     <p className="text-lg font-bold text-gray-900">{location.floors}</p>
                     <p className="text-[11px] text-gray-400">Floors</p>
@@ -148,6 +148,10 @@ function LocationCard({ location, onClick, isSelected }: LocationCardProps) {
                 <div className="px-4 py-3 text-center">
                     <p className="text-lg font-bold text-gray-900">{location.rooms}</p>
                     <p className="text-[11px] text-gray-400">Rooms</p>
+                </div>
+                <div className="px-2 py-3 text-center">
+                    <p className="text-lg font-bold text-gray-900">{location.requiredHours}h</p>
+                    <p className="text-[11px] text-gray-400">Required</p>
                 </div>
             </div>
         </div>

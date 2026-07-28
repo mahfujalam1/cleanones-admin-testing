@@ -8,7 +8,7 @@ import { useAppSelector, useAppDispatch } from '@/store/hooks';
 import { toggleSidebar, closeMobileSidebar, setSignOutModalOpen } from '@/store/slices/ui.slice';
 import {
   MdDashboard, MdCalendarToday, MdAccessTime, MdPeople,
-  MdBusinessCenter, MdLocationOn, MdMeetingRoom, MdAssignment,
+  MdBusinessCenter, MdLocationOn,
   MdPhotoCamera, MdWarning, MdAssessment, MdNotifications, MdSettings,
   MdChevronLeft, MdChevronRight, MdLogout, MdChatBubbleOutline
 } from 'react-icons/md';
@@ -21,8 +21,6 @@ const mainLinks = [
   { name: 'Clients', href: '/clients', icon: MdBusinessCenter },
   { name: 'Chat', href: '/chat', icon: MdChatBubbleOutline },
   { name: 'Locations', href: '/locations', icon: MdLocationOn },
-  { name: 'Rooms', href: '/rooms', icon: MdMeetingRoom },
-  { name: 'Cleaning Plans', href: '/cleaning-plans', icon: MdAssignment },
 ];
 
 const qcLinks = [

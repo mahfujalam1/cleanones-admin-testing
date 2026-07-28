@@ -11,8 +11,13 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "CleanOnes Dashboard",
+  title: "CleanOnes - Next-level cleaning",
   description: "Cleaning workforce management on one platform",
+  icons: {
+    icon: "/icon.png",
+    shortcut: "/icon.png",
+    apple: "/icon.png",
+  },
 };
 
 export default function RootLayout({

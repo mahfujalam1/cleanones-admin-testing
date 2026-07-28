@@ -17,6 +17,9 @@ export function CreateLocationModal({ onClose, onAdd }: CreateLocationModalProps
     const [address, setAddress] = useState('');
     const [floors, setFloors] = useState('');
     const [rooms, setRooms] = useState('');
+    const [requiredHours, setRequiredHours] = useState('');
+    const [assignedEmployees, setAssignedEmployees] = useState<string[]>([]);
+    const employees = ['Lisa Visser', 'Emma Smit', 'Noah Bos', 'Sophie de Boer', 'Lucas Meijer', 'Anna Mulder', 'Daan van den Berg', 'Milan Dekker'];
 
     useEffect(() => {
         const handleEsc = (e: KeyboardEvent) => {
@@ -35,6 +38,8 @@ export function CreateLocationModal({ onClose, onAdd }: CreateLocationModalProps
             address,
             floors: parseInt(floors),
             rooms: parseInt(rooms),
+            requiredHours: parseInt(requiredHours) || 0,
+            assignedEmployees,
         });
     };
 
@@ -133,6 +138,16 @@ export function CreateLocationModal({ onClose, onAdd }: CreateLocationModalProps
                                 onChange={(e) => setRooms(e.target.value)}
                                 className="w-full h-10 rounded border border-gray-300 bg-white px-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#0ea5e9] focus:border-[#0ea5e9] transition-colors"
                             />
+                        </div>
+                    </div>
+                    <div>
+                        <label className="text-xs font-semibold text-gray-700 mb-1.5 block">Required working hours / month *</label>
+                        <input type="number" required min={1} placeholder="e.g. 240" value={requiredHours} onChange={(e) => setRequiredHours(e.target.value)} className="w-full h-10 rounded border border-gray-300 bg-white px-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-[#0ea5e9]" />
+                    </div>
+                    <div>
+                        <label className="text-xs font-semibold text-gray-700 mb-1.5 block">Assigned employees</label>
+                        <div className="grid max-h-32 grid-cols-2 gap-1.5 overflow-y-auto rounded border border-gray-200 bg-gray-50 p-2">
+                            {employees.map((employee) => <label key={employee} className="flex cursor-pointer items-center gap-2 rounded bg-white px-2 py-1.5 text-[11px] text-gray-700"><input type="checkbox" checked={assignedEmployees.includes(employee)} onChange={() => setAssignedEmployees((items) => items.includes(employee) ? items.filter((item) => item !== employee) : [...items, employee])} className="accent-sky-500" />{employee}</label>)}
                         </div>
                     </div>
                 </div>

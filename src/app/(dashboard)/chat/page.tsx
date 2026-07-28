@@ -14,6 +14,7 @@ import {
 
 type Client = {
   id: string;
+  kind: "client" | "employee";
   name: string;
   company: string;
   initials: string;
@@ -36,7 +37,7 @@ type Message = {
 
 const clients: Client[] = [
   {
-    id: "nh",
+    id: "nh", kind: "client",
     name: "Sophie van Dijk",
     company: "NH Hotels",
     initials: "SV",
@@ -50,7 +51,7 @@ const clients: Client[] = [
     time: "09:08",
   },
   {
-    id: "hilton",
+    id: "hilton", kind: "client",
     name: "Mark de Jong",
     company: "Hilton Rotterdam",
     initials: "MJ",
@@ -64,7 +65,7 @@ const clients: Client[] = [
     time: "Yesterday",
   },
   {
-    id: "umc",
+    id: "umc", kind: "client",
     name: "Eva Jansen",
     company: "UMC Utrecht",
     initials: "EJ",
@@ -78,7 +79,7 @@ const clients: Client[] = [
     time: "Yesterday",
   },
   {
-    id: "valk",
+    id: "valk", kind: "client",
     name: "Thomas Bakker",
     company: "Van der Valk",
     initials: "TB",
@@ -92,7 +93,7 @@ const clients: Client[] = [
     time: "Mon",
   },
   {
-    id: "office",
+    id: "office", kind: "client",
     name: "Nora Visser",
     company: "Keizersgracht Offices",
     initials: "NV",
@@ -105,6 +106,9 @@ const clients: Client[] = [
     lastMessage: "Could you share the monthly report?",
     time: "Fri",
   },
+  { id: "employee-lisa", kind: "employee", name: "Lisa Visser", company: "Employee · Team Alpha", initials: "LV", color: "bg-sky-600", email: "l.visser@cleanones.nl", phone: "+31 20 123 4567", location: "NH Hotel Amsterdam", unread: 1, online: true, lastMessage: "The meeting rooms are complete.", time: "09:22" },
+  { id: "employee-emma", kind: "employee", name: "Emma Smit", company: "Employee · Team Alpha", initials: "ES", color: "bg-indigo-600", email: "e.smit@cleanones.nl", phone: "+31 20 222 4567", location: "Hilton Rotterdam", unread: 0, online: true, lastMessage: "I may need help with the last floor.", time: "08:54" },
+  { id: "employee-noah", kind: "employee", name: "Noah Bos", company: "Freelancer · Medical sites", initials: "NB", color: "bg-emerald-600", email: "n.bos@cleanones.nl", phone: "+31 20 333 4567", location: "UMC Utrecht", unread: 2, online: false, lastMessage: "Can you confirm my replacement?", time: "Yesterday" },
 ];
 
 const initialMessages: Record<string, Message[]> = {
@@ -127,11 +131,18 @@ const initialMessages: Record<string, Message[]> = {
   office: [
     { id: 1, sender: "client", text: "Could you share the monthly report?", time: "Fri" },
   ],
+  "employee-lisa": [
+    { id: 1, sender: "client", text: "The meeting rooms are complete. We are moving to the lobby.", time: "09:22" },
+    { id: 2, sender: "admin", text: "Thanks Lisa. Please upload the final photos when ready.", time: "09:24" },
+  ],
+  "employee-emma": [{ id: 1, sender: "client", text: "I may need help with the last floor.", time: "08:54" }],
+  "employee-noah": [{ id: 1, sender: "client", text: "Can you confirm my replacement for today's shift?", time: "Yesterday" }],
 };
 
 export default function AdminChatPage() {
   const [selectedId, setSelectedId] = useState(clients[0].id);
   const [query, setQuery] = useState("");
+  const [contactType, setContactType] = useState<"client" | "employee">("client");
   const [messageText, setMessageText] = useState("");
   const [messages, setMessages] = useState(initialMessages);
 
@@ -139,9 +150,10 @@ export default function AdminChatPage() {
   const filteredClients = useMemo(
     () =>
       clients.filter((client) =>
+        client.kind === contactType &&
         `${client.name} ${client.company}`.toLowerCase().includes(query.toLowerCase())
       ),
-    [query]
+    [query, contactType]
   );
 
   const sendMessage = () => {
@@ -161,8 +173,8 @@ export default function AdminChatPage() {
     <div className="flex h-[calc(100dvh-6.5rem)] min-h-[560px] flex-col gap-3">
       <header className="flex shrink-0 flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-lg font-semibold tracking-tight text-slate-800">Client conversations</h1>
-          <p className="text-xs text-slate-500">Support clients and coordinate service requests.</p>
+          <h1 className="text-lg font-semibold tracking-tight text-slate-800">Conversations</h1>
+          <p className="text-xs text-slate-500">Support clients and coordinate directly with employees.</p>
         </div>
         <div className="text-xs text-slate-500">
           <span className="font-semibold text-slate-700">{clients.reduce((total, client) => total + client.unread, 0)}</span> unread messages
@@ -172,12 +184,22 @@ export default function AdminChatPage() {
       <div className="grid min-h-0 flex-1 overflow-hidden rounded border border-gray-200 bg-white lg:grid-cols-[270px_minmax(0,1fr)] xl:grid-cols-[270px_minmax(0,1fr)_250px]">
         <aside className="flex min-h-0 flex-col border-b border-gray-200 lg:border-b-0 lg:border-r">
           <div className="border-b border-gray-200 p-3">
+            <div className="mb-2 grid grid-cols-2 rounded border border-slate-200 bg-slate-50 p-0.5">
+              {(["client", "employee"] as const).map((type) => (
+                <button key={type} onClick={() => {
+                  setContactType(type);
+                  setSelectedId(clients.find((item) => item.kind === type)?.id ?? selectedId);
+                }} className={`h-7 rounded text-[10px] font-semibold capitalize ${contactType === type ? "bg-white text-sky-600" : "text-slate-500"}`}>
+                  {type}s
+                </button>
+              ))}
+            </div>
             <div className="relative">
               <MdSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-base text-slate-400" />
               <input
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search clients..."
+                placeholder={`Search ${contactType}s...`}
                 className="h-9 w-full rounded border border-gray-200 bg-gray-50 pl-9 pr-3 text-xs text-slate-700 outline-none transition-colors placeholder:text-slate-400 focus:border-primary focus:bg-white"
               />
             </div>

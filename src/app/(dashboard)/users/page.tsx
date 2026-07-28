@@ -86,8 +86,9 @@ export default function WorkersPage() {
           />
         </div>
 
+        <div className="flex flex-wrap items-center gap-2 ">
         {/* Worker type filters */}
-        <div className="flex bg-gray-100 p-1 rounded text-xs font-medium">
+          <div className="flex rounded text-xs font-medium border border-gray-200 bg-white p-1">
           {WORKER_FILTERS.map((f) => (
             <button
               key={f}
@@ -103,7 +104,7 @@ export default function WorkersPage() {
         </div>
 
         {/* Status filters */}
-        <div className="flex bg-gray-100 p-1 rounded text-xs font-medium">
+          <div className="flex rounded text-xs font-medium border border-gray-200 bg-white p-1">
           {STATUS_FILTERS.map((f) => (
             <button
               key={f}
@@ -116,6 +117,7 @@ export default function WorkersPage() {
               {f}
             </button>
           ))}
+        </div>
         </div>
 
         {/* Spacer + Add */}

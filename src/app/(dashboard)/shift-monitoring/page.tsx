@@ -1,134 +1,60 @@
 "use client";
 
-import React, { useState } from 'react';
-import { MdSearch, MdLocationOn, MdAccessTime } from 'react-icons/md';
-import { WORKERS } from '@/components/shift-monitoring/data';
-import { EmployeeSidebar } from '@/components/shift-monitoring/EmployeeSidebar';
-import { WorkerInfo } from '@/components/shift-monitoring/types';
+import React, { useMemo, useState } from "react";
+import { MdAccessTime, MdExpandMore, MdLocationOn, MdSearch } from "react-icons/md";
+import { EmployeeSidebar } from "@/components/shift-monitoring/EmployeeSidebar";
+import { WORKERS } from "@/components/shift-monitoring/data";
+import { WorkerInfo } from "@/components/shift-monitoring/types";
+
+const schedule: Record<number, { start: string; end: string; progress: number; requiredHours: number }> = {
+  1: { start: "08:00", end: "16:00", progress: 64, requiredHours: 240 },
+  2: { start: "08:00", end: "16:00", progress: 61, requiredHours: 192 },
+  3: { start: "07:30", end: "15:30", progress: 0, requiredHours: 304 },
+  4: { start: "07:00", end: "15:00", progress: 76, requiredHours: 120 },
+  5: { start: "06:00", end: "14:00", progress: 89, requiredHours: 168 },
+  6: { start: "08:00", end: "16:00", progress: 0, requiredHours: 136 },
+  7: { start: "08:00", end: "16:00", progress: 58, requiredHours: 104 },
+  8: { start: "09:30", end: "17:30", progress: 42, requiredHours: 216 },
+};
 
 export default function LiveStatusPage() {
   const [selectedWorker, setSelectedWorker] = useState<WorkerInfo | null>(null);
-  const [statusFilter, setStatusFilter] = useState<'All' | 'On Time' | 'Late' | 'Missing'>('All');
-  const [search, setSearch] = useState('');
+  const [status, setStatus] = useState<"All" | WorkerInfo["status"]>("All");
+  const [query, setQuery] = useState("");
+  const [closed, setClosed] = useState<string[]>([]);
+  const groups = useMemo(() => {
+    const filtered = WORKERS.filter((worker) => (status === "All" || worker.status === status) && `${worker.name} ${worker.location}`.toLowerCase().includes(query.toLowerCase()));
+    return Object.entries(filtered.reduce<Record<string, WorkerInfo[]>>((result, worker) => {
+      (result[worker.location] ??= []).push(worker);
+      return result;
+    }, {}));
+  }, [query, status]);
 
-  const filteredWorkers = WORKERS.filter(w => {
-    if (statusFilter !== 'All' && w.status !== statusFilter) return false;
-    if (search && !w.name.toLowerCase().includes(search.toLowerCase())) return false;
-    return true;
-  });
-
-  const onTimeCount = WORKERS.filter(w => w.status === 'On Time').length;
-  const lateCount = WORKERS.filter(w => w.status === 'Late').length;
-  const missingCount = WORKERS.filter(w => w.status === 'Missing').length;
-
-  return (
-    <div className="relative flex h-full w-full">
-      <div className="flex-1 transition-all duration-300 w-full flex flex-col h-full">
-
-        {/* Filters */}
-        <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4 mb-6 w-full">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full xl:w-auto">
-            <div className="relative">
-              <MdSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg" />
-              <input
-                type="text"
-                placeholder="Search employee..."
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                className="pl-9 pr-4 py-2 border border-gray-200 rounded text-sm w-64 focus:outline-none shadow-sm bg-gray-50"
-              />
-            </div>
-            <div className="flex bg-gray-100 p-1 rounded">
-              {(['All', 'On Time', 'Late', 'Missing'] as const).map(filter => (
-                <button
-                  key={filter}
-                  onClick={() => setStatusFilter(filter)}
-                  className={`px-4 py-1.5 rounded text-xs font-semibold cursor-pointer transition-colors ${statusFilter === filter
-                      ? 'bg-[#0ea5e9] text-white shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900'
-                    }`}
-                >
-                  {filter}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-[#ecfdf5] border border-[#a7f3d0] rounded text-xs font-bold text-[#10b981]">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#10b981]"></span> {onTimeCount} On Time
-            </div>
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-[#fffbeb] border border-[#fde68a] rounded text-xs font-bold text-[#f59e0b]">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#f59e0b]"></span> {lateCount} Late
-            </div>
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-[#fef2f2] border border-[#fecaca] rounded text-xs font-bold text-[#ef4444]">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#ef4444]"></span> {missingCount} Missing
-            </div>
-          </div>
-        </div>
-
-        {/* Table */}
-        <div className="dashboard-card flex flex-1 flex-col overflow-hidden">
-          <div className="overflow-x-auto w-full">
-            <table className="w-full text-left border-collapse min-w-[1000px]">
-            <thead>
-              <tr className="border-b border-gray-100 text-[10px] font-semibold text-gray-400 uppercase tracking-wider bg-white">
-                <th className="px-6 py-4">Employee Name</th>
-                <th className="px-6 py-4">Location</th>
-                <th className="px-6 py-4">Check-In Time</th>
-                <th className="px-6 py-4 text-right">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 text-sm bg-white">
-              {filteredWorkers.map((worker) => (
-                <tr
-                  key={worker.id}
-                  className={`hover:bg-gray-50 transition-colors cursor-pointer ${selectedWorker?.id === worker.id ? 'bg-[#f0fdfa]' : ''}`}
-                  onClick={() => setSelectedWorker(worker)}
-                >
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <img src="/avatar-placeholder.svg" alt={worker.name} className="h-9 w-9 rounded-full border border-gray-200 object-cover" />
-                      <div>
-                        <div className="font-semibold text-gray-900">{worker.name}</div>
-                        <div className="text-[11px] text-gray-500">{worker.role} · Shift {worker.shiftId}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-gray-600 flex items-center gap-1.5 mt-2.5">
-                    <MdLocationOn className="text-gray-400" /> {worker.location}
-                  </td>
-                  <td className="px-6 py-4 text-gray-600">
-                    <div className="flex items-center gap-1.5">
-                      <MdAccessTime className="text-gray-400" /> {worker.checkIn}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <div className="flex items-center justify-end gap-6">
-                      <div className="flex items-center gap-1.5 font-semibold text-xs">
-                        <span className={`w-2 h-2 rounded-full ${worker.status === 'On Time' ? 'bg-[#10b981]' :
-                            worker.status === 'Late' ? 'bg-[#f59e0b]' :
-                              'bg-[#ef4444]'
-                          }`}></span>
-                        <span className={worker.statusColor}>{worker.status}</span>
-                      </div>
-                      <button className="text-[#0ea5e9] text-xs font-medium hover:underline cursor-pointer">View &gt;</button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          </div>
-        </div>
-      </div>
-
-      {/* Slide-over Panel using EmployeeSidebar component */}
-      {selectedWorker && (
-        <EmployeeSidebar
-          worker={selectedWorker}
-          onClose={() => setSelectedWorker(null)}
-        />
-      )}
+  return <div className="space-y-4">
+    <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+      <div><h1 className="text-lg font-semibold text-slate-800">Live shifts by location</h1><p className="text-xs text-slate-500">Locations first, with assigned people, end times and live progress.</p></div>
+      <div className="flex flex-col gap-2 sm:flex-row"><label className="relative"><MdSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search location or employee..." className="h-9 w-full rounded border border-slate-200 bg-white pl-9 pr-3 text-xs outline-none focus:border-sky-400 sm:w-64" /></label><div className="flex rounded border border-slate-200 bg-white p-1">{(["All", "On Time", "Late", "Missing"] as const).map((item) => <button key={item} onClick={() => setStatus(item)} className={`rounded px-3 py-1 text-[10px] font-semibold ${status === item ? "bg-sky-500 text-white" : "text-slate-500"}`}>{item}</button>)}</div></div>
     </div>
-  );
+    <div className="space-y-3">{groups.map(([location, employees]) => {
+      const collapsed = closed.includes(location);
+      const average = Math.round(employees.reduce((sum, worker) => sum + schedule[worker.id].progress, 0) / employees.length);
+      const required = schedule[employees[0].id].requiredHours;
+      return <section key={location} className="overflow-hidden rounded border border-slate-200 bg-white">
+        <button onClick={() => setClosed((items) => items.includes(location) ? items.filter((item) => item !== location) : [...items, location])} className="flex w-full flex-wrap items-center gap-3 border-b border-slate-100 px-4 py-3 text-left">
+          <span className="flex h-8 w-8 items-center justify-center rounded bg-sky-50 text-sky-600"><MdLocationOn /></span><span className="min-w-48 flex-1"><b className="block text-sm text-slate-800">{location}</b><small className="text-[10px] text-slate-500">{employees.length} assigned today · {required} required hours/month</small></span>
+          <span className="w-36"><span className="flex justify-between text-[10px] text-slate-500"><span>Progress</span><b>{average}%</b></span><span className="mt-1 block h-1.5 overflow-hidden rounded bg-slate-100"><span className="block h-full rounded bg-sky-500" style={{ width: `${average}%` }} /></span></span><MdExpandMore className={`text-lg text-slate-400 ${collapsed ? "" : "rotate-180"}`} />
+        </button>
+        {!collapsed && <div className="divide-y divide-slate-100">{employees.map((worker) => {
+          const shift = schedule[worker.id];
+          return <button key={worker.id} onClick={() => setSelectedWorker(worker)} className="grid w-full gap-3 px-4 py-3 text-left hover:bg-slate-50 md:grid-cols-[minmax(210px,1.3fr)_150px_minmax(180px,1fr)_100px] md:items-center">
+            <span className="flex items-center gap-3"><img src="/avatar-placeholder.svg" alt={worker.name} className="h-8 w-8 rounded-full border border-slate-200 object-cover" /><span><b className="block text-xs text-slate-800">{worker.name}</b><small className="text-[10px] text-slate-500">{worker.role} · {worker.shiftId}</small></span></span>
+            <span className="flex items-center gap-1.5 text-[11px] text-slate-600"><MdAccessTime className="text-slate-400" /> {shift.start}–{shift.end}</span>
+            <span><span className="flex justify-between text-[10px] text-slate-500"><span>{shift.progress ? `${Math.round(shift.progress * .08 * 10) / 10}h worked` : "Not started"}</span><b>{shift.progress}%</b></span><span className="mt-1 block h-1.5 overflow-hidden rounded bg-slate-100"><span className={`block h-full rounded ${worker.status === "Missing" ? "bg-red-400" : worker.status === "Late" ? "bg-amber-400" : "bg-emerald-500"}`} style={{ width: `${shift.progress}%` }} /></span></span>
+            <span className={`justify-self-start rounded px-2 py-1 text-[10px] font-semibold md:justify-self-end ${worker.status === "On Time" ? "bg-emerald-50 text-emerald-700" : worker.status === "Late" ? "bg-amber-50 text-amber-700" : "bg-red-50 text-red-700"}`}>{worker.status}</span>
+          </button>;
+        })}</div>}
+      </section>;
+    })}</div>
+    {selectedWorker && <EmployeeSidebar worker={selectedWorker} onClose={() => setSelectedWorker(null)} />}
+  </div>;
 }
