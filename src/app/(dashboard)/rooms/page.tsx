@@ -5,7 +5,7 @@ import { mockRooms } from '@/components/rooms/MockData';
 import { RoomDetailSidebar } from '@/components/rooms/RoomDetailsSidebar';
 import { Room, RoomType } from '@/components/rooms/types';
 import React, { useState, useMemo } from 'react';
-import { MdOutlineLocationOn, MdSearch } from 'react-icons/md';
+import { MdSearch } from 'react-icons/md';
 import { TbDoor, TbClock, TbCamera, TbChecklist } from 'react-icons/tb';
 
 const typeColors: Record<RoomType, { text: string; bg: string }> = {

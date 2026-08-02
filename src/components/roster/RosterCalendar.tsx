@@ -10,7 +10,7 @@ import { CreateShiftModal } from './CreateShiftModal';
 import { MOCK_SHIFTS, Shift, ShiftTheme } from './types';
 
 export function RosterCalendar() {
-  const [view, setView] = useState<'Day' | 'Week' | 'Month'>('Week');
+  const [view, setView] = useState<'Day' | 'Week' | 'Month'>('Day');
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);

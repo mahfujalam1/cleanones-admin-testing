@@ -16,8 +16,11 @@ export default function EditLegalDocumentPage() {
 
   useEffect(() => {
     if (!valid) return;
-    const saved = window.localStorage.getItem(legalStorageKey(slug));
-    if (saved) setContent((JSON.parse(saved) as { content: string }).content);
+    const frame = window.requestAnimationFrame(() => {
+      const saved = window.localStorage.getItem(legalStorageKey(slug));
+      if (saved) setContent((JSON.parse(saved) as { content: string }).content);
+    });
+    return () => window.cancelAnimationFrame(frame);
   }, [slug, valid]);
 
   if (!document || !valid) return null;

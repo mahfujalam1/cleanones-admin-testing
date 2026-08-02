@@ -16,12 +16,14 @@ export default function LegalDocumentPage() {
 
   useEffect(() => {
     if (!valid) return;
-    const saved = window.localStorage.getItem(legalStorageKey(slug));
-    if (saved) {
+    const frame = window.requestAnimationFrame(() => {
+      const saved = window.localStorage.getItem(legalStorageKey(slug));
+      if (!saved) return;
       const parsed = JSON.parse(saved) as { content: string; updated: string };
       setContent(parsed.content);
       setUpdated(parsed.updated);
-    }
+    });
+    return () => window.cancelAnimationFrame(frame);
   }, [slug, valid]);
 
   if (!document || !valid) return <div className="rounded border border-slate-200 bg-white p-6"><h1 className="text-lg font-semibold text-slate-800">Document not found</h1><Link href="/settings" className="mt-3 inline-block text-xs font-semibold text-sky-600">Back to settings</Link></div>;

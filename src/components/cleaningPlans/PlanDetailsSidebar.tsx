@@ -11,13 +11,14 @@ interface PlanDetailSidebarProps {
     onDelete?: (id: string) => void;
 }
 
-export function PlanDetailSidebar({ plan, onClose, onDelete }: PlanDetailSidebarProps) {
+export function PlanDetailSidebar({ plan, onClose }: PlanDetailSidebarProps) {
     const [checked, setChecked] = useState<Set<number>>(new Set());
 
     const toggleTask = (i: number) => {
         setChecked((prev) => {
             const next = new Set(prev);
-            next.has(i) ? next.delete(i) : next.add(i);
+            if (next.has(i)) next.delete(i);
+            else next.add(i);
             return next;
         });
     };

@@ -1,118 +1,28 @@
-import React from 'react';
-import { Shift, getThemeClasses } from './types';
+import React from "react";
+import { MdLocationOn } from "react-icons/md";
+import { Shift, getThemeClasses } from "./types";
 
-interface WeekViewProps {
-  currentDate: Date;
-  shifts: Shift[];
-  onShiftClick: (shift: Shift) => void;
-}
+interface WeekViewProps { currentDate: Date; shifts: Shift[]; onShiftClick: (shift: Shift) => void; }
+const EMPLOYEE_WIDTH = 220;
+const DAY_WIDTH = 178;
+const employees = ["Lisa Visser", "Emma Smit", "Noah Bos", "Sophie de Boer", "Lucas Meijer", "Anna Mulder", "Daan van den Berg", "Milan Dekker"];
 
 export function WeekView({ currentDate, shifts, onShiftClick }: WeekViewProps) {
-  const startOfWeek = new Date(currentDate);
-  startOfWeek.setDate(currentDate.getDate() - currentDate.getDay());
-  
-  const days = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(startOfWeek);
-    d.setDate(startOfWeek.getDate() + i);
-    return d;
-  });
+  const start = new Date(currentDate);
+  start.setDate(currentDate.getDate() - currentDate.getDay());
+  const days = Array.from({ length: 7 }, (_, index) => { const date = new Date(start); date.setDate(start.getDate() + index); return date; });
+  const weekKeys = new Set(days.map(toDateKey));
+  const weekShifts = shifts.filter((shift) => weekKeys.has(shift.date));
 
-  const hours = Array.from({ length: 11 }, (_, i) => i + 6); // 6 AM to 4 PM
-
-  const getShiftStyle = (shift: Shift, dayIndex: number) => {
-    const [startH, startM] = shift.startTime.split(':').map(Number);
-    const [endH, endM] = shift.endTime.split(':').map(Number);
-    
-    const startMinutes = (startH - 6) * 60 + startM;
-    const endMinutes = (endH - 6) * 60 + endM;
-    const duration = endMinutes - startMinutes;
-    
-    // Each hour is 80px tall (just an example). 1 minute = 80/60 px
-    const top = (startMinutes / 60) * 80;
-    const height = (duration / 60) * 80;
-    
-    return {
-      top: `${top}px`,
-      height: `${height}px`,
-      left: `calc(${dayIndex * (100 / 7)}% + 4px)`,
-      width: `calc(${100 / 7}% - 8px)`,
-    };
-  };
-
-  const getDayName = (date: Date) => date.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase();
-
-  return (
-    <div className="flex flex-col overflow-hidden rounded border border-gray-200 bg-white">
-      {/* Header */}
-      <div className="flex border-b border-gray-200 bg-white">
-        <div className="w-16 flex-shrink-0 border-r border-gray-200"></div>
-        <div className="flex-1 grid grid-cols-7">
-          {days.map((date, i) => {
-            const isToday = date.toDateString() === new Date().toDateString();
-            return (
-              <div key={i} className={`border-r border-gray-200 py-2.5 text-center last:border-r-0 ${isToday ? 'bg-sky-50/60' : ''}`}>
-                <div className={`text-[10px] font-semibold mb-1 ${isToday ? 'text-[#0ea5e9]' : 'text-gray-400'}`}>
-                  {getDayName(date)}
-                </div>
-                <div className={`text-sm font-medium w-6 h-6 mx-auto flex items-center justify-center rounded-full ${isToday ? 'bg-[#0ea5e9] text-white' : 'text-gray-700'}`}>
-                  {date.getDate()}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Grid */}
-      <div className="relative flex flex-1 overflow-y-auto bg-[#fbfcfd]">
-        {/* Time Labels */}
-        <div className="w-16 flex-shrink-0 border-r border-gray-200 bg-white">
-          {hours.map(hour => (
-            <div key={hour} className="h-[80px] relative">
-              <span className="absolute -top-2 right-2 text-[10px] font-medium text-gray-400">
-                {hour === 12 ? '12 PM' : hour > 12 ? `${hour - 12} PM` : `${hour} AM`}
-              </span>
-            </div>
-          ))}
-        </div>
-
-        {/* Grid Lines & Shifts Container */}
-        <div className="flex-1 relative">
-          {/* Horizontal Lines */}
-          {hours.map(hour => (
-            <div key={hour} className="h-[80px] border-b border-gray-100 last:border-b-0 w-full absolute pointer-events-none" style={{ top: `${(hour - 6) * 80}px` }}></div>
-          ))}
-
-          {/* Vertical Lines */}
-          <div className="absolute inset-0 grid grid-cols-7 pointer-events-none">
-            {days.map((date, i) => (
-              <div key={i} className={`h-full border-r border-gray-100 last:border-r-0 ${date.toDateString() === new Date().toDateString() ? 'bg-sky-50/35' : ''}`}></div>
-            ))}
-          </div>
-
-          {/* Shifts */}
-          {days.map((date, dayIndex) => {
-            const dateStr = date.toISOString().split('T')[0];
-            const dayShifts = shifts.filter(s => s.date === dateStr);
-            
-            return dayShifts.map(shift => {
-              const theme = getThemeClasses(shift.theme);
-              return (
-                <div 
-                  key={shift.id}
-                  onClick={() => onShiftClick(shift)}
-                  className={`absolute cursor-pointer overflow-hidden rounded border border-l-[3px] p-2 transition-colors hover:brightness-95 ${theme.bg} ${theme.border} ${theme.text}`}
-                  style={getShiftStyle(shift, dayIndex)}
-                >
-                  <div className="text-[10px] font-bold leading-tight">{shift.workerName}</div>
-                  <div className="mt-0.5 truncate text-[9px] leading-tight opacity-75">{shift.location}</div>
-                  <div className="mt-0.5 text-[9px] leading-tight opacity-70">{shift.startTime}–{shift.endTime}</div>
-                </div>
-              );
-            });
-          })}
-        </div>
-      </div>
-    </div>
-  );
+  return <section className="overflow-hidden rounded border border-slate-200 bg-white">
+    <div className="flex min-h-16 items-center justify-between border-b border-sky-600 bg-primary px-5 text-white"><div><p className="text-[10px] font-semibold uppercase tracking-[.18em] text-white/75">Weekly roster</p><h2 className="mt-0.5 text-xl font-semibold">{days[0].toLocaleDateString("en-GB", { day: "numeric", month: "short" })} – {days[6].toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}</h2></div><div className="hidden text-right text-[10px] text-white/75 sm:block"><b className="block text-sm text-white">{weekShifts.length} shifts</b>{weekShifts.reduce((total, shift) => total + duration(shift), 0).toFixed(1)} scheduled hours</div></div>
+    <div className="overflow-x-auto"><div style={{ minWidth: EMPLOYEE_WIDTH + DAY_WIDTH * 7 }}>
+      <div className="sticky top-0 z-30 flex h-14 border-b border-slate-200 bg-white"><div className="sticky left-0 z-40 flex shrink-0 items-center border-r border-slate-200 bg-white px-4 text-[10px] font-semibold uppercase tracking-wider text-slate-400" style={{ width: EMPLOYEE_WIDTH }}>Team member</div>{days.map((day) => { const today = day.toDateString() === new Date().toDateString(); return <div key={day.toISOString()} className={`flex shrink-0 items-center justify-between border-r border-slate-200 px-3 last:border-r-0 ${today ? "bg-sky-50" : "bg-white"}`} style={{ width: DAY_WIDTH }}><span><b className={`block text-[10px] uppercase ${today ? "text-primary" : "text-slate-400"}`}>{day.toLocaleDateString("en-US", { weekday: "short" })}</b><span className="text-xs font-semibold text-slate-700">{day.toLocaleDateString("en-GB", { day: "numeric", month: "short" })}</span></span>{today && <i className="h-2 w-2 rounded-full bg-primary" />}</div>; })}</div>
+      {employees.map((employee, rowIndex) => <div key={employee} className={`flex min-h-[88px] border-b border-slate-100 last:border-b-0 ${rowIndex % 2 ? "bg-slate-50/45" : "bg-white"}`}><div className={`sticky left-0 z-20 flex shrink-0 items-center gap-3 border-r border-slate-200 px-4 ${rowIndex % 2 ? "bg-[#fafbfc]" : "bg-white"}`} style={{ width: EMPLOYEE_WIDTH }}><img src="/avatar-placeholder.svg" alt={employee} className="h-8 w-8 rounded-full border border-slate-200 object-cover" /><span><b className="block text-xs text-slate-800">{employee}</b><small className="text-[10px] text-slate-400">{weekShifts.filter((shift) => shift.workerName === employee).length} shifts this week</small></span></div>{days.map((day) => { const items = weekShifts.filter((shift) => shift.workerName === employee && shift.date === toDateKey(day)); return <div key={day.toISOString()} className="flex shrink-0 flex-col justify-center gap-1.5 border-r border-slate-200 p-2 last:border-r-0" style={{ width: DAY_WIDTH }}>{items.length ? items.map((shift) => { const theme = getThemeClasses(shift.theme); return <button key={shift.id} onClick={() => onShiftClick(shift)} className={`rounded border border-l-[3px] px-2.5 py-2 text-left ${theme.bg} ${theme.border} ${theme.text}`}><span className="flex items-center justify-between gap-2 text-[10px] font-bold"><span>{shift.startTime}</span><span>{shift.endTime}</span></span><span className="mt-1 block truncate text-[9px] font-medium opacity-80"><MdLocationOn className="mr-0.5 inline" />{shift.location}</span></button>; }) : <span className="text-center text-[10px] text-slate-300">Available</span>}</div>; })}</div>)}
+    </div></div>
+    <div className="border-t border-slate-200 bg-slate-50 px-4 py-2 text-[10px] text-slate-400">Scroll horizontally to compare the full working week</div>
+  </section>;
 }
+
+function toDateKey(date: Date) { const year = date.getFullYear(); const month = String(date.getMonth() + 1).padStart(2, "0"); const day = String(date.getDate()).padStart(2, "0"); return `${year}-${month}-${day}`; }
+function duration(shift: Shift) { const minutes = (value: string) => { const [hour, minute] = value.split(":").map(Number); return hour * 60 + minute; }; return (minutes(shift.endTime) - minutes(shift.startTime)) / 60; }
