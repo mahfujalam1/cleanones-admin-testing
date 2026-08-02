@@ -3,9 +3,12 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { getLocale, localizePath, stripLocale } from '@/lib/locale';
 
 export default function ShiftMonitoringLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const locale = getLocale(pathname);
+  const routePath = stripLocale(pathname);
 
   const tabs = [
     { 
@@ -42,18 +45,19 @@ export default function ShiftMonitoringLayout({ children }: { children: React.Re
       {/* Top Navigation Tabs */}
       <div className="flex border-b border-gray-200 mb-6 gap-6 px-2 flex-shrink-0 overflow-x-auto">
         {tabs.map(tab => {
-          const isActive = tab.exact 
-            ? pathname === tab.path 
-            : pathname?.startsWith(tab.path);
+          const isActive = tab.exact
+            ? routePath === tab.path
+            : routePath.startsWith(tab.path);
 
           return (
             <Link 
               key={tab.name}
-              href={tab.path}
-              className={`text-sm font-semibold pb-3 flex items-center gap-2 whitespace-nowrap transition-colors cursor-pointer border-b-2 ${
+              href={localizePath(tab.path, locale)}
+              aria-current={isActive ? 'page' : undefined}
+              className={`mb-2 flex h-9 items-center gap-2 whitespace-nowrap rounded border px-3 text-xs font-semibold transition-colors ${
                 isActive 
-                  ? 'text-[#0ea5e9] border-[#0ea5e9]' 
-                  : 'text-gray-500 hover:text-gray-900 border-transparent'
+                  ? 'border-sky-200 bg-sky-50 text-primary' 
+                  : 'border-transparent text-gray-500 hover:bg-white hover:text-gray-800'
               }`}
             >
               {tab.icon}
