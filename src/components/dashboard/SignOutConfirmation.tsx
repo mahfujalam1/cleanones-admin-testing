@@ -16,6 +16,7 @@ export function SignOutConfirmation() {
   const close = () => dispatch(setSignOutModalOpen(false));
   const confirm = () => {
     localStorage.removeItem("token");
+    localStorage.removeItem("cleanones-dashboard-user");
     dispatch(logout());
     dispatch(setSignOutModalOpen(false));
     router.replace(localizePath("/login", locale));

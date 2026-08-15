@@ -12,6 +12,8 @@ import {
   MdPhotoCamera, MdWarning, MdAssessment, MdNotifications, MdSettings,
   MdChevronLeft, MdChevronRight, MdLogout, MdChatBubbleOutline
 } from 'react-icons/md';
+import { MdAdminPanelSettings } from 'react-icons/md';
+import { getStoredManagerAccess, routeIsAllowed } from '@/lib/access-control';
 
 const mainLinks = [
   { name: 'Dashboard', href: '/', icon: MdDashboard },
@@ -38,7 +40,11 @@ export default function Sidebar() {
   const dispatch = useAppDispatch();
   const sidebarOpen = useAppSelector((state) => state.ui.sidebarOpen);
   const mobileSidebarOpen = useAppSelector((state) => state.ui.mobileSidebarOpen);
+  const user = useAppSelector((state) => state.auth.user);
   const collapsed = !sidebarOpen;
+  const allowedRoutes = user?.role === 'SUPER_ADMIN' ? null : getStoredManagerAccess();
+  const visibleMainLinks = allowedRoutes ? mainLinks.filter((link) => routeIsAllowed(link.href, allowedRoutes)) : mainLinks;
+  const visibleQcLinks = allowedRoutes ? qcLinks.filter((link) => routeIsAllowed(link.href, allowedRoutes)) : qcLinks;
 
   return (
     <>
@@ -81,7 +87,7 @@ export default function Sidebar() {
         {/* Navigation */}
         <div className="flex-1 overflow-y-auto py-3 custom-scrollbar lg:py-2">
           <nav className="space-y-1 px-3">
-            {mainLinks.map((link) => {
+            {visibleMainLinks.map((link) => {
               const isActive = routePath === link.href || (link.href !== '/' && routePath.startsWith(link.href));
               return (
                 <Link
@@ -107,7 +113,7 @@ export default function Sidebar() {
           <div className={`mb-2 px-6 text-xs font-medium text-sidebar-foreground/70 uppercase tracking-wider ${collapsed ? 'lg:hidden' : 'block'}`}>Quality Control</div>
 
           <nav className="space-y-1 px-3">
-            {qcLinks.map((link) => {
+            {visibleQcLinks.map((link) => {
               const isActive = routePath === link.href || (routePath.startsWith(link.href) && link.href !== '/');
               return (
                 <Link
@@ -128,6 +134,19 @@ export default function Sidebar() {
               );
             })}
           </nav>
+
+          {user?.role === 'SUPER_ADMIN' && (
+            <>
+              <div className="mx-3 my-4 border-t border-sidebar-border" />
+              <div className={`mb-2 px-6 text-xs font-medium uppercase tracking-wider text-sidebar-foreground/70 ${collapsed ? 'lg:hidden' : 'block'}`}>Administration</div>
+              <nav className="space-y-1 px-3">
+                <Link href={localizePath('/manager-access', locale)} onClick={() => dispatch(closeMobileSidebar())} className={`flex h-9 items-center gap-2.5 rounded px-3 text-sm font-medium transition-colors ${routePath.startsWith('/manager-access') ? 'bg-[#e5f6fc] text-primary' : 'text-sidebar-foreground hover:bg-[#f2f9fc] hover:text-foreground'}`}>
+                  <MdAdminPanelSettings className="text-lg" />
+                  <span className={collapsed ? 'lg:hidden' : 'block'}>Manager Access</span>
+                </Link>
+              </nav>
+            </>
+          )}
         </div>
 
         {/* Footer */}

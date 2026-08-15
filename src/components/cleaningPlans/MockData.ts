@@ -31,6 +31,11 @@ export const mockCleaningPlans: CleaningPlan[] = [
             'Bedroom before',
             'Bedroom after',
         ],
+        photoRotation: 'Daily rotating selection',
+        periodicTasks: [
+            { task: 'Clean toilet air vents', frequencyDays: 30, lastCompleted: '2026-07-02', due: true },
+            { task: 'Clean skirting boards', frequencyDays: 7, lastCompleted: '2026-07-25', due: false },
+        ],
     },
     {
         id: 'P002',

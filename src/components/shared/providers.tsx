@@ -8,7 +8,16 @@ import { initializeAuth } from "@/store/slices/auth.slice";
 function AuthInitializer({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const token = localStorage.getItem("token");
-    store.dispatch(initializeAuth(token ? { id: "1", name: "Kaz Putters", email: "manager@cleanones.nl", role: "Manager" } : null));
+    const savedUser = localStorage.getItem("cleanones-dashboard-user");
+    if (token && savedUser) {
+      try {
+        store.dispatch(initializeAuth(JSON.parse(savedUser)));
+        return;
+      } catch {
+        localStorage.removeItem("cleanones-dashboard-user");
+      }
+    }
+    store.dispatch(initializeAuth(null));
   }, []);
   return children;
 }

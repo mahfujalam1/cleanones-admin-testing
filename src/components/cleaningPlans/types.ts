@@ -10,4 +10,6 @@ export interface CleaningPlan {
     aiValid: boolean;
     checklistTasks: string[];
     photoRequirements: string[];
+    periodicTasks?: { task: string; frequencyDays: number; lastCompleted: string; due: boolean }[];
+    photoRotation?: string;
 }

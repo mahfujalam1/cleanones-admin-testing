@@ -1,7 +1,15 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import type { DashboardRole } from '@/lib/access-control';
+
+export interface DashboardUser {
+  id: string;
+  name: string;
+  email: string;
+  role: DashboardRole;
+}
 
 interface AuthState {
-  user: { id: string; name: string; email: string; role: string } | null;
+  user: DashboardUser | null;
   isAuthenticated: boolean;
   initialized: boolean;
 }

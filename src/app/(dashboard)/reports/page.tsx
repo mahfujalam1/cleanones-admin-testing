@@ -34,6 +34,13 @@ const qualityData = [
   { name: "Rejected", value: 8, color: "#ef4444" },
 ];
 
+const productivityData = [
+  { name: "Lisa Visser", type: "Rooms", rate: 4.8, completed: 96, hours: 20 },
+  { name: "Emma Smit", type: "Rooms", rate: 4.3, completed: 82, hours: 19 },
+  { name: "Noah Bos", type: "Houses", rate: 1.6, completed: 24, hours: 15 },
+  { name: "Sophie de Boer", type: "Objects", rate: 3.9, completed: 74, hours: 19 },
+];
+
 export default function ReportsPage() {
   const [activeRange, setActiveRange] = useState<ReportRange>("Month");
 
@@ -155,6 +162,11 @@ export default function ReportsPage() {
           </div>
         </section>
       </div>
+
+      <section className="dashboard-card overflow-hidden">
+        <div className="border-b border-slate-100 px-5 py-4"><h2 className="text-sm font-bold text-slate-950">Employee Productivity</h2><p className="mt-1 text-xs text-slate-500">Average completed houses, rooms or objects per worked hour.</p></div>
+        <div className="overflow-x-auto"><table className="w-full min-w-[620px] text-left"><thead className="bg-slate-50 text-[10px] uppercase tracking-wider text-slate-400"><tr><th className="px-5 py-3">Employee</th><th className="px-5 py-3">Object type</th><th className="px-5 py-3">Completed</th><th className="px-5 py-3">Worked hours</th><th className="px-5 py-3">Average / hour</th></tr></thead><tbody className="divide-y divide-slate-100">{productivityData.map(item => <tr key={item.name} className="text-sm text-slate-600"><td className="px-5 py-3 font-semibold text-slate-900">{item.name}</td><td className="px-5 py-3">{item.type}</td><td className="px-5 py-3">{item.completed}</td><td className="px-5 py-3">{item.hours}h</td><td className="px-5 py-3"><span className="rounded bg-sky-50 px-2 py-1 font-bold text-sky-700">{item.rate} {item.type.toLowerCase()}/h</span></td></tr>)}</tbody></table></div>
+      </section>
     </div>
   );
 }

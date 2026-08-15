@@ -11,7 +11,28 @@ interface NotificationItem {
   unread?: boolean;
 }
 
+
 const initialNotifications: NotificationItem[] = [
+  {
+    id: "progress-1",
+    title: "Employee falling behind",
+    message: "Lisa Visser completed 3 of 4 rooms with only 22 minutes remaining. Contact the employee to confirm completion.",
+    time: "Just now",
+    unread: true,
+  },
+  {
+    id: "late-employee-1",
+    title: "Late alert sent",
+    message: "Emma Smit is 42 minutes late. Manager alert and employee 'You are late' notification were both sent.",
+    time: "1 min ago",
+    unread: true,
+  },
+  {
+    id: "reminder-1",
+    title: "Shift reminders scheduled",
+    message: "Tomorrow, 1-hour and 10-minute reminders are queued for 18 upcoming employee shifts.",
+    time: "2 min ago",
+  },
   {
     id: "n1",
     title: "Nieuwe Escalatie",

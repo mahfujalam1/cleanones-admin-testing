@@ -171,6 +171,7 @@ function PlanCard({ plan, onClick, isSelected, onDelete }: PlanCardProps) {
             <div className="border-t border-gray-100 mx-4" />
 
             {/* Stats */}
+            {plan.periodicTasks && <div className="mx-4 mb-3 rounded border border-sky-100 bg-sky-50 p-2.5"><p className="text-[10px] font-bold uppercase tracking-wider text-sky-700">Dynamic tasks</p><p className="mt-1 text-xs text-slate-600">{plan.periodicTasks.filter(task => task.due).length} periodic task(s) due this week</p><p className="mt-1 text-[10px] text-slate-400">Photos: {plan.photoRotation}</p></div>}
             <div className="grid grid-cols-3 divide-x divide-gray-100">
                 <div className="py-3 flex flex-col items-center gap-1">
                     <TbClock className="text-gray-300 text-base" />

@@ -19,11 +19,16 @@ import {
   MdSend,
   MdSupportAgent,
 } from "react-icons/md";
-import { useAppDispatch } from "@/store/hooks";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setSignOutModalOpen, toggleMobileSidebar } from "@/store/slices/ui.slice";
 
 const languages = [
   { label: "English", code: "en" },
+  { label: "Nederlands", code: "nl" },
+  { label: "Polski", code: "pl" },
+  { label: "Ukrainian", code: "uk" },
+  { label: "Portuguese", code: "pt" },
+  { label: "Arabic", code: "ar" },
   { label: "French", code: "fr" },
   { label: "Spanish", code: "es" },
 ];
@@ -70,6 +75,7 @@ export default function Topbar() {
   const locale = getLocale(pathname);
   const routePath = stripLocale(pathname);
   const dispatch = useAppDispatch();
+  const user = useAppSelector((state) => state.auth.user);
   const [languageOpen, setLanguageOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -207,11 +213,12 @@ export default function Topbar() {
               }}
               className="flex h-8 items-center gap-2 rounded border border-transparent bg-transparent px-1.5 text-left transition-colors hover:bg-white/70"
             >
-              <img src="/avatar-placeholder.svg" alt="Kaz Putters" className="h-7 w-7 shrink-0 rounded-full border border-gray-200 object-cover" />
+              <img src="/avatar-placeholder.svg" alt={user?.name ?? "User"} className="h-7 w-7 shrink-0 rounded-full border border-gray-200 object-cover" />
               <div className="hidden text-left md:block">
                 <div className="text-xs font-semibold leading-none text-foreground">
-                  Kaz Putters
+                  {user?.name ?? 'User'}
                 </div>
+                <div className="mt-1 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">{user?.role === 'SUPER_ADMIN' ? 'Super Admin' : 'Manager'}</div>
               </div>
               <MdKeyboardArrowDown className="hidden text-sm text-muted-foreground sm:block" />
             </button>

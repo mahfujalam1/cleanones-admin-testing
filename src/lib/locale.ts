@@ -1,4 +1,4 @@
-export const supportedLocales = ["en", "fr", "es"] as const;
+export const supportedLocales = ["en", "nl", "fr", "es", "pl", "uk", "pt", "ar"] as const;
 
 export function getLocale(pathname: string | null) {
   const locale = pathname?.split("/").filter(Boolean)[0];
