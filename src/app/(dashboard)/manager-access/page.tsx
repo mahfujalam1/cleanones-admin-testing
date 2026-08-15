@@ -8,7 +8,13 @@ export default function ManagerAccessPage() {
   const [access, setAccess] = useState<string[]>(defaultManagerAccess);
   const [saved, setSaved] = useState(false);
   const [managers, setManagers] = useState<ManagerRecord[]>(defaultManagers);
-  useEffect(() => { setAccess(getStoredManagerAccess()); setManagers(getStoredManagers()); }, []);
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => {
+      setAccess(getStoredManagerAccess());
+      setManagers(getStoredManagers());
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
   const grouped = useMemo(() => ({
     Operations: routePermissions.filter((item) => item.section === "Operations"),
     "Quality Control": routePermissions.filter((item) => item.section === "Quality Control"),
