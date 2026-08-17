@@ -19,6 +19,8 @@ export default function ManagerAccessPage() {
     Operations: routePermissions.filter((item) => item.section === "Operations"),
     "Quality Control": routePermissions.filter((item) => item.section === "Quality Control"),
   }), []);
+
+  
   const toggle = (href: string) => { setSaved(false); setAccess((current) => current.includes(href) ? current.filter((item) => item !== href) : [...current, href]); };
   const save = () => { localStorage.setItem(MANAGER_ACCESS_STORAGE_KEY, JSON.stringify(access)); setSaved(true); };
   const toggleManagerStatus = (id: string) => {
