@@ -1,0 +1,14 @@
+"use server";
+import { authenticated } from "./auth";
+
+export type RoomTaskInput = { id?: string; frequency_type: string; is_photo_req: boolean; name: string; photo: Array<{ id?: string; name: string }> };
+export type RoomInput = { clean_type: string; duration: number; monthly_cleaning_frequency: number; room_name: string; room_type: string; tasks: RoomTaskInput[] };
+export type RoomDetails = { clean_type: string; client_id: string; company_name: string; created_at: string; duration: number; floor: number; id: string; location_id: string; location_name: string; monthly_cleaning_frequency: number; photo_number: number; required_photos: Array<{ frequency_type: string; id: string; name: string }>; room_name: string; room_type: string; task_number: number; tasks: Array<RoomTaskInput & { id: string; total_photos_required: number }>; total_photos_required: number; updated_at: string };
+export type RoomGridItem = { room_id: string; room_name: string; room_type: string; client_id: string; company_name: string; location_id: string; location_name: string; monthly_cleaning_frequency: number; photo_number: number; total_photos_required: number; task_number: number; clean_type: string; updated_at: string };
+const json = (value: unknown) => ({ headers: { "Content-Type": "application/json" }, body: JSON.stringify(value) });
+export async function getRoomLocations(clientId?: string) { return authenticated<{ locations: Array<{ id: string; name: string; total_rooms: number }> }>(`/manager/dropdowns/locations${clientId ? `?client_id=${encodeURIComponent(clientId)}` : ""}`, { method: "GET" }); }
+export async function createRoom(locationId: string, input: RoomInput) { return authenticated<RoomDetails>(`/manager/locations/${encodeURIComponent(locationId)}/rooms`, { method: "POST", ...json(input) }); }
+export async function getRoom(roomId: string) { return authenticated<RoomDetails>(`/manager/rooms/${encodeURIComponent(roomId)}`, { method: "GET" }); }
+export async function updateRoom(roomId: string, input: RoomInput) { return authenticated<RoomDetails>(`/manager/rooms/${encodeURIComponent(roomId)}`, { method: "PATCH", ...json(input) }); }
+export async function deleteRoom(roomId: string) { return authenticated<string>(`/manager/rooms/${encodeURIComponent(roomId)}`, { method: "DELETE" }); }
+export async function getRooms(input: { page?: number; limit?: number; search?: string; roomId?: string; locationId?: string; clientId?: string } = {}) { const query = new URLSearchParams({ page: String(input.page ?? 1), limit: String(input.limit ?? 100) }); if (input.search) query.set("search", input.search); if (input.roomId) query.set("room_id", input.roomId); if (input.locationId) query.set("location_id", input.locationId); if (input.clientId) query.set("client_id", input.clientId); return authenticated<{ total_count: number; page: number; limit: number; has_more: boolean; rooms: RoomGridItem[] }>(`/manager/rooms?${query}`, { method: "GET" }); }

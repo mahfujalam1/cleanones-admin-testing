@@ -1,61 +1,8 @@
-import React from 'react';
-import { MdLocationOn } from 'react-icons/md';
-import { LOCATIONS } from './data';
-
-const getThemeForLocation = (index: number) => {
-  const themes = [
-    { bg: 'bg-[#e0f2fe]', text: 'text-[#0284c7]' },
-    { bg: 'bg-[#dcfce7]', text: 'text-[#15803d]' },
-    { bg: 'bg-[#f3e8ff]', text: 'text-[#7e22ce]' },
-    { bg: 'bg-[#ffedd5]', text: 'text-[#c2410c]' },
-    { bg: 'bg-[#e0f2fe]', text: 'text-[#0284c7]' },
-    { bg: 'bg-[#fce7f3]', text: 'text-[#be185d]' },
-  ];
-  return themes[index % themes.length];
-};
-
-export function LocationStatistics() {
-  return (
-    <div className="flex flex-col h-full animate-in fade-in duration-300">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        {LOCATIONS.map((loc, idx) => {
-          const theme = getThemeForLocation(idx);
-          return (
-            <div 
-              key={loc.name}
-              className="dashboard-card p-5 transition-[border-color,box-shadow] hover:border-[#d7dbe4] hover:shadow"
-            >
-              {/* Header */}
-              <div className="flex items-center gap-3 mb-6">
-                <div className={`w-10 h-10 rounded ${theme.bg} ${theme.text} flex items-center justify-center text-lg shadow-sm`}>
-                  <MdLocationOn />
-                </div>
-                <h3 className="font-semibold text-gray-900 leading-tight flex-1">{loc.name}</h3>
-              </div>
-
-              {/* Stats */}
-              <div className="grid grid-cols-4 gap-2">
-                <div className="text-center">
-                  <div className="text-lg font-bold text-gray-800">{loc.workers}</div>
-                  <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-0.5">Workers</div>
-                </div>
-                <div className="text-center border-l border-gray-100">
-                  <div className="text-lg font-bold text-gray-800">{loc.hours}h</div>
-                  <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-0.5">Hours</div>
-                </div>
-                <div className="text-center border-l border-gray-100">
-                  <div className="text-lg font-bold text-gray-800">{loc.shifts}</div>
-                  <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-0.5">Shifts</div>
-                </div>
-                <div className="text-center border-l border-gray-100">
-                  <div className="text-lg font-bold text-gray-800">{loc.requiredHours ?? Math.round(loc.hours * 1.08)}h</div>
-                  <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-0.5">Required</div>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
+"use client";
+import { useEffect, useState } from "react";
+import { MdLocationOn, MdSearch } from "react-icons/md";
+import { CardGridSkeleton } from "@/components/shared/SkeletonLoader";
+import { getLocationStatistics, type Period } from "@/services/actions/shiftMonitoring";
+type Location = { location_id: string; location_name: string; client_name: string; workers_count: number; hours_worked: string; shifts_count: number };
+export function LocationStatistics() { const [period, setPeriod] = useState<Period>("monthly"); const [search, setSearch] = useState(""); const [items, setItems] = useState<Location[]>([]); const [loading, setLoading] = useState(true); const [error, setError] = useState(""); useEffect(() => { setLoading(true); const timer = window.setTimeout(() => void getLocationStatistics({ period, search }).then((result) => { setLoading(false); if (!result.success) return setError(result.error); setError(""); setItems(result.data.locations); }), 300); return () => window.clearTimeout(timer); }, [period, search]); return <div className="space-y-4"><div className="flex flex-wrap justify-between gap-2"><div className="flex rounded bg-slate-100 p-1">{(["today", "weekly", "monthly"] as const).map((value) => <button key={value} onClick={() => setPeriod(value)} className={`rounded px-3 py-1.5 text-xs font-semibold ${period === value ? "bg-white text-sky-600 shadow-sm" : "text-slate-500"}`}>{value}</button>)}</div><label className="relative"><MdSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" /><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search locations..." className="h-9 rounded border pl-9 pr-3 text-xs" /></label></div>{error && <p className="rounded bg-red-50 p-3 text-xs text-red-700">{error}</p>}{loading ? <CardGridSkeleton cards={8} /> : <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">{items.map((item) => <div key={item.location_id} className="dashboard-card p-5"><div className="mb-5 flex gap-3"><span className="flex h-10 w-10 items-center justify-center rounded bg-sky-50 text-sky-600"><MdLocationOn /></span><div><h3 className="font-semibold">{item.location_name}</h3><p className="text-xs text-slate-400">{item.client_name}</p></div></div><div className="grid grid-cols-3 gap-2 text-center"><Stat value={item.workers_count} label="Workers" /><Stat value={item.hours_worked} label="Hours" /><Stat value={item.shifts_count} label="Shifts" /></div></div>)}{items.length === 0 && <p className="col-span-full py-16 text-center text-sm text-slate-500">No locations</p>}</div>}</div>; }
+function Stat({ value, label }: { value: string | number; label: string }) { return <div><b className="text-lg text-slate-800">{value}</b><p className="text-[10px] uppercase text-slate-400">{label}</p></div>; }

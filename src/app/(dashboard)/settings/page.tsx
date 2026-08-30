@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   MdChevronRight,
@@ -9,16 +9,31 @@ import {
   MdSecurity,
   MdVpnKey,
 } from "react-icons/md";
-
-const companyFields = [
-  { label: "Bedrijfsnaam", value: "CleanOnes BV" },
-  { label: "Bedrijfs e-mail", value: "admin@cleanones.nl" },
-  { label: "Telefoonnummer", value: "+31 20 000 0000" },
-  { label: "Adres", value: "Keizersgracht 123, Amsterdam, Nederland" },
-  { label: "Website", value: "www.cleanones.nl" },
-];
+import { getCompanyProfile, getManagerProfile, updateCompanyProfile } from "@/services/actions/manager";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { setUser } from "@/store/slices/auth.slice";
+import { DetailSkeleton } from "@/components/shared/SkeletonLoader";
 
 export default function SettingsPage() {
+  const dispatch = useAppDispatch();
+  const user = useAppSelector((state) => state.auth.user);
+  const [company, setCompany] = useState({ company_name: "", email: "", phone: "", address: "", website: "" });
+  const [profileMessage, setProfileMessage] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    void getManagerProfile().then((result) => { if (result.success && user) { const next = { ...user, id: result.data.id, name: result.data.full_name, email: result.data.email, profilePhoto: result.data.profile_photo }; dispatch(setUser(next)); localStorage.setItem("cleanones-dashboard-user", JSON.stringify(next)); } });
+    void getCompanyProfile().then((result) => { if (result.success) setCompany({ company_name: result.data.company_name, email: result.data.email, phone: result.data.phone, address: result.data.address, website: result.data.website }); setLoading(false); });
+  }, [dispatch]);
+
+  const saveProfile = async () => {
+    if (!company.company_name.trim() || !company.email.trim()) return setProfileMessage("Company name and email are required");
+    setSaving(true); setProfileMessage(""); const result = await updateCompanyProfile(company); setSaving(false);
+    if (!result.success) return setProfileMessage(result.error);
+    setCompany({ company_name: result.data.company_name, email: result.data.email, phone: result.data.phone, address: result.data.address, website: result.data.website });
+    setProfileMessage("Profile updated successfully");
+  };
   return (
     <div className="space-y-6 pb-10">
       <div className="grid grid-cols-1 items-start gap-5 xl:grid-cols-2">
@@ -27,25 +42,30 @@ export default function SettingsPage() {
             Company Profile
           </h2>
           <div className="dashboard-card p-5">
+            {loading ? <DetailSkeleton blocks={5} /> :
             <div className="space-y-4">
-              {companyFields.map((field) => (
-                <label key={field.label} className="block">
+              {([['company_name', 'Company Name'], ['email', 'Company Email'], ['phone', 'Phone Number'], ['address', 'Address'], ['website', 'Website']] as const).map(([key, label]) => <label key={key} className="block">
                   <span className="mb-2 block text-xs font-medium text-slate-500">
-                    {field.label}
+                    {label}
                   </span>
                   <input
-                    defaultValue={field.value}
+                    type={key === 'email' ? 'email' : 'text'}
+                    value={company[key]}
+                    onChange={(event) => setCompany((current) => ({ ...current, [key]: event.target.value }))}
                     className="h-10 w-full rounded border border-gray-200 bg-gray-100 px-4 text-sm text-slate-800 shadow-sm outline-none transition-colors focus:border-[#0ea5e9] focus:bg-white focus:ring-1 focus:ring-[#0ea5e9]"
                   />
-                </label>
-              ))}
-            </div>
+                </label>)}
+            </div>}
+
+            {profileMessage && <p className={`mt-3 text-xs font-medium ${profileMessage.includes("successfully") ? "text-emerald-600" : "text-red-600"}`}>{profileMessage}</p>}
 
             <button
               type="button"
+              onClick={saveProfile}
+              disabled={saving}
               className="mt-4 h-10 rounded bg-[#0ea5e9] px-5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-[#0284c7]"
             >
-              Save Changes
+              {saving ? "Saving..." : "Save Changes"}
             </button>
           </div>
         </section>

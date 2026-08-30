@@ -1,9 +1,11 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { MdOutlineClose } from 'react-icons/md';
-import { TbClipboardList, TbClock, TbCamera, TbSparkles, TbMapPin, TbUser, TbDoor } from 'react-icons/tb';
+import { TbClipboardList, TbClock, TbCamera, TbSparkles, TbMapPin, TbUser, TbDoor, TbUsers } from 'react-icons/tb';
 import { CleaningPlan } from './types';
+import { getCleaningPlan, type PlanDetails } from '@/services/actions/cleaningPlans';
+import { DetailSkeleton } from '@/components/shared/SkeletonLoader';
 
 interface PlanDetailSidebarProps {
     plan: CleaningPlan;
@@ -13,6 +15,14 @@ interface PlanDetailSidebarProps {
 
 export function PlanDetailSidebar({ plan, onClose }: PlanDetailSidebarProps) {
     const [checked, setChecked] = useState<Set<number>>(new Set());
+    const [details, setDetails] = useState<PlanDetails | null>(null);
+    const [error, setError] = useState('');
+    useEffect(() => { void getCleaningPlan(plan.id).then((result) => result.success ? setDetails(result.data) : setError(result.error)); }, [plan.id]);
+    const planRooms = plan.rooms ?? [];
+    const detailRooms = details?.rooms ?? [];
+    const additionalTasks = details?.additional_tasks ?? [];
+    const taskNames = details ? [...detailRooms.flatMap((room) => (room.tasks ?? []).map((task) => task.name)), ...additionalTasks.map((task) => task.name)] : (plan.checklistTasks ?? []);
+    const photoNames = details ? [...detailRooms.flatMap((room) => (room.required_photos ?? []).map((photo) => photo.name)), ...additionalTasks.flatMap((task) => (task.photo ?? []).map((photo) => photo.name)), ...(details.additional_required_photos ?? []).map((photo) => photo.name)] : (plan.photoRequirements ?? []);
 
     const toggleTask = (i: number) => {
         setChecked((prev) => {
@@ -52,6 +62,8 @@ export function PlanDetailSidebar({ plan, onClose }: PlanDetailSidebarProps) {
 
                 {/* Body */}
                 <div className="flex-1 overflow-y-auto px-5 py-5 space-y-3">
+                    {error && <p className="rounded bg-red-50 p-2 text-xs text-red-700">{error}</p>}
+                    {!details && !error ? <DetailSkeleton blocks={7} /> : <>
                     {/* Client */}
                     <div className="rounded border border-gray-100 bg-gray-50/60 px-4 py-3.5 flex items-start gap-3">
                         <TbUser className="text-[#0ea5e9] text-lg mt-0.5 shrink-0" />
@@ -71,21 +83,29 @@ export function PlanDetailSidebar({ plan, onClose }: PlanDetailSidebarProps) {
                     </div>
 
                     {/* Rooms */}
-                    {plan.rooms.length > 0 && (
+                    {planRooms.length > 0 && (
                         <div className="rounded border border-gray-100 bg-gray-50/60 px-4 py-3.5">
                             <div className="flex items-center gap-2 mb-2">
                                 <TbDoor className="text-[#0ea5e9] text-lg shrink-0" />
                                 <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Rooms</p>
                             </div>
                             <div className="flex flex-wrap gap-1.5">
-                                {plan.rooms.map((r) => (
-                                    <span key={r} className="text-xs font-medium text-[#0ea5e9] bg-[#e0f2fe] px-2.5 py-1 rounded">
+                                {planRooms.map((r, index) => (
+                                    <span key={`${plan.id}-${index}-${r}`} className="text-xs font-medium text-[#0ea5e9] bg-[#e0f2fe] px-2.5 py-1 rounded">
                                         {r}
                                     </span>
                                 ))}
                             </div>
                         </div>
                     )}
+
+                    {/* Assigned Workers */}
+                    <div className="rounded border border-gray-100 bg-gray-50/60 px-4 py-3.5">
+                        <div className="mb-3 flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2"><TbUsers className="text-lg text-[#0ea5e9]"/><div><p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">Assigned workers</p><p className="text-xs text-gray-500">{(details?.workers ?? []).length} assigned</p></div></div>
+                        </div>
+                        {(details?.workers ?? []).length === 0 ? <p className="rounded border border-dashed border-gray-200 bg-white p-3 text-center text-xs text-gray-400">No workers assigned yet</p> : <div className="space-y-2">{(details?.workers ?? []).map((worker) => <div key={worker.worker_id} className="flex items-center gap-2 rounded border border-gray-100 bg-white p-2"><span className="flex h-8 w-8 items-center justify-center rounded-full bg-sky-100 text-[10px] font-bold text-sky-700">{worker.name?.split(' ').map((part) => part[0]).join('').slice(0, 2) || 'W'}</span><span className="min-w-0 flex-1"><b className="block truncate text-xs text-gray-700">{worker.name}</b><span className="text-[10px] capitalize text-gray-400">{worker.position?.replace('_', ' ') || 'normal'}</span></span></div>)}</div>}
+                    </div>
 
                     {/* Stats: Duration / Photos / AI Valid */}
                     <div className="grid grid-cols-3 gap-3">
@@ -107,11 +127,11 @@ export function PlanDetailSidebar({ plan, onClose }: PlanDetailSidebarProps) {
                     </div>
 
                     {/* Checklist Tasks */}
-                    {plan.checklistTasks.length > 0 && (
+                    {taskNames.length > 0 && (
                         <div>
                             <p className="text-xs font-semibold text-[#0ea5e9] mb-2">Checklist Tasks</p>
                             <div className="space-y-1.5">
-                                {plan.checklistTasks.map((task, i) => {
+                                {taskNames.map((task, i) => {
                                     const isChecked = checked.has(i);
                                     return (
                                         <div
@@ -140,11 +160,11 @@ export function PlanDetailSidebar({ plan, onClose }: PlanDetailSidebarProps) {
                     )}
 
                     {/* Photo Requirements */}
-                    {plan.photoRequirements.length > 0 && (
+                    {photoNames.length > 0 && (
                         <div>
                             <p className="text-xs font-semibold text-[#0ea5e9] mb-2">Photo Requirements</p>
                             <div className="grid grid-cols-2 gap-2">
-                                {plan.photoRequirements.map((req, i) => (
+                                {photoNames.map((req, i) => (
                                     <div
                                         key={i}
                                         className="flex items-center gap-2 px-3 py-2.5 rounded border border-gray-100 bg-white"
@@ -156,6 +176,7 @@ export function PlanDetailSidebar({ plan, onClose }: PlanDetailSidebarProps) {
                             </div>
                         </div>
                     )}
+                    </>}
                 </div>
             </div>
         </>

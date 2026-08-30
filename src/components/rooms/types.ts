@@ -1,5 +1,5 @@
-export type RoomType = 'Standard' | 'Deluxe' | 'Suite' | 'Junior Suite';
-export type CleaningPlan = 'Standard Clean' | 'Deluxe Clean' | 'Suite Deep Clean' | 'Junior Suite Clean';
+export type RoomType = string;
+export type CleaningPlan = string;
 
 export interface Room {
     id: string;

@@ -1,38 +1,37 @@
 "use client";
 
 import { LocationDetailSidebar } from '@/components/locations/LocationDetailsSidebar';
-import { mockLocations } from '@/components/locations/MockData';
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import { MdOutlineLocationOn, MdSearch, MdUploadFile } from 'react-icons/md';
 import { BulkImportModal } from '@/components/shared/BulkImportModal';
 import { TbBuilding } from 'react-icons/tb';
 import { Location } from '../../../components/locations/types';
 import { CreateLocationModal } from '@/components/locations/CreateLocationModal';
+import { getLocations } from '@/services/actions/locations';
+import { CardGridSkeleton } from '@/components/shared/SkeletonLoader';
+import { BackendPagination } from '@/components/shared/BackendPagination';
 
 export default function LocationsPage() {
-    const [locations, setLocations] = useState<Location[]>(mockLocations);
+    const [locations, setLocations] = useState<Location[]>([]);
     const [search, setSearch] = useState('');
     const [showModal, setShowModal] = useState(false);
     const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
     const [importOpen, setImportOpen] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
+    const [page, setPage] = useState(1); const [total, setTotal] = useState(0); const limit = 12;
 
-    const filtered = useMemo(() => {
-        const q = search.toLowerCase();
-        return locations.filter(
-            (l) =>
-                l.name.toLowerCase().includes(q) ||
-                l.client.toLowerCase().includes(q) ||
-                l.address.toLowerCase().includes(q)
-        );
-    }, [locations, search]);
+    const loadLocations = async () => {
+        setLoading(true); const result = await getLocations({ page, search, limit }); setLoading(false);
+        if (!result.success) { setError(result.error); return; }
+        setError(''); setTotal(result.data.total_count); setLocations(result.data.locations.map((item) => ({ id: item.location_id, name: item.location_name, client: item.client_company_name, address: item.address, floors: item.floors, rooms: item.rooms, requiredHours: item.required_hours_numeric, assignedEmployees: [] })));
+    };
+    useEffect(() => { const timeout = window.setTimeout(() => { void loadLocations(); }, 300); return () => window.clearTimeout(timeout); }, [search, page]);
+    useEffect(() => { setPage(1); }, [search]);
 
-    const handleAdd = (data: Omit<Location, 'id'>) => {
-        const newLocation: Location = {
-            ...data,
-            id: `L${String(locations.length + 1).padStart(3, '0')}`,
-        };
-        setLocations((prev) => [...prev, newLocation]);
+    const handleAdd = () => {
         setShowModal(false);
+        void loadLocations();
     };
 
     return (
@@ -66,7 +65,8 @@ export default function LocationsPage() {
 
             {/* Cards Grid */}
             <div>
-                {filtered.length === 0 ? (
+                {error && <p className="mb-4 rounded border border-red-200 bg-red-50 p-3 text-xs font-medium text-red-700">{error}</p>}
+                {loading ? <CardGridSkeleton /> : locations.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-24 text-center">
                         <MdOutlineLocationOn className="text-5xl text-gray-300 mb-3" />
                         <p className="text-sm font-semibold text-gray-500">No locations found</p>
@@ -74,7 +74,7 @@ export default function LocationsPage() {
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4  gap-4">
-                        {filtered.map((location) => (
+                        {locations.map((location) => (
                             <LocationCard
                                 key={location.id}
                                 location={location}
@@ -85,6 +85,7 @@ export default function LocationsPage() {
                     </div>
                 )}
             </div>
+            <BackendPagination page={page} limit={limit} total={total} onPageChange={setPage} />
 
             {/* Modal */}
             {showModal && (
@@ -101,7 +102,7 @@ export default function LocationsPage() {
                     onClose={() => setSelectedLocation(null)}
                 />
             )}
-            {importOpen && <BulkImportModal onClose={() => setImportOpen(false)} />}
+            {importOpen && <BulkImportModal mode="locations" onImported={() => { setImportOpen(false); void loadLocations(); }} onClose={() => setImportOpen(false)} />}
         </div>
     );
 }
@@ -116,42 +117,44 @@ function LocationCard({ location, onClick, isSelected }: LocationCardProps) {
     return (
         <div
             onClick={onClick}
-            className={`dashboard-card cursor-pointer transition-[border-color,box-shadow] hover:border-[#d7dbe4] hover:shadow ${isSelected ? 'border-[#0ea5e9]/50 shadow ring-1 ring-[#0ea5e9]/20' : ''
+            className={`dashboard-card flex flex-col justify-between h-full cursor-pointer transition-[border-color,box-shadow] hover:border-[#d7dbe4] hover:shadow ${isSelected ? 'border-[#0ea5e9]/50 shadow ring-1 ring-[#0ea5e9]/20' : ''
                 }`}
         >
-            {/* Card Header */}
-            <div className="px-4 pt-4 pb-3 flex items-start gap-3">
-                <div className="w-9 h-9 rounded bg-[#e0f2fe] flex items-center justify-center shrink-0 mt-0.5">
-                    <TbBuilding className="text-[#0ea5e9] text-lg" />
+            <div className="flex-1 flex flex-col min-w-0">
+                {/* Card Header */}
+                <div className="px-3.5 pt-3 pb-2 flex items-start gap-2.5">
+                    <div className="w-8 h-8 rounded bg-[#e0f2fe] flex items-center justify-center shrink-0 mt-0.5">
+                        <TbBuilding className="text-[#0ea5e9] text-base" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                        <p className="text-xs font-semibold text-gray-900 leading-tight line-clamp-2">{location.name}</p>
+                        <p className="text-xs text-[#0ea5e9] mt-0.5 truncate">{location.client}</p>
+                    </div>
                 </div>
-                <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold text-gray-900 leading-snug line-clamp-2">{location.name}</p>
-                    <p className="text-xs text-[#0ea5e9] mt-0.5 truncate">{location.client}</p>
-                </div>
-            </div>
 
-            {/* Address */}
-            <div className="px-4 pb-3 flex items-center gap-1.5">
-                <MdOutlineLocationOn className="text-gray-400 text-sm shrink-0" />
-                <p className="text-xs text-gray-400 truncate">{location.address}</p>
+                {/* Address */}
+                <div className="px-3.5 pb-2.5 flex items-center gap-1.5">
+                    <MdOutlineLocationOn className="text-gray-400 text-xs shrink-0" />
+                    <p className="text-xs text-gray-400 truncate">{location.address}</p>
+                </div>
             </div>
 
             {/* Divider */}
-            <div className="border-t border-gray-100 mx-4" />
+            <div className="border-t border-gray-100 mx-3.5" />
 
             {/* Stats */}
-            <div className="grid grid-cols-3 divide-x divide-gray-100">
-                <div className="px-4 py-3 text-center">
-                    <p className="text-lg font-bold text-gray-900">{location.floors}</p>
-                    <p className="text-[11px] text-gray-400">Floors</p>
+            <div className="grid grid-cols-3 divide-x divide-gray-100 mt-auto">
+                <div className="px-2 py-2 text-center">
+                    <p className="text-sm font-bold text-gray-900">{location.floors}</p>
+                    <p className="text-[10px] text-gray-400">Floors</p>
                 </div>
-                <div className="px-4 py-3 text-center">
-                    <p className="text-lg font-bold text-gray-900">{location.rooms}</p>
-                    <p className="text-[11px] text-gray-400">Rooms</p>
+                <div className="px-2 py-2 text-center">
+                    <p className="text-sm font-bold text-gray-900">{location.rooms}</p>
+                    <p className="text-[10px] text-gray-400">Rooms</p>
                 </div>
-                <div className="px-2 py-3 text-center">
-                    <p className="text-lg font-bold text-gray-900">{location.requiredHours}h</p>
-                    <p className="text-[11px] text-gray-400">Required</p>
+                <div className="px-2 py-2 text-center">
+                    <p className="text-sm font-bold text-gray-900">{location.requiredHours}h</p>
+                    <p className="text-[10px] text-gray-400">Required</p>
                 </div>
             </div>
         </div>

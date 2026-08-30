@@ -1,309 +1,35 @@
 "use client";
+import { useEffect, useState } from "react";
+import { MdClose, MdOutlinePerson, MdSearch, MdWarningAmber } from "react-icons/md";
+import { CardGridSkeleton, DetailSkeleton } from "@/components/shared/SkeletonLoader";
+import { getEscalation, getEscalations, updateEscalationStatus, type EscalationApi } from "@/services/actions/escalations";
 
-import React, { useMemo, useState } from "react";
-import {
-  MdClose,
-  MdOutlinePerson,
-  MdSearch,
-  MdWarningAmber,
-} from "react-icons/md";
-
-type EscalationStatus = "Open" | "In Progress" | "Resolved";
-type EscalationSeverity = "Emergency" | "High" | "Medium" | "Low";
-
-interface Escalation {
-  id: string;
-  title: string;
-  location: string;
-  description: string;
-  reporter: string;
-  reporterInitials: string;
-  status: EscalationStatus;
-  severity: EscalationSeverity;
-  assignedTo?: string;
-}
-
-const ESCALATIONS: Escalation[] = [
-  {
-    id: "I001",
-    title: "Gebroken spiegel in Kamer 305",
-    location: "NH Hotel Amsterdam - Kamer 305",
-    description:
-      "Een grote badkamerspiegel lijkt gebarsten. Onduidelijk of het bestaande schade betreft.",
-    reporter: "Lisa Visser",
-    reporterInitials: "LV",
-    status: "Open",
-    severity: "Emergency",
-  },
-  {
-    id: "I002",
-    title: "Waterlek in badkamer - Kamer 701",
-    location: "Hilton Rotterdam - Kamer 701",
-    description:
-      "Actief waterlek vanuit de pijp onder de wastafel. Water verspreidt zich naar slaapkamer. Dringende onderhoud vereist.",
-    reporter: "Emma Smit",
-    reporterInitials: "ES",
-    status: "In Progress",
-    severity: "Emergency",
-    assignedTo: "Kaz Putters",
-  },
-  {
-    id: "I003",
-    title: "Gast klaagde over gemiste gebieden",
-    location: "NH Hotel Amsterdam - Kamer 203",
-    description:
-      "Gast uit Kamer 203 meldde dat achter de badkamerdeur niet schoongemaakt was.",
-    reporter: "Lisa Visser",
-    reporterInitials: "LV",
-    status: "In Progress",
-    severity: "High",
-    assignedTo: "Jan de Vries",
-  },
-  {
-    id: "I004",
-    title: "Chemische morsen op corridorvloer",
-    location: "UMC Utrecht - Verdieping 5 Gang",
-    description:
-      "Schoonmaakmiddel per ongeluk gemorst op de gang. Gebied gemarkeerd maar vereist proper schoonmaken en ventilatie.",
-    reporter: "Noah Bos",
-    reporterInitials: "NB",
-    status: "Open",
-    severity: "Emergency",
-  },
-  {
-    id: "I005",
-    title: "Gastbenodigdheden niet aangevuld",
-    location: "Van der Valk Eindhoven - Opslag",
-    description:
-      "Shampoo en conditioner niet beschikbaar in de opslagruimte. Bestelling moet worden geplaatst.",
-    reporter: "Sophie de Boer",
-    reporterInitials: "SB",
-    status: "Resolved",
-    severity: "Low",
-    assignedTo: "Marit Janssen",
-  },
-];
-
-const severityStyles: Record<
-  EscalationSeverity,
-  { accent: string; iconBg: string; iconText: string; label: string }
-> = {
-  Emergency: {
-    accent: "border-l-[#ef4444]",
-    iconBg: "bg-[#fee2e2]",
-    iconText: "text-[#ef4444]",
-    label: "text-[#ef4444]",
-  },
-  High: {
-    accent: "border-l-[#f59e0b]",
-    iconBg: "bg-[#fef3c7]",
-    iconText: "text-[#f59e0b]",
-    label: "text-[#f59e0b]",
-  },
-  Medium: {
-    accent: "border-l-[#0ea5e9]",
-    iconBg: "bg-[#e0f2fe]",
-    iconText: "text-[#0ea5e9]",
-    label: "text-[#0ea5e9]",
-  },
-  Low: {
-    accent: "border-l-[#10b981]",
-    iconBg: "bg-[#d1fae5]",
-    iconText: "text-[#10b981]",
-    label: "text-[#10b981]",
-  },
-};
-
-const statusStyles: Record<EscalationStatus, string> = {
-  Open: "text-[#ef4444]",
-  "In Progress": "text-[#f59e0b]",
-  Resolved: "text-[#10b981]",
-};
+const severityStyle: Record<string, string> = { emergency: "border-l-red-500 text-red-500 bg-red-50", high: "border-l-amber-500 text-amber-500 bg-amber-50", medium: "border-l-sky-500 text-sky-500 bg-sky-50", low: "border-l-emerald-500 text-emerald-500 bg-emerald-50" };
+const statusStyle: Record<string, string> = { open: "text-red-500", in_progress: "text-amber-500", resolved: "text-emerald-500", closed: "text-slate-500" };
+const label = (value: string) => value.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
 
 export default function EscalationsPage() {
-  const [search, setSearch] = useState("");
-  const [selectedIssue, setSelectedIssue] = useState<Escalation | null>(null);
+  const [search, setSearch] = useState(""); const [status, setStatus] = useState("");
+  const [items, setItems] = useState<EscalationApi[]>([]); const [counts, setCounts] = useState({ open: 0, progress: 0, resolved: 0 });
+  const [selected, setSelected] = useState<EscalationApi | null>(null); const [drawerLoading, setDrawerLoading] = useState(false);
+  const [loading, setLoading] = useState(true); const [error, setError] = useState("");
+  const load = () => { setLoading(true); void getEscalations({ search, status: status || undefined }).then((result) => { setLoading(false); if (!result.success) return setError(result.error); setError(""); setItems(result.data.escalations); setCounts({ open: result.data.open_count, progress: result.data.in_progress_count, resolved: result.data.resolved_count }); }); };
+  useEffect(() => { const timer = window.setTimeout(load, 300); return () => window.clearTimeout(timer); }, [search, status]);
+  const openDrawer = async (item: EscalationApi) => { setSelected(item); setDrawerLoading(true); const result = await getEscalation(item.escalation_id); setDrawerLoading(false); if (result.success) setSelected(result.data); else setError(result.error); };
+  const update = async (next: string, notes: string) => { if (!selected) return false; const result = await updateEscalationStatus(selected.escalation_id, next, notes); if (!result.success) { setError(result.error); return false; } setSelected(null); load(); return true; };
 
-  const filteredEscalations = useMemo(() => {
-    const query = search.trim().toLowerCase();
-    if (!query) return ESCALATIONS;
-
-    return ESCALATIONS.filter((issue) =>
-      [issue.title, issue.location, issue.description, issue.reporter, issue.status]
-        .join(" ")
-        .toLowerCase()
-        .includes(query)
-    );
-  }, [search]);
-
-  return (
-    <div className="space-y-6 pb-10">
-      <div className="relative w-full max-w-[280px]">
-        <MdSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg" />
-        <input
-          type="text"
-          placeholder="Search issues..."
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          className="h-9 w-full rounded border border-gray-200 bg-gray-50 pl-9 pr-4 text-sm text-gray-700 shadow-sm transition-colors placeholder:text-gray-400 focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#0ea5e9]"
-        />
-      </div>
-
-      <div className="space-y-3">
-        {filteredEscalations.map((issue) => (
-          <EscalationCard
-            key={issue.id}
-            issue={issue}
-            onClick={() => setSelectedIssue(issue)}
-          />
-        ))}
-      </div>
-
-      {filteredEscalations.length === 0 && (
-        <div className="rounded border border-gray-200 bg-white py-16 text-center shadow-sm">
-          <p className="text-sm font-semibold text-gray-500">No escalations found</p>
-          <p className="mt-1 text-xs text-gray-400">Try a different search term.</p>
-        </div>
-      )}
-
-      {selectedIssue && (
-        <IssueDrawer
-          issue={selectedIssue}
-          onClose={() => setSelectedIssue(null)}
-          onResolve={() => setSelectedIssue(null)}
-        />
-      )}
-    </div>
-  );
+  return <div className="space-y-5 pb-10">
+    <div className="flex flex-wrap gap-2"><div className="relative min-w-[260px] flex-1"><MdSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" /><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search escalations..." className="h-10 w-full rounded border border-slate-200 bg-white pl-9 pr-3 text-sm outline-none focus:border-sky-400" /></div><select value={status} onChange={(e) => setStatus(e.target.value)} className="h-10 rounded border border-slate-200 bg-white px-3 text-sm"><option value="">All statuses</option><option value="open">Open ({counts.open})</option><option value="in_progress">In Progress ({counts.progress})</option><option value="resolved">Resolved ({counts.resolved})</option><option value="closed">Closed</option></select></div>
+    {error && <p className="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</p>}
+    {loading ? <CardGridSkeleton cards={6} /> : <div className="space-y-3">{items.map((item) => <EscalationCard key={item.escalation_id} item={item} onClick={() => void openDrawer(item)} />)}{items.length === 0 && <div className="rounded border bg-white py-16 text-center text-sm text-slate-500">No escalations found</div>}</div>}
+    {selected && <IssueDrawer issue={selected} loading={drawerLoading} onClose={() => setSelected(null)} onUpdate={update} />}
+  </div>;
 }
 
-function EscalationCard({
-  issue,
-  onClick,
-}: {
-  issue: Escalation;
-  onClick: () => void;
-}) {
-  const style = severityStyles[issue.severity];
+function EscalationCard({ item, onClick }: { item: EscalationApi; onClick: () => void }) { const severity = item.severity.toLowerCase(); const style = severityStyle[severity] ?? "border-l-slate-400 text-slate-500 bg-slate-50"; return <button onClick={onClick} className={`w-full rounded border border-l-4 border-slate-200 bg-white p-5 text-left shadow-sm hover:shadow ${style.split(" ")[0]}`}><div className="flex gap-4"><span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${style}`}><MdWarningAmber className="text-xl" /></span><div className="min-w-0 flex-1"><div className="flex flex-wrap justify-between gap-2"><div><h2 className="text-sm font-bold text-slate-900">{item.title}</h2><p className="mt-1 text-xs text-slate-500">{item.subtitle}</p></div><span className={`text-xs font-semibold ${statusStyle[item.status] ?? "text-slate-500"}`}>{item.status_label || label(item.status)}</span></div><p className="mt-3 line-clamp-2 text-sm text-slate-600">{item.description}</p><div className="mt-3 flex flex-wrap gap-4 text-xs text-slate-500"><span>{item.reporter.name}</span>{item.assigned_to?.name && <span className="flex items-center gap-1"><MdOutlinePerson />Assigned to {item.assigned_to.name}</span>}<span>{new Date(item.created_at).toLocaleString()}</span></div></div></div></button>; }
 
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`w-full rounded border border-gray-200 border-l-4 ${style.accent} bg-white p-5 text-left shadow-sm transition-all hover:border-gray-300 hover:shadow`}
-    >
-      <div className="flex min-h-[96px] flex-col gap-4 md:flex-row md:justify-between cursor-pointer">
-        <div className="flex gap-4">
-          <div
-            className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${style.iconBg}`}
-          >
-            <MdWarningAmber className={`text-xl ${style.iconText}`} />
-          </div>
-
-          <div className="min-w-0 space-y-3">
-            <div>
-              <h2 className="text-sm font-bold leading-snug text-gray-950">
-                {issue.title}
-              </h2>
-              <p className="mt-1 text-xs font-medium text-slate-500">
-                {issue.location}
-              </p>
-            </div>
-
-            <p className="text-sm leading-relaxed text-slate-600">
-              {issue.description}
-            </p>
-
-            <div className="flex items-center gap-2">
-              <img src="/avatar-placeholder.svg" alt={issue.reporter} className="h-5 w-5 rounded-full border border-gray-200 object-cover" />
-              <span className="text-xs font-medium text-slate-500">
-                {issue.reporter}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex shrink-0 items-end justify-between gap-4 md:w-[190px] md:flex-col md:items-end">
-          <span className={`text-xs font-medium ${statusStyles[issue.status]}`}>
-            {issue.status}
-          </span>
-
-          {issue.assignedTo && (
-            <span className="flex items-center gap-1 text-xs font-medium text-slate-500">
-              <MdOutlinePerson className="text-sm text-slate-400" />
-              Assigned to {issue.assignedTo}
-            </span>
-          )}
-        </div>
-      </div>
-    </button>
-  );
-}
-
-function IssueDrawer({
-  issue,
-  onClose,
-  onResolve,
-}: {
-  issue: Escalation;
-  onClose: () => void;
-  onResolve: () => void;
-}) {
-  const style = severityStyles[issue.severity];
-
-  return (
-    <div className="modal-backdrop fixed inset-0 z-40 flex justify-end">
-      <button
-        type="button"
-        aria-label="Close issue details"
-        className="absolute inset-0 cursor-default"
-        onClick={onClose}
-      />
-
-      <aside className="relative z-10 flex h-full w-full max-w-[500px] flex-col bg-white shadow animate-in slide-in-from-right duration-200">
-        <div className="flex items-start justify-between border-b border-gray-200 px-6 py-5">
-          <div>
-            <h2 className="text-lg font-bold text-slate-800">Issue {issue.id}</h2>
-            <p className={`mt-1 text-xs font-semibold ${style.label}`}>
-              {issue.severity}
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded p-1 text-slate-400 transition-colors hover:bg-gray-100 hover:text-slate-600"
-            aria-label="Close"
-          >
-            <MdClose className="text-2xl" />
-          </button>
-        </div>
-
-        <div className="flex-1 px-6 py-6">
-          <h3 className="text-base font-bold leading-snug text-slate-800">
-            {issue.title}
-          </h3>
-          <p className="mt-2 text-sm leading-relaxed text-slate-600">
-            {issue.description}
-          </p>
-
-          <div className="mt-5 grid grid-cols-1 gap-2 sm:grid-cols-2">
-            <button
-              type="button"
-              onClick={onResolve}
-              className="h-10 rounded border border-emerald-200 bg-emerald-50 text-sm font-semibold text-emerald-600 transition-colors hover:bg-emerald-100"
-            >
-              Resolve
-            </button>
-            <button
-              type="button"
-              onClick={onClose}
-              className="h-10 rounded border border-gray-300 bg-gray-50 text-sm font-semibold text-slate-500 transition-colors hover:bg-gray-100"
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      </aside>
-    </div>
-  );
+function IssueDrawer({ issue, loading, onClose, onUpdate }: { issue: EscalationApi; loading: boolean; onClose: () => void; onUpdate: (status: string, notes: string) => Promise<boolean> }) {
+  const [nextStatus, setNextStatus] = useState(issue.status); const [notes, setNotes] = useState(issue.notes ?? ""); const [saving, setSaving] = useState(false);
+  const save = async () => { setSaving(true); const ok = await onUpdate(nextStatus, notes); if (!ok) setSaving(false); };
+  return <div className="modal-backdrop fixed inset-0 z-40 flex justify-end"><button className="absolute inset-0" onClick={onClose} aria-label="Close" /><aside className="relative z-10 flex h-full w-full max-w-[500px] flex-col bg-white shadow"><header className="flex justify-between border-b p-5"><div><h2 className="text-lg font-bold">Escalation {issue.escalation_id}</h2><p className="text-xs font-semibold text-amber-500">{label(issue.severity)}</p></div><button onClick={onClose}><MdClose className="text-2xl text-slate-400" /></button></header><div className="flex-1 overflow-y-auto p-6">{loading ? <DetailSkeleton blocks={6} /> : <div className="space-y-4"><div><h3 className="font-bold text-slate-800">{issue.title}</h3><p className="mt-1 text-xs text-slate-500">{issue.subtitle}</p><p className="mt-3 text-sm leading-6 text-slate-600">{issue.description}</p></div>{issue.photo_url && <img src={issue.photo_url} alt="Escalation" className="max-h-64 w-full rounded border object-cover" />}<div className="rounded bg-slate-50 p-3 text-xs text-slate-600"><p>Reporter: {issue.reporter.name}</p><p className="mt-1">Shift: {issue.shift_id}</p><p className="mt-1">Assigned: {issue.assigned_to?.name || "Unassigned"}</p></div><label className="block text-xs font-semibold text-slate-600">Status<select value={nextStatus} onChange={(e) => setNextStatus(e.target.value)} className="mt-2 h-10 w-full rounded border bg-white px-3 text-sm font-normal"><option value="open">Open</option><option value="in_progress">In Progress</option><option value="resolved">Resolved</option><option value="closed">Closed</option></select></label><label className="block text-xs font-semibold text-slate-600">Notes<textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={4} className="mt-2 w-full rounded border p-3 text-sm font-normal" /></label><button disabled={saving} onClick={() => void save()} className="h-10 w-full rounded bg-sky-500 text-sm font-semibold text-white disabled:opacity-60">{saving ? "Updating..." : "Update status"}</button></div>}</div></aside></div>;
 }

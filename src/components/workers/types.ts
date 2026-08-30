@@ -6,6 +6,7 @@ export interface Worker {
   workerType: 'Employee' | 'Freelancer';
   position: string;
   location: string;
+  hourlyRate?: number;
   languages: string[];
   hours: string;
   status: 'On Shift' | 'Active' | 'Off Duty';

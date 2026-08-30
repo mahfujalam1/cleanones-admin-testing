@@ -5,6 +5,7 @@ import { Shift } from "./types";
 interface DayViewProps {
   currentDate: Date;
   shifts: Shift[];
+  teamMembers?: string[];
   onShiftClick: (shift: Shift) => void;
 }
 
@@ -12,13 +13,14 @@ const START_HOUR = 5;
 const END_HOUR = 20;
 const HOUR_WIDTH = 96;
 const EMPLOYEE_WIDTH = 220;
-const employees = ["Lisa Visser", "Emma Smit", "Noah Bos", "Sophie de Boer", "Lucas Meijer", "Anna Mulder", "Daan van den Berg", "Milan Dekker"];
 const colors = ["#0ea5e9", "#0284c7", "#06a7df", "#0891b2", "#38a9db", "#0369a1", "#0b9fd3", "#0284c7"];
 
-export function DayView({ currentDate, shifts, onShiftClick }: DayViewProps) {
+export function DayView({ currentDate, shifts, teamMembers, onShiftClick }: DayViewProps) {
   const dateKey = toDateKey(currentDate);
   const dayShifts = shifts.filter((shift) => shift.date === dateKey);
-  const rows = Array.from(new Set([...employees, ...dayShifts.map((shift) => shift.workerName)]));
+  const rows = teamMembers && teamMembers.length > 0
+    ? teamMembers
+    : Array.from(new Set(dayShifts.map((shift) => shift.workerName)));
   const hours = Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, index) => START_HOUR + index);
   const isToday = currentDate.toDateString() === new Date().toDateString();
   const now = new Date();

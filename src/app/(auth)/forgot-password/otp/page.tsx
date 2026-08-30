@@ -2,6 +2,7 @@
 
 import React, { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { resendOtp } from '@/services/actions/auth';
 
 export default function OTPPage() {
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
@@ -17,6 +18,7 @@ export default function OTPPage() {
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     if (otp.join('').length !== 6) return setError('Please enter the complete 6-digit code');
+    sessionStorage.setItem('cleanones-reset-otp', otp.join(''));
     router.push('/forgot-password/reset');
   };
 
@@ -34,7 +36,7 @@ export default function OTPPage() {
         {error && <p className="text-center text-xs font-medium text-red-500">{error}</p>}
         <button type="submit" className="h-10 w-full cursor-pointer rounded bg-primary text-sm font-semibold text-white shadow-sm hover:bg-[#0284c7]">Verify Code</button>
       </form>
-      <p className="text-center text-[11px] text-slate-400">Didn&apos;t receive the code? <button type="button" className="font-semibold text-primary hover:underline">Resend Code</button></p>
+      <p className="text-center text-[11px] text-slate-400">Didn&apos;t receive the code? <button type="button" onClick={async () => { const email = sessionStorage.getItem('cleanones-reset-email'); if (!email) return setError('Please start the reset process again'); const result = await resendOtp(email); setError(result.success ? 'OTP sent again' : result.error); }} className="font-semibold text-primary hover:underline">Resend Code</button></p>
     </div>
   );
 }

@@ -25,12 +25,16 @@ export const defaultManagers: ManagerRecord[] = [
 
 export const routePermissions: RoutePermission[] = [
   { name: "Dashboard", href: "/", section: "Operations" },
+  { name: "Live Operations", href: "/live-operations", section: "Operations" },
   { name: "Roster", href: "/roster", section: "Operations" },
   { name: "Shift Monitoring", href: "/shift-monitoring", section: "Operations" },
   { name: "Workers", href: "/users", section: "Operations" },
   { name: "Clients", href: "/clients", section: "Operations" },
   { name: "Chat", href: "/chat", section: "Operations" },
   { name: "Locations", href: "/locations", section: "Operations" },
+  { name: "Rooms", href: "/rooms", section: "Operations" },
+  { name: "Cleaning Plans", href: "/cleaning-plans", section: "Operations" },
+  { name: "Extra Services", href: "/extra-services", section: "Operations" },
   { name: "Photo Reviews", href: "/photo-reviews", section: "Quality Control" },
   { name: "Escalations", href: "/escalations", section: "Quality Control" },
   { name: "Reports", href: "/reports", section: "Quality Control" },

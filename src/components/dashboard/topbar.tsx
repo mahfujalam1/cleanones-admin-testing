@@ -21,6 +21,9 @@ import {
 } from "react-icons/md";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setSignOutModalOpen, toggleMobileSidebar } from "@/store/slices/ui.slice";
+import { getFaqs, type Faq } from "@/services/actions/manager";
+import { getNotifications, markNotificationRead, type NotificationApi } from "@/services/actions/notifications";
+import { DetailSkeleton } from "@/components/shared/SkeletonLoader";
 
 const languages = [
   { label: "English", code: "en" },
@@ -31,34 +34,6 @@ const languages = [
   { label: "Arabic", code: "ar" },
   { label: "French", code: "fr" },
   { label: "Spanish", code: "es" },
-];
-
-const notificationPreview = [
-  {
-    color: "bg-[#f59e0b]",
-    text: "Schoonmaker Lisa Visser is 15 min te laat",
-    time: "2m geleden",
-  },
-  {
-    color: "bg-[#ef4444]",
-    text: "Foto afgewezen voor Kamer 201 - NH Hotel Amsterdam",
-    time: "5m geleden",
-  },
-  {
-    color: "bg-[#3b82f6]",
-    text: "Dienst #1043 voltooid bij Hilton Rotterdam",
-    time: "12m geleden",
-  },
-  {
-    color: "bg-[#10b981]",
-    text: "Nieuwe escalatie opgelost door supervisor",
-    time: "20m geleden",
-  },
-  {
-    color: "bg-[#f59e0b]",
-    text: "GPS-validatie mislukt voor Noah Bos",
-    time: "35m geleden",
-  },
 ];
 
 const faqs = [
@@ -80,6 +55,9 @@ export default function Topbar() {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
+  const [notificationPreview, setNotificationPreview] = useState<NotificationApi[]>([]);
+  const [notificationsLoading, setNotificationsLoading] = useState(true);
+  const [unreadCount, setUnreadCount] = useState(0);
   const languageRef = useRef<HTMLDivElement>(null);
   const notificationsRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
@@ -99,6 +77,8 @@ export default function Topbar() {
     setNotificationsOpen(false);
     setProfileOpen(false);
   };
+
+  useEffect(() => { void getNotifications(1, 5).then((result) => { setNotificationsLoading(false); if (result.success) { setNotificationPreview(result.data.notifications); setUnreadCount(result.data.unread_count); } }); }, []);
 
   useEffect(() => {
     const handlePointerDown = (event: PointerEvent) => {
@@ -197,10 +177,10 @@ export default function Topbar() {
               className="relative flex h-8 w-8 items-center justify-center rounded border border-border bg-white text-muted-foreground shadow-[var(--shadow-xs)] transition-colors hover:bg-muted/60 hover:text-foreground"
             >
               <MdNotificationsNone className="text-lg" />
-              <span className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-primary" />
+              {unreadCount > 0 && <span className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-primary" />}
             </button>
 
-            {notificationsOpen && <NotificationsPopover locale={locale} />}
+            {notificationsOpen && <NotificationsPopover locale={locale} items={notificationPreview} loading={notificationsLoading} onRead={async (item) => { if (item.is_read) return; const result = await markNotificationRead(item.id); if (result.success) { setNotificationPreview((current) => current.map((entry) => entry.id === item.id ? { ...entry, is_read: true } : entry)); setUnreadCount((count) => Math.max(0, count - 1)); } }} />}
           </div>
 
           <div ref={profileRef} className="relative">
@@ -213,7 +193,7 @@ export default function Topbar() {
               }}
               className="flex h-8 items-center gap-2 rounded border border-transparent bg-transparent px-1.5 text-left transition-colors hover:bg-white/70"
             >
-              <img src="/avatar-placeholder.svg" alt={user?.name ?? "User"} className="h-7 w-7 shrink-0 rounded-full border border-gray-200 object-cover" />
+              <img src={user?.profilePhoto || "/avatar-placeholder.svg"} alt={user?.name ?? "User"} className="h-7 w-7 shrink-0 rounded-full border border-gray-200 object-cover" />
               <div className="hidden text-left md:block">
                 <div className="text-xs font-semibold leading-none text-foreground">
                   {user?.name ?? 'User'}
@@ -244,7 +224,7 @@ export default function Topbar() {
   );
 }
 
-function NotificationsPopover({ locale }: { locale: string }) {
+function NotificationsPopover({ locale, items, loading, onRead }: { locale: string; items: NotificationApi[]; loading: boolean; onRead: (item: NotificationApi) => Promise<void> }) {
   return (
     <div className="shadow absolute -right-12 top-11 w-[300px] max-w-[calc(100vw-2rem)] overflow-hidden rounded border border-gray-200 bg-white sm:right-0 sm:w-[360px]">
       <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
@@ -257,18 +237,22 @@ function NotificationsPopover({ locale }: { locale: string }) {
         </Link>
       </div>
       <div>
-        {notificationPreview.map((item) => (
-          <div
-            key={item.text}
+        {loading ? <div className="p-3"><DetailSkeleton blocks={3} /></div> : items.map((item) => (
+          <button
+            type="button"
+            onClick={() => void onRead(item)}
+            key={item.id}
             className="flex gap-3 border-b border-gray-100 px-4 py-3 last:border-b-0"
           >
-            <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${item.color}`} />
-            <div>
-              <p className="text-sm leading-snug text-slate-800">{item.text}</p>
-              <p className="mt-1 text-xs text-slate-400">{item.time}</p>
+            <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${item.is_read ? "bg-slate-300" : "bg-sky-500"}`} />
+            <div className="text-left">
+              <p className="text-sm font-semibold leading-snug text-slate-800">{item.title}</p>
+              <p className="mt-0.5 line-clamp-2 text-xs text-slate-500">{item.message}</p>
+              <p className="mt-1 text-xs text-slate-400">{item.time_ago}</p>
             </div>
-          </div>
+          </button>
         ))}
+        {!loading && items.length === 0 && <p className="p-5 text-center text-xs text-slate-400">No notifications</p>}
       </div>
     </div>
   );
@@ -310,6 +294,10 @@ function ProfileMenu({ locale, onHelp, onSignOut }: { locale: string; onHelp: ()
 
 function HelpCenterModal({ onClose }: { onClose: () => void }) {
   const [chatOpen, setChatOpen] = useState(false);
+  const [apiFaqs, setApiFaqs] = useState<Faq[]>([]);
+  const [openFaq, setOpenFaq] = useState<string | null>(null);
+
+  useEffect(() => { void getFaqs().then((result) => { if (result.success) setApiFaqs([...result.data].sort((a, b) => a.serial_no - b.serial_no)); }); }, []);
 
   return (
     <div className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -377,15 +365,11 @@ function HelpCenterModal({ onClose }: { onClose: () => void }) {
             Frequently Asked Questions
           </h3>
           <div className="mt-3 space-y-2">
-            {faqs.map((question) => (
-              <button
-                key={question}
-                type="button"
-                className="flex w-full items-center justify-between rounded border border-gray-200 bg-white px-4 py-3 text-left text-sm font-medium text-slate-950 transition-colors hover:bg-gray-50"
-              >
-                {question}
-                <MdChevronRight className="text-xl text-slate-400" />
-              </button>
+            {(apiFaqs.length ? apiFaqs : faqs.map((question, index) => ({ _id: String(index), question, answer: "", serial_no: index, created_at: "", updated_at: "" }))).map((faq) => (
+              <div key={faq._id} className="rounded border border-gray-200 bg-white">
+                <button type="button" onClick={() => setOpenFaq((current) => current === faq._id ? null : faq._id)} className="flex w-full items-center justify-between px-4 py-3 text-left text-sm font-medium text-slate-950 transition-colors hover:bg-gray-50">{faq.question}<MdChevronRight className={`text-xl text-slate-400 transition-transform ${openFaq === faq._id ? "rotate-90" : ""}`} /></button>
+                {openFaq === faq._id && faq.answer && <p className="border-t border-gray-100 px-4 py-3 text-xs leading-5 text-slate-600">{faq.answer}</p>}
+              </div>
             ))}
           </div>
         </div>

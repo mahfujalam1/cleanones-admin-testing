@@ -1,26 +1,12 @@
 "use client";
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { MdOutlineClose } from 'react-icons/md';
 import { useRouter } from 'next/navigation';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { WorkerInfo } from './types';
-
-const weeklyData = [
-  { name: 'W1', hours: 32 },
-  { name: 'W2', hours: 35 },
-  { name: 'W3', hours: 38 },
-  { name: 'W4', hours: 36 },
-];
-
-const monthlyData = [
-  { name: 'Jan', hours: 160 },
-  { name: 'Feb', hours: 155 },
-  { name: 'Mar', hours: 170 },
-  { name: 'Apr', hours: 168 },
-  { name: 'May', hours: 165 },
-  { name: 'Jun', hours: 80 },
-];
+import { getWorkerAttendanceStats } from '@/services/actions/shiftMonitoring';
+import { DetailSkeleton } from '@/components/shared/SkeletonLoader';
 
 interface AttendanceSidebarProps {
   worker: WorkerInfo;
@@ -29,6 +15,10 @@ interface AttendanceSidebarProps {
 
 export function AttendanceSidebar({ worker, onClose }: AttendanceSidebarProps) {
   const router = useRouter();
+  const [stats, setStats] = useState<{ hours_worked: string; completed_shifts: number; avg_shift_duration: string; late_checkins: number; weekly_hours_trend: Array<{ week_label: string; hours: number }>; monthly_hours_trend: Array<{ month_label: string; hours: number }> } | null>(null);
+  useEffect(() => { void getWorkerAttendanceStats(String(worker.id)).then((result) => { if (result.success) setStats(result.data); }); }, [worker.id]);
+  const weeklyData = (stats?.weekly_hours_trend ?? []).map((item) => ({ name: item.week_label, hours: item.hours }));
+  const monthlyData = (stats?.monthly_hours_trend ?? []).map((item) => ({ name: item.month_label, hours: item.hours }));
 
   // Handle escape key
   useEffect(() => {
@@ -70,24 +60,25 @@ export function AttendanceSidebar({ worker, onClose }: AttendanceSidebarProps) {
 
         {/* Panel Content */}
         <div className="flex-1 overflow-y-auto p-6 bg-gray-50 space-y-5">
+          {!stats ? <DetailSkeleton blocks={6} /> : <>
           
           {/* Stats Cards */}
           <div className="grid grid-cols-2 gap-4">
             <div className="bg-white border border-gray-100 rounded p-4 shadow-sm">
               <div className="text-[10px] text-[#0ea5e9] uppercase font-bold tracking-wider mb-1">Hours Worked</div>
-              <div className="text-2xl font-bold text-[#0ea5e9]">{worker.hoursWorked || 168}h</div>
+              <div className="text-2xl font-bold text-[#0ea5e9]">{stats.hours_worked}</div>
             </div>
             <div className="bg-white border border-gray-100 rounded p-4 shadow-sm">
               <div className="text-[10px] text-[#10b981] uppercase font-bold tracking-wider mb-1">Completed Shifts</div>
-              <div className="text-2xl font-bold text-[#10b981]">{worker.totalShifts || 22}</div>
+              <div className="text-2xl font-bold text-[#10b981]">{stats.completed_shifts}</div>
             </div>
             <div className="bg-white border border-gray-100 rounded p-4 shadow-sm">
               <div className="text-[10px] text-[#6366f1] uppercase font-bold tracking-wider mb-1">Avg Shift Duration</div>
-              <div className="text-2xl font-bold text-[#6366f1]">{worker.avgDuration || '7.6h'}</div>
+              <div className="text-2xl font-bold text-[#6366f1]">{stats.avg_shift_duration}</div>
             </div>
             <div className="bg-white border border-gray-100 rounded p-4 shadow-sm">
               <div className="text-[10px] text-[#f59e0b] uppercase font-bold tracking-wider mb-1">Late Check-Ins</div>
-              <div className="text-2xl font-bold text-[#f59e0b]">{worker.lateDays || 1}</div>
+              <div className="text-2xl font-bold text-[#f59e0b]">{stats.late_checkins}</div>
             </div>
           </div>
 
@@ -133,6 +124,7 @@ export function AttendanceSidebar({ worker, onClose }: AttendanceSidebarProps) {
               </ResponsiveContainer>
             </div>
           </div>
+          </>}
         </div>
       </div>
     </>

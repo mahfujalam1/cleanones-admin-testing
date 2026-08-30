@@ -1,6 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { MdOutlineClose, MdSearch, MdCheck } from 'react-icons/md';
 import { ShiftTheme } from './types';
+import { assignRosterShift, createRosterDraft, getRosterClients, getRosterLocations, getRosterWorkers } from '@/services/actions/roster';
 
 interface Worker {
   id: string;
@@ -10,20 +11,6 @@ interface Worker {
   status: 'Available' | 'On Shift' | 'Off Duty';
   color: string;
 }
-
-const WORKERS: Worker[] = [
-  { id: 'w1', initials: 'LV', name: 'Lisa Visser', role: 'Employee', status: 'Available', color: 'bg-[#0ea5e9]' },
-  { id: 'w2', initials: 'ES', name: 'Emma Smit', role: 'Employee', status: 'Available', color: 'bg-[#8b5cf6]' },
-  { id: 'w3', initials: 'NB', name: 'Noah Bos', role: 'Freelancer', status: 'Available', color: 'bg-[#f97316]' },
-  { id: 'w4', initials: 'SB', name: 'Sophie de Boer', role: 'Employee', status: 'On Shift', color: 'bg-[#ec4899]' },
-  { id: 'w5', initials: 'LM', name: 'Lucas Meijer', role: 'Freelancer', status: 'Available', color: 'bg-[#10b981]' },
-  { id: 'w6', initials: 'AM', name: 'Anna Mulder', role: 'Employee', status: 'Available', color: 'bg-[#14b8a6]' },
-  { id: 'w7', initials: 'DB', name: 'Daan van den Berg', role: 'Freelancer', status: 'Off Duty', color: 'bg-[#6366f1]' },
-  { id: 'w8', initials: 'MD', name: 'Milan Dekker', role: 'Employee', status: 'Available', color: 'bg-[#22c55e]' },
-];
-
-const CLIENTS = ['NH Hotels', 'Hilton Group', 'Van der Valk', 'UMC Utrecht', 'Academisch Ziekenhuis'];
-const LOCATIONS = ['NH Hotel Amsterdam', 'Hilton Rotterdam', 'Van der Valk Eindhoven', 'UMC Utrecht', 'NH Hotel Groningen', 'Keizersgracht Kantoren', 'Haarlem Stadsschouwburg', 'Academisch Ziekenhuis Leiden'];
 
 const THEME_OPTIONS: ShiftTheme[] = ['blue', 'pink', 'orange', 'purple', 'green', 'teal'];
 
@@ -41,6 +28,11 @@ interface CreateShiftModalProps {
 
 export function CreateShiftModal({ onClose, onSave }: CreateShiftModalProps) {
   const [step, setStep] = useState<1 | 2>(1);
+  const [workers, setWorkers] = useState<Worker[]>([]);
+  const [clients, setClients] = useState<Array<{ id: string; name: string }>>([]);
+  const [locations, setLocations] = useState<Array<{ id: string; name: string }>>([]);
+  const [error, setError] = useState('');
+  const [saving, setSaving] = useState(false);
 
   // Step 1 state
   const [client, setClient] = useState('');
@@ -66,15 +58,50 @@ export function CreateShiftModal({ onClose, onSave }: CreateShiftModalProps) {
   const [roleFilter, setRoleFilter] = useState<'All' | 'Employee' | 'Freelancer'>('All');
   const [selectedWorkerIds, setSelectedWorkerIds] = useState<string[]>([]);
 
+  useEffect(() => {
+    void getRosterClients().then((result) => {
+      if (!result.success) return setError(result.error);
+      const raw = result.data as any;
+      const list = Array.isArray(raw) ? raw : raw?.clients || raw?.data || [];
+      setClients(list.map((item: any) => typeof item === 'string' ? { id: item, name: item } : { id: item.id || item.client_id || item.value || item.company_name, name: item.company_name || item.name || item.primary_contact_name || item.label || item.id }));
+    });
+  }, []);
+
+  useEffect(() => {
+    void getRosterWorkers({ targetDate: date }).then((result) => {
+      if (!result.success) return setError(result.error);
+      const raw = result.data as any;
+      const list = Array.isArray(raw) ? raw : raw?.workers || [];
+      setWorkers(list.map((item: any) => ({
+        id: item.worker_id || item.id,
+        name: item.name || item.full_name || 'Worker',
+        initials: (item.name || 'W').split(' ').map((part: string) => part[0]).join('').slice(0, 2),
+        role: (item.worker_type || '').toLowerCase() === 'freelancer' ? 'Freelancer' : 'Employee',
+        status: (item.status || '').toLowerCase() === 'active' || (item.status || '').toLowerCase() === 'available' ? 'Available' : 'Off Duty',
+        color: 'bg-sky-500'
+      })));
+    });
+  }, [date]);
+
+  useEffect(() => {
+    if (!client) { setLocations([]); return; }
+    void getRosterLocations(client).then((result) => {
+      if (!result.success) return setError(result.error);
+      const raw = result.data as any;
+      const list = Array.isArray(raw) ? raw : raw?.locations || [];
+      setLocations(list.map((item: any) => ({ id: item.id || item.location_id, name: item.name || item.location_name || item.address })));
+    });
+  }, [client]);
+
   const filteredWorkers = useMemo(() => {
-    return WORKERS.filter(w => {
+    return workers.filter(w => {
       const matchesRole = roleFilter === 'All' || w.role === roleFilter;
       const matchesSearch = w.name.toLowerCase().includes(searchQuery.toLowerCase());
       return matchesRole && matchesSearch;
     });
-  }, [searchQuery, roleFilter]);
+  }, [searchQuery, roleFilter, workers]);
 
-  const selectedWorkers = WORKERS.filter(w => selectedWorkerIds.includes(w.id));
+  const selectedWorkers = workers.filter(w => selectedWorkerIds.includes(w.id));
 
   const toggleWorker = (workerId: string) => {
     setSelectedWorkerIds(prev =>
@@ -92,26 +119,43 @@ export function CreateShiftModal({ onClose, onSave }: CreateShiftModalProps) {
     setSelectedWorkerIds([]);
   };
 
-  const handleSave = () => {
-    const dates = [date];
-    if (repeat !== 'none') {
-      const cursor = new Date(`${date}T12:00:00`);
-      const end = new Date(`${repeatUntil}T12:00:00`);
-      dates.length = 0;
-      while (cursor <= end && dates.length < 90) {
-        if (repeat === 'daily' || weekdays.includes(cursor.getDay())) dates.push(cursor.toISOString().split('T')[0]);
-        cursor.setDate(cursor.getDate() + 1);
-      }
-    }
-    const newShifts = dates.flatMap((shiftDate) => selectedWorkers.map((w, i) => ({
-      workerName: w.name,
-      location: location || 'Unassigned Location',
-      date: shiftDate,
-      startTime,
-      endTime,
-      theme: THEME_OPTIONS[i % THEME_OPTIONS.length],
-    })));
-    onSave(newShifts);
+  const handleSave = async () => {
+    if (!client || !location || !selectedWorkerIds.length) return setError('Client, location and at least one worker are required');
+    setSaving(true);
+    setError('');
+    const draft = await createRosterDraft({
+      client_id: client,
+      location_id: location,
+      date,
+      start_time: startTime,
+      end_time: endTime,
+      repeat_shift: repeat === 'daily' ? 'Every day' : repeat === 'weekly' ? 'Standard working week' : 'Does not repeat',
+      shift_notes: notes,
+      cleaning_plan_id: '',
+      room_ids: [],
+      rooms: []
+    });
+    if (!draft.success) { setSaving(false); return setError(draft.error); }
+    const draftId = draft.data.id || (draft.data as any).draft_id || '';
+    const published = await assignRosterShift({
+      draft_id: draftId,
+      team_leader_id: teamLeader || selectedWorkerIds[0],
+      worker_ids: selectedWorkerIds,
+      worker_assignments: selectedWorkerIds.map((worker_id) => ({
+        worker_id,
+        shift_role: worker_id === teamLeader ? 'team_leader' : 'cleaning_specialist'
+      }))
+    });
+    setSaving(false);
+    if (!published.success) return setError(published.error);
+    onSave([{
+      workerName: published.data.workers?.map((worker) => worker.name).join(', ') || selectedWorkers.map((worker) => worker.name).join(', '),
+      location: published.data.location_name || locations.find(l => l.id === location)?.name || location,
+      date: published.data.date || date,
+      startTime: published.data.start_time || startTime,
+      endTime: published.data.end_time || endTime,
+      theme: THEME_OPTIONS[0]
+    }]);
   };
 
   const canProceedToStep2 = location.length > 0;
@@ -164,7 +208,7 @@ export function CreateShiftModal({ onClose, onSave }: CreateShiftModalProps) {
                     className="w-full border border-gray-300 rounded px-3 py-2.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#0ea5e9]/30 focus:border-[#0ea5e9] appearance-none bg-white cursor-pointer"
                   >
                     <option value="">Select client...</option>
-                    {CLIENTS.map(c => <option key={c} value={c}>{c}</option>)}
+                    {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                   </select>
                 </div>
                 <div>
@@ -175,7 +219,7 @@ export function CreateShiftModal({ onClose, onSave }: CreateShiftModalProps) {
                     className="w-full border border-gray-300 rounded px-3 py-2.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#0ea5e9]/30 focus:border-[#0ea5e9] appearance-none bg-white cursor-pointer"
                   >
                     <option value="">Select location...</option>
-                    {LOCATIONS.map(l => <option key={l} value={l}>{l}</option>)}
+                    {locations.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
                   </select>
                 </div>
               </div>
@@ -250,7 +294,7 @@ export function CreateShiftModal({ onClose, onSave }: CreateShiftModalProps) {
                   className="w-full border border-gray-300 rounded px-3 py-2.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#0ea5e9]/30 focus:border-[#0ea5e9] appearance-none bg-white cursor-pointer"
                 >
                   <option value="">Select team leader...</option>
-                  {WORKERS.filter(w => w.role === 'Employee').map(w => (
+                  {workers.filter(w => w.role === 'Employee').map(w => (
                     <option key={w.id} value={w.id}>{w.name}</option>
                   ))}
                 </select>
@@ -346,6 +390,7 @@ export function CreateShiftModal({ onClose, onSave }: CreateShiftModalProps) {
         </div>
 
         {/* Footer */}
+        {error && <p className="border-t border-red-100 bg-red-50 px-6 py-2 text-xs font-medium text-red-700">{error}</p>}
         <div className="border-t border-gray-200 px-6 py-4 flex items-center justify-between bg-gray-50 flex-shrink-0">
           {step === 1 ? (
             <>
@@ -367,10 +412,10 @@ export function CreateShiftModal({ onClose, onSave }: CreateShiftModalProps) {
               </button>
               <button
                 onClick={handleSave}
-                disabled={selectedWorkerIds.length === 0}
+                disabled={selectedWorkerIds.length === 0 || saving}
                 className={`px-5 py-2 text-sm font-semibold rounded transition-all shadow-sm cursor-pointer ${selectedWorkerIds.length > 0 ? 'bg-[#0ea5e9] hover:bg-[#0284c7] text-white' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
               >
-                Save {repeat === 'none' ? 'Shift' : 'Shift Series'} ({selectedWorkerIds.length} assigned)
+                {saving ? 'Publishing...' : `Save ${repeat === 'none' ? 'Shift' : 'Shift Series'} (${selectedWorkerIds.length} assigned)`}
               </button>
             </>
           )}

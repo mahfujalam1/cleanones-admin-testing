@@ -2,7 +2,7 @@ export type WorkerRole = 'Employee' | 'Freelancer';
 export type ShiftStatus = 'On Time' | 'Late' | 'Missing';
 
 export interface WorkerInfo {
-  id: number;
+  id: string | number;
   initials: string;
   name: string;
   role: WorkerRole;

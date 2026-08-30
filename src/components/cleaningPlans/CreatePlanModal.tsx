@@ -1,240 +1,43 @@
 "use client";
+import React, { useEffect, useState } from "react";
+import { MdOutlineClose } from "react-icons/md";
+import { TbClipboardList, TbPlus, TbTrash } from "react-icons/tb";
+import { createCleaningPlan, getPlanRooms, type PlanRoomOption, type PlanTaskInput } from "@/services/actions/cleaningPlans";
+import { getClientOptions, type ClientOption } from "@/services/actions/locations";
+import { getRoomLocations } from "@/services/actions/rooms";
+import { Select } from "@/components/ui/select";
+import { DatePicker } from "@/components/ui/date-picker";
+import { TimePicker } from "@/components/ui/time-picker";
 
-import React, { useState, useEffect } from 'react';
-import { MdOutlineClose } from 'react-icons/md';
-import { TbClipboardList, TbPlus, TbTrash } from 'react-icons/tb';
-import { CleaningPlan } from './types';
-import { mockClients, mockLocations } from './MockData';
+const controlClass = "h-10 w-full rounded border border-gray-300 bg-white px-3 text-sm text-gray-800 outline-none transition placeholder:text-gray-400 focus:border-sky-500 focus:ring-2 focus:ring-sky-100";
+const days = [{ value: "mon", label: "Mon" }, { value: "tue", label: "Tue" }, { value: "wed", label: "Wed" }, { value: "thu", label: "Thu" }, { value: "fri", label: "Fri" }, { value: "sat", label: "Sat" }, { value: "sun", label: "Sun" }];
+const newTask = (): PlanTaskInput => ({ name: "", frequency_type: "every_visit", is_photo_req: false, photo: [] });
 
-interface CreatePlanModalProps {
-    onClose: () => void;
-    onAdd: (plan: Omit<CleaningPlan, 'id'>) => void;
+export function CreatePlanModal({ onClose, onAdd }: { onClose: () => void; onAdd: () => void }) {
+  const [clients, setClients] = useState<ClientOption[]>([]), [clientId, setClientId] = useState("");
+  const [locations, setLocations] = useState<Array<{ id: string; name: string }>>([]), [locationId, setLocationId] = useState("");
+  const [rooms, setRooms] = useState<PlanRoomOption[]>([]), [roomIds, setRoomIds] = useState<string[]>([]);
+  const [title, setTitle] = useState(""), [date, setDate] = useState(""), [startTime, setStartTime] = useState("08:00");
+  const [repeatShift, setRepeatShift] = useState("Does not repeat"), [repeatUntil, setRepeatUntil] = useState(""), [notes, setNotes] = useState("");
+  const [tasks, setTasks] = useState<PlanTaskInput[]>([]), [workingDays, setWorkingDays] = useState<string[]>([]), [error, setError] = useState(""), [saving, setSaving] = useState(false);
+  useEffect(() => { void getClientOptions(1, 100).then((r) => r.success ? setClients(r.data.clients ?? []) : setError(r.error)); }, []);
+  useEffect(() => { setLocationId(""); setLocations([]); setRooms([]); setRoomIds([]); if (clientId) void getRoomLocations(clientId).then((r) => r.success ? setLocations(r.data.locations ?? []) : setError(r.error)); }, [clientId]);
+  useEffect(() => { setRooms([]); setRoomIds([]); if (locationId) void getPlanRooms({ clientId, locationId, limit: 100 }).then((r) => r.success ? setRooms(r.data.rooms ?? []) : setError(r.error)); }, [clientId, locationId]);
+  useEffect(() => { if (repeatShift === "Every day") setWorkingDays(days.map((day) => day.value)); else if (repeatShift === "Standard working week") setWorkingDays(["mon", "tue", "wed", "thu", "fri"]); else setWorkingDays([]); }, [repeatShift]);
+  const updateTask = (index: number, update: Partial<PlanTaskInput>) => setTasks((items) => items.map((item, itemIndex) => itemIndex === index ? { ...item, ...update } : item));
+  const submit = async (e: React.FormEvent) => { e.preventDefault(); if (!clientId || !locationId || !title || !date || !roomIds.length) return setError("Client, location, title, date and at least one room are required."); if (repeatShift !== "Does not repeat" && !workingDays.length) return setError("Select at least one working day for the recurring plan."); if (tasks.some((task) => !task.name.trim() || (task.is_photo_req && (!task.photo.length || task.photo.some((photo) => !photo.name.trim()))))) return setError("Complete every additional task and its required photo names."); const time = new Date(`2000-01-01T${startTime}`).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }); setSaving(true); setError(""); const result = await createCleaningPlan({ title, room_ids: roomIds, date, start_time: time, repeat_shift: repeatShift, ...(repeatUntil ? { repeat_until: repeatUntil } : {}), working_days: workingDays, timezone: "Europe/Amsterdam", shift_notes: notes, additional_tasks: tasks }); setSaving(false); if (!result.success) return setError(result.error); onAdd(); };
+  return <div onClick={onClose} className="modal-backdrop fixed inset-0 z-[70] flex items-center justify-center p-4"><form onSubmit={submit} onClick={(e) => e.stopPropagation()} className="flex max-h-[92vh] w-full max-w-xl flex-col rounded-md bg-white shadow"><header className="flex items-center gap-3 border-b p-5"><TbClipboardList className="text-xl text-sky-500"/><div className="flex-1"><h2 className="font-bold">Create Cleaning Plan</h2><p className="text-xs text-slate-400">Select client, location and rooms</p></div><button type="button" onClick={onClose}><MdOutlineClose/></button></header><div className="space-y-4 overflow-y-auto p-5">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2"><Field label="Client *"><Select required value={clientId} onValueChange={setClientId} placeholder="Select client" options={clients.map((c) => ({ value: c.id, label: c.company_name || c.primary_contact_name }))}/></Field><Field label="Location *"><Select required disabled={!clientId} value={locationId} onValueChange={setLocationId} placeholder={clientId ? "Select location" : "Select client first"} options={locations.map((l) => ({ value: l.id, label: l.name }))}/></Field></div>
+    <Field label="Rooms *"><div className="max-h-40 space-y-1 overflow-y-auto rounded border border-gray-300 bg-slate-50 p-2">{!locationId ? <Empty text="Select client and location first"/> : !rooms.length ? <Empty text="No rooms found"/> : rooms.map((room) => <label key={room.room_id} className="flex gap-2 rounded border border-gray-200 bg-white p-2 text-xs"><input type="checkbox" checked={roomIds.includes(room.room_id)} onChange={() => setRoomIds((ids) => ids.includes(room.room_id) ? ids.filter((id) => id !== room.room_id) : [...ids, room.room_id])}/><span className="flex-1">{room.room_name}</span><span className="text-slate-400">{room.task_number} tasks · {room.photo_number} photos</span></label>)}</div></Field>
+    <Field label="Plan title *"><input required value={title} onChange={(e) => setTitle(e.target.value)} className={controlClass}/></Field>
+    <div className="grid grid-cols-2 gap-3"><Field label="Date *"><DatePicker value={date} onValueChange={setDate}/></Field><Field label="Start time *"><TimePicker value={startTime} onValueChange={setStartTime}/></Field></div>
+    <div className="grid grid-cols-2 gap-3"><Field label="Repeat shift"><Select value={repeatShift} onValueChange={setRepeatShift} options={["Does not repeat", "Every day", "Standard working week", "Weekly", "Monthly"].map((value) => ({ value, label: value }))}/></Field><Field label="Repeat until"><DatePicker clearable value={repeatUntil} onValueChange={setRepeatUntil} placeholder="Select end date"/></Field></div>
+    {repeatShift !== "Does not repeat" && <Field label="Working days *"><div className="grid grid-cols-7 gap-1.5">{days.map((day) => <button key={day.value} type="button" onClick={() => setWorkingDays((values) => values.includes(day.value) ? values.filter((value) => value !== day.value) : [...values, day.value])} className={`h-9 rounded border text-xs font-semibold ${workingDays.includes(day.value) ? "border-sky-500 bg-sky-500 text-white" : "border-gray-300 bg-white text-gray-600 hover:bg-gray-50"}`}>{day.label}</button>)}</div></Field>}
+    <Field label="Shift notes"><textarea value={notes} onChange={(e) => setNotes(e.target.value)} className="min-h-20 w-full rounded border border-gray-300 bg-white p-3 text-sm outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-100"/></Field>
+    <TaskEditor tasks={tasks} setTasks={setTasks} updateTask={updateTask}/>
+    {error && <p className="text-xs font-medium text-red-600">{error}</p>}
+  </div><footer className="flex justify-end gap-2 border-t p-4"><button type="button" onClick={onClose} className="rounded border px-4 py-2 text-sm">Cancel</button><button disabled={saving} className="rounded bg-sky-500 px-4 py-2 text-sm font-bold text-white disabled:opacity-60">{saving ? "Creating..." : "Create plan"}</button></footer></form></div>;
 }
-
-export function CreatePlanModal({ onClose, onAdd }: CreatePlanModalProps) {
-    const [name, setName] = useState('');
-    const [client, setClient] = useState(mockClients[0]);
-    const [location, setLocation] = useState('');
-    const [duration, setDuration] = useState('45');
-    const [photos, setPhotos] = useState('4');
-    const [checklistTasks, setChecklistTasks] = useState<string[]>(['']);
-    const [photoRequirements, setPhotoRequirements] = useState<string[]>(['']);
-
-    useEffect(() => {
-        const handleEsc = (e: KeyboardEvent) => {
-            if (e.key === 'Escape') onClose();
-        };
-        window.addEventListener('keydown', handleEsc);
-        return () => window.removeEventListener('keydown', handleEsc);
-    }, [onClose]);
-
-    const addTask = () => setChecklistTasks((p) => [...p, '']);
-    const updateTask = (i: number, val: string) =>
-        setChecklistTasks((p) => p.map((t, idx) => (idx === i ? val : t)));
-    const removeTask = (i: number) =>
-        setChecklistTasks((p) => p.filter((_, idx) => idx !== i));
-
-    const addPhoto = () => setPhotoRequirements((p) => [...p, '']);
-    const updatePhoto = (i: number, val: string) =>
-        setPhotoRequirements((p) => p.map((t, idx) => (idx === i ? val : t)));
-    const removePhoto = (i: number) =>
-        setPhotoRequirements((p) => p.filter((_, idx) => idx !== i));
-
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!name || !location) return;
-        const validTasks = checklistTasks.filter((t) => t.trim());
-        const validPhotos = photoRequirements.filter((p) => p.trim());
-        onAdd({
-            name,
-            client,
-            location,
-            rooms: [],
-            duration: parseInt(duration),
-            photos: parseInt(photos),
-            tasks: validTasks.length,
-            aiValid: false,
-            checklistTasks: validTasks,
-            photoRequirements: validPhotos,
-        });
-    };
-
-    return (
-        <div
-            onClick={onClose}
-            className="modal-backdrop fixed inset-0 z-[70] flex items-center justify-center p-4 animate-in fade-in duration-200"
-        >
-            <form
-                onSubmit={handleSubmit}
-                onClick={(e) => e.stopPropagation()}
-                className="bg-white rounded-md shadow w-full max-w-[520px] max-h-[90vh] flex flex-col animate-in fade-in zoom-in-95 duration-200"
-            >
-                {/* Header */}
-                <div className="flex items-center gap-3 px-6 pt-6 pb-4 border-b border-gray-100 shrink-0">
-                    <div className="w-9 h-9 rounded bg-[#e0f2fe] flex items-center justify-center shrink-0">
-                        <TbClipboardList className="text-[#0ea5e9] text-lg" />
-                    </div>
-                    <div className="flex-1">
-                        <h2 className="text-base font-bold text-gray-900">Create Cleaning Plan</h2>
-                        <p className="text-xs text-gray-400 mt-0.5">Assign client, location, rooms and tasks</p>
-                    </div>
-                    <button type="button" onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors p-1 cursor-pointer">
-                        <MdOutlineClose className="text-xl" />
-                    </button>
-                </div>
-
-                {/* Scrollable body */}
-                <div className="flex-1 overflow-y-auto scrollbar-hidden px-6 py-5 space-y-5">
-                    {/* Plan Name */}
-                    <div>
-                        <label className="text-xs font-semibold text-gray-700 mb-1.5 block">Plan Name *</label>
-                        <input
-                            type="text"
-                            required
-                            placeholder="e.g. Standard Room Clean"
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            className="w-full h-10 rounded border border-gray-200 bg-gray-50 px-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#0ea5e9] focus:border-[#0ea5e9] focus:bg-white transition-colors"
-                        />
-                    </div>
-
-                    {/* Assignment box */}
-                    <div className="border border-gray-200 rounded p-4 space-y-3">
-                        <p className="text-xs font-bold text-gray-800">Assignment</p>
-                        {/* Client */}
-                        <div>
-                            <label className="text-xs font-semibold text-gray-500 mb-1.5 flex items-center gap-1.5">
-                                <TbClipboardList className="text-base" /> Client *
-                            </label>
-                            <select
-                                value={client}
-                                onChange={(e) => setClient(e.target.value)}
-                                className="w-full h-10 rounded border border-gray-200 bg-gray-50 px-3 text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#0ea5e9] focus:border-[#0ea5e9] transition-colors appearance-none cursor-pointer"
-                            >
-                                {mockClients.map((c) => <option key={c} value={c}>{c}</option>)}
-                            </select>
-                        </div>
-                        {/* Location */}
-                        <div>
-                            <label className="text-xs font-semibold text-gray-500 mb-1.5 flex items-center gap-1.5">
-                                📍 Location *
-                            </label>
-                            <select
-                                required
-                                value={location}
-                                onChange={(e) => setLocation(e.target.value)}
-                                className="w-full h-10 rounded border border-gray-200 bg-gray-50 px-3 text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#0ea5e9] focus:border-[#0ea5e9] transition-colors appearance-none cursor-pointer"
-                            >
-                                <option value="">Select location...</option>
-                                {mockLocations.map((l) => <option key={l} value={l}>{l}</option>)}
-                            </select>
-                        </div>
-                    </div>
-
-                    {/* Duration + Photos */}
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                        <div>
-                            <label className="text-xs font-semibold text-gray-700 mb-1.5 block">Duration (min) *</label>
-                            <input
-                                type="number"
-                                required
-                                min={1}
-                                value={duration}
-                                onChange={(e) => setDuration(e.target.value)}
-                                className="w-full h-10 rounded border border-gray-200 bg-gray-50 px-3 text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#0ea5e9] focus:border-[#0ea5e9] focus:bg-white transition-colors"
-                            />
-                        </div>
-                        <div>
-                            <label className="text-xs font-semibold text-gray-700 mb-1.5 block">Required Photos *</label>
-                            <input
-                                type="number"
-                                required
-                                min={0}
-                                value={photos}
-                                onChange={(e) => setPhotos(e.target.value)}
-                                className="w-full h-10 rounded border border-gray-200 bg-gray-50 px-3 text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#0ea5e9] focus:border-[#0ea5e9] focus:bg-white transition-colors"
-                            />
-                        </div>
-                    </div>
-
-                    {/* Checklist Tasks */}
-                    <div>
-                        <label className="text-xs font-semibold text-gray-700 mb-2 block">Checklist Tasks *</label>
-                        <div className="space-y-2">
-                            {checklistTasks.map((task, i) => (
-                                <div key={i} className="flex items-center gap-2">
-                                    <input
-                                        type="text"
-                                        placeholder={`Task ${i + 1}`}
-                                        value={task}
-                                        onChange={(e) => updateTask(i, e.target.value)}
-                                        className="flex-1 h-10 rounded border border-gray-200 bg-gray-50 px-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#0ea5e9] focus:border-[#0ea5e9] focus:bg-white transition-colors"
-                                    />
-                                    {checklistTasks.length > 1 && (
-                                        <button type="button" onClick={() => removeTask(i)} className="text-gray-300 hover:text-red-400 transition-colors cursor-pointer">
-                                            <TbTrash className="text-lg" />
-                                        </button>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
-                        <button
-                            type="button"
-                            onClick={addTask}
-                            className="mt-2 w-full h-10 rounded border border-dashed border-gray-300 text-sm text-gray-500 hover:border-[#0ea5e9] hover:text-[#0ea5e9] transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
-                        >
-                            <TbPlus className="text-base" /> Add Task
-                        </button>
-                    </div>
-
-                    {/* Photo Requirements */}
-                    <div>
-                        <label className="text-xs font-semibold text-gray-700 mb-2 block">Photo Requirements</label>
-                        <div className="space-y-2">
-                            {photoRequirements.map((req, i) => (
-                                <div key={i} className="flex items-center gap-2">
-                                    <input
-                                        type="text"
-                                        placeholder="e.g. Bathroom before"
-                                        value={req}
-                                        onChange={(e) => updatePhoto(i, e.target.value)}
-                                        className="flex-1 h-10 rounded border border-gray-200 bg-gray-50 px-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#0ea5e9] focus:border-[#0ea5e9] focus:bg-white transition-colors"
-                                    />
-                                    {photoRequirements.length > 1 && (
-                                        <button type="button" onClick={() => removePhoto(i)} className="text-gray-300 hover:text-red-400 transition-colors cursor-pointer">
-                                            <TbTrash className="text-lg" />
-                                        </button>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
-                        <button
-                            type="button"
-                            onClick={addPhoto}
-                            className="mt-2 w-full h-10 rounded border border-dashed border-gray-300 text-sm text-gray-500 hover:border-[#0ea5e9] hover:text-[#0ea5e9] transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
-                        >
-                            <TbPlus className="text-base" /> Add Photo Requirement
-                        </button>
-                    </div>
-                </div>
-
-                {/* Footer */}
-                <div className="flex items-center justify-end gap-3 px-6 py-5 border-t border-gray-100 shrink-0">
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        className="px-5 py-2.5 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded hover:bg-gray-50 transition-colors cursor-pointer"
-                    >
-                        Cancel
-                    </button>
-                    <button
-                        type="submit"
-                        className="px-5 py-2.5 text-sm font-semibold text-white bg-[#0ea5e9] hover:bg-[#0284c7] rounded shadow-sm transition-colors cursor-pointer"
-                    >
-                        + Create Plan
-                    </button>
-                </div>
-            </form>
-        </div>
-    );
-}
+function Field({ label, children }: { label: string; children: React.ReactNode }) { return <label className="block border-b border-slate-200 pb-3 text-xs font-semibold text-slate-600">{label}<div className="mt-1">{children}</div></label>; }
+function Empty({ text }: { text: string }) { return <p className="p-3 text-center text-xs text-slate-400">{text}</p>; }
+function TaskEditor({ tasks, setTasks, updateTask }: { tasks: PlanTaskInput[]; setTasks: React.Dispatch<React.SetStateAction<PlanTaskInput[]>>; updateTask: (index: number, update: Partial<PlanTaskInput>) => void }) { return <section className="space-y-3 rounded border border-gray-200 bg-gray-50 p-4"><div className="flex items-center justify-between"><div><h3 className="text-sm font-bold text-gray-800">Additional tasks</h3><p className="text-xs font-normal text-gray-400">Photos are attached to their specific task</p></div><button type="button" onClick={() => setTasks((items) => [...items, newTask()])} className="flex items-center gap-1 rounded bg-sky-500 px-3 py-2 text-xs font-semibold text-white"><TbPlus/> Add task</button></div>{!tasks.length && <Empty text="No additional tasks"/>}{tasks.map((task, taskIndex) => <div key={taskIndex} className="space-y-3 rounded border border-gray-200 bg-white p-3"><div className="flex items-center justify-between"><strong className="text-xs text-gray-600">Task {taskIndex + 1}</strong><button type="button" onClick={() => setTasks((items) => items.filter((_, index) => index !== taskIndex))} className="rounded border border-gray-200 p-2 text-red-500"><TbTrash/></button></div><div className="grid gap-3 sm:grid-cols-2"><Field label="Task name *"><input required value={task.name} onChange={(event) => updateTask(taskIndex, { name: event.target.value })} className={controlClass}/></Field><Field label="Frequency *"><Select value={task.frequency_type} onValueChange={(value) => updateTask(taskIndex, { frequency_type: value as PlanTaskInput["frequency_type"] })} options={[{ value: "every_visit", label: "Every visit" }, { value: "weekly", label: "Weekly" }, { value: "monthly", label: "Monthly" }, { value: "yearly", label: "Yearly" }]}/></Field></div><label className="flex items-center gap-2 text-xs font-semibold text-gray-700"><input type="checkbox" checked={task.is_photo_req} onChange={(event) => updateTask(taskIndex, { is_photo_req: event.target.checked, photo: event.target.checked ? [{ name: "" }] : [] })}/> Photo required</label>{task.is_photo_req && <div className="space-y-2 rounded border border-gray-200 bg-gray-50 p-3"><p className="text-xs font-semibold text-gray-600">Required photos</p>{task.photo.map((photo, photoIndex) => <div key={photoIndex} className="flex gap-2"><input required value={photo.name} onChange={(event) => updateTask(taskIndex, { photo: task.photo.map((item, index) => index === photoIndex ? { ...item, name: event.target.value } : item) })} placeholder="Photo name" className={controlClass}/><button type="button" onClick={() => updateTask(taskIndex, { photo: task.photo.filter((_, index) => index !== photoIndex) })} className="rounded border border-gray-300 px-3 text-red-500"><TbTrash/></button></div>)}<button type="button" onClick={() => updateTask(taskIndex, { is_photo_req: true, photo: [...task.photo, { name: "" }] })} className="flex items-center gap-1 text-xs font-semibold text-sky-600"><TbPlus/> Add photo</button></div>}</div>)}</section>; }

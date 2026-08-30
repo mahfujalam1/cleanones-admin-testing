@@ -3,8 +3,9 @@
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { MdArrowBack, MdSave } from "react-icons/md";
-import { isLegalSlug, legalDocuments, legalStorageKey } from "@/lib/legal-content";
+import { isLegalSlug, legalDocuments } from "@/lib/legal-content";
 import { RichTextEditor } from "@/components/legal/RichTextEditor";
+import { getLegalDocument, updateLegalDocument } from "@/services/actions/manager";
 
 export default function EditLegalDocumentPage() {
   const params = useParams<{ slug: string }>();
@@ -13,19 +14,22 @@ export default function EditLegalDocumentPage() {
   const valid = isLegalSlug(slug);
   const document = valid ? legalDocuments[slug] : null;
   const [content, setContent] = useState(document?.content ?? "");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     if (!valid) return;
-    const frame = window.requestAnimationFrame(() => {
-      const saved = window.localStorage.getItem(legalStorageKey(slug));
-      if (saved) setContent((JSON.parse(saved) as { content: string }).content);
-    });
-    return () => window.cancelAnimationFrame(frame);
+    const type = slug === "privacy-policy" ? "privacy_policy" : "terms_and_conditions";
+    void getLegalDocument(type).then((result) => { if (result.success) setContent(result.data.content); else setError(result.error); });
   }, [slug, valid]);
 
   if (!document || !valid) return null;
-  const update = () => {
-    window.localStorage.setItem(legalStorageKey(slug), JSON.stringify({ content, updated: new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" }) }));
+  const update = async () => {
+    setSaving(true); setError("");
+    const type = slug === "privacy-policy" ? "privacy_policy" : "terms_and_conditions";
+    const result = await updateLegalDocument(type, { title: document.title, content });
+    setSaving(false);
+    if (!result.success) { setError(result.error); return; }
     router.push(`/settings/legal/${slug}`);
   };
 
@@ -36,11 +40,12 @@ export default function EditLegalDocumentPage() {
     </header>
     <section className="w-full">
       <RichTextEditor initialContent={content} onChange={setContent} />
+      {error && <p className="mt-2 text-xs font-medium text-red-600">{error}</p>}
       <div className="mt-3 flex flex-col gap-3 rounded border border-slate-200 bg-white p-3 sm:flex-row sm:items-center sm:justify-between">
         <span className="text-[10px] text-slate-400">{content.replace(/<[^>]*>/g, "").length} characters · HTML formatting enabled</span>
         <div className="flex gap-2">
         <button onClick={() => router.push(`/settings/legal/${slug}`)} className="h-9 rounded border border-slate-200 px-4 text-xs font-semibold text-slate-600">Cancel</button>
-        <button onClick={update} className="flex h-9 items-center gap-1.5 rounded bg-sky-500 px-4 text-xs font-semibold text-white hover:bg-sky-600"><MdSave /> Update document</button>
+        <button onClick={update} disabled={saving} className="flex h-9 items-center gap-1.5 rounded bg-sky-500 px-4 text-xs font-semibold text-white hover:bg-sky-600 disabled:opacity-60"><MdSave /> {saving ? "Updating..." : "Update document"}</button>
         </div>
       </div>
     </section>

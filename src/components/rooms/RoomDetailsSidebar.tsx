@@ -1,9 +1,11 @@
 "use client";
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { MdOutlineClose } from 'react-icons/md';
 import { TbDoor, TbClock, TbCamera, TbChecklist, TbMapPin, TbLayersLinked } from 'react-icons/tb';
 import { Room, RoomType } from './types';
+import { getRoom, type RoomDetails } from '@/services/actions/rooms';
+import { DetailSkeleton } from '@/components/shared/SkeletonLoader';
 
 interface RoomDetailSidebarProps {
     room: Room;
@@ -25,7 +27,10 @@ const typeIconColors: Record<RoomType, string> = {
 };
 
 export function RoomDetailSidebar({ room, onClose }: RoomDetailSidebarProps) {
-    const colors = typeColors[room.type];
+    const colors = typeColors[room.type] ?? typeColors.Standard;
+    const [details, setDetails] = useState<RoomDetails | null>(null);
+    const [error, setError] = useState('');
+    useEffect(() => { void getRoom(room.id).then((result) => result.success ? setDetails(result.data) : setError(result.error)); }, [room.id]);
 
     return (
         <>
@@ -40,7 +45,7 @@ export function RoomDetailSidebar({ room, onClose }: RoomDetailSidebarProps) {
                 {/* Header */}
                 <div className="flex items-center gap-3 px-5 py-5 border-b border-gray-100 bg-[#1A2332]">
                     <div className={`w-10 h-10 rounded ${colors.bg} flex items-center justify-center shrink-0`}>
-                        <TbDoor className={`${typeIconColors[room.type]} text-xl`} />
+                        <TbDoor className={`${typeIconColors[room.type] ?? typeIconColors.Standard} text-xl`} />
                     </div>
                     <div className="flex-1 min-w-0">
                         <h2 className="text-sm font-bold text-white truncate">{room.name}</h2>
@@ -56,6 +61,8 @@ export function RoomDetailSidebar({ room, onClose }: RoomDetailSidebarProps) {
 
                 {/* Body */}
                 <div className="flex-1 overflow-y-auto px-5 py-5 space-y-3">
+                    {error && <p className="rounded bg-red-50 p-2 text-xs text-red-700">{error}</p>}
+                    {!details && !error ? <DetailSkeleton blocks={5} /> : <>
                     {/* Room Type + Floor */}
                     <div className="grid grid-cols-2 gap-3">
                         <div className="rounded border border-gray-100 bg-gray-50/60 px-4 py-3.5">
@@ -64,7 +71,7 @@ export function RoomDetailSidebar({ room, onClose }: RoomDetailSidebarProps) {
                         </div>
                         <div className="rounded border border-gray-100 bg-gray-50/60 px-4 py-3.5">
                             <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">Floor</p>
-                            <p className="text-sm font-medium text-gray-800">{room.floor}</p>
+                            <p className="text-sm font-medium text-gray-800">{details ? `Floor ${details.floor}` : room.floor}</p>
                         </div>
                     </div>
 
@@ -73,7 +80,7 @@ export function RoomDetailSidebar({ room, onClose }: RoomDetailSidebarProps) {
                         <TbMapPin className="text-[#0ea5e9] text-lg mt-0.5 shrink-0" />
                         <div>
                             <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-0.5">Location</p>
-                            <p className="text-sm font-medium text-gray-800">{room.location}</p>
+                            <p className="text-sm font-medium text-gray-800">{details?.location_name ?? room.location}</p>
                         </div>
                     </div>
 
@@ -82,7 +89,7 @@ export function RoomDetailSidebar({ room, onClose }: RoomDetailSidebarProps) {
                         <TbLayersLinked className="text-[#0ea5e9] text-lg mt-0.5 shrink-0" />
                         <div>
                             <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-0.5">Cleaning Plan</p>
-                            <p className={`text-sm font-semibold ${colors.text}`}>{room.cleaningPlan}</p>
+                            <p className={`text-sm font-semibold ${colors.text}`}>{details?.clean_type ?? room.cleaningPlan}</p>
                         </div>
                     </div>
 
@@ -90,20 +97,21 @@ export function RoomDetailSidebar({ room, onClose }: RoomDetailSidebarProps) {
                     <div className="grid grid-cols-3 gap-3">
                         <div className="rounded border border-gray-100 bg-gray-50/60 px-3 py-4 flex flex-col items-center gap-1.5">
                             <TbClock className="text-gray-400 text-lg" />
-                            <p className="text-lg font-bold text-gray-900">{room.duration}m</p>
+                            <p className="text-lg font-bold text-gray-900">{details?.duration ?? room.duration}m</p>
                             <p className="text-[11px] text-gray-400">Duration</p>
                         </div>
                         <div className="rounded border border-gray-100 bg-gray-50/60 px-3 py-4 flex flex-col items-center gap-1.5">
                             <TbCamera className="text-gray-400 text-lg" />
-                            <p className="text-lg font-bold text-gray-900">{room.photos}</p>
+                            <p className="text-lg font-bold text-gray-900">{details?.total_photos_required ?? room.photos}</p>
                             <p className="text-[11px] text-gray-400">Photos</p>
                         </div>
                         <div className="rounded border border-gray-100 bg-gray-50/60 px-3 py-4 flex flex-col items-center gap-1.5">
                             <TbChecklist className="text-gray-400 text-lg" />
-                            <p className="text-lg font-bold text-gray-900">{room.tasks}</p>
+                            <p className="text-lg font-bold text-gray-900">{details?.task_number ?? room.tasks}</p>
                             <p className="text-[11px] text-gray-400">Tasks</p>
                         </div>
                     </div>
+                    </>}
                 </div>
             </div>
         </>

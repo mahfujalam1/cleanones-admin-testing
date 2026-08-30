@@ -3,6 +3,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { MdOutlineClose, MdCloudUpload, MdCheckCircle } from 'react-icons/md';
 import { Worker } from './types';
+import { getLocations } from '@/services/actions/locations';
+import { getRoomLocations } from '@/services/actions/rooms';
 
 type NewWorker = Omit<Worker, 'id' | 'code' | 'completedShifts' | 'avgPhotoScore' | 'weeklyAvailability' | 'monthlyHours' | 'lateDays' | 'absentDays' | 'attendanceRecords' | 'documents' | 'invoices' | 'shiftRecords'> & {
   nidFile?: string;
@@ -12,20 +14,52 @@ type NewWorker = Omit<Worker, 'id' | 'code' | 'completedShifts' | 'avgPhotoScore
 
 interface AddWorkerModalProps {
   onClose: () => void;
-  onAdd: (worker: NewWorker) => void;
+  onAdd: (worker: NewWorker) => Promise<string | boolean | void> | void;
+  error?: string;
 }
 
 const LANGUAGES = ['Nederlands', 'Engels', 'Duits', 'Frans', 'Spaans', 'Pools', 'Turks', 'Arabisch'];
 
-export function AddWorkerModal({ onClose, onAdd }: AddWorkerModalProps) {
+export function AddWorkerModal({ onClose, onAdd, error: externalError }: AddWorkerModalProps) {
   const [selectedLanguages, setSelectedLanguages] = useState<string[]>(['Nederlands', 'Engels']);
   const [name, setName] = useState('');
   const [workerType, setWorkerType] = useState<'Employee' | 'Freelancer'>('Employee');
   const [position, setPosition] = useState('Cleaner');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
+  const [hourlyRate, setHourlyRate] = useState<number | ''>(25);
   const [status, setStatus] = useState<'On Shift' | 'Active' | 'Off Duty'>('Active');
-  const [location, setLocation] = useState('Amsterdam-Centrum');
+  const [location, setLocation] = useState('');
+  const [locationOptions, setLocationOptions] = useState<Array<{ id: string; name: string }>>([]);
+  const [locationsLoading, setLocationsLoading] = useState(true);
+  const [modalError, setModalError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  // Load locations dynamically from API
+  useEffect(() => {
+    let isMounted = true;
+    setLocationsLoading(true);
+    void getRoomLocations().then((res) => {
+      if (!isMounted) return;
+      if (res.success && Array.isArray(res.data?.locations) && res.data.locations.length > 0) {
+        const list = res.data.locations.map((item) => ({ id: item.id, name: item.name }));
+        setLocationOptions(list);
+        setLocation(list[0].name);
+        setLocationsLoading(false);
+      } else {
+        void getLocations({ page: 1, limit: 100 }).then((locRes) => {
+          if (!isMounted) return;
+          if (locRes.success && Array.isArray(locRes.data?.locations) && locRes.data.locations.length > 0) {
+            const list = locRes.data.locations.map((item) => ({ id: item.location_id, name: item.location_name || item.address }));
+            setLocationOptions(list);
+            if (list.length > 0) setLocation(list[0].name);
+          }
+          setLocationsLoading(false);
+        });
+      }
+    });
+    return () => { isMounted = false; };
+  }, []);
 
   // File Upload State
   const [nidFile, setNidFile] = useState<File | null>(null);
@@ -47,17 +81,20 @@ export function AddWorkerModal({ onClose, onAdd }: AddWorkerModalProps) {
     );
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !email || !phone) return;
+    setModalError('');
+    setSubmitting(true);
 
-    onAdd({
+    const err = await onAdd({
       name,
       initials: name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2),
       avatarColor: 'bg-[#0ea5e9]',
       workerType,
       position,
       location,
+      hourlyRate: typeof hourlyRate === 'number' ? hourlyRate : 0,
       languages: selectedLanguages,
       hours: '0h',
       status,
@@ -70,7 +107,14 @@ export function AddWorkerModal({ onClose, onAdd }: AddWorkerModalProps) {
       certFile: certFile ? certFile.name : undefined,
       contractFile: contractFile ? contractFile.name : undefined
     });
+
+    setSubmitting(false);
+    if (typeof err === 'string' && err) {
+      setModalError(err);
+    }
   };
+
+  const activeError = modalError || externalError;
 
   return (
     <>
@@ -98,6 +142,13 @@ export function AddWorkerModal({ onClose, onAdd }: AddWorkerModalProps) {
               <MdOutlineClose className="text-xl" />
             </button>
           </div>
+
+          {/* Error Message inside Modal */}
+          {activeError && (
+            <div className="mx-7 mt-2 rounded border border-red-200 bg-red-50 p-3 text-xs font-medium text-red-700 animate-in fade-in">
+              {activeError}
+            </div>
+          )}
 
           {/* Form Content */}
           <div className="flex-1 overflow-y-auto px-7 py-5 space-y-5">
@@ -168,8 +219,21 @@ export function AddWorkerModal({ onClose, onAdd }: AddWorkerModalProps) {
               </div>
             </div>
 
-            {/* Status + Base Location */}
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {/* Hourly Rate + Status + Base Location */}
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <div>
+                <label className="text-xs font-semibold text-gray-700 mb-1.5 block">Hourly Rate (€/hr) *</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.5"
+                  required
+                  placeholder="25"
+                  value={hourlyRate}
+                  onChange={(e) => setHourlyRate(e.target.value === '' ? '' : Number(e.target.value))}
+                  className="w-full h-10 rounded border border-gray-300 bg-white px-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#0ea5e9] focus:border-[#0ea5e9] transition-colors"
+                />
+              </div>
               <div>
                 <label className="text-xs font-semibold text-gray-700 mb-1.5 block">Status</label>
                 <select
@@ -187,16 +251,20 @@ export function AddWorkerModal({ onClose, onAdd }: AddWorkerModalProps) {
                 <select
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
-                  className="w-full h-10 rounded border border-gray-300 bg-white px-3 text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#0ea5e9] focus:border-[#0ea5e9] transition-colors appearance-none cursor-pointer"
+                  disabled={locationsLoading}
+                  className="w-full h-10 rounded border border-gray-300 bg-white px-3 text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#0ea5e9] focus:border-[#0ea5e9] transition-colors appearance-none cursor-pointer disabled:bg-gray-50 disabled:text-gray-400"
                 >
-                  <option value="Amsterdam-Centrum">Amsterdam-Centrum</option>
-                  <option value="Rotterdam-Noord">Rotterdam-Noord</option>
-                  <option value="Utrecht-Binnenstad">Utrecht-Binnenstad</option>
-                  <option value="Eindhoven-Centrum">Eindhoven-Centrum</option>
-                  <option value="Groningen-Centrum">Groningen-Centrum</option>
-                  <option value="Haarlem-Centrum">Haarlem-Centrum</option>
-                  <option value="Leiden-Centrum">Leiden-Centrum</option>
-                  <option value="Delft-Centrum">Delft-Centrum</option>
+                  {locationsLoading ? (
+                    <option value="">Loading locations...</option>
+                  ) : locationOptions.length === 0 ? (
+                    <option value="">No locations available</option>
+                  ) : (
+                    locationOptions.map((loc) => (
+                      <option key={loc.id || loc.name} value={loc.name}>
+                        {loc.name}
+                      </option>
+                    ))
+                  )}
                 </select>
               </div>
             </div>
@@ -271,9 +339,10 @@ export function AddWorkerModal({ onClose, onAdd }: AddWorkerModalProps) {
             </button>
             <button
               type="submit"
-              className="px-5 py-2.5 text-sm font-semibold text-white bg-[#0ea5e9] hover:bg-[#0284c7] rounded shadow-sm transition-colors cursor-pointer flex items-center gap-1.5"
+              disabled={submitting}
+              className="px-5 py-2.5 text-sm font-semibold text-white bg-[#0ea5e9] hover:bg-[#0284c7] rounded shadow-sm transition-colors cursor-pointer flex items-center gap-1.5 disabled:opacity-60"
             >
-              + Add Worker
+              {submitting ? 'Adding...' : '+ Add Worker'}
             </button>
           </div>
         </form>

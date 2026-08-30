@@ -5,6 +5,8 @@ import { createPortal } from 'react-dom';
 import { MdOutlineClose } from 'react-icons/md';
 import { useRouter } from 'next/navigation';
 import { WorkerInfo } from './types';
+import { getLiveWorkerDetails, getWorkerStats, type Period } from '@/services/actions/shiftMonitoring';
+import { DetailSkeleton } from '@/components/shared/SkeletonLoader';
 
 interface EmployeeSidebarProps {
   worker: WorkerInfo;
@@ -14,6 +16,9 @@ interface EmployeeSidebarProps {
 export function EmployeeSidebar({ worker, onClose }: EmployeeSidebarProps) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<'Today' | 'Weekly' | 'Monthly'>('Today');
+  const [details, setDetails] = useState<{ hours_worked: string; shifts_count: number; avg_duration: string; shift_details: { check_in: string; check_out: string; duration: string; status: string } } | null>(null);
+  const [rows, setRows] = useState<Array<{ date: string; checkIn: string; checkOut: string; hours: string }>>([]); const [loading, setLoading] = useState(true);
+  useEffect(() => { setLoading(true); const period = activeTab.toLowerCase() as Period; void Promise.all([getLiveWorkerDetails(String(worker.id), period), getWorkerStats(String(worker.id), period)]).then(([live, stats]) => { setLoading(false); if (live.success) setDetails(live.data); if (stats.success) setRows(stats.data.shifts.map((shift) => ({ date: shift.date, checkIn: shift.checkin_time || shift.start_time, checkOut: shift.checkout_time || shift.end_time, hours: `${shift.duration_hours}h` }))); }); }, [worker.id, activeTab]);
 
   // Handle escape key
   useEffect(() => {
@@ -24,22 +29,6 @@ export function EmployeeSidebar({ worker, onClose }: EmployeeSidebarProps) {
     return () => window.removeEventListener('keydown', handleEsc);
   }, [onClose]);
 
-  // Mock data for Weekly
-  const weeklyData = [
-    { date: 'Mon 9 Jun', checkIn: '08:00', checkOut: '16:00', hours: '8h' },
-    { date: 'Tue 8 Jun', checkIn: '08:05', checkOut: '16:10', hours: '8h' },
-    { date: 'Wed 7 Jun', checkIn: '07:58', checkOut: '16:02', hours: '8h' },
-    { date: 'Thu 6 Jun', checkIn: '08:01', checkOut: '16:00', hours: '8h' },
-    { date: 'Fri 5 Jun', checkIn: '08:00', checkOut: '16:00', hours: '8h' },
-  ];
-
-  // Mock data for Monthly
-  const monthlyData = [
-    { date: 'W1', checkIn: '08:01', checkOut: '16:02', hours: '40h' },
-    { date: 'W2', checkIn: '08:00', checkOut: '16:00', hours: '40h' },
-    { date: 'W3', checkIn: '08:03', checkOut: '16:05', hours: '40h' },
-    { date: 'W4', checkIn: '08:00', checkOut: '16:00', hours: '40h' },
-  ];
 
   if (typeof document === 'undefined') return null;
 
@@ -99,24 +88,25 @@ export function EmployeeSidebar({ worker, onClose }: EmployeeSidebarProps) {
           </div>
 
           <div className="p-6 space-y-6 flex-1 flex flex-col">
+            {loading ? <DetailSkeleton blocks={6} /> : <>
             
             {/* Top Summary Stats */}
             <div className="grid grid-cols-3 gap-3">
               <div className="bg-gray-50 border border-gray-100 rounded p-4 text-center shadow-sm">
                 <div className="text-xl font-bold text-gray-900">
-                  {activeTab === 'Monthly' ? '160h' : activeTab === 'Weekly' ? '40h' : '8h'}
+                  {details?.hours_worked ?? '0h'}
                 </div>
                 <div className="text-[10px] text-gray-400 uppercase font-semibold mt-1">Hours Worked</div>
               </div>
               <div className="bg-gray-50 border border-gray-100 rounded p-4 text-center shadow-sm">
                 <div className="text-xl font-bold text-gray-900">
-                  {activeTab === 'Monthly' ? '4' : activeTab === 'Weekly' ? '5' : '1'}
+                  {details?.shifts_count ?? 0}
                 </div>
                 <div className="text-[10px] text-gray-400 uppercase font-semibold mt-1">Shifts</div>
               </div>
               <div className="bg-gray-50 border border-gray-100 rounded p-4 text-center shadow-sm">
                 <div className="text-xl font-bold text-gray-900">
-                  {activeTab === 'Monthly' ? '40.0h' : '8.0h'}
+                  {details?.avg_duration ?? '0h'}
                 </div>
                 <div className="text-[10px] text-gray-400 uppercase font-semibold mt-1">Avg Duration</div>
               </div>
@@ -131,15 +121,15 @@ export function EmployeeSidebar({ worker, onClose }: EmployeeSidebarProps) {
                 <div className="divide-y divide-gray-100 text-sm">
                   <div className="flex items-center justify-between px-5 py-4">
                     <span className="text-gray-500">Check-In</span>
-                    <span className="font-semibold text-gray-900">{worker.checkIn || '08:00'}</span>
+                    <span className="font-semibold text-gray-900">{details?.shift_details.check_in ?? '--:--'}</span>
                   </div>
                   <div className="flex items-center justify-between px-5 py-4">
                     <span className="text-gray-500">Check-Out</span>
-                    <span className="font-semibold text-gray-900">16:00</span>
+                    <span className="font-semibold text-gray-900">{details?.shift_details.check_out ?? '--:--'}</span>
                   </div>
                   <div className="flex items-center justify-between px-5 py-4">
                     <span className="text-gray-500">Duration</span>
-                    <span className="font-semibold text-[#0ea5e9]">8h</span>
+                    <span className="font-semibold text-[#0ea5e9]">{details?.shift_details.duration ?? '0h'}</span>
                   </div>
                   <div className="flex items-center justify-between px-5 py-4">
                     <span className="text-gray-500">Status</span>
@@ -160,7 +150,7 @@ export function EmployeeSidebar({ worker, onClose }: EmployeeSidebarProps) {
                 </div>
                 
                 <div className="divide-y divide-gray-100 text-sm overflow-y-auto flex-1 bg-white">
-                  {(activeTab === 'Monthly' ? monthlyData : weeklyData).map((row, i) => (
+                  {rows.map((row, i) => (
                     <div key={i} className="flex items-center justify-between px-4 py-4 hover:bg-gray-50 transition-colors">
                       <div className="w-24 text-gray-700 font-medium">{row.date}</div>
                       <div className="flex-1 text-center text-gray-500">{row.checkIn}</div>
@@ -171,6 +161,7 @@ export function EmployeeSidebar({ worker, onClose }: EmployeeSidebarProps) {
                 </div>
               </div>
             )}
+            </>}
 
             {/* View Activity History Button */}
             <button 

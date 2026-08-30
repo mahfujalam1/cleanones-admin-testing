@@ -12,6 +12,7 @@ import {
   MdPhotoCamera, MdWarning, MdAssessment, MdNotifications, MdSettings,
   MdChevronLeft, MdChevronRight, MdLogout, MdChatBubbleOutline
 } from 'react-icons/md';
+import { MdMeetingRoom, MdChecklist } from 'react-icons/md';
 import { MdAdminPanelSettings } from 'react-icons/md';
 import { getStoredManagerAccess, routeIsAllowed } from '@/lib/access-control';
 
@@ -23,6 +24,9 @@ const mainLinks = [
   { name: 'Clients', href: '/clients', icon: MdBusinessCenter },
   { name: 'Chat', href: '/chat', icon: MdChatBubbleOutline },
   { name: 'Locations', href: '/locations', icon: MdLocationOn },
+  { name: 'Rooms', href: '/rooms', icon: MdMeetingRoom },
+  { name: 'Cleaning Plans', href: '/cleaning-plans', icon: MdChecklist },
+  { name: 'Extra Services', href: '/extra-services', icon: MdBusinessCenter },
 ];
 
 const qcLinks = [

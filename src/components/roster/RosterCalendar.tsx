@@ -1,20 +1,106 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { MdAdd, MdCalendarToday, MdChevronLeft, MdChevronRight } from 'react-icons/md';
 import { DayView } from './DayView';
 import { WeekView } from './WeekView';
 import { MonthView } from './MonthView';
 import { ShiftModal } from './ShiftModal';
 import { CreateShiftModal } from './CreateShiftModal';
-import { MOCK_SHIFTS, Shift, ShiftTheme } from './types';
+import { Shift, ShiftTheme } from './types';
+import { getDailyRoster, getMonthlyRoster, getWeeklyRoster, type RosterShift } from '@/services/actions/roster';
+import { ContentSkeleton } from '@/components/shared/SkeletonLoader';
 
 export function RosterCalendar() {
   const [view, setView] = useState<'Day' | 'Week' | 'Month'>('Day');
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [shifts, setShifts] = useState<Shift[]>(MOCK_SHIFTS);
+  const [shifts, setShifts] = useState<Shift[]>([]);
+  const [teamMembers, setTeamMembers] = useState<string[]>([]);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState<{ totalShifts: number; totalHours?: number; totalMembers: number }>({
+    totalShifts: 0,
+    totalHours: 0,
+    totalMembers: 0,
+  });
+
+  useEffect(() => {
+    const dateStr = formatYYYYMMDD(currentDate);
+    const run = async () => {
+      setError('');
+      setLoading(true);
+      if (view === 'Day') {
+        const result = await getDailyRoster(dateStr);
+        setLoading(false);
+        if (!result.success) return setError(result.error);
+        setStats({
+          totalShifts: result.data.banner?.total_scheduled_shifts ?? 0,
+          totalHours: result.data.banner?.total_scheduled_hours ?? 0,
+          totalMembers: result.data.total_team_members ?? 0,
+        });
+        setTeamMembers((result.data.team_members || []).map((m) => m.worker_name));
+        setShifts(
+          flatten(
+            (result.data.team_members || []).flatMap((member) =>
+              (member.shifts || []).map((shift) => ({ member: member.worker_name, date: dateStr, shift }))
+            )
+          )
+        );
+      } else if (view === 'Week') {
+        const start = new Date(currentDate);
+        start.setDate(start.getDate() - start.getDay());
+        const startStr = formatYYYYMMDD(start);
+        const result = await getWeeklyRoster(startStr);
+        setLoading(false);
+        if (!result.success) return setError(result.error);
+        setStats({
+          totalShifts: result.data.banner?.total_scheduled_shifts ?? 0,
+          totalHours: result.data.banner?.total_scheduled_hours ?? 0,
+          totalMembers: result.data.total_team_members ?? 0,
+        });
+        setTeamMembers((result.data.team_members || []).map((m) => m.worker_name));
+        setShifts(
+          flatten(
+            (result.data.team_members || []).flatMap((member) =>
+              (member.daily_schedule || []).flatMap((day) =>
+                (day.shifts || []).map((shift) => ({
+                  member: member.worker_name,
+                  date: normalizeDate(day.full_date || day.date_str || ""),
+                  shift,
+                }))
+              )
+            )
+          )
+        );
+      } else {
+        const result = await getMonthlyRoster(currentDate.getMonth() + 1, currentDate.getFullYear());
+        setLoading(false);
+        if (!result.success) return setError(result.error);
+        setStats({
+          totalShifts: result.data.banner?.total_scheduled_shifts ?? 0,
+          totalHours: 0,
+          totalMembers: result.data.banner?.total_team_members ?? (result.data.team_members || []).length,
+        });
+        setTeamMembers((result.data.team_members || []).map((m) => m.worker_name));
+        setShifts(
+          flatten(
+            (result.data.team_members || []).flatMap((member) =>
+              (member.daily_summaries || []).flatMap((day) =>
+                (day.shifts || []).map((shift) => ({
+                  member: member.worker_name,
+                  date: normalizeDate(day.full_date || ""),
+                  shift,
+                }))
+              )
+            )
+          )
+        );
+      }
+    };
+    void run();
+  }, [view, currentDate]);
 
   const handlePrev = () => {
     const newDate = new Date(currentDate);
@@ -62,9 +148,6 @@ export function RosterCalendar() {
     return currentDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
   };
 
-  const todayKey = new Date().toISOString().split('T')[0];
-  const todayShiftCount = shifts.filter(shift => shift.date === todayKey).length;
-
   return (
     <div className="flex h-full flex-col gap-3">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
@@ -81,10 +164,15 @@ export function RosterCalendar() {
         </div>
         <div className="flex items-center gap-2 text-xs text-slate-500">
           <span className="rounded border border-gray-200 bg-white px-2.5 py-1.5">
-            <strong className="font-semibold text-slate-700">{shifts.length}</strong> scheduled
+            <strong className="font-semibold text-slate-700">{stats.totalShifts || shifts.length}</strong> shifts
           </span>
+          {Boolean(stats.totalHours) && (
+            <span className="rounded border border-gray-200 bg-white px-2.5 py-1.5">
+              <strong className="font-semibold text-slate-700">{stats.totalHours}</strong> hrs
+            </span>
+          )}
           <span className="rounded border border-gray-200 bg-white px-2.5 py-1.5">
-            <strong className="font-semibold text-slate-700">{todayShiftCount}</strong> today
+            <strong className="font-semibold text-slate-700">{stats.totalMembers}</strong> team members
           </span>
         </div>
       </div>
@@ -127,14 +215,17 @@ export function RosterCalendar() {
       </div>
 
       <div className="min-h-[600px] flex-1">
-        {view === 'Day' && <DayView currentDate={currentDate} shifts={shifts} onShiftClick={setSelectedShift} />}
-        {view === 'Week' && <WeekView currentDate={currentDate} shifts={shifts} onShiftClick={setSelectedShift} />}
-        {view === 'Month' && <MonthView currentDate={currentDate} shifts={shifts} onShiftClick={setSelectedShift} />}
+        {error && <p className="mb-3 rounded border border-red-200 bg-red-50 p-3 text-xs text-red-700">{error}</p>}
+        {loading ? <ContentSkeleton /> : <>
+          {view === 'Day' && <DayView currentDate={currentDate} shifts={shifts} teamMembers={teamMembers} onShiftClick={setSelectedShift} />}
+          {view === 'Week' && <WeekView currentDate={currentDate} shifts={shifts} teamMembers={teamMembers} onShiftClick={setSelectedShift} />}
+          {view === 'Month' && <MonthView currentDate={currentDate} shifts={shifts} teamMembers={teamMembers} onShiftClick={setSelectedShift} />}
+        </>}
       </div>
 
       {/* Shift Detail Modal */}
       {selectedShift && (
-        <ShiftModal shift={selectedShift} onClose={() => setSelectedShift(null)} />
+        <ShiftModal shift={selectedShift} onClose={() => setSelectedShift(null)} onDeleted={(id) => setShifts((current) => current.filter((shift) => shift.id !== id))} />
       )}
 
       {/* Create Shift Modal */}
@@ -144,3 +235,8 @@ export function RosterCalendar() {
     </div>
   );
 }
+
+function formatYYYYMMDD(d: Date): string { const year = d.getFullYear(); const month = String(d.getMonth() + 1).padStart(2, '0'); const day = String(d.getDate()).padStart(2, '0'); return `${year}-${month}-${day}`; }
+function to24Hour(value: string) { const match = value.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i); if (!match) return value; let hour = Number(match[1]); if (match[3]?.toUpperCase() === 'PM' && hour < 12) hour += 12; if (match[3]?.toUpperCase() === 'AM' && hour === 12) hour = 0; return `${String(hour).padStart(2, '0')}:${match[2]}`; }
+function normalizeDate(value: string) { const parsed = new Date(value); return Number.isNaN(parsed.getTime()) ? value : parsed.toISOString().split('T')[0]; }
+function flatten(items: Array<{ member: string; date: string; shift: RosterShift }>): Shift[] { const themes: ShiftTheme[] = ['blue', 'pink', 'orange', 'purple', 'green', 'teal']; return items.map((item, index) => ({ id: item.shift.shift_id, workerName: item.member, location: item.shift.location_name, date: item.date, startTime: to24Hour(item.shift.start_time), endTime: to24Hour(item.shift.end_time), theme: themes[index % themes.length] })); }

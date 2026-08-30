@@ -1,15 +1,16 @@
 "use client";
 
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { MdSearch, MdPeople, MdBadge, MdWorkOutline, MdAdd, MdUploadFile } from 'react-icons/md';
 import { BulkImportModal } from '@/components/shared/BulkImportModal';
 import { WorkerFilter, StatusFilter } from '@/components/workers/types';
 import { WorkersTable } from '@/components/workers/WorkersTable';
 import { WorkerDetailSidebar } from '@/components/workers/WorkerDetailSidebar';
 import { AddWorkerModal } from '@/components/workers/AddWorkerModal';
-import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { addWorker } from '@/store/slices/workers.slice';
 import type { Worker } from '@/components/workers/types';
+import { createWorker, getWorkers } from '@/services/actions/workers';
+import { TableSkeleton } from '@/components/shared/SkeletonLoader';
+import { BackendPagination } from '@/components/shared/BackendPagination';
 
 type NewWorker = Omit<Worker, 'id' | 'code' | 'completedShifts' | 'avgPhotoScore' | 'weeklyAvailability' | 'monthlyHours' | 'lateDays' | 'absentDays' | 'attendanceRecords' | 'documents' | 'invoices' | 'shiftRecords'> & {
   nidFile?: string;
@@ -21,8 +22,11 @@ const WORKER_FILTERS: WorkerFilter[] = ['All Workers', 'Employees', 'Freelancers
 const STATUS_FILTERS: StatusFilter[] = ['All', 'On Shift', 'Active', 'Off Duty'];
 
 export default function WorkersPage() {
-  const dispatch = useAppDispatch();
-  const workers = useAppSelector((state) => state.workers.list);
+  const [workers, setWorkers] = useState<Worker[]>([]);
+  const [counts, setCounts] = useState({ total: 0, employees: 0, freelancers: 0 });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [page, setPage] = useState(1); const limit = 10;
 
   const [search, setSearch] = useState('');
   const [workerFilter, setWorkerFilter] = useState<WorkerFilter>('All Workers');
@@ -31,43 +35,39 @@ export default function WorkersPage() {
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
 
+  const loadWorkers = async () => { const type = workerFilter === 'Employees' ? 'employee' : workerFilter === 'Freelancers' ? 'freelancer' : undefined; const status = statusFilter === 'All' ? undefined : statusFilter.toLowerCase().replaceAll(' ', '_'); setLoading(true); const result = await getWorkers({ page, search, workerType: type, status, limit }); setLoading(false); if (!result.success) return setError(result.error); setError(''); setCounts({ total: result.data.total_workers, employees: result.data.employees_count, freelancers: result.data.freelancers_count }); setWorkers(result.data.workers.map(mapWorker)); };
+  useEffect(() => { const timeout = window.setTimeout(() => { void loadWorkers(); }, 300); return () => window.clearTimeout(timeout); }, [search, workerFilter, statusFilter, page]);
+  useEffect(() => { setPage(1); }, [search, workerFilter, statusFilter]);
+
   const selectedWorker = useMemo(() => {
     return workers.find(w => w.id === selectedWorkerId) || null;
   }, [selectedWorkerId, workers]);
 
-  const filtered = useMemo(() => {
-    return workers.filter((w) => {
-      // search
-      if (search && !w.name.toLowerCase().includes(search.toLowerCase())) return false;
-      // worker type
-      if (workerFilter === 'Employees' && w.workerType !== 'Employee') return false;
-      if (workerFilter === 'Freelancers' && w.workerType !== 'Freelancer') return false;
-      // status
-      if (statusFilter !== 'All' && w.status !== statusFilter) return false;
-      return true;
+  const filtered = workers;
+
+  const handleAddWorker = async (data: NewWorker): Promise<string | void> => {
+    const rate = Number(data.hourlyRate) || 25;
+    const result = await createWorker({
+      full_name: data.name,
+      name: data.name,
+      email: data.email,
+      phone: data.phone,
+      worker_type: data.workerType.toLowerCase(),
+      position: data.position,
+      base_location: data.location,
+      hourly_rate: rate,
+      languages: data.languages,
+      status: data.status.toLowerCase().replaceAll(' ', '_'),
+      national_id: data.nidFile ?? 'NID-12345678',
+      certificates: data.certFile ? [data.certFile] : ['Certificate in Professional Cleaning'],
+      national_id_front: data.nidFile ?? 'string',
+      national_id_back: 'string',
+      employee_contract_pdf: data.contractFile ?? 'string',
     });
-  }, [search, workerFilter, statusFilter, workers]);
-
-  const totalWorkers = workers.length;
-  const totalEmployees = workers.filter((w) => w.workerType === 'Employee').length;
-  const totalFreelancers = workers.filter((w) => w.workerType === 'Freelancer').length;
-
-  const handleAddWorker = (newWorkerData: NewWorker) => {
-    const workerPayload = {
-      ...newWorkerData,
-      completedShifts: 0,
-      avgPhotoScore: 0,
-      weeklyAvailability: [],
-      monthlyHours: '0',
-      lateDays: 0,
-      absentDays: 0,
-      attendanceRecords: [],
-      documents: [],
-      invoices: [],
-      shiftRecords: [],
-    } as Omit<Worker, 'id' | 'code'>;
-
-    dispatch(addWorker(workerPayload));
+    if (!result.success) {
+      return result.error;
+    }
+    setWorkers((current) => [mapWorker(result.data), ...current]);
     setAddModalOpen(false);
   };
 
@@ -137,13 +137,15 @@ export default function WorkersPage() {
 
       {/* Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <StatCard icon={<MdPeople className="text-[#0ea5e9] text-2xl" />} value={totalWorkers} label="Total Workers" />
-        <StatCard icon={<MdBadge className="text-[#6366f1] text-2xl" />} value={totalEmployees} label="Employees" />
-        <StatCard icon={<MdWorkOutline className="text-[#f59e0b] text-2xl" />} value={totalFreelancers} label="Freelancers" />
+        <StatCard icon={<MdPeople className="text-[#0ea5e9] text-2xl" />} value={counts.total} label="Total Workers" />
+        <StatCard icon={<MdBadge className="text-[#6366f1] text-2xl" />} value={counts.employees} label="Employees" />
+        <StatCard icon={<MdWorkOutline className="text-[#f59e0b] text-2xl" />} value={counts.freelancers} label="Freelancers" />
       </div>
 
       {/* Table */}
-      <WorkersTable workers={filtered} onViewWorker={(w) => setSelectedWorkerId(w.id)} />
+      {error && <p className="rounded border border-red-200 bg-red-50 p-3 text-xs text-red-700">{error}</p>}
+      {loading ? <div className="overflow-hidden rounded border border-slate-200 bg-white"><TableSkeleton rows={7} columns={7} /></div> : <WorkersTable workers={filtered} onViewWorker={(w) => setSelectedWorkerId(w.id)} />}
+      <BackendPagination page={page} limit={limit} total={counts.total} onPageChange={setPage} />
 
       {/* Sidebar */}
       {selectedWorker && (
@@ -160,10 +162,12 @@ export default function WorkersPage() {
           onAdd={handleAddWorker}
         />
       )}
-      {importOpen && <BulkImportModal onClose={() => setImportOpen(false)} />}
+      {importOpen && <BulkImportModal mode="workers" onImported={() => { setImportOpen(false); void loadWorkers(); }} onClose={() => setImportOpen(false)} />}
     </div>
   );
 }
+
+function mapWorker(item: import('@/services/actions/workers').WorkerApi): Worker { const status = item.status.toLowerCase() === 'on_shift' ? 'On Shift' : item.status.toLowerCase() === 'off_duty' ? 'Off Duty' : 'Active'; return { id: item.worker_id, code: item.worker_id, name: item.full_name, initials: item.full_name.split(' ').map((part) => part[0]).join('').slice(0, 2), avatarColor: 'bg-sky-500', workerType: item.worker_type.toLowerCase() === 'freelancer' ? 'Freelancer' : 'Employee', position: item.position, location: item.location, languages: item.languages, hours: item.hours_worked, status, email: '', phone: '', completedShifts: 0, avgPhotoScore: 0, weeklyAvailability: [], monthlyHours: item.hours_worked, lateDays: 0, absentDays: 0, attendanceRecords: [], documents: [], totalEarned: 0, totalPaid: 0, remaining: 0, invoices: [], shiftRecords: [] }; }
 
 /* ─── Stat Card ──────────────────────────────────────── */
 

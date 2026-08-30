@@ -3,21 +3,24 @@
 import React, { useState, useEffect } from 'react';
 import { MdOutlineClose } from 'react-icons/md';
 import type { Client } from './types';
+import { createClient } from '@/services/actions/clients';
 
 type NewClient = Omit<Client, 'id' | 'locationsCount' | 'contractStatus' | 'contractExpiryDate' | 'activeTasks' | 'contacts' | 'locations'>;
 
 interface AddClientModalProps {
   onClose: () => void;
-  onAdd: (clientData: NewClient) => void;
+  onAdd: (client: Client) => void;
 }
 
 export function AddClientModal({ onClose, onAdd }: AddClientModalProps) {
   const [name, setName] = useState('');
   const [industry, setIndustry] = useState<'Corporate' | 'Healthcare' | 'Hospitality'>('Corporate');
-  const [status, setStatus] = useState<'Active' | 'Inactive'>('Active');
   const [mainContactName, setMainContactName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
+  const [licenseExpirationDate, setLicenseExpirationDate] = useState('');
+  const [error, setError] = useState('');
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
@@ -27,18 +30,14 @@ export function AddClientModal({ onClose, onAdd }: AddClientModalProps) {
     return () => window.removeEventListener('keydown', handleEsc);
   }, [onClose]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !mainContactName || !email || !phone) return;
 
-    onAdd({
-      name,
-      industry,
-      status,
-      mainContactName,
-      email,
-      phone
-    });
+    if (!licenseExpirationDate) return setError('License expiration date is required');
+    setSaving(true); setError(''); const result = await createClient({ company_name: name, email, industry, license_expiration_date: licenseExpirationDate, phone, primary_contact_name: mainContactName }); setSaving(false);
+    if (!result.success) return setError(result.error);
+    onAdd({ id: result.data.id, name: result.data.company_name, industry: result.data.industry, status: result.data.status, mainContactName: result.data.primary_contact_name, email: result.data.email, phone: result.data.phone, locationsCount: result.data.locations_count, contractStatus: result.data.contract_status, contractExpiryDate: result.data.license_expiration_date, activeTasks: 0, contacts: [], locations: [] });
   };
 
   return (
@@ -81,13 +80,12 @@ export function AddClientModal({ onClose, onAdd }: AddClientModalProps) {
             />
           </div>
 
-          {/* Industry + Status */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
             <div>
               <label className="text-xs font-semibold text-gray-700 mb-1.5 block">Industry</label>
               <select
                 value={industry}
-                onChange={(e) => setIndustry(e.target.value as NewClient['industry'])}
+                onChange={(e) => setIndustry(e.target.value as typeof industry)}
                 className="w-full h-10 rounded border border-gray-300 bg-white px-3 text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#0ea5e9] focus:border-[#0ea5e9] transition-colors appearance-none cursor-pointer"
               >
                 <option value="Corporate">Corporate</option>
@@ -95,18 +93,9 @@ export function AddClientModal({ onClose, onAdd }: AddClientModalProps) {
                 <option value="Hospitality">Hospitality</option>
               </select>
             </div>
-            <div>
-              <label className="text-xs font-semibold text-gray-700 mb-1.5 block">Status</label>
-              <select
-                value={status}
-                onChange={(e) => setStatus(e.target.value as NewClient['status'])}
-                className="w-full h-10 rounded border border-gray-300 bg-white px-3 text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#0ea5e9] focus:border-[#0ea5e9] transition-colors appearance-none cursor-pointer"
-              >
-                <option value="Active">Active</option>
-                <option value="Inactive">Inactive</option>
-              </select>
-            </div>
           </div>
+          <div><label className="text-xs font-semibold text-gray-700 mb-1.5 block">License Expiration Date *</label><input type="date" required value={licenseExpirationDate} onChange={(event) => setLicenseExpirationDate(event.target.value)} className="w-full h-10 rounded border border-gray-300 bg-white px-3 text-sm" /></div>
+          {error && <p className="text-xs font-medium text-red-600">{error}</p>}
 
           {/* Primary Contact Name */}
           <div>
@@ -159,9 +148,10 @@ export function AddClientModal({ onClose, onAdd }: AddClientModalProps) {
           </button>
           <button
             type="submit"
-            className="px-5 py-2.5 text-sm font-semibold text-white bg-[#0ea5e9] hover:bg-[#0284c7] rounded shadow-sm transition-colors cursor-pointer"
+            disabled={saving}
+            className="px-5 py-2.5 text-sm font-semibold text-white bg-[#0ea5e9] hover:bg-[#0284c7] rounded shadow-sm transition-colors cursor-pointer disabled:opacity-60"
           >
-            + Add Client
+            {saving ? 'Adding...' : '+ Add Client'}
           </button>
         </div>
       </form>

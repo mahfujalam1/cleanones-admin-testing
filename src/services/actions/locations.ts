@@ -1,0 +1,23 @@
+"use server";
+
+import { authenticated, type ActionResult } from "./auth";
+
+export type ClientOption = { id: string; primary_contact_name: string; company_name: string; is_signup: boolean };
+export type LocationGridItem = { location_id: string; location_name: string; client_id: string; client_company_name: string; address: string; floors: number; rooms: number; required_hours_label: string; required_hours_numeric: number; created_at: string; updated_at: string };
+export type LocationDetails = { id: string; client_id: string; name: string; type: string; address: string; city: string; postal_code: string; country: string; floor: number; number_of_rooms: number; rooms_count: number; cleaning_plans_count: number; description: string; image_url: string; is_active: boolean; notes: string; created_at: string; updated_at: string };
+export type LocationOverview = { location_id: string; location_code: string; location_name: string; client_name: string; subtitle: string; address: string; floors: number; rooms: number; required_hours_month: string; assigned_employees: Array<{ worker_id: string; name: string; profile_picture: string; status: string }>; assigned_employees_count: number; coverage_label: string };
+export type RoomsTab = { location_id: string; location_name: string; total_rooms_count: number; rooms: Array<{ room_id: string; title: string; floor: number; cleaning_type_label: string; status: string }> };
+export type LocationInput = { name: string; type: string; address: string; floor: number; description: string };
+const body = (value: unknown) => ({ headers: { "Content-Type": "application/json" }, body: JSON.stringify(value) });
+export async function getClientOptions(page = 1, limit = 100, search?: string, isSignup?: boolean) { const query = new URLSearchParams({ page: String(page), limit: String(limit) }); if (search) query.set("search", search); if (isSignup !== undefined) query.set("is_signup", String(isSignup)); return authenticated<{ total_count: number; page: number; limit: number; has_more: boolean; clients: ClientOption[] }>(`/manager/dropdowns/clients?${query}`, { method: "GET" }); }
+export async function getLocations(input: { page?: number; limit?: number; search?: string; clientId?: string; locationId?: string } = {}) { const query = new URLSearchParams({ page: String(input.page ?? 1), limit: String(input.limit ?? 100) }); if (input.search) query.set("search", input.search); if (input.clientId) query.set("client_id", input.clientId); if (input.locationId) query.set("location_id", input.locationId); return authenticated<{ total_count: number; page: number; limit: number; has_more: boolean; locations: LocationGridItem[] }>(`/manager/locations?${query}`, { method: "GET" }); }
+export async function createClientLocation(clientId: string, input: LocationInput) { return authenticated<LocationDetails>(`/manager/clients/${encodeURIComponent(clientId)}/locations`, { method: "POST", ...body(input) }); }
+export async function getLocation(locationId: string) { return authenticated<LocationDetails>(`/manager/locations/${encodeURIComponent(locationId)}`, { method: "GET" }); }
+export async function updateLocation(locationId: string, input: LocationInput) { return authenticated<LocationDetails>(`/manager/locations/${encodeURIComponent(locationId)}`, { method: "PATCH", ...body(input) }); }
+export async function deleteLocation(locationId: string) { return authenticated<string>(`/manager/locations/${encodeURIComponent(locationId)}`, { method: "DELETE" }); }
+export async function getLocationOverview(locationId: string) { return authenticated<LocationOverview>(`/manager/locations/${encodeURIComponent(locationId)}/overview`, { method: "GET" }); }
+export async function getLocationRooms(locationId: string) { return authenticated<RoomsTab>(`/manager/locations/${encodeURIComponent(locationId)}/rooms-tab`, { method: "GET" }); }
+export async function getLocationCleaningPlans(locationId: string): Promise<ActionResult<unknown>> { return authenticated<unknown>(`/manager/locations/${encodeURIComponent(locationId)}/cleaning-plans-tab`, { method: "GET" }); }
+export async function importLocations(file: File) { const data = new FormData(); data.append("file", file); return authenticated<{ total_rows: number; imported_count: number; failed_count: number; errors: string[] }>("/manager/locations/bulk-import", { method: "POST", body: data }); }
+export async function getLocationImportTemplate() { return authenticated<string>("/manager/locations/bulk-import/template", { method: "GET" }); }
+export async function exportLocations() { return authenticated<string>("/manager/locations/export", { method: "GET" }); }

@@ -3,15 +3,20 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { forgotPassword } from '@/services/actions/auth';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
   const router = useRouter();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [loading, setLoading] = useState(false);
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) return setError('Email is required');
+    setLoading(true); const result = await forgotPassword(email); setLoading(false);
+    if (!result.success) return setError(result.error);
+    sessionStorage.setItem('cleanones-reset-email', email);
     router.push('/forgot-password/otp');
   };
 
@@ -31,7 +36,7 @@ export default function ForgotPasswordPage() {
           <input type="email" value={email} onChange={(e) => { setEmail(e.target.value); setError(''); }} placeholder="you@company.com" className="h-10 w-full rounded border border-slate-200 bg-white px-3 text-sm text-slate-900 shadow-sm outline-none transition-colors placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/10" required />
           {error && <p className="text-xs text-red-500">{error}</p>}
         </div>
-        <button type="submit" className="h-10 w-full cursor-pointer rounded bg-primary text-sm font-semibold text-white shadow-sm hover:bg-[#0284c7]">Send OTP</button>
+        <button type="submit" disabled={loading} className="h-10 w-full cursor-pointer rounded bg-primary text-sm font-semibold text-white shadow-sm hover:bg-[#0284c7] disabled:opacity-60">{loading ? 'Sending...' : 'Send OTP'}</button>
       </form>
 
       <p className="text-center text-[11px] text-slate-400">Remember your password? <Link href="/login" className="font-semibold text-primary hover:underline">Sign In</Link></p>

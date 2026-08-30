@@ -7,9 +7,8 @@ import { initializeAuth } from "@/store/slices/auth.slice";
 
 function AuthInitializer({ children }: { children: React.ReactNode }) {
   useEffect(() => {
-    const token = localStorage.getItem("token");
     const savedUser = localStorage.getItem("cleanones-dashboard-user");
-    if (token && savedUser) {
+    if (savedUser) {
       try {
         store.dispatch(initializeAuth(JSON.parse(savedUser)));
         return;

@@ -1,21 +1,24 @@
-import React from 'react';
-import { WORKERS } from './data';
+import React, { useEffect, useState } from 'react';
 import { WorkerInfo } from './types';
+import { getAttendanceTracking, type AttendanceWorker } from '@/services/actions/shiftMonitoring';
+import { CardGridSkeleton } from '@/components/shared/SkeletonLoader';
 
 interface Props {
   onWorkerSelect: (worker: WorkerInfo) => void;
-  selectedWorkerId: number | null;
+  selectedWorkerId: string | number | null;
 }
 
 export function EmployeeStatistics({ onWorkerSelect, selectedWorkerId }: Props) {
+  const [workers, setWorkers] = useState<WorkerInfo[]>([]); const [loading, setLoading] = useState(true);
+  useEffect(() => { void getAttendanceTracking({ period: 'monthly' }).then((result) => { setLoading(false); if (result.success) setWorkers(result.data.workers.map(mapWorker)); }); }, []);
   return (
     <div className="flex flex-col h-full animate-in fade-in duration-300">
       <div className="mb-6">
         <p className="text-sm text-gray-500 font-medium">Select an employee to view detailed statistics and analytics.</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-        {WORKERS.map(worker => {
+      {loading ? <CardGridSkeleton cards={8} /> : <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+        {workers.map(worker => {
           const isSelected = selectedWorkerId === worker.id;
           return (
             <div 
@@ -54,7 +57,9 @@ export function EmployeeStatistics({ onWorkerSelect, selectedWorkerId }: Props) 
             </div>
           );
         })}
-      </div>
+      </div>}
     </div>
   );
 }
+
+function mapWorker(item: AttendanceWorker): WorkerInfo { return { id: item.worker_id, initials: '', name: item.worker_name, role: item.worker_type.toLowerCase() === 'freelancer' ? 'Freelancer' : 'Employee', shiftId: '', location: '', checkIn: '', status: 'On Time', color: 'bg-sky-500', statusColor: 'text-sky-500', hoursWorked: item.hours_worked_numeric, totalShifts: item.total_shifts, lateDays: item.late_days, avgDuration: '0h' }; }

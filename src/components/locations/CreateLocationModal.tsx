@@ -3,25 +3,26 @@
 import React, { useState, useEffect } from 'react';
 import { MdOutlineClose } from 'react-icons/md';
 import { MdOutlineLocationOn } from 'react-icons/md';
-import { Location } from './types';
-import { mockClients } from './MockData';
+import { createClientLocation, getClientOptions, type ClientOption } from '@/services/actions/locations';
 
 interface CreateLocationModalProps {
     onClose: () => void;
-    onAdd: (location: Omit<Location, 'id'>) => void;
+    onAdd: () => void;
 }
 
 export function CreateLocationModal({ onClose, onAdd }: CreateLocationModalProps) {
     const [name, setName] = useState('');
-    const [client, setClient] = useState(mockClients[0]);
+    const [clients, setClients] = useState<ClientOption[]>([]);
+    const [client, setClient] = useState('');
     const [address, setAddress] = useState('');
-    const [floors, setFloors] = useState('');
-    const [rooms, setRooms] = useState('');
-    const [requiredHours, setRequiredHours] = useState('');
-    const [assignedEmployees, setAssignedEmployees] = useState<string[]>([]);
-    const employees = ['Lisa Visser', 'Emma Smit', 'Noah Bos', 'Sophie de Boer', 'Lucas Meijer', 'Anna Mulder', 'Daan van den Berg', 'Milan Dekker'];
+    const [floor, setFloor] = useState('1');
+    const [type, setType] = useState('office');
+    const [description, setDescription] = useState('');
+    const [error, setError] = useState('');
+    const [saving, setSaving] = useState(false);
 
     useEffect(() => {
+        void getClientOptions().then((result) => { if (result.success) { setClients(result.data.clients); setClient(result.data.clients[0]?.id ?? ''); } else setError(result.error); });
         const handleEsc = (e: KeyboardEvent) => {
             if (e.key === 'Escape') onClose();
         };
@@ -29,18 +30,12 @@ export function CreateLocationModal({ onClose, onAdd }: CreateLocationModalProps
         return () => window.removeEventListener('keydown', handleEsc);
     }, [onClose]);
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!name || !address || !floors || !rooms) return;
-        onAdd({
-            name,
-            client,
-            address,
-            floors: parseInt(floors),
-            rooms: parseInt(rooms),
-            requiredHours: parseInt(requiredHours) || 0,
-            assignedEmployees,
-        });
+        if (!name || !type || !address || floor === '' || !client) return;
+        setSaving(true); setError(''); const result = await createClientLocation(client, { name, type, address, floor: Number(floor), description }); setSaving(false);
+        if (!result.success) { setError(result.error); return; }
+        onAdd();
     };
 
     return (
@@ -94,8 +89,8 @@ export function CreateLocationModal({ onClose, onAdd }: CreateLocationModalProps
                             onChange={(e) => setClient(e.target.value)}
                             className="w-full h-10 rounded border border-gray-300 bg-white px-3 text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#0ea5e9] focus:border-[#0ea5e9] transition-colors appearance-none cursor-pointer"
                         >
-                            {mockClients.map((c) => (
-                                <option key={c} value={c}>{c}</option>
+                            {clients.map((c) => (
+                                <option key={c.id} value={c.id}>{c.company_name || c.primary_contact_name}</option>
                             ))}
                         </select>
                     </div>
@@ -113,43 +108,29 @@ export function CreateLocationModal({ onClose, onAdd }: CreateLocationModalProps
                         />
                     </div>
 
-                    {/* Floors + Rooms */}
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <div>
-                            <label className="text-xs font-semibold text-gray-700 mb-1.5 block">Number of Floors *</label>
+                            <label className="text-xs font-semibold text-gray-700 mb-1.5 block">Floor *</label>
                             <input
                                 type="number"
                                 required
-                                min={1}
-                                placeholder="e.g. 4"
-                                value={floors}
-                                onChange={(e) => setFloors(e.target.value)}
+                                min={0}
+                                placeholder="e.g. 1"
+                                value={floor}
+                                onChange={(e) => setFloor(e.target.value)}
                                 className="w-full h-10 rounded border border-gray-300 bg-white px-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#0ea5e9] focus:border-[#0ea5e9] transition-colors"
                             />
                         </div>
                         <div>
-                            <label className="text-xs font-semibold text-gray-700 mb-1.5 block">Number of Rooms *</label>
-                            <input
-                                type="number"
-                                required
-                                min={1}
-                                placeholder="e.g. 48"
-                                value={rooms}
-                                onChange={(e) => setRooms(e.target.value)}
-                                className="w-full h-10 rounded border border-gray-300 bg-white px-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#0ea5e9] focus:border-[#0ea5e9] transition-colors"
-                            />
+                            <label className="text-xs font-semibold text-gray-700 mb-1.5 block">Type *</label>
+                            <input value={type} onChange={(e) => setType(e.target.value)} required className="w-full h-10 rounded border border-gray-300 px-3 text-sm" />
                         </div>
                     </div>
                     <div>
-                        <label className="text-xs font-semibold text-gray-700 mb-1.5 block">Required working hours / month *</label>
-                        <input type="number" required min={1} placeholder="e.g. 240" value={requiredHours} onChange={(e) => setRequiredHours(e.target.value)} className="w-full h-10 rounded border border-gray-300 bg-white px-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-[#0ea5e9]" />
+                        <label className="text-xs font-semibold text-gray-700 mb-1.5 block">Description</label>
+                        <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} className="w-full rounded border border-gray-300 px-3 py-2 text-sm resize-none" />
                     </div>
-                    <div>
-                        <label className="text-xs font-semibold text-gray-700 mb-1.5 block">Assigned employees</label>
-                        <div className="grid max-h-32 grid-cols-2 gap-1.5 overflow-y-auto rounded border border-gray-200 bg-gray-50 p-2">
-                            {employees.map((employee) => <label key={employee} className="flex cursor-pointer items-center gap-2 rounded bg-white px-2 py-1.5 text-[11px] text-gray-700"><input type="checkbox" checked={assignedEmployees.includes(employee)} onChange={() => setAssignedEmployees((items) => items.includes(employee) ? items.filter((item) => item !== employee) : [...items, employee])} className="accent-sky-500" />{employee}</label>)}
-                        </div>
-                    </div>
+                    {error && <p className="text-xs font-medium text-red-600">{error}</p>}
                 </div>
 
                 {/* Footer */}
@@ -163,9 +144,10 @@ export function CreateLocationModal({ onClose, onAdd }: CreateLocationModalProps
                     </button>
                     <button
                         type="submit"
-                        className="px-5 py-2.5 text-sm font-semibold text-white bg-[#0ea5e9] hover:bg-[#0284c7] rounded shadow-sm transition-colors cursor-pointer"
+                        disabled={saving}
+                        className="px-5 py-2.5 text-sm font-semibold text-white bg-[#0ea5e9] hover:bg-[#0284c7] rounded shadow-sm transition-colors cursor-pointer disabled:opacity-60"
                     >
-                        + Add Location
+                        {saving ? 'Adding...' : '+ Add Location'}
                     </button>
                 </div>
             </form>

@@ -1,13 +1,13 @@
 export interface Client {
   id: string;
   name: string;
-  industry: 'Corporate' | 'Healthcare' | 'Hospitality';
-  status: 'Active' | 'Inactive';
+  industry: string;
+  status: string;
   mainContactName: string;
   email: string;
   phone: string;
   locationsCount: number;
-  contractStatus: 'Active' | 'Expiring' | 'Expired';
+  contractStatus: string;
   contractExpiryDate: string;
   activeTasks: number;
 

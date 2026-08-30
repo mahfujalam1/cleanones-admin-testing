@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { MdInsertDriveFile } from "react-icons/md";
 import {
   Bar,
@@ -14,35 +14,25 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { ContentSkeleton } from "@/components/shared/SkeletonLoader";
+import { exportQualityControlPdf, getQualityControlReport, type QualityControlReport, type ReportTimeframe } from "@/services/actions/reports";
 
 type ReportRange = "Week" | "Month" | "Quarter" | "Year";
 
 const ranges: ReportRange[] = ["Week", "Month", "Quarter", "Year"];
 
-const shiftTrendData = [
-  { month: "Jan", shifts: 265 },
-  { month: "Feb", shifts: 302 },
-  { month: "Mar", shifts: 278 },
-  { month: "Apr", shifts: 328 },
-  { month: "May", shifts: 368 },
-  { month: "Jun", shifts: 232 },
-];
-
-const qualityData = [
-  { name: "Approved", value: 67, color: "#0ea5e9" },
-  { name: "Pending", value: 12, color: "#f59e0b" },
-  { name: "Rejected", value: 8, color: "#ef4444" },
-];
-
-const productivityData = [
-  { name: "Lisa Visser", type: "Rooms", rate: 4.8, completed: 96, hours: 20 },
-  { name: "Emma Smit", type: "Rooms", rate: 4.3, completed: 82, hours: 19 },
-  { name: "Noah Bos", type: "Houses", rate: 1.6, completed: 24, hours: 15 },
-  { name: "Sophie de Boer", type: "Objects", rate: 3.9, completed: 74, hours: 19 },
-];
-
 export default function ReportsPage() {
   const [activeRange, setActiveRange] = useState<ReportRange>("Month");
+  const [report, setReport] = useState<QualityControlReport | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
+  const [error, setError] = useState("");
+  const timeframe = activeRange.toLowerCase() as ReportTimeframe;
+  useEffect(() => { setLoading(true); void getQualityControlReport(timeframe).then((result) => { setLoading(false); if (!result.success) return setError(result.error); setError(""); setReport(result.data); }); }, [timeframe]);
+  const downloadPdf = async () => { setExporting(true); const result = await exportQualityControlPdf(timeframe); setExporting(false); if (!result.success) return setError(result.error); window.open(result.data, "_blank", "noopener,noreferrer"); };
+  const shiftTrendData = (report?.shift_trends ?? []).map((item) => ({ label: item.label, count: item.count }));
+  const distribution = report?.photo_quality_distribution;
+  const qualityData = [{ name: "Approved", value: distribution?.approved ?? 0, color: "#0ea5e9" }, { name: "Pending", value: distribution?.pending ?? 0, color: "#f59e0b" }, { name: "Rejected", value: distribution?.rejected ?? 0, color: "#ef4444" }];
 
   return (
     <div className="space-y-6 pb-10">
@@ -65,30 +55,35 @@ export default function ReportsPage() {
 
         <button
           type="button"
+          onClick={() => void downloadPdf()}
+          disabled={exporting}
           className="flex h-9 items-center gap-1.5 rounded border border-gray-200 bg-gray-100 px-3 text-sm font-semibold text-slate-500 shadow-sm transition-colors hover:bg-white"
         >
           <MdInsertDriveFile className="text-base" />
-          PDF
+          {exporting ? "Exporting..." : "PDF"}
         </button>
       </div>
 
+      {error && <p className="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</p>}
+      {loading ? <ContentSkeleton /> : <>
+
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <MetricCard label="Total Shifts" value="1,245" />
-        <MetricCard label="Total Photos Approved" value="67" />
-        <MetricCard label="Escalations" value="23" />
+        <MetricCard label="Total Shifts" value={(report?.total_shifts ?? 0).toLocaleString()} />
+        <MetricCard label="Total Photos Approved" value={(report?.total_photos_approved ?? 0).toLocaleString()} />
+        <MetricCard label="Escalations" value={(report?.escalations_count ?? 0).toLocaleString()} />
       </div>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_1fr]">
         <section className="dashboard-card p-5">
           <h2 className="mb-5 text-sm font-bold text-slate-950">
-            Monthly Shift Trends
+            {activeRange} Shift Trends
           </h2>
           <div className="h-[210px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={shiftTrendData} margin={{ top: 5, right: 5, left: 0, bottom: 0 }}>
                 <CartesianGrid stroke="#eef2f7" strokeDasharray="3 3" vertical />
                 <XAxis
-                  dataKey="month"
+                  dataKey="label"
                   tick={{ fontSize: 11, fill: "#64748b" }}
                   axisLine={false}
                   tickLine={false}
@@ -107,7 +102,7 @@ export default function ReportsPage() {
                     fontSize: 12,
                   }}
                 />
-                <Bar dataKey="shifts" fill="#0ea5e9" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="count" fill="#0ea5e9" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -163,10 +158,7 @@ export default function ReportsPage() {
         </section>
       </div>
 
-      <section className="dashboard-card overflow-hidden">
-        <div className="border-b border-slate-100 px-5 py-4"><h2 className="text-sm font-bold text-slate-950">Employee Productivity</h2><p className="mt-1 text-xs text-slate-500">Average completed houses, rooms or objects per worked hour.</p></div>
-        <div className="overflow-x-auto"><table className="w-full min-w-[620px] text-left"><thead className="bg-slate-50 text-[10px] uppercase tracking-wider text-slate-400"><tr><th className="px-5 py-3">Employee</th><th className="px-5 py-3">Object type</th><th className="px-5 py-3">Completed</th><th className="px-5 py-3">Worked hours</th><th className="px-5 py-3">Average / hour</th></tr></thead><tbody className="divide-y divide-slate-100">{productivityData.map(item => <tr key={item.name} className="text-sm text-slate-600"><td className="px-5 py-3 font-semibold text-slate-900">{item.name}</td><td className="px-5 py-3">{item.type}</td><td className="px-5 py-3">{item.completed}</td><td className="px-5 py-3">{item.hours}h</td><td className="px-5 py-3"><span className="rounded bg-sky-50 px-2 py-1 font-bold text-sky-700">{item.rate} {item.type.toLowerCase()}/h</span></td></tr>)}</tbody></table></div>
-      </section>
+      </>}
     </div>
   );
 }

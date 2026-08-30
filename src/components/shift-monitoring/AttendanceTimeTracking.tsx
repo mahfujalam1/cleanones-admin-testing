@@ -1,23 +1,20 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { MdSearch } from 'react-icons/md';
-import { WORKERS } from './data';
 import { WorkerInfo } from './types';
+import { getAttendanceTracking, type AttendanceWorker, type Period } from '@/services/actions/shiftMonitoring';
+import { TableSkeleton } from '@/components/shared/SkeletonLoader';
 
 interface Props {
   onWorkerSelect: (worker: WorkerInfo) => void;
-  selectedWorkerId: number | null;
+  selectedWorkerId: string | number | null;
 }
 
 export function AttendanceTimeTracking({ onWorkerSelect, selectedWorkerId }: Props) {
   const [timeRange, setTimeRange] = useState<'Today' | 'Weekly' | 'Monthly'>('Today');
   const [roleFilter, setRoleFilter] = useState<'All' | 'Employee' | 'Freelancer'>('All');
   const [search, setSearch] = useState('');
-
-  const filteredWorkers = WORKERS.filter(w => {
-    if (roleFilter !== 'All' && w.role !== roleFilter) return false;
-    if (search && !w.name.toLowerCase().includes(search.toLowerCase())) return false;
-    return true;
-  });
+  const [workers, setWorkers] = useState<WorkerInfo[]>([]); const [loading, setLoading] = useState(true); const [error, setError] = useState('');
+  useEffect(() => { setLoading(true); const timer = window.setTimeout(() => { const period = timeRange.toLowerCase() as Period; void getAttendanceTracking({ period, workerType: roleFilter === 'All' ? undefined : roleFilter.toLowerCase(), search }).then((result) => { setLoading(false); if (!result.success) return setError(result.error); setError(''); setWorkers(result.data.workers.map(mapAttendanceWorker)); }); }, 300); return () => window.clearTimeout(timer); }, [timeRange, roleFilter, search]);
 
   return (
     <div className="flex flex-col h-full animate-in fade-in duration-300">
@@ -68,6 +65,7 @@ export function AttendanceTimeTracking({ onWorkerSelect, selectedWorkerId }: Pro
       </div>
 
       {/* Table */}
+      {error && <p className="mb-3 rounded bg-red-50 p-3 text-xs text-red-700">{error}</p>}
       <div className="dashboard-card flex flex-1 flex-col overflow-hidden">
         <div className="overflow-x-auto w-full">
           <table className="w-full text-left border-collapse min-w-[600px]">
@@ -82,7 +80,7 @@ export function AttendanceTimeTracking({ onWorkerSelect, selectedWorkerId }: Pro
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 text-sm bg-white">
-            {filteredWorkers.map((worker) => (
+            {loading ? <tr><td colSpan={6} className="p-0"><TableSkeleton rows={7} columns={6} /></td></tr> : workers.map((worker) => (
               <tr 
                 key={worker.id} 
                 className={`hover:bg-gray-50 transition-colors ${selectedWorkerId === worker.id ? 'bg-[#f0f9ff]' : ''}`}
@@ -126,3 +124,5 @@ export function AttendanceTimeTracking({ onWorkerSelect, selectedWorkerId }: Pro
     </div>
   );
 }
+
+function mapAttendanceWorker(item: AttendanceWorker): WorkerInfo { return { id: item.worker_id, initials: '', name: item.worker_name, role: item.worker_type.toLowerCase() === 'freelancer' ? 'Freelancer' : 'Employee', shiftId: '', location: '', checkIn: '', status: 'On Time', color: 'bg-sky-500', statusColor: 'text-sky-500', hoursWorked: item.hours_worked_numeric, totalShifts: item.total_shifts, lateDays: item.late_days, avgDuration: '0h' }; }

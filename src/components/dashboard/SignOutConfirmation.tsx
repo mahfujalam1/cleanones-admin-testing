@@ -6,6 +6,7 @@ import { AlertDialog } from "@base-ui/react/alert-dialog";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { logout } from "@/store/slices/auth.slice";
 import { setSignOutModalOpen } from "@/store/slices/ui.slice";
+import { logoutUser } from "@/services/actions/auth";
 
 export function SignOutConfirmation() {
   const router = useRouter();
@@ -14,8 +15,8 @@ export function SignOutConfirmation() {
   const open = useAppSelector((state) => state.ui.signOutModalOpen);
 
   const close = () => dispatch(setSignOutModalOpen(false));
-  const confirm = () => {
-    localStorage.removeItem("token");
+  const confirm = async () => {
+    await logoutUser();
     localStorage.removeItem("cleanones-dashboard-user");
     dispatch(logout());
     dispatch(setSignOutModalOpen(false));

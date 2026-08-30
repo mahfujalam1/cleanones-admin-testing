@@ -6,7 +6,9 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { setUser } from '@/store/slices/auth.slice';
 import { getLocale, localizePath } from '@/lib/locale';
-import { getFirstAllowedRoute, getManagerByEmail, getStoredManagerAccess, type DashboardRole } from '@/lib/access-control';
+import { getFirstAllowedRoute, getStoredManagerAccess, type DashboardRole } from '@/lib/access-control';
+import { loginUser } from '@/services/actions/auth';
+import { TbEye, TbEyeOff } from 'react-icons/tb';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -15,8 +17,10 @@ export default function LoginPage() {
   const { isAuthenticated, initialized, user } = useAppSelector((state) => state.auth);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<DashboardRole>('MANAGER');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (initialized && isAuthenticated) {
@@ -27,21 +31,20 @@ export default function LoginPage() {
     }
   }, [initialized, isAuthenticated, user, locale, router]);
 
-  const handleSignIn = (e: React.FormEvent) => {
+  const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    const manager = role === 'MANAGER' ? getManagerByEmail(email) : null;
-    if (manager?.status === 'BLOCKED') {
-      setError('This manager account has been blocked by the Super Admin.');
-      return;
-    }
-    localStorage.setItem('token', `cleanones-dashboard-${Date.now()}`);
-    const user = role === 'SUPER_ADMIN'
-      ? { id: 'sa-1', name: 'CleanOnes Admin', email, role: 'SUPER_ADMIN' as const }
-      : { id: manager!.id, name: manager!.name, email: manager!.email, role: 'MANAGER' as const };
+    setLoading(true);
+    const result = await loginUser({ email, password, remember_me: rememberMe });
+    setLoading(false);
+    if (!result.success) { setError(result.error); return; }
+    const normalizedRole = result.data.role.toUpperCase().replaceAll('-', '_');
+    const apiRole = (normalizedRole === 'ADMIN' || normalizedRole === 'SUPERADMIN' ? 'SUPER_ADMIN' : normalizedRole) as DashboardRole;
+    if (apiRole !== 'MANAGER' && apiRole !== 'SUPER_ADMIN') { setError('Your account does not have dashboard access.'); return; }
+    const user = { id: email, name: result.data.name, email, role: apiRole };
     localStorage.setItem('cleanones-dashboard-user', JSON.stringify(user));
     dispatch(setUser(user));
-    const destination = role === 'MANAGER'
+    const destination = apiRole === 'MANAGER'
       ? getFirstAllowedRoute(getStoredManagerAccess()) ?? '/unauthorized'
       : '/';
     router.replace(localizePath(destination, locale));
@@ -59,13 +62,6 @@ export default function LoginPage() {
         </div>
 
         <form onSubmit={handleSignIn} className="space-y-4">
-          <div className="grid grid-cols-2 gap-2 rounded bg-slate-100 p-1">
-            {([['MANAGER', 'Manager'], ['SUPER_ADMIN', 'Super Admin']] as const).map(([value, label]) => (
-              <button key={value} type="button" onClick={() => setRole(value)} className={`h-9 rounded text-xs font-semibold transition ${role === value ? 'bg-white text-primary shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}>
-                {label}
-              </button>
-            ))}
-          </div>
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-slate-800">Email Address</label>
             <input
@@ -80,27 +76,37 @@ export default function LoginPage() {
 
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-slate-800">Password</label>
-            <input
-              type="password"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="h-10 w-full rounded border border-slate-200 bg-white px-3 text-sm text-slate-900 shadow-sm outline-none transition-colors placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/10"
-              required
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="h-10 w-full rounded border border-slate-200 bg-white pl-3 pr-10 text-sm text-slate-900 shadow-sm outline-none transition-colors placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/10"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none cursor-pointer p-0.5 rounded transition-colors"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? <TbEyeOff className="text-lg" /> : <TbEye className="text-lg" />}
+              </button>
+            </div>
           </div>
 
           <div className="flex items-center justify-between pt-0.5">
             <label className="flex cursor-pointer items-center gap-2 text-xs text-slate-700">
-              <input type="checkbox" className="h-4 w-4 rounded border-slate-300 accent-primary" /> Remember me
+              <input type="checkbox" checked={rememberMe} onChange={(event) => setRememberMe(event.target.checked)} className="h-4 w-4 rounded border-slate-300 accent-primary" /> Remember me
             </label>
             <Link href={localizePath('/forgot-password', locale)} className="text-xs font-medium text-primary hover:underline">
               Forgot password?
             </Link>
           </div>
 
-          <button type="submit" className="h-10 w-full cursor-pointer rounded bg-primary text-sm font-semibold text-white shadow-sm transition-all hover:bg-[#0284c7] hover:shadow">
-            Sign In
+          <button type="submit" disabled={loading} className="h-10 w-full cursor-pointer rounded bg-primary text-sm font-semibold text-white shadow-sm transition-all hover:bg-[#0284c7] hover:shadow disabled:opacity-60">
+            {loading ? 'Signing in...' : 'Sign In'}
           </button>
           {error && <p className="rounded border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700">{error}</p>}
         </form>

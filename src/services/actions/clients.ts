@@ -1,0 +1,37 @@
+"use server";
+import { authenticated, type ActionResult } from "./auth";
+
+export type ClientSummary = { id: string; company_name: string; industry: string; status: string; primary_contact_name: string; email: string; phone: string; is_signup: boolean; locations_count: number; contract_status: string; created_at: string; updated_at: string };
+export type ClientInput = { company_name: string; email: string; industry: string; license_expiration_date: string; phone: string; primary_contact_name: string };
+export type ClientContact = { id: string; name: string; role: string; email: string; phone: string };
+export type ClientDetails = ClientSummary & { admin: { id: string; name: string; profile_picture: string | null }; license_expiration_date: string; locations: Array<{ id: string; name: string; address: string; rooms_count: number }>; contacts: ClientContact[]; contracts: unknown[]; cleaning_plans: unknown[]; reports: unknown[] };
+const json = (value: unknown) => ({ headers: { "Content-Type": "application/json" }, body: JSON.stringify(value) });
+const apiUrl = (value: string) => {
+  if (!value || value.startsWith("http://") || value.startsWith("https://")) return value;
+  const base = (process.env.API_BASE_URL ?? process.env.NEXT_PUBLIC_API_BASE_URL ?? "").replace(/\/$/, "");
+  return `${base}${value.startsWith("/") ? "" : "/"}${value}`;
+};
+function query(page: number, limit: number, search?: string, isSignup?: boolean) { const value = new URLSearchParams({ page: String(page), limit: String(limit) }); if (search) value.set("search", search); if (isSignup !== undefined) value.set("is_signup", String(isSignup)); return value; }
+export async function createClient(input: ClientInput) { return authenticated<ClientDetails>("/manager/clients", { method: "POST", ...json(input) }); }
+export async function getClients(page = 1, limit = 100, search?: string, isSignup?: boolean) { return authenticated<{ total_count: number; page: number; limit: number; has_more: boolean; clients: ClientSummary[] }>(`/manager/clients?${query(page, limit, search, isSignup)}`, { method: "GET" }); }
+export async function getClient(clientId: string) { return authenticated<ClientDetails>(`/manager/clients/${encodeURIComponent(clientId)}`, { method: "GET" }); }
+export async function updateClient(clientId: string, input: Omit<ClientSummary, "id" | "locations_count" | "contract_status" | "created_at" | "updated_at">) { return authenticated<ClientDetails>(`/manager/clients/${encodeURIComponent(clientId)}`, { method: "PATCH", ...json(input) }); }
+export async function deleteClient(clientId: string) { return authenticated<string>(`/manager/clients/${encodeURIComponent(clientId)}`, { method: "DELETE" }); }
+export async function getDeletedClients(page = 1, limit = 10, search?: string, isSignup?: boolean) { return authenticated<{ total_count: number; page: number; limit: number; has_more: boolean; clients: ClientSummary[] }>(`/manager/clients/deleted-list?${query(page, limit, search, isSignup)}`, { method: "GET" }); }
+export async function restoreClient(clientId: string) { return authenticated<string>(`/manager/clients/${encodeURIComponent(clientId)}/restore`, { method: "POST" }); }
+export async function getPendingClientApprovals(page = 1, limit = 10) { return authenticated<{ total_count: number; page: number; limit: number; has_more: boolean; users: unknown[] }>(`/manager/clients/pending-approvals?page=${page}&limit=${limit}`, { method: "GET" }); }
+export async function approveClient(userId: string, licenseExpirationDate: string) { return authenticated<ClientDetails>(`/manager/clients/${encodeURIComponent(userId)}/approve`, { method: "POST", ...json({ license_expiration_date: licenseExpirationDate }) }); }
+export async function rejectClient(userId: string, rejectReason: string) { return authenticated<string>(`/manager/clients/${encodeURIComponent(userId)}/reject`, { method: "POST", ...json({ reject_reason: rejectReason }) }); }
+export async function getClientOverview(clientId: string) { return authenticated<{ client_id: string; company_name: string; industry: string; status: string; subtitle_contract_status: string; contract_status: string; contract_expiry_date: string; contract_expiry_formatted: string; locations_count: number; contacts_count: number; active_tasks_count: number }>(`/manager/clients/${encodeURIComponent(clientId)}/dashboard-overview`, { method: "GET" }); }
+export async function getClientContacts(clientId: string, page = 1, limit = 100) { return authenticated<{ total_count: number; page: number; limit: number; has_more: boolean; contacts: ClientContact[] }>(`/manager/clients/${encodeURIComponent(clientId)}/contacts?page=${page}&limit=${limit}`, { method: "GET" }); }
+export async function addClientContact(clientId: string, input: Omit<ClientContact, "id">) { return authenticated<ClientContact>(`/manager/clients/${encodeURIComponent(clientId)}/contacts`, { method: "POST", ...json(input) }); }
+export async function removeClientContact(clientId: string, contactId: string) { return authenticated<string>(`/manager/clients/${encodeURIComponent(clientId)}/contacts/${encodeURIComponent(contactId)}`, { method: "DELETE" }); }
+export type Contract = { client_id: string; company_name: string; status: string; expiry_date: string; expiry_date_formatted: string; pdf_url: string };
+export async function getClientContract(clientId: string) { const result = await authenticated<Contract>(`/manager/clients/${encodeURIComponent(clientId)}/contract`, { method: "GET" }); return result.success ? { success: true as const, data: { ...result.data, pdf_url: apiUrl(result.data.pdf_url) } } : result; }
+export async function renewClientContract(clientId: string, expiryDate: string) { const result = await authenticated<Contract>(`/manager/clients/${encodeURIComponent(clientId)}/contract/renew`, { method: "POST", ...json({ expiry_date: expiryDate }) }); return result.success ? { success: true as const, data: { ...result.data, pdf_url: apiUrl(result.data.pdf_url) } } : result; }
+export async function uploadClientContract(clientId: string, file: File) { const data = new FormData(); data.append("file", file); return authenticated<string>(`/manager/clients/${encodeURIComponent(clientId)}/contract/upload`, { method: "POST", body: data }); }
+export type ClientReport = { id: string; title: string; date_formatted: string; date_iso: string; status: string; download_url: string };
+export async function getClientReports(clientId: string) { return authenticated<{ total_count: number; reports: ClientReport[] }>(`/manager/clients/${encodeURIComponent(clientId)}/reports`, { method: "GET" }); }
+export async function generateClientReport(clientId: string) { return authenticated<ClientReport>(`/manager/clients/${encodeURIComponent(clientId)}/reports/generate`, { method: "POST" }); }
+export async function exportClientReport(clientId: string, reportId?: string) { const result = await authenticated<string>(`/manager/clients/${encodeURIComponent(clientId)}/reports/export-pdf${reportId ? `?report_id=${encodeURIComponent(reportId)}` : ""}`, { method: "GET" }); return result.success ? { success: true as const, data: apiUrl(result.data) } : result; }
+export async function emailClientReport(clientId: string, reportId: string, email: string) { return authenticated<string>(`/manager/clients/${encodeURIComponent(clientId)}/reports/send-email`, { method: "POST", ...json({ report_id: reportId, email }) }); }

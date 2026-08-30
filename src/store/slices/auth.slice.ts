@@ -6,6 +6,7 @@ export interface DashboardUser {
   name: string;
   email: string;
   role: DashboardRole;
+  profilePhoto?: string;
 }
 
 interface AuthState {

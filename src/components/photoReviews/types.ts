@@ -8,6 +8,11 @@ export type RejectReason =
     | "missing_areas"
     | "other";
 
+export type PhotoItem = {
+    label: string;
+    url: string | null;
+};
+
 export interface AIAnalysis {
     overallScore: number;
     qualityScore: number;
@@ -16,6 +21,7 @@ export interface AIAnalysis {
     brightnessScore: number;
     suggestion: "Approve" | "Reject" | "Review";
     notes: string[];
+    breakdown?: Array<{ label: string; score: number }>;
 }
 
 export interface PhotoReview {
@@ -35,6 +41,7 @@ export interface PhotoReview {
     aiAnalysis?: AIAnalysis;
     beforeImage?: string;
     afterImage?: string;
+    photos?: PhotoItem[];
     submittedBy?: string;
     shiftId?: string;
 }
