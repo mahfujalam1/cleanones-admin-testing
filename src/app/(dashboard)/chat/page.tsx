@@ -34,13 +34,14 @@ type Tab = "clients" | "workers" | "groups";
 type Candidate = { id: string; name: string; type: "client" | "worker" };
 
 function getWebSocketUrl(userId: string): string {
-  const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || "http://10.10.28.191:8084";
+  const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || "http://18.198.109.196:8080";
+  const isHttps = typeof window !== "undefined" && window.location.protocol === "https:";
   try {
     const url = new URL(apiBase);
-    const protocol = url.protocol === "https:" ? "wss:" : "ws:";
+    const protocol = isHttps || url.protocol === "https:" ? "wss:" : "ws:";
     return `${protocol}//${url.host}/chat/ws/${encodeURIComponent(userId)}`;
   } catch {
-    const wsProto = apiBase.startsWith("https") ? "wss:" : "ws:";
+    const wsProto = isHttps || apiBase.startsWith("https") ? "wss:" : "ws:";
     const host = apiBase.replace(/^https?:\/\//, "").split("/")[0];
     return `${wsProto}//${host}/chat/ws/${encodeURIComponent(userId)}`;
   }
@@ -175,12 +176,24 @@ export default function ChatPage() {
   useEffect(() => {
     if (!user?.id) return;
 
-    const wsUrl = getWebSocketUrl(user.id);
-    const ws = new WebSocket(wsUrl);
-    socket.current = ws;
+    let ws: WebSocket | null = null;
+    try {
+      const wsUrl = getWebSocketUrl(user.id);
+      ws = new WebSocket(wsUrl);
+      socket.current = ws;
+    } catch (e) {
+      console.warn("WebSocket initialization skipped or failed:", e);
+      return;
+    }
+
+    ws.onerror = (err) => {
+      console.warn("WebSocket connection error:", err);
+    };
 
     ws.onopen = () => {
-      ws.send(JSON.stringify({ type: "ping" }));
+      if (ws?.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: "ping" }));
+      }
     };
 
     ws.onmessage = (event) => {
