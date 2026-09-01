@@ -1,14 +1,15 @@
 "use client";
 
 import React, { useEffect, useState, useMemo } from 'react';
-import { MdSearch, MdPeople, MdBadge, MdWorkOutline, MdAdd, MdUploadFile } from 'react-icons/md';
+import { MdSearch, MdPeople, MdBadge, MdWorkOutline, MdAdd, MdUploadFile, MdHourglassTop } from 'react-icons/md';
 import { BulkImportModal } from '@/components/shared/BulkImportModal';
 import { WorkerFilter, StatusFilter } from '@/components/workers/types';
 import { WorkersTable } from '@/components/workers/WorkersTable';
 import { WorkerDetailSidebar } from '@/components/workers/WorkerDetailSidebar';
 import { AddWorkerModal } from '@/components/workers/AddWorkerModal';
+import { PendingApprovalsModal } from '@/components/workers/PendingApprovalsModal';
 import type { Worker } from '@/components/workers/types';
-import { createWorker, getWorkers } from '@/services/actions/workers';
+import { createWorker, getWorkers, getWorkerApprovals } from '@/services/actions/workers';
 import { TableSkeleton } from '@/components/shared/SkeletonLoader';
 import { BackendPagination } from '@/components/shared/BackendPagination';
 
@@ -24,6 +25,7 @@ const STATUS_FILTERS: StatusFilter[] = ['All', 'On Shift', 'Active', 'Off Duty']
 export default function WorkersPage() {
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [counts, setCounts] = useState({ total: 0, employees: 0, freelancers: 0 });
+  const [pendingCount, setPendingCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [page, setPage] = useState(1); const limit = 10;
@@ -34,9 +36,35 @@ export default function WorkersPage() {
   const [selectedWorkerId, setSelectedWorkerId] = useState<string | null>(null);
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  const [pendingModalOpen, setPendingModalOpen] = useState(false);
 
-  const loadWorkers = async () => { const type = workerFilter === 'Employees' ? 'employee' : workerFilter === 'Freelancers' ? 'freelancer' : undefined; const status = statusFilter === 'All' ? undefined : statusFilter.toLowerCase().replaceAll(' ', '_'); setLoading(true); const result = await getWorkers({ page, search, workerType: type, status, limit }); setLoading(false); if (!result.success) return setError(result.error); setError(''); setCounts({ total: result.data.total_workers, employees: result.data.employees_count, freelancers: result.data.freelancers_count }); setWorkers(result.data.workers.map(mapWorker)); };
-  useEffect(() => { const timeout = window.setTimeout(() => { void loadWorkers(); }, 300); return () => window.clearTimeout(timeout); }, [search, workerFilter, statusFilter, page]);
+  const loadPendingCount = async () => {
+    const res = await getWorkerApprovals(1, 1, 'pending');
+    if (res.success) {
+      setPendingCount(res.data.total_count || 0);
+    }
+  };
+
+  const loadWorkers = async () => {
+    const type = workerFilter === 'Employees' ? 'employee' : workerFilter === 'Freelancers' ? 'freelancer' : undefined;
+    const status = statusFilter === 'All' ? undefined : statusFilter.toLowerCase().replaceAll(' ', '_');
+    setLoading(true);
+    const result = await getWorkers({ page, search, workerType: type, status, limit });
+    setLoading(false);
+    if (!result.success) return setError(result.error);
+    setError('');
+    setCounts({ total: result.data.total_workers, employees: result.data.employees_count, freelancers: result.data.freelancers_count });
+    setWorkers(result.data.workers.map(mapWorker));
+  };
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      void loadWorkers();
+      void loadPendingCount();
+    }, 300);
+    return () => window.clearTimeout(timeout);
+  }, [search, workerFilter, statusFilter, page]);
+
   useEffect(() => { setPage(1); }, [search, workerFilter, statusFilter]);
 
   const selectedWorker = useMemo(() => {
@@ -136,10 +164,18 @@ export default function WorkersPage() {
       </div>
 
       {/* Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard icon={<MdPeople className="text-[#0ea5e9] text-2xl" />} value={counts.total} label="Total Workers" />
         <StatCard icon={<MdBadge className="text-[#6366f1] text-2xl" />} value={counts.employees} label="Employees" />
         <StatCard icon={<MdWorkOutline className="text-[#f59e0b] text-2xl" />} value={counts.freelancers} label="Freelancers" />
+        <StatCard
+          icon={<MdHourglassTop className="text-amber-500 text-2xl" />}
+          value={pendingCount}
+          label="Pending Approvals"
+          onClick={() => setPendingModalOpen(true)}
+          badgeText={pendingCount > 0 ? "Review Requests" : undefined}
+          highlight={pendingCount > 0}
+        />
       </div>
 
       {/* Table */}
@@ -162,7 +198,19 @@ export default function WorkersPage() {
           onAdd={handleAddWorker}
         />
       )}
-      {importOpen && <BulkImportModal mode="workers" onImported={() => { setImportOpen(false); void loadWorkers(); }} onClose={() => setImportOpen(false)} />}
+
+      {/* Pending Approvals Modal */}
+      {pendingModalOpen && (
+        <PendingApprovalsModal
+          onClose={() => setPendingModalOpen(false)}
+          onSuccess={() => {
+            void loadWorkers();
+            void loadPendingCount();
+          }}
+        />
+      )}
+
+      {importOpen && <BulkImportModal mode="workers" onImported={() => { setImportOpen(false); void loadWorkers(); void loadPendingCount(); }} onClose={() => setImportOpen(false)} />}
     </div>
   );
 }
@@ -171,16 +219,43 @@ function mapWorker(item: import('@/services/actions/workers').WorkerApi): Worker
 
 /* ─── Stat Card ──────────────────────────────────────── */
 
-function StatCard({ icon, value, label }: { icon: React.ReactNode; value: number; label: string }) {
+function StatCard({
+  icon,
+  value,
+  label,
+  onClick,
+  badgeText,
+  highlight,
+}: {
+  icon: React.ReactNode;
+  value: number;
+  label: string;
+  onClick?: () => void;
+  badgeText?: string;
+  highlight?: boolean;
+}) {
   return (
-    <div className="bg-white rounded border border-gray-100 shadow-sm px-6 py-5 flex items-center gap-4 hover:shadow transition-shadow">
-      <div className="w-12 h-12 rounded bg-gray-50 border border-gray-100 flex items-center justify-center">
-        {icon}
+    <div
+      onClick={onClick}
+      className={`bg-white rounded border shadow-sm px-6 py-5 flex items-center justify-between transition-all ${
+        onClick ? 'cursor-pointer hover:shadow-md hover:border-amber-300' : 'hover:shadow'
+      } ${highlight ? 'border-amber-200 bg-amber-50/20' : 'border-gray-100'}`}
+    >
+      <div className="flex items-center gap-4">
+        <div className={`w-12 h-12 rounded flex items-center justify-center border ${highlight ? 'bg-amber-50 border-amber-200' : 'bg-gray-50 border-gray-100'}`}>
+          {icon}
+        </div>
+        <div>
+          <div className="text-2xl font-bold text-gray-900 leading-none mb-0.5">{value}</div>
+          <div className="text-xs text-gray-500 font-medium">{label}</div>
+        </div>
       </div>
-      <div>
-        <div className="text-2xl font-bold text-gray-900 leading-none mb-0.5">{value}</div>
-        <div className="text-xs text-gray-500 font-medium">{label}</div>
-      </div>
+      {badgeText && (
+        <span className="rounded-full bg-amber-100 border border-amber-200 px-2.5 py-1 text-[10px] font-bold text-amber-800 animate-pulse">
+          {badgeText}
+        </span>
+      )}
     </div>
   );
 }
+
