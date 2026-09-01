@@ -5,11 +5,12 @@ import Link from "next/link";
 import {
   MdChevronRight,
   MdDescription,
-  MdOutlineRemoveRedEye,
   MdSecurity,
   MdVpnKey,
 } from "react-icons/md";
+import { TbEye, TbEyeOff } from "react-icons/tb";
 import { getCompanyProfile, getManagerProfile, updateCompanyProfile } from "@/services/actions/manager";
+import { changePassword } from "@/services/actions/auth";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setUser } from "@/store/slices/auth.slice";
 import { DetailSkeleton } from "@/components/shared/SkeletonLoader";
@@ -21,6 +22,17 @@ export default function SettingsPage() {
   const [profileMessage, setProfileMessage] = useState("");
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  // Change Password state
+  const [oldPassword, setOldPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showOld, setShowOld] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [passwordMessage, setPasswordMessage] = useState("");
+  const [passwordError, setPasswordError] = useState("");
 
   useEffect(() => {
     void getManagerProfile().then((result) => { if (result.success && user) { const next = { ...user, id: result.data.id, name: result.data.full_name, email: result.data.email, profilePhoto: result.data.profile_photo }; dispatch(setUser(next)); localStorage.setItem("cleanones-dashboard-user", JSON.stringify(next)); } });
@@ -34,6 +46,40 @@ export default function SettingsPage() {
     setCompany({ company_name: result.data.company_name, email: result.data.email, phone: result.data.phone, address: result.data.address, website: result.data.website });
     setProfileMessage("Profile updated successfully");
   };
+
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordMessage("");
+    setPasswordError("");
+
+    if (!oldPassword || !newPassword || !confirmPassword) {
+      setPasswordError("Please fill in all password fields.");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordError("New password and confirmation do not match.");
+      return;
+    }
+    if (newPassword.length < 6) {
+      setPasswordError("New password must be at least 6 characters long.");
+      return;
+    }
+
+    setPasswordLoading(true);
+    const result = await changePassword({ old_password: oldPassword, new_password: newPassword });
+    setPasswordLoading(false);
+
+    if (!result.success) {
+      setPasswordError(result.error);
+      return;
+    }
+
+    setPasswordMessage(typeof result.data === "string" ? result.data : "Password updated successfully");
+    setOldPassword("");
+    setNewPassword("");
+    setConfirmPassword("");
+  };
+
   return (
     <div className="space-y-6 pb-10">
       <div className="grid grid-cols-1 items-start gap-5 xl:grid-cols-2">
@@ -75,31 +121,89 @@ export default function SettingsPage() {
             <MdVpnKey className="text-xl" />
             Change Password
           </h2>
-          <div className="dashboard-card p-5">
+          <form onSubmit={handlePasswordChange} className="dashboard-card p-5">
             <div className="space-y-4">
-              {["Current Password", "New Password", "Confirm New Password"].map((label) => (
-                <label key={label} className="block">
-                  <span className="mb-2 block text-xs font-medium text-slate-500">
-                    {label}
-                  </span>
-                  <div className="relative">
-                    <input
-                      type="password"
-                      className="h-10 w-full rounded border border-gray-200 bg-gray-100 px-4 pr-10 text-sm text-slate-800 shadow-sm outline-none transition-colors focus:border-[#0ea5e9] focus:bg-white focus:ring-1 focus:ring-[#0ea5e9]"
-                    />
-                    <MdOutlineRemoveRedEye className="absolute right-3 top-1/2 -translate-y-1/2 text-lg text-slate-400" />
-                  </div>
-                </label>
-              ))}
+              <label className="block">
+                <span className="mb-2 block text-xs font-medium text-slate-500">
+                  Current Password
+                </span>
+                <div className="relative">
+                  <input
+                    type={showOld ? "text" : "password"}
+                    value={oldPassword}
+                    onChange={(e) => setOldPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="h-10 w-full rounded border border-gray-200 bg-gray-100 px-4 pr-10 text-sm text-slate-800 shadow-sm outline-none transition-colors focus:border-[#0ea5e9] focus:bg-white focus:ring-1 focus:ring-[#0ea5e9]"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowOld(!showOld)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-lg text-slate-400 hover:text-slate-600"
+                  >
+                    {showOld ? <TbEyeOff /> : <TbEye />}
+                  </button>
+                </div>
+              </label>
+
+              <label className="block">
+                <span className="mb-2 block text-xs font-medium text-slate-500">
+                  New Password
+                </span>
+                <div className="relative">
+                  <input
+                    type={showNew ? "text" : "password"}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="h-10 w-full rounded border border-gray-200 bg-gray-100 px-4 pr-10 text-sm text-slate-800 shadow-sm outline-none transition-colors focus:border-[#0ea5e9] focus:bg-white focus:ring-1 focus:ring-[#0ea5e9]"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNew(!showNew)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-lg text-slate-400 hover:text-slate-600"
+                  >
+                    {showNew ? <TbEyeOff /> : <TbEye />}
+                  </button>
+                </div>
+              </label>
+
+              <label className="block">
+                <span className="mb-2 block text-xs font-medium text-slate-500">
+                  Confirm New Password
+                </span>
+                <div className="relative">
+                  <input
+                    type={showConfirm ? "text" : "password"}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="h-10 w-full rounded border border-gray-200 bg-gray-100 px-4 pr-10 text-sm text-slate-800 shadow-sm outline-none transition-colors focus:border-[#0ea5e9] focus:bg-white focus:ring-1 focus:ring-[#0ea5e9]"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirm(!showConfirm)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-lg text-slate-400 hover:text-slate-600"
+                  >
+                    {showConfirm ? <TbEyeOff /> : <TbEye />}
+                  </button>
+                </div>
+              </label>
             </div>
 
+            {passwordError && <p className="mt-3 text-xs font-medium text-red-600">{passwordError}</p>}
+            {passwordMessage && <p className="mt-3 text-xs font-medium text-emerald-600">{passwordMessage}</p>}
+
             <button
-              type="button"
-              className="mt-4 h-10 rounded bg-[#0ea5e9] px-5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-[#0284c7]"
+              type="submit"
+              disabled={passwordLoading}
+              className="mt-4 h-10 rounded bg-[#0ea5e9] px-5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-[#0284c7] disabled:opacity-60 cursor-pointer"
             >
-              Update Password
+              {passwordLoading ? "Updating..." : "Update Password"}
             </button>
-          </div>
+          </form>
         </section>
       </div>
 

@@ -6,16 +6,21 @@ import { updateTag } from "next/cache";
 const ACCESS = "cleanones_manager_access_token";
 const REFRESH = "cleanones_manager_refresh_token";
 const BASE = (process.env.API_BASE_URL ?? process.env.NEXT_PUBLIC_API_BASE_URL ?? "").replace(/\/$/, "");
-export type AuthResponse = { message: string; access_token: string; refresh_token: string; token_type: string; name: string; role: string; is_approved: boolean; approval_status: string };
+export type AuthResponse = { message: string; access_token: string; refresh_token: string; token_type: string; name: string; role: string; is_approved: boolean; approval_status: string; is_temporary_password?: boolean };
 export type ActionResult<T = string> = { success: true; data: T } | { success: false; error: string };
 
 function message(value: unknown, fallback: string) {
   if (typeof value === "string") return value;
   if (value && typeof value === "object") {
-    const body = value as { message?: string; detail?: string | Array<{ msg?: string }> };
-    if (body.message) return body.message;
+    const body = value as { message?: string; detail?: string | Array<{ msg?: string } | string> | Record<string, unknown> };
+    if (body.message && typeof body.message === "string") return body.message;
     if (typeof body.detail === "string") return body.detail;
-    if (Array.isArray(body.detail)) return body.detail.map((item) => item.msg).filter(Boolean).join(", ") || fallback;
+    if (Array.isArray(body.detail)) {
+      return body.detail.map((item) => (typeof item === "string" ? item : item.msg || JSON.stringify(item))).filter(Boolean).join(", ") || fallback;
+    }
+    if (body.detail && typeof body.detail === "object") {
+      return (body.detail as { message?: string }).message || JSON.stringify(body.detail);
+    }
   }
   return fallback;
 }
