@@ -16,11 +16,15 @@ export function SignOutConfirmation() {
 
   const close = () => dispatch(setSignOutModalOpen(false));
   const confirm = async () => {
-    await logoutUser();
+    dispatch(setSignOutModalOpen(false));
     localStorage.removeItem("cleanones-dashboard-user");
     dispatch(logout());
-    dispatch(setSignOutModalOpen(false));
-    router.replace(localizePath("/login", locale));
+    try {
+      await logoutUser();
+    } catch {
+      // Ignore API error on logout
+    }
+    window.location.href = localizePath("/login", locale);
   };
 
   return (

@@ -76,4 +76,15 @@ export async function authenticated<T>(path: string, init: RequestInit): Promise
 }
 export async function changePassword(input: { old_password: string; new_password: string }) { return authenticated<string>("/auth/change-password", { method: "POST", body: JSON.stringify(input) }); }
 export async function getCurrentUser() { return authenticated<unknown>("/auth/me", { method: "GET" }); }
-export async function logoutUser() { await authenticated<string>("/auth/logout", { method: "POST" }); const store = await cookies(); store.delete(ACCESS); store.delete(REFRESH); return { success: true, data: "Logged out" } as ActionResult<string>; }
+export async function logoutUser() {
+  try {
+    await authenticated<string>("/auth/logout", { method: "POST" });
+  } catch {
+    // Ignore API error on logout
+  } finally {
+    const store = await cookies();
+    store.delete(ACCESS);
+    store.delete(REFRESH);
+  }
+  return { success: true, data: "Logged out" } as ActionResult<string>;
+}
