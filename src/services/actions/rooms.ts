@@ -1,4 +1,3 @@
-"use server";
 import { authenticated } from "./auth";
 
 export type RoomTaskInput = { id?: string; frequency_type: string; is_photo_req: boolean; name: string; photo: Array<{ id?: string; name: string }> };

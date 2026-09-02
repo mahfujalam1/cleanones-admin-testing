@@ -1,5 +1,4 @@
-"use server";
-import { authenticated } from "./auth";
+import { authenticated, type ActionResult } from "./auth";
 export type WorkerApi = { worker_id: string; full_name: string; profile_photo: string; worker_type: string; position: string; location: string; languages: string[]; hours_worked: string; hours_worked_numeric: number; status: string; account_status: string; approval_status: string; is_active: boolean };
 export type WorkerInput = { full_name: string; name?: string; email: string; phone: string; worker_type: string; position: string; base_location: string; hourly_rate?: number; languages: string[]; status: string; national_id: string; certificates: string[]; national_id_front?: string; national_id_back?: string; employee_contract_pdf?: string };
 

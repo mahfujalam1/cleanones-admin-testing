@@ -1,5 +1,3 @@
-"use server";
-
 import { authenticated, type ActionResult } from "./auth";
 
 export type ManagerProfile = { id: string; full_name: string; email: string; phone: string; role: string; is_active: boolean; is_verified: boolean; created_at: string; updated_at: string; profile_photo: string; push_notifications_enabled: boolean; address: string; website: string };

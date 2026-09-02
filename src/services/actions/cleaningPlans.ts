@@ -1,4 +1,3 @@
-"use server";
 import { authenticated } from "./auth";
 
 export type PlanRoomOption = { photo_number: number; room_id: string; room_name: string; room_type: string; task_number: number };

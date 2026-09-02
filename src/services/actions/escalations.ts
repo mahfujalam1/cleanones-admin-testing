@@ -1,4 +1,3 @@
-"use server";
 import { authenticated } from "./auth";
 
 export type EscalationApi = { escalation_id: string; shift_id: string; title: string; subtitle: string; description: string; severity: string; reporter: { worker_id: string; name: string; profile_picture: string }; assigned_to: { admin_id: string; name: string } | null; status: string; status_label?: string; photo_url: string; created_at: string; notes?: string };

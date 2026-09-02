@@ -1,4 +1,3 @@
-"use server";
 import { authenticated } from "./auth";
 export type ShiftRoomInput = { room_id: string; custom_room_name?: string; additional_tasks?: Array<{ name: string }>; additional_photo_requirements?: Array<{ name: string }>; duration?: number; clean_type?: string; tasks?: unknown[]; required_photos?: unknown[] };
 export type ShiftDraftInput = { client_id: string; location_id: string; date: string; start_time: string; end_time: string; repeat_shift: string; shift_notes: string; cleaning_plan_id?: string; room_ids: string[]; rooms: ShiftRoomInput[] };

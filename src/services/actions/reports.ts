@@ -1,4 +1,3 @@
-"use server";
 import { authenticated, type ActionResult } from "./auth";
 
 export type ReportTimeframe = "week" | "month" | "quarter" | "year";

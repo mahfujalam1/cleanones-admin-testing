@@ -1,4 +1,3 @@
-"use server";
 import { authenticated } from "./auth";
 import type { ShiftDraftInput, ShiftApi } from "./shifts";
 const json = (value: unknown) => ({ headers: { "Content-Type": "application/json" }, body: JSON.stringify(value) });

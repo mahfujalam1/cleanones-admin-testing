@@ -1,4 +1,3 @@
-"use server";
 import { authenticated, type ActionResult } from "./auth";
 
 export type ClientSummary = { id: string; company_name: string; industry: string; status: string; primary_contact_name: string; email: string; phone: string; is_signup: boolean; locations_count: number; contract_status: string; created_at: string; updated_at: string };

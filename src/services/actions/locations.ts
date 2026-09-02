@@ -1,5 +1,3 @@
-"use server";
-
 import { authenticated, type ActionResult } from "./auth";
 
 export type ClientOption = { id: string; primary_contact_name: string; company_name: string; is_signup: boolean };

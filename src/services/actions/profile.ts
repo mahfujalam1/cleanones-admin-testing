@@ -1,5 +1,3 @@
-"use server";
-
 import { authenticated, type ActionResult } from "./auth";
 
 export type ProfileDetails = { full_name?: string | null; profile_photo?: string | null; name?: string | null };

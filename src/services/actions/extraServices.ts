@@ -1,5 +1,4 @@
-"use server";
-import { authenticated } from "./auth";
+import { authenticated, type ActionResult } from "./auth";
 
 export type ExtraServiceWorkerDropdownItem = {
   worker_id: string;

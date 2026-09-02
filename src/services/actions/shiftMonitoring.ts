@@ -1,4 +1,3 @@
-"use server";
 import { authenticated } from "./auth";
 export type Period = "today" | "weekly" | "monthly";
 export type AttendanceWorker = { worker_id: string; worker_name: string; profile_picture: string; worker_type: string; hours_worked: string; hours_worked_numeric: number; total_shifts: number; late_days: number };

@@ -1,5 +1,4 @@
-"use server";
-import { authenticated } from "./auth";
+import { authenticated, type ActionResult } from "./auth";
 export type ChatParticipant = { user_id: string; name: string; role: string; profile_picture: string };
 export type ChatMessage = { id: string; conversation_id: string; sender_id: string; sender_name: string; sender_role: string; sender_avatar: string; content: string; attachment_url: string; attachment_type: string; status: string; read_by: Array<{ user_id: string; read_at: string }>; created_at: string; updated_at: string };
 export type Conversation = { id: string; type: string; title: string; subtitle: string; shift_id: string; cleaning_plan_id: string; participants: ChatParticipant[]; last_message: { text: string; sender_id: string; sender_name: string; timestamp: string } | null; unread_count: number; created_at: string; updated_at: string };
