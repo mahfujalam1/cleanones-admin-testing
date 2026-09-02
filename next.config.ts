@@ -7,8 +7,18 @@ const withPWA = withPWAInit({
   register: true,
 });
 
+const targetApi = (process.env.API_BASE_URL ?? process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://18.198.109.196:8080").replace(/\/$/, "");
+
 const nextConfig: NextConfig = {
   turbopack: {},
+  async rewrites() {
+    return [
+      {
+        source: "/api/proxy/:path*",
+        destination: `${targetApi}/:path*`,
+      },
+    ];
+  },
 };
 
 export default withPWA(nextConfig);

@@ -1,6 +1,12 @@
 const ACCESS = "cleanones_manager_access_token";
 const REFRESH = "cleanones_manager_refresh_token";
-const BASE = (process.env.NEXT_PUBLIC_API_BASE_URL ?? process.env.API_BASE_URL ?? "http://10.10.28.191:8084").replace(/\/$/, "");
+function getBaseUrl(): string {
+  const configured = (process.env.NEXT_PUBLIC_API_BASE_URL ?? process.env.API_BASE_URL ?? "http://18.198.109.196:8080").replace(/\/$/, "");
+  if (typeof window !== "undefined" && window.location.protocol === "https:" && configured.startsWith("http://")) {
+    return "/api/proxy";
+  }
+  return configured;
+}
 
 export type AuthResponse = { message: string; access_token: string; refresh_token: string; token_type: string; name: string; role: string; is_approved: boolean; approval_status: string; is_temporary_password?: boolean };
 export type ActionResult<T = string> = { success: true; data: T } | { success: false; error: string; status?: number };
@@ -41,9 +47,10 @@ function message(value: unknown, fallback: string) {
 }
 
 async function request<T>(path: string, init: RequestInit): Promise<ActionResult<T>> {
-  if (!BASE) return { success: false, error: "API_BASE_URL is not configured", status: 500 };
+  const base = getBaseUrl();
+  if (!base) return { success: false, error: "API_BASE_URL is not configured", status: 500 };
   const method = (init.method ?? "GET").toUpperCase();
-  const url = `${BASE}${path}`;
+  const url = `${base}${path}`;
   const startedAt = Date.now();
   try {
     const response = await fetch(url, { ...init, headers: { ...(init.body instanceof FormData ? {} : { "Content-Type": "application/json" }), ...init.headers }, cache: init.cache ?? "no-store" });

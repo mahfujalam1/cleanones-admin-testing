@@ -8,10 +8,16 @@ function getCookieValue(name: string): string | null {
   return match ? decodeURIComponent(match[1]) : null;
 }
 
-const API_BASE_URL = (process.env.NEXT_PUBLIC_API_BASE_URL ?? process.env.API_BASE_URL ?? "http://10.10.28.191:8084").replace(/\/$/, "");
+function getApiBaseUrl(): string {
+  const configured = (process.env.NEXT_PUBLIC_API_BASE_URL ?? process.env.API_BASE_URL ?? "http://18.198.109.196:8080").replace(/\/$/, "");
+  if (typeof window !== "undefined" && window.location.protocol === "https:" && configured.startsWith("http://")) {
+    return "/api/proxy";
+  }
+  return configured;
+}
 
 const rawBaseQuery = fetchBaseQuery({
-  baseUrl: API_BASE_URL,
+  baseUrl: getApiBaseUrl(),
   prepareHeaders: (headers) => {
     const token = getCookieValue("cleanones_manager_access_token");
     if (token) {
