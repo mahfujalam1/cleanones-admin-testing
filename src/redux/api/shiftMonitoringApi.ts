@@ -11,7 +11,7 @@ export const shiftMonitoringApi = baseApi.injectEndpoints({
       query: (input) => {
         const q = new URLSearchParams({
           page: String(input?.page ?? 1),
-          limit: String(input?.limit ?? 100),
+          limit: String(input?.limit ?? 20),
         });
         if (input?.date) q.set("date_val", input.date);
         if (input?.status) q.set("checkin_status", input.status);
@@ -29,7 +29,7 @@ export const shiftMonitoringApi = baseApi.injectEndpoints({
         const q = new URLSearchParams({
           period: input?.period ?? "monthly",
           page: String(input?.page ?? 1),
-          limit: String(input?.limit ?? 100),
+          limit: String(input?.limit ?? 20),
         });
         if (input?.workerType) q.set("worker_type", input.workerType);
         if (input?.search) q.set("search", input.search);
@@ -45,7 +45,7 @@ export const shiftMonitoringApi = baseApi.injectEndpoints({
         const q = new URLSearchParams({
           period: input?.period ?? "monthly",
           page: String(input?.page ?? 1),
-          limit: String(input?.limit ?? 100),
+          limit: String(input?.limit ?? 20),
         });
         if (input?.search) q.set("search", input.search);
         return `/manager/shift-monitoring/location-statistics?${q.toString()}`;

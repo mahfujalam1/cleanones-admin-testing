@@ -33,7 +33,7 @@ export const dashboardApi = baseApi.injectEndpoints({
       query: (params) => {
         const qp = new URLSearchParams({
           page: String(params?.page ?? 1),
-          limit: String(params?.limit ?? 100),
+          limit: String(params?.limit ?? 20),
         });
         if (params?.search) qp.append("search", params.search);
         return `/manager/clients?${qp.toString()}`;
@@ -44,7 +44,7 @@ export const dashboardApi = baseApi.injectEndpoints({
       query: (params) => {
         const qp = new URLSearchParams({
           page: String(params?.page ?? 1),
-          limit: String(params?.limit ?? 100),
+          limit: String(params?.limit ?? 20),
         });
         if (params?.search) qp.append("search", params.search);
         if (params?.client_id) qp.append("client_id", params.client_id);
@@ -60,7 +60,7 @@ export const dashboardApi = baseApi.injectEndpoints({
       query: (params) => {
         const qp = new URLSearchParams({
           page: String(params?.page ?? 1),
-          limit: String(params?.limit ?? 100),
+          limit: String(params?.limit ?? 20),
         });
         if (params?.search) qp.append("search", params.search);
         if (params?.client_id) qp.append("client_id", params.client_id);
@@ -74,7 +74,7 @@ export const dashboardApi = baseApi.injectEndpoints({
       query: (params) => {
         const qp = new URLSearchParams({
           page: String(params?.page ?? 1),
-          limit: String(params?.limit ?? 100),
+          limit: String(params?.limit ?? 20),
         });
         if (params?.start_date) qp.append("start_date", params.start_date);
         if (params?.end_date) qp.append("end_date", params.end_date);
@@ -88,7 +88,7 @@ export const dashboardApi = baseApi.injectEndpoints({
       query: (params) => {
         const qp = new URLSearchParams({
           page: String(params?.page ?? 1),
-          limit: String(params?.limit ?? 100),
+          limit: String(params?.limit ?? 20),
         });
         if (params?.search) qp.append("search", params.search);
         return `/manager/cleaning-plans?${qp.toString()}`;
@@ -99,7 +99,7 @@ export const dashboardApi = baseApi.injectEndpoints({
       query: (params) => {
         const qp = new URLSearchParams({
           page: String(params?.page ?? 1),
-          limit: String(params?.limit ?? 100),
+          limit: String(params?.limit ?? 20),
         });
         if (params?.status) qp.append("status", params.status);
         if (params?.priority) qp.append("priority", params.priority);
@@ -111,7 +111,7 @@ export const dashboardApi = baseApi.injectEndpoints({
       query: (params) => {
         const qp = new URLSearchParams({
           page: String(params?.page ?? 1),
-          limit: String(params?.limit ?? 100),
+          limit: String(params?.limit ?? 20),
         });
         if (params?.search) qp.append("search", params.search);
         if (params?.role) qp.append("role", params.role);
@@ -124,7 +124,7 @@ export const dashboardApi = baseApi.injectEndpoints({
       query: (params) => {
         const qp = new URLSearchParams({
           page: String(params?.page ?? 1),
-          limit: String(params?.limit ?? 100),
+          limit: String(params?.limit ?? 20),
         });
         return `/manager/notifications?${qp.toString()}`;
       },

@@ -256,23 +256,14 @@ export default function DashboardPage() {
                 <p className="text-xs text-red-600 mt-1">Reason: {selectedLateWorker.delay_reason}</p>
               )}
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center">
               <a
                 href={`tel:${selectedLateWorker.phone_number}`}
-                className="flex-1 flex items-center justify-center gap-1.5 h-10 rounded-lg border border-emerald-600 text-emerald-700 text-xs font-semibold hover:bg-emerald-50 transition-colors"
+                className="w-full flex items-center justify-center gap-1.5 h-10 rounded-lg border border-emerald-600 text-emerald-700 text-xs font-semibold hover:bg-emerald-50 transition-colors"
               >
                 <MdCall className="text-sm" />
                 Call employee
               </a>
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedLateWorker(null);
-                }}
-                className="flex-1 flex items-center justify-center h-10 rounded-lg bg-sky-500 text-white text-xs font-semibold hover:bg-sky-600 transition-colors shadow-xs cursor-pointer"
-              >
-                Mark sick & replace
-              </button>
             </div>
           </div>
         </div>

@@ -33,7 +33,7 @@ export default function Sidebar() {
   const handleLinkHover = (href: string) => {
     if (href === '/') prefetchDashboard();
     else if (href === '/shift-monitoring') prefetchShiftMonitoring({});
-    else if (href === '/notifications') prefetchNotifications({ page: 1, limit: 100 });
+    else if (href === '/notifications') prefetchNotifications({ page: 1, limit: 20 });
     else if (href === '/reports') prefetchReports('month');
   };
 

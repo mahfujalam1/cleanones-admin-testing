@@ -95,8 +95,6 @@ export default function Topbar() {
     setProfileOpen(false);
   };
 
-  useEffect(() => { void getNotifications(1, 5).then((result) => { setNotificationsLoading(false); if (result.success) { setNotificationPreview(result.data.notifications); setUnreadCount(result.data.unread_count); } }); }, []);
-
   useEffect(() => {
     const handlePointerDown = (event: PointerEvent) => {
       const target = event.target as Node;
@@ -187,7 +185,18 @@ export default function Topbar() {
             <button
               type="button"
               onClick={() => {
-                setNotificationsOpen((open) => !open);
+                const nextOpen = !notificationsOpen;
+                setNotificationsOpen(nextOpen);
+                if (nextOpen) {
+                  setNotificationsLoading(true);
+                  void getNotifications(1, 5).then((result) => {
+                    setNotificationsLoading(false);
+                    if (result.success) {
+                      setNotificationPreview(result.data.notifications);
+                      setUnreadCount(result.data.unread_count);
+                    }
+                  });
+                }
                 setLanguageOpen(false);
                 setProfileOpen(false);
               }}

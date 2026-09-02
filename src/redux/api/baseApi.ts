@@ -4,8 +4,13 @@ import { refreshSession } from "@/services/actions/auth";
 
 function getCookieValue(name: string): string | null {
   if (typeof document === "undefined") return null;
-  const match = document.cookie.match(new RegExp("(?:^|; )" + name.replace(/([\.$?*|{}\(\)\[\]\\\/\+^])/g, "\\$1") + "=([^;]*)"));
-  return match ? decodeURIComponent(match[1]) : null;
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) {
+    const raw = parts.pop()?.split(";").shift();
+    if (raw) return decodeURIComponent(raw);
+  }
+  return null;
 }
 
 function getApiBaseUrl(): string {
