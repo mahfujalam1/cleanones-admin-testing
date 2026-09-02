@@ -68,16 +68,18 @@ async function request<T>(path: string, init: RequestInit): Promise<ActionResult
 }
 
 async function save(auth: AuthResponse, remember = false) {
+  const accessMaxAge = remember ? 2592000 : 86400 * 7;
+  const refreshMaxAge = remember ? 2592000 : 86400 * 30;
   if (typeof window !== "undefined") {
-    setClientCookie(ACCESS, auth.access_token, remember ? 86400 : undefined);
-    setClientCookie(REFRESH, auth.refresh_token, remember ? 2592000 : 604800);
+    setClientCookie(ACCESS, auth.access_token, accessMaxAge);
+    setClientCookie(REFRESH, auth.refresh_token, refreshMaxAge);
   } else {
     try {
       const { cookies } = await import("next/headers");
       const store = await cookies();
       const options = { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax" as const, path: "/" };
-      store.set(ACCESS, auth.access_token, { ...options, maxAge: remember ? 86400 : undefined });
-      store.set(REFRESH, auth.refresh_token, { ...options, maxAge: remember ? 2592000 : 604800 });
+      store.set(ACCESS, auth.access_token, { ...options, maxAge: accessMaxAge });
+      store.set(REFRESH, auth.refresh_token, { ...options, maxAge: refreshMaxAge });
     } catch {}
   }
 }
