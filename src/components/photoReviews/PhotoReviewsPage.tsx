@@ -4,9 +4,11 @@ import { useEffect, useState, useMemo } from "react";
 import { Search, Eye, ChevronLeft, ChevronRight } from "lucide-react";
 import { StatusBadge } from "./StatusBadge";
 import { CleanerAvatar } from "./CleanerAvatar";
-import { ApproveModal } from "./ApproveModal";
-import { RejectModal } from "./RejectModal";
-import { ReviewDetail } from "./ReviewDetail";
+import dynamic from "next/dynamic";
+
+const ApproveModal = dynamic(() => import("./ApproveModal").then((mod) => mod.ApproveModal), { ssr: false });
+const RejectModal = dynamic(() => import("./RejectModal").then((mod) => mod.RejectModal), { ssr: false });
+const ReviewDetail = dynamic(() => import("./ReviewDetail").then((mod) => mod.ReviewDetail), { ssr: false });
 import { ApproveFormData, PhotoReview, RejectFormData, ReviewStatus } from "./types";
 import { AIScoreBar } from "./Aiscorebar";
 import { approvePhotoReview, getPhotoReview, getPhotoReviews, rejectPhotoReview, type PhotoReviewApi } from "@/services/actions/photoReviews";

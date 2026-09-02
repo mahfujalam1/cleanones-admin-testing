@@ -5,8 +5,10 @@ import { MdAdd, MdCalendarToday, MdChevronLeft, MdChevronRight } from 'react-ico
 import { DayView } from './DayView';
 import { WeekView } from './WeekView';
 import { MonthView } from './MonthView';
-import { ShiftModal } from './ShiftModal';
-import { CreateShiftModal } from './CreateShiftModal';
+import dynamic from 'next/dynamic';
+
+const ShiftModal = dynamic(() => import('./ShiftModal').then((mod) => mod.ShiftModal), { ssr: false });
+const CreateShiftModal = dynamic(() => import('./CreateShiftModal').then((mod) => mod.CreateShiftModal), { ssr: false });
 import { Shift, ShiftTheme } from './types';
 import { type RosterShift } from '@/services/actions/roster';
 import { ContentSkeleton } from '@/components/shared/SkeletonLoader';

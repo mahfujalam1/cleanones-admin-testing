@@ -12,35 +12,52 @@ import {
   MdPhotoCamera, MdWarning, MdAssessment, MdNotifications, MdSettings,
   MdChevronLeft, MdChevronRight, MdLogout, MdChatBubbleOutline
 } from 'react-icons/md';
-import { MdMeetingRoom, MdChecklist } from 'react-icons/md';
-import { MdAdminPanelSettings } from 'react-icons/md';
+import { MdMeetingRoom, MdChecklist, MdAdminPanelSettings } from 'react-icons/md';
+import { dashboardApi } from '@/redux/api/dashboardApi';
+import { shiftMonitoringApi } from '@/redux/api/shiftMonitoringApi';
+import { reportsApi } from '@/redux/api/reportsApi';
+import { getDashboardTranslation } from '@/lib/translations';
 import { getStoredManagerAccess, routeIsAllowed } from '@/lib/access-control';
-
-const mainLinks = [
-  { name: 'Dashboard', href: '/', icon: MdDashboard },
-  { name: 'Roster', href: '/roster', icon: MdCalendarToday },
-  { name: 'Shift Monitoring', href: '/shift-monitoring', icon: MdAccessTime },
-  { name: 'Workers', href: '/users', icon: MdPeople },
-  { name: 'Clients', href: '/clients', icon: MdBusinessCenter },
-  { name: 'Chat', href: '/chat', icon: MdChatBubbleOutline },
-  { name: 'Locations', href: '/locations', icon: MdLocationOn },
-  { name: 'Rooms', href: '/rooms', icon: MdMeetingRoom },
-  { name: 'Cleaning Plans', href: '/cleaning-plans', icon: MdChecklist },
-  { name: 'Extra Services', href: '/extra-services', icon: MdBusinessCenter },
-];
-
-const qcLinks = [
-  { name: 'Photo Reviews', href: '/photo-reviews', icon: MdPhotoCamera },
-  { name: 'Escalations', href: '/escalations', icon: MdWarning },
-  { name: 'Reports', href: '/reports', icon: MdAssessment },
-  { name: 'Notifications', href: '/notifications', icon: MdNotifications },
-  { name: 'Settings', href: '/settings', icon: MdSettings },
-];
 
 export default function Sidebar() {
   const pathname = usePathname();
   const locale = getLocale(pathname);
   const routePath = stripLocale(pathname);
+  const t = getDashboardTranslation(locale);
+
+  const prefetchDashboard = dashboardApi.usePrefetch('getDashboardOverview');
+  const prefetchShiftMonitoring = shiftMonitoringApi.usePrefetch('getLiveStatus');
+  const prefetchNotifications = dashboardApi.usePrefetch('getNotifications');
+  const prefetchReports = reportsApi.usePrefetch('getQualityControlReport');
+
+  const handleLinkHover = (href: string) => {
+    if (href === '/') prefetchDashboard();
+    else if (href === '/shift-monitoring') prefetchShiftMonitoring({});
+    else if (href === '/notifications') prefetchNotifications({ page: 1, limit: 100 });
+    else if (href === '/reports') prefetchReports('month');
+  };
+
+  const mainLinks = [
+    { name: t.nav.dashboard, href: '/', icon: MdDashboard },
+    { name: t.nav.roster, href: '/roster', icon: MdCalendarToday },
+    { name: t.nav.shiftMonitoring, href: '/shift-monitoring', icon: MdAccessTime },
+    { name: t.nav.workers, href: '/users', icon: MdPeople },
+    { name: t.nav.clients, href: '/clients', icon: MdBusinessCenter },
+    { name: t.nav.chat, href: '/chat', icon: MdChatBubbleOutline },
+    { name: t.nav.locations, href: '/locations', icon: MdLocationOn },
+    { name: t.nav.rooms, href: '/rooms', icon: MdMeetingRoom },
+    { name: t.nav.cleaningPlans, href: '/cleaning-plans', icon: MdChecklist },
+    { name: t.nav.extraServices, href: '/extra-services', icon: MdBusinessCenter },
+  ];
+
+  const qcLinks = [
+    { name: t.nav.photoReviews, href: '/photo-reviews', icon: MdPhotoCamera },
+    { name: t.nav.escalations, href: '/escalations', icon: MdWarning },
+    { name: t.nav.reports, href: '/reports', icon: MdAssessment },
+    { name: t.nav.notifications, href: '/notifications', icon: MdNotifications },
+    { name: t.nav.settings, href: '/settings', icon: MdSettings },
+  ];
+
   const dispatch = useAppDispatch();
   const sidebarOpen = useAppSelector((state) => state.ui.sidebarOpen);
   const mobileSidebarOpen = useAppSelector((state) => state.ui.mobileSidebarOpen);
@@ -97,6 +114,7 @@ export default function Sidebar() {
                 <Link
                   key={link.name}
                   href={localizePath(link.href, locale)}
+                  onMouseEnter={() => handleLinkHover(link.href)}
                   onClick={() => dispatch(closeMobileSidebar())}
                   className={`flex h-9 items-center justify-between rounded px-3 text-sm font-medium transition-colors ${isActive
                       ? 'bg-[#e5f6fc] text-primary'
@@ -114,7 +132,7 @@ export default function Sidebar() {
           </nav>
 
           <div className="mx-3 my-4 border-t border-sidebar-border" />
-          <div className={`mb-2 px-6 text-xs font-medium text-sidebar-foreground/70 uppercase tracking-wider ${collapsed ? 'lg:hidden' : 'block'}`}>Quality Control</div>
+          <div className={`mb-2 px-6 text-xs font-medium text-sidebar-foreground/70 uppercase tracking-wider ${collapsed ? 'lg:hidden' : 'block'}`}>{t.nav.qualityControl}</div>
 
           <nav className="space-y-1 px-3">
             {visibleQcLinks.map((link) => {
@@ -123,6 +141,7 @@ export default function Sidebar() {
                 <Link
                   key={link.name}
                   href={localizePath(link.href, locale)}
+                  onMouseEnter={() => handleLinkHover(link.href)}
                   onClick={() => dispatch(closeMobileSidebar())}
                   className={`flex h-9 items-center justify-between rounded px-3 text-sm font-medium transition-colors ${isActive
                       ? 'bg-[#e5f6fc] text-primary'
@@ -142,11 +161,11 @@ export default function Sidebar() {
           {user?.role === 'SUPER_ADMIN' && (
             <>
               <div className="mx-3 my-4 border-t border-sidebar-border" />
-              <div className={`mb-2 px-6 text-xs font-medium uppercase tracking-wider text-sidebar-foreground/70 ${collapsed ? 'lg:hidden' : 'block'}`}>Administration</div>
+              <div className={`mb-2 px-6 text-xs font-medium uppercase tracking-wider text-sidebar-foreground/70 ${collapsed ? 'lg:hidden' : 'block'}`}>{t.nav.administration}</div>
               <nav className="space-y-1 px-3">
                 <Link href={localizePath('/manager-access', locale)} onClick={() => dispatch(closeMobileSidebar())} className={`flex h-9 items-center gap-2.5 rounded px-3 text-sm font-medium transition-colors ${routePath.startsWith('/manager-access') ? 'bg-[#e5f6fc] text-primary' : 'text-sidebar-foreground hover:bg-[#f2f9fc] hover:text-foreground'}`}>
                   <MdAdminPanelSettings className="text-lg" />
-                  <span className={collapsed ? 'lg:hidden' : 'block'}>Manager Access</span>
+                  <span className={collapsed ? 'lg:hidden' : 'block'}>{t.nav.managerAccess}</span>
                 </Link>
               </nav>
             </>
@@ -157,7 +176,7 @@ export default function Sidebar() {
         <div className="shrink-0 border-t border-sidebar-border p-3">
           <button onClick={() => dispatch(setSignOutModalOpen(true))} className="flex h-9 w-full cursor-pointer items-center gap-3 rounded px-3 text-sm font-medium text-sidebar-foreground hover:bg-sidebar-accent hover:text-foreground">
             <MdLogout className="shrink-0 text-lg" />
-            <span className={collapsed ? 'lg:hidden' : 'block'}>Sign Out</span>
+            <span className={collapsed ? 'lg:hidden' : 'block'}>{t.nav.signOut}</span>
           </button>
         </div>
 

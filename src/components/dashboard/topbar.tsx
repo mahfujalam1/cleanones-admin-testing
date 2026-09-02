@@ -44,11 +44,14 @@ const faqs = [
   "How do I change my password?",
 ];
 
+import { getDashboardTranslation } from "@/lib/translations";
+
 export default function Topbar() {
   const pathname = usePathname();
   const router = useRouter();
   const locale = getLocale(pathname);
   const routePath = stripLocale(pathname);
+  const t = getDashboardTranslation(locale);
   const dispatch = useAppDispatch();
   const user = useAppSelector((state) => state.auth.user);
   const [languageOpen, setLanguageOpen] = useState(false);
@@ -63,13 +66,27 @@ export default function Topbar() {
   const profileRef = useRef<HTMLDivElement>(null);
 
   const getTitle = () => {
-    if (routePath === "/") return "Dashboard";
+    if (routePath === "/") return t.nav.dashboard;
     const path = routePath.split("/")[1];
-    if (!path) return "Dashboard";
-    return path
-      .split("-")
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(" ");
+    if (!path) return t.nav.dashboard;
+    const keyMap: Record<string, string> = {
+      roster: t.nav.roster,
+      "shift-monitoring": t.nav.shiftMonitoring,
+      users: t.nav.workers,
+      clients: t.nav.clients,
+      chat: t.nav.chat,
+      locations: t.nav.locations,
+      rooms: t.nav.rooms,
+      "cleaning-plans": t.nav.cleaningPlans,
+      "extra-services": t.nav.extraServices,
+      "photo-reviews": t.nav.photoReviews,
+      escalations: t.nav.escalations,
+      reports: t.nav.reports,
+      notifications: t.nav.notifications,
+      settings: t.nav.settings,
+      "manager-access": t.nav.managerAccess,
+    };
+    return keyMap[path] || path.split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
   };
 
   const closeMenus = () => {

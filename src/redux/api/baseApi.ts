@@ -47,5 +47,7 @@ export const baseApi = createApi({
   reducerPath: "api",
   baseQuery: baseQueryWithReauth,
   tagTypes: tagTypeList,
+  keepUnusedDataFor: 300,
+  refetchOnMountOrArgChange: 30,
   endpoints: () => ({}),
 });

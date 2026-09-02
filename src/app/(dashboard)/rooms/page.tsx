@@ -1,7 +1,9 @@
 "use client";
 
-import { AddRoomModal } from '@/components/rooms/AddRoomModal';
-import { RoomDetailSidebar } from '@/components/rooms/RoomDetailsSidebar';
+import dynamic from 'next/dynamic';
+
+const AddRoomModal = dynamic(() => import('@/components/rooms/AddRoomModal').then((mod) => mod.AddRoomModal), { ssr: false });
+const RoomDetailSidebar = dynamic(() => import('@/components/rooms/RoomDetailsSidebar').then((mod) => mod.RoomDetailSidebar), { ssr: false });
 import { Room, RoomType } from '@/components/rooms/types';
 import React, { useCallback, useEffect, useState } from 'react';
 import { MdSearch } from 'react-icons/md';
