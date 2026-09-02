@@ -1,16 +1,19 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { MdClose, MdNotificationsNone } from "react-icons/md";
 import { DetailSkeleton } from "@/components/shared/SkeletonLoader";
-import { deleteNotification, getNotifications, markAllNotificationsRead, markNotificationRead, type NotificationApi } from "@/services/actions/notifications";
+import { deleteNotification, markAllNotificationsRead, markNotificationRead, type NotificationApi } from "@/services/actions/notifications";
+import { useGetNotificationsQuery } from "@/redux/api/dashboardApi";
 
 export default function NotificationsPage() {
-  const [notifications, setNotifications] = useState<NotificationApi[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0); const [loading, setLoading] = useState(true); const [error, setError] = useState(""); const [updatingAll, setUpdatingAll] = useState(false);
-  useEffect(() => { void getNotifications().then((result) => { setLoading(false); if (!result.success) return setError(result.error); setNotifications(result.data.notifications); setUnreadCount(result.data.unread_count); }); }, []);
-  const read = async (item: NotificationApi) => { if (item.is_read) return; const result = await markNotificationRead(item.id); if (!result.success) return setError(result.error); setNotifications((current) => current.map((entry) => entry.id === item.id ? { ...entry, is_read: true } : entry)); setUnreadCount((count) => Math.max(0, count - 1)); };
-  const markAll = async () => { setUpdatingAll(true); const result = await markAllNotificationsRead(); setUpdatingAll(false); if (!result.success) return setError(result.error); setNotifications((current) => current.map((item) => ({ ...item, is_read: true }))); setUnreadCount(0); };
-  const dismiss = async (item: NotificationApi) => { const result = await deleteNotification(item.id); if (!result.success) return setError(result.error); setNotifications((current) => current.filter((entry) => entry.id !== item.id)); if (!item.is_read) setUnreadCount((count) => Math.max(0, count - 1)); };
+  const [error, setError] = useState(""); const [updatingAll, setUpdatingAll] = useState(false);
+  const { data: notifRes, isLoading: loading, refetch } = useGetNotificationsQuery();
+  const notifications: NotificationApi[] = notifRes?.notifications ?? [];
+  const unreadCount = notifications.filter(n => !n.is_read).length;
+
+  const read = async (item: NotificationApi) => { if (item.is_read) return; const result = await markNotificationRead(item.id); if (!result.success) return setError(result.error); void refetch(); };
+  const markAll = async () => { setUpdatingAll(true); const result = await markAllNotificationsRead(); setUpdatingAll(false); if (!result.success) return setError(result.error); void refetch(); };
+  const dismiss = async (item: NotificationApi) => { const result = await deleteNotification(item.id); if (!result.success) return setError(result.error); void refetch(); };
   return <div className="space-y-5 pb-10">
     <div className="flex items-center justify-between border-b border-gray-200 pb-5"><div className="flex items-center gap-2"><MdNotificationsNone className="text-xl text-slate-800" /><h2 className="text-lg font-bold text-slate-950">Notification Center</h2>{unreadCount > 0 && <span className="rounded-full bg-red-500 px-3 py-1 text-xs font-bold text-white">{unreadCount} new</span>}</div><button disabled={updatingAll || unreadCount === 0} onClick={() => void markAll()} className="text-sm font-semibold text-sky-500 hover:underline disabled:opacity-40">{updatingAll ? "Marking..." : "Mark all read"}</button></div>
     {error && <p className="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</p>}

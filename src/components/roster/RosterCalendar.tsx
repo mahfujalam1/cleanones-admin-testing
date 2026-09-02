@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { MdAdd, MdCalendarToday, MdChevronLeft, MdChevronRight } from 'react-icons/md';
 import { DayView } from './DayView';
 import { WeekView } from './WeekView';
@@ -8,99 +8,97 @@ import { MonthView } from './MonthView';
 import { ShiftModal } from './ShiftModal';
 import { CreateShiftModal } from './CreateShiftModal';
 import { Shift, ShiftTheme } from './types';
-import { getDailyRoster, getMonthlyRoster, getWeeklyRoster, type RosterShift } from '@/services/actions/roster';
+import { type RosterShift } from '@/services/actions/roster';
 import { ContentSkeleton } from '@/components/shared/SkeletonLoader';
+import { useGetDailyRosterQuery, useGetWeeklyRosterQuery, useGetMonthlyRosterQuery } from '@/redux/api/rosterApi';
 
 export function RosterCalendar() {
   const [view, setView] = useState<'Day' | 'Week' | 'Month'>('Day');
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [shifts, setShifts] = useState<Shift[]>([]);
-  const [teamMembers, setTeamMembers] = useState<string[]>([]);
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState<{ totalShifts: number; totalHours?: number; totalMembers: number }>({
-    totalShifts: 0,
-    totalHours: 0,
-    totalMembers: 0,
-  });
 
-  useEffect(() => {
-    const dateStr = formatYYYYMMDD(currentDate);
-    const run = async () => {
-      setError('');
-      setLoading(true);
-      if (view === 'Day') {
-        const result = await getDailyRoster(dateStr);
-        setLoading(false);
-        if (!result.success) return setError(result.error);
-        setStats({
-          totalShifts: result.data.banner?.total_scheduled_shifts ?? 0,
-          totalHours: result.data.banner?.total_scheduled_hours ?? 0,
-          totalMembers: result.data.total_team_members ?? 0,
-        });
-        setTeamMembers((result.data.team_members || []).map((m) => m.worker_name));
-        setShifts(
-          flatten(
-            (result.data.team_members || []).flatMap((member) =>
-              (member.shifts || []).map((shift) => ({ member: member.worker_name, date: dateStr, shift }))
+  const dateStr = formatYYYYMMDD(currentDate);
+
+  const startOfWeek = new Date(currentDate);
+  startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
+  const weekStartStr = formatYYYYMMDD(startOfWeek);
+
+  const monthParam = { month: currentDate.getMonth() + 1, year: currentDate.getFullYear() };
+
+  const { data: dailyRes, isLoading: dailyLoading, refetch: refetchDaily } = useGetDailyRosterQuery(dateStr, { skip: view !== 'Day' });
+  const { data: weeklyRes, isLoading: weeklyLoading, refetch: refetchWeekly } = useGetWeeklyRosterQuery(weekStartStr, { skip: view !== 'Week' });
+  const { data: monthlyRes, isLoading: monthlyLoading, refetch: refetchMonthly } = useGetMonthlyRosterQuery(monthParam, { skip: view !== 'Month' });
+
+  const loading = view === 'Day' ? dailyLoading : view === 'Week' ? weeklyLoading : monthlyLoading;
+
+  const refetchCurrent = () => {
+    if (view === 'Day') void refetchDaily();
+    else if (view === 'Week') void refetchWeekly();
+    else void refetchMonthly();
+  };
+
+  const { stats, teamMembers, shifts } = useMemo(() => {
+    if (view === 'Day' && dailyRes) {
+      return {
+        stats: {
+          totalShifts: dailyRes.banner?.total_scheduled_shifts ?? 0,
+          totalHours: dailyRes.banner?.total_scheduled_hours ?? 0,
+          totalMembers: dailyRes.total_team_members ?? 0,
+        },
+        teamMembers: (dailyRes.team_members || []).map((m) => m.worker_name),
+        shifts: flatten(
+          (dailyRes.team_members || []).flatMap((member) =>
+            (member.shifts || []).map((shift) => ({ member: member.worker_name, date: dateStr, shift }))
+          )
+        ),
+      };
+    }
+    if (view === 'Week' && weeklyRes) {
+      return {
+        stats: {
+          totalShifts: weeklyRes.banner?.total_scheduled_shifts ?? 0,
+          totalHours: weeklyRes.banner?.total_scheduled_hours ?? 0,
+          totalMembers: weeklyRes.total_team_members ?? 0,
+        },
+        teamMembers: (weeklyRes.team_members || []).map((m) => m.worker_name),
+        shifts: flatten(
+          (weeklyRes.team_members || []).flatMap((member) =>
+            (member.daily_schedule || []).flatMap((day) =>
+              (day.shifts || []).map((shift) => ({
+                member: member.worker_name,
+                date: normalizeDate(day.full_date || day.date_str || ''),
+                shift,
+              }))
             )
           )
-        );
-      } else if (view === 'Week') {
-        const start = new Date(currentDate);
-        start.setDate(start.getDate() - start.getDay());
-        const startStr = formatYYYYMMDD(start);
-        const result = await getWeeklyRoster(startStr);
-        setLoading(false);
-        if (!result.success) return setError(result.error);
-        setStats({
-          totalShifts: result.data.banner?.total_scheduled_shifts ?? 0,
-          totalHours: result.data.banner?.total_scheduled_hours ?? 0,
-          totalMembers: result.data.total_team_members ?? 0,
-        });
-        setTeamMembers((result.data.team_members || []).map((m) => m.worker_name));
-        setShifts(
-          flatten(
-            (result.data.team_members || []).flatMap((member) =>
-              (member.daily_schedule || []).flatMap((day) =>
-                (day.shifts || []).map((shift) => ({
-                  member: member.worker_name,
-                  date: normalizeDate(day.full_date || day.date_str || ""),
-                  shift,
-                }))
-              )
-            )
-          )
-        );
-      } else {
-        const result = await getMonthlyRoster(currentDate.getMonth() + 1, currentDate.getFullYear());
-        setLoading(false);
-        if (!result.success) return setError(result.error);
-        setStats({
-          totalShifts: result.data.banner?.total_scheduled_shifts ?? 0,
+        ),
+      };
+    }
+    if (view === 'Month' && monthlyRes) {
+      return {
+        stats: {
+          totalShifts: monthlyRes.banner?.total_scheduled_shifts ?? 0,
           totalHours: 0,
-          totalMembers: result.data.banner?.total_team_members ?? (result.data.team_members || []).length,
-        });
-        setTeamMembers((result.data.team_members || []).map((m) => m.worker_name));
-        setShifts(
-          flatten(
-            (result.data.team_members || []).flatMap((member) =>
-              (member.daily_summaries || []).flatMap((day) =>
-                (day.shifts || []).map((shift) => ({
-                  member: member.worker_name,
-                  date: normalizeDate(day.full_date || ""),
-                  shift,
-                }))
-              )
+          totalMembers: monthlyRes.banner?.total_team_members ?? (monthlyRes.team_members || []).length,
+        },
+        teamMembers: (monthlyRes.team_members || []).map((m) => m.worker_name),
+        shifts: flatten(
+          (monthlyRes.team_members || []).flatMap((member) =>
+            (member.daily_summaries || []).flatMap((day) =>
+              (day.shifts || []).map((shift) => ({
+                member: member.worker_name,
+                date: normalizeDate(day.full_date || ''),
+                shift,
+              }))
             )
           )
-        );
-      }
-    };
-    void run();
-  }, [view, currentDate]);
+        ),
+      };
+    }
+    return { stats: { totalShifts: 0, totalHours: 0, totalMembers: 0 }, teamMembers: [], shifts: [] };
+  }, [view, dailyRes, weeklyRes, monthlyRes, dateStr]);
 
   const handlePrev = () => {
     const newDate = new Date(currentDate);
@@ -122,13 +120,9 @@ export function RosterCalendar() {
     setCurrentDate(new Date());
   };
 
-  const handleCreateShift = (newShifts: { workerName: string; location: string; date: string; startTime: string; endTime: string; theme: ShiftTheme }[]) => {
-    const createdShifts: Shift[] = newShifts.map((s, i) => ({
-      ...s,
-      id: `new-${Date.now()}-${i}`,
-    }));
-    setShifts(prev => [...prev, ...createdShifts]);
+  const handleCreateShift = (_newShifts: { workerName: string; location: string; date: string; startTime: string; endTime: string; theme: ShiftTheme }[]) => {
     setShowCreateModal(false);
+    refetchCurrent();
   };
 
   const formatDateRange = () => {
@@ -225,7 +219,7 @@ export function RosterCalendar() {
 
       {/* Shift Detail Modal */}
       {selectedShift && (
-        <ShiftModal shift={selectedShift} onClose={() => setSelectedShift(null)} onDeleted={(id) => setShifts((current) => current.filter((shift) => shift.id !== id))} />
+        <ShiftModal shift={selectedShift} onClose={() => setSelectedShift(null)} onDeleted={() => refetchCurrent()} />
       )}
 
       {/* Create Shift Modal */}

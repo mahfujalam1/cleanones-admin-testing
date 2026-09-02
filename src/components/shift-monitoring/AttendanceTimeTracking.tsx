@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { MdSearch } from 'react-icons/md';
 import { WorkerInfo } from './types';
-import { getAttendanceTracking, type AttendanceWorker, type Period } from '@/services/actions/shiftMonitoring';
+import { type AttendanceWorker, type Period } from '@/services/actions/shiftMonitoring';
+import { useGetAttendanceTrackingQuery } from '@/redux/api/shiftMonitoringApi';
 import { TableSkeleton } from '@/components/shared/SkeletonLoader';
 
 interface Props {
@@ -9,12 +10,38 @@ interface Props {
   selectedWorkerId: string | number | null;
 }
 
+const mapAttendanceWorker = (item: AttendanceWorker): WorkerInfo => ({
+  id: item.worker_id,
+  initials: '',
+  name: item.worker_name,
+  role: item.worker_type.toLowerCase() === 'freelancer' ? 'Freelancer' : 'Employee',
+  shiftId: '',
+  location: '',
+  checkIn: '',
+  status: 'On Time',
+  color: 'bg-sky-500',
+  statusColor: 'text-sky-500',
+  hoursWorked: item.hours_worked_numeric,
+  totalShifts: item.total_shifts,
+  lateDays: item.late_days,
+  avgDuration: '0h',
+});
+
 export function AttendanceTimeTracking({ onWorkerSelect, selectedWorkerId }: Props) {
   const [timeRange, setTimeRange] = useState<'Today' | 'Weekly' | 'Monthly'>('Today');
   const [roleFilter, setRoleFilter] = useState<'All' | 'Employee' | 'Freelancer'>('All');
   const [search, setSearch] = useState('');
-  const [workers, setWorkers] = useState<WorkerInfo[]>([]); const [loading, setLoading] = useState(true); const [error, setError] = useState('');
-  useEffect(() => { setLoading(true); const timer = window.setTimeout(() => { const period = timeRange.toLowerCase() as Period; void getAttendanceTracking({ period, workerType: roleFilter === 'All' ? undefined : roleFilter.toLowerCase(), search }).then((result) => { setLoading(false); if (!result.success) return setError(result.error); setError(''); setWorkers(result.data.workers.map(mapAttendanceWorker)); }); }, 300); return () => window.clearTimeout(timer); }, [timeRange, roleFilter, search]);
+  const [error, setError] = useState('');
+
+  const period = timeRange.toLowerCase() as Period;
+  const { data: attRes, isLoading: loading } = useGetAttendanceTrackingQuery({
+    period,
+    workerType: roleFilter === 'All' ? undefined : roleFilter.toLowerCase(),
+    search: search.trim() || undefined,
+  });
+
+  const rawWorkers = attRes?.workers ?? [];
+  const workers: WorkerInfo[] = rawWorkers.map(mapAttendanceWorker);
 
   return (
     <div className="flex flex-col h-full animate-in fade-in duration-300">
@@ -124,5 +151,3 @@ export function AttendanceTimeTracking({ onWorkerSelect, selectedWorkerId }: Pro
     </div>
   );
 }
-
-function mapAttendanceWorker(item: AttendanceWorker): WorkerInfo { return { id: item.worker_id, initials: '', name: item.worker_name, role: item.worker_type.toLowerCase() === 'freelancer' ? 'Freelancer' : 'Employee', shiftId: '', location: '', checkIn: '', status: 'On Time', color: 'bg-sky-500', statusColor: 'text-sky-500', hoursWorked: item.hours_worked_numeric, totalShifts: item.total_shifts, lateDays: item.late_days, avgDuration: '0h' }; }

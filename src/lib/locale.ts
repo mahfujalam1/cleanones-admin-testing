@@ -6,7 +6,8 @@ export function getLocale(pathname: string | null) {
 }
 
 export function localizePath(pathname: string, locale: string) {
-  const normalized = pathname === "/" ? "" : pathname.startsWith("/") ? pathname : `/${pathname}`;
+  const stripped = stripLocale(pathname);
+  const normalized = stripped === "/" ? "" : stripped;
   return `/${locale}${normalized}`;
 }
 

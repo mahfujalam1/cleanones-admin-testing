@@ -13,9 +13,13 @@ import { CardGridSkeleton } from '@/components/shared/SkeletonLoader';
 import { BackendPagination } from '@/components/shared/BackendPagination';
 import { Select } from '@/components/ui/select';
 
+import { useGetRoomsQuery } from '@/redux/api/dashboardApi';
+
 const ALL_FILTER_VALUE = '__all__';
 const ROOMS_PAGE_LIMIT = 12;
 type LocationOption = { id: string; name: string; total_rooms: number };
+
+const title = (val?: string) => val ? val.replaceAll('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Standard';
 
 const typeColors: Record<RoomType, { text: string; bg: string }> = {
     Standard: { text: 'text-[#0ea5e9]', bg: 'bg-[#e0f2fe]' },
@@ -25,15 +29,12 @@ const typeColors: Record<RoomType, { text: string; bg: string }> = {
 };
 
 export default function RoomsPage() {
-    const [rooms, setRooms] = useState<Room[]>([]);
     const [search, setSearch] = useState('');
     const [showModal, setShowModal] = useState(false);
     const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
-    const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [filterError, setFilterError] = useState('');
     const [page, setPage] = useState(1);
-    const [total, setTotal] = useState(0);
     const [clientId, setClientId] = useState('');
     const [locationId, setLocationId] = useState('');
     const [roomId, setRoomId] = useState('');
@@ -43,6 +44,29 @@ export default function RoomsPage() {
     const [clientsLoading, setClientsLoading] = useState(true);
     const [locationsLoading, setLocationsLoading] = useState(false);
     const [roomOptionsLoading, setRoomOptionsLoading] = useState(false);
+
+    const { data: roomsRes, isLoading: loading, refetch } = useGetRoomsQuery({
+        search: search.trim() || undefined,
+        client_id: clientId || undefined,
+        location_id: locationId || undefined,
+        room_id: roomId || undefined,
+        page,
+        limit: ROOMS_PAGE_LIMIT,
+    });
+
+    const rawRooms = roomsRes?.rooms ?? [];
+    const total = roomsRes?.total_count ?? 0;
+    const rooms: Room[] = rawRooms.map((item) => ({
+        id: item.room_id,
+        name: item.room_name,
+        type: title(item.room_type),
+        location: item.location_name,
+        floor: '',
+        duration: 0,
+        photos: item.total_photos_required || item.photo_number,
+        tasks: item.task_number,
+        cleaningPlan: title(item.clean_type),
+    }));
 
     useEffect(() => {
         let active = true;
@@ -84,38 +108,6 @@ export default function RoomsPage() {
         return () => { active = false; };
     }, [clientId, locationId]);
 
-    const loadRooms = useCallback(async () => {
-        setLoading(true);
-        const result = await getRooms({
-            page,
-            limit: ROOMS_PAGE_LIMIT,
-            search: search.trim(),
-            clientId,
-            locationId,
-            roomId,
-        });
-        setLoading(false);
-        if (!result.success) return setError(result.error);
-        setError('');
-        setTotal(result.data.total_count);
-        setRooms(result.data.rooms.map((item) => ({
-            id: item.room_id,
-            name: item.room_name,
-            type: title(item.room_type),
-            location: item.location_name,
-            floor: '',
-            duration: 0,
-            photos: item.total_photos_required || item.photo_number,
-            tasks: item.task_number,
-            cleaningPlan: title(item.clean_type),
-        })));
-    }, [clientId, locationId, page, roomId, search]);
-
-    useEffect(() => {
-        const timeout = window.setTimeout(() => { void loadRooms(); }, 300);
-        return () => window.clearTimeout(timeout);
-    }, [loadRooms]);
-
     const handleClientChange = (value: string) => {
         const nextClientId = value === ALL_FILTER_VALUE ? '' : value;
         setFilterError('');
@@ -146,7 +138,7 @@ export default function RoomsPage() {
 
     const handleAdd = () => {
         setShowModal(false);
-        void loadRooms();
+        void refetch();
     };
 
     return (
@@ -321,5 +313,3 @@ function RoomCard({ room, onClick, isSelected }: RoomCardProps) {
         </div>
     );
 }
-
-function title(value: string) { return value.split('_').map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(' '); }

@@ -38,34 +38,28 @@ const TABLE_HEADERS = [
 
 // ── Component ────────────────────────────────────────────────────────────────
 
+import { useGetPhotoReviewsQuery } from "@/redux/api/photoReviewsApi";
+
 export function PhotoReviewsPage() {
-    const [reviews, setReviews] = useState<PhotoReview[]>([]);
     const [activeFilter, setActiveFilter] = useState<ReviewStatus | "All">("All");
     const [search, setSearch] = useState("");
     const [page, setPage] = useState(1);
     const [selectedReview, setSelectedReview] = useState<PhotoReview | null>(null);
     const [approveReview, setApproveReview] = useState<PhotoReview | null>(null);
     const [rejectReview, setRejectReview] = useState<PhotoReview | null>(null);
-    const [apiPendingCount, setApiPendingCount] = useState(0);
     const [error, setError] = useState("");
-    const [loading, setLoading] = useState(true);
 
-    const pendingCount = apiPendingCount;
+    const status = activeFilter === "All" ? undefined : activeFilter.toLowerCase().replaceAll(" ", "_");
+    const { data: reviewsRes, isLoading: loading, refetch } = useGetPhotoReviewsQuery({
+        search: search.trim() || undefined,
+        status,
+        page,
+        limit: PAGE_SIZE,
+    });
 
-    useEffect(() => {
-        setLoading(true);
-        const timeout = window.setTimeout(() => {
-            const status = activeFilter === "All" ? undefined : activeFilter.toLowerCase().replaceAll(" ", "_");
-            void getPhotoReviews({ search, status, limit: 100 }).then((result) => {
-                setLoading(false);
-                if (!result.success) return setError(result.error);
-                setError("");
-                setApiPendingCount(result.data.pending_reviews_count);
-                setReviews(result.data.reviews.map(mapReview));
-            });
-        }, 300);
-        return () => window.clearTimeout(timeout);
-    }, [search, activeFilter]);
+    const rawReviews = reviewsRes?.reviews ?? [];
+    const pendingCount = reviewsRes?.pending_reviews_count ?? 0;
+    const reviews: PhotoReview[] = rawReviews.map(mapReview);
 
     // ── Filtering & Pagination ──────────────────────────────────────────────
 
@@ -105,11 +99,8 @@ export function PhotoReviewsPage() {
             setError(result.error);
             return;
         }
-        setReviews((prev) =>
-            prev.map((r) => (r.id === approveReview.id ? { ...r, status: "Approved" as ReviewStatus } : r))
-        );
         setApproveReview(null);
-        setApiPendingCount((count) => Math.max(0, count - 1));
+        void refetch();
     };
 
     const handleRejectConfirm = async (data: RejectFormData) => {
@@ -119,11 +110,8 @@ export function PhotoReviewsPage() {
             setError(result.error);
             return;
         }
-        setReviews((prev) =>
-            prev.map((r) => (r.id === rejectReview.id ? { ...r, status: "Rejected" as ReviewStatus } : r))
-        );
         setRejectReview(null);
-        setApiPendingCount((count) => Math.max(0, count - 1));
+        void refetch();
     };
 
     const openReview = async (review: PhotoReview) => {

@@ -29,11 +29,11 @@ const languages = [
   { label: "English", code: "en" },
   { label: "Nederlands", code: "nl" },
   { label: "Polski", code: "pl" },
-  { label: "Ukrainian", code: "uk" },
-  { label: "Portuguese", code: "pt" },
-  { label: "Arabic", code: "ar" },
-  { label: "French", code: "fr" },
-  { label: "Spanish", code: "es" },
+  { label: "Українська", code: "uk" },
+  { label: "Português", code: "pt" },
+  { label: "العربية", code: "ar" },
+  { label: "Français", code: "fr" },
+  { label: "Español", code: "es" },
 ];
 
 const faqs = [

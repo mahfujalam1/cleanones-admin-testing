@@ -9,7 +9,8 @@ import { WorkerDetailSidebar } from '@/components/workers/WorkerDetailSidebar';
 import { AddWorkerModal } from '@/components/workers/AddWorkerModal';
 import { PendingApprovalsModal } from '@/components/workers/PendingApprovalsModal';
 import type { Worker } from '@/components/workers/types';
-import { createWorker, getWorkers, getWorkerApprovals } from '@/services/actions/workers';
+import { createWorker, getWorkerApprovals } from '@/services/actions/workers';
+import { useGetWorkersQuery } from '@/redux/api/dashboardApi';
 import { TableSkeleton } from '@/components/shared/SkeletonLoader';
 import { BackendPagination } from '@/components/shared/BackendPagination';
 
@@ -23,10 +24,7 @@ const WORKER_FILTERS: WorkerFilter[] = ['All Workers', 'Employees', 'Freelancers
 const STATUS_FILTERS: StatusFilter[] = ['All', 'On Shift', 'Active', 'Off Duty'];
 
 export default function WorkersPage() {
-  const [workers, setWorkers] = useState<Worker[]>([]);
-  const [counts, setCounts] = useState({ total: 0, employees: 0, freelancers: 0 });
   const [pendingCount, setPendingCount] = useState(0);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [page, setPage] = useState(1); const limit = 10;
 
@@ -38,6 +36,24 @@ export default function WorkersPage() {
   const [importOpen, setImportOpen] = useState(false);
   const [pendingModalOpen, setPendingModalOpen] = useState(false);
 
+  const type = workerFilter === 'Employees' ? 'employee' : workerFilter === 'Freelancers' ? 'freelancer' : undefined;
+
+  const { data: workersRes, isLoading: loading, refetch } = useGetWorkersQuery({
+    search: search.trim() || undefined,
+    role: type,
+    page,
+    limit,
+  });
+
+  const rawWorkers = workersRes?.workers ?? [];
+  const totalWorkers = workersRes?.total_count ?? 0;
+  const workers = rawWorkers.map(mapWorker);
+  const counts = {
+    total: totalWorkers,
+    employees: rawWorkers.filter(w => (w.worker_type || '').toLowerCase() === 'employee').length,
+    freelancers: rawWorkers.filter(w => (w.worker_type || '').toLowerCase() === 'freelancer').length,
+  };
+
   const loadPendingCount = async () => {
     const res = await getWorkerApprovals(1, 1, 'pending');
     if (res.success) {
@@ -45,27 +61,9 @@ export default function WorkersPage() {
     }
   };
 
-  const loadWorkers = async () => {
-    const type = workerFilter === 'Employees' ? 'employee' : workerFilter === 'Freelancers' ? 'freelancer' : undefined;
-    const status = statusFilter === 'All' ? undefined : statusFilter.toLowerCase().replaceAll(' ', '_');
-    setLoading(true);
-    const result = await getWorkers({ page, search, workerType: type, status, limit });
-    setLoading(false);
-    if (!result.success) return setError(result.error);
-    setError('');
-    setCounts({ total: result.data.total_workers, employees: result.data.employees_count, freelancers: result.data.freelancers_count });
-    setWorkers(result.data.workers.map(mapWorker));
-  };
-
   useEffect(() => {
-    const timeout = window.setTimeout(() => {
-      void loadWorkers();
-      void loadPendingCount();
-    }, 300);
-    return () => window.clearTimeout(timeout);
-  }, [search, workerFilter, statusFilter, page]);
-
-  useEffect(() => { setPage(1); }, [search, workerFilter, statusFilter]);
+    void loadPendingCount();
+  }, []);
 
   const selectedWorker = useMemo(() => {
     return workers.find(w => w.id === selectedWorkerId) || null;
@@ -95,7 +93,7 @@ export default function WorkersPage() {
     if (!result.success) {
       return result.error;
     }
-    setWorkers((current) => [mapWorker(result.data), ...current]);
+    void refetch();
     setAddModalOpen(false);
   };
 
@@ -204,13 +202,13 @@ export default function WorkersPage() {
         <PendingApprovalsModal
           onClose={() => setPendingModalOpen(false)}
           onSuccess={() => {
-            void loadWorkers();
+            void refetch();
             void loadPendingCount();
           }}
         />
       )}
 
-      {importOpen && <BulkImportModal mode="workers" onImported={() => { setImportOpen(false); void loadWorkers(); void loadPendingCount(); }} onClose={() => setImportOpen(false)} />}
+      {importOpen && <BulkImportModal mode="workers" onImported={() => { setImportOpen(false); void refetch(); void loadPendingCount(); }} onClose={() => setImportOpen(false)} />}
     </div>
   );
 }

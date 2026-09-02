@@ -1,9 +1,10 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { MdAccessTime, MdAdd, MdArrowForward, MdBusiness, MdCall, MdCalendarToday, MdCheckCircle, MdClose, MdLocationOn, MdPeople, MdUploadFile, MdWarningAmber } from "react-icons/md";
 import { CardGridSkeleton, DetailSkeleton } from "@/components/shared/SkeletonLoader";
-import { getDashboardOverview, getInProgressShifts, getWorkerAttendanceSummary, type DashboardOverview, type InProgressShift } from "@/services/actions/dashboard";
+import { useGetDashboardOverviewQuery, useGetInProgressShiftsQuery } from "@/redux/api/dashboardApi";
+import type { DashboardOverview, InProgressShift } from "@/services/actions/dashboard";
 
 const normalizeStatus = (value: string) => value.toLowerCase().replaceAll(" ", "_");
 const uniqueBy = <T,>(items: T[], getKey: (item: T) => string) => {
@@ -16,12 +17,8 @@ const uniqueBy = <T,>(items: T[], getKey: (item: T) => string) => {
   });
 };
 export default function DashboardPage() {
-  const [overview, setOverview] = useState<DashboardOverview | null>(null);
-  const [shifts, setShifts] = useState<InProgressShift[]>([]);
   const [filter, setFilter] = useState("");
   const [actionsOpen, setActionsOpen] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
   const [selectedLateWorker, setSelectedLateWorker] = useState<{
     worker_name: string;
     late_duration_text: string;
@@ -29,34 +26,13 @@ export default function DashboardPage() {
     delay_reason?: string;
   } | null>(null);
 
-  useEffect(() => {
-    let active = true;
-    const timer = window.setTimeout(() => {
-      setLoading(true);
-      void Promise.all([
-        getDashboardOverview(filter || undefined),
-        getInProgressShifts(),
-        getWorkerAttendanceSummary(),
-      ]).then(([home, progress, attendance]) => {
-        if (!active) return;
-        setLoading(false);
-        const errors = [home, progress, attendance]
-          .filter((item) => !item.success)
-          .map((item) => (!item.success ? item.error : ""));
-        if (errors.length) setError(errors.join(" · "));
-        else setError("");
-        if (home.success) setOverview(home.data);
-        if (progress.success) setShifts(progress.data.shifts);
-      });
-    }, 0);
-    return () => {
-      active = false;
-      window.clearTimeout(timer);
-    };
-  }, [filter]);
+  const { data: overview, isLoading: loadingOverview } = useGetDashboardOverviewQuery(filter || undefined);
+  const { data: shiftsRes } = useGetInProgressShiftsQuery();
 
-  if (loading && !overview) return <div className="space-y-5"><DetailSkeleton blocks={2} /><CardGridSkeleton cards={4} /><DetailSkeleton blocks={7} /></div>;
-  if (!overview) return <p className="rounded bg-red-50 p-4 text-sm text-red-700">{error || "Dashboard could not be loaded"}</p>;
+  const shifts: InProgressShift[] = shiftsRes?.shifts ?? [];
+
+  if (loadingOverview && !overview) return <div className="space-y-5"><DetailSkeleton blocks={2} /><CardGridSkeleton cards={4} /><DetailSkeleton blocks={7} /></div>;
+  if (!overview) return <p className="rounded bg-red-50 p-4 text-sm text-red-700">Dashboard could not be loaded</p>;
 
   const attentionPills = uniqueBy(overview.attention_banner.call_pills, (item) => item.worker_id);
   const liveGroups = uniqueBy(overview.live_operations_by_client, (group) => `${group.client_id}-${group.location_id}`).map((group) => ({
@@ -92,8 +68,6 @@ export default function DashboardPage() {
           )}
         </div>
       </header>
-
-      {error && <p className="rounded border border-red-200 bg-red-50 p-3 text-xs text-red-700">{error}</p>}
 
       {/* Red Attention Banner */}
       <section className={`rounded-xl border p-4 ${overview.attention_banner.people_need_attention_count > 0 ? "border-red-200 bg-red-50/70" : "border-slate-200 bg-white"}`}>

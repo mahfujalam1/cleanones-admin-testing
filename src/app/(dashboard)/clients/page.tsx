@@ -1,11 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { MdAdd, MdBusinessCenter, MdClose, MdDelete, MdLocationOn, MdRestore, MdSearch, MdWarningAmber } from "react-icons/md";
 import { AddClientModal } from "@/components/clients/AddClientModal";
 import type { Client } from "@/components/clients/types";
-import { deleteClient, getClients, getDeletedClients, restoreClient } from "@/services/actions/clients";
+import { deleteClient, getDeletedClients, restoreClient } from "@/services/actions/clients";
+import { useGetClientsQuery } from "@/redux/api/dashboardApi";
 import { CardGridSkeleton } from "@/components/shared/SkeletonLoader";
 import { BackendPagination } from "@/components/shared/BackendPagination";
 
@@ -13,50 +14,31 @@ type Mode = "active" | "deleted";
 
 export default function ClientsPage() {
   const router = useRouter();
-  const [clients, setClients] = useState<Client[]>([]);
   const [mode, setMode] = useState<Mode>("active");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [addOpen, setAddOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Client | null>(null);
   const [deleting, setDeleting] = useState(false);
   const limit = 9;
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError("");
-    setClients([]);
-    setTotal(0);
-    const result = mode === "deleted" ? await getDeletedClients(page, limit, search, false) : await getClients(page, limit, search, false);
-    setLoading(false);
-    if (!result.success) {
-      setError(result.error);
-      return;
-    }
-    setTotal(result.data.total_count);
-    const visibleClients = result.data.clients.filter((item) => !item.is_signup);
-    setClients(visibleClients.map((item) => ({
-      id: item.id, name: item.company_name, industry: item.industry, status: item.status,
-      mainContactName: item.primary_contact_name, email: item.email, phone: item.phone,
-      locationsCount: item.locations_count, contractStatus: item.contract_status,
-      contractExpiryDate: "", activeTasks: 0, contacts: [], locations: [],
-    })));
-  }, [mode, page, search]);
+  const { data: clientsRes, isLoading: loading, refetch } = useGetClientsQuery({ search: search.trim() || undefined, page, limit });
 
-  useEffect(() => {
-    const timer = window.setTimeout(() => void load(), 300);
-    return () => window.clearTimeout(timer);
-  }, [load]);
-  useEffect(() => setPage(1), [mode, search]);
+  const rawClients = clientsRes?.clients ?? [];
+  const total = clientsRes?.total_count ?? 0;
+  const clients: Client[] = rawClients.filter((item) => !item.is_signup).map((item) => ({
+    id: item.id, name: item.company_name, industry: item.industry, status: item.status,
+    mainContactName: item.primary_contact_name, email: item.email, phone: item.phone,
+    locationsCount: item.locations_count, contractStatus: item.contract_status,
+    contractExpiryDate: "", activeTasks: 0, contacts: [], locations: [],
+  }));
 
   const restore = async (client: Client) => {
     setError("");
     const result = await restoreClient(client.id);
     if (!result.success) return setError(result.error);
-    await load();
+    void refetch();
   };
 
   const confirmDelete = async () => {
@@ -67,7 +49,7 @@ export default function ClientsPage() {
     setDeleting(false);
     if (!result.success) return setError(result.error);
     setDeleteTarget(null);
-    await load();
+    void refetch();
   };
 
   return <div className="space-y-5 pb-10">
@@ -86,7 +68,7 @@ export default function ClientsPage() {
       {clients.length === 0 && !error && <p className="col-span-full py-16 text-center text-sm text-slate-500">No {mode} clients found</p>}
     </div>}
     {!error && <BackendPagination page={page} limit={limit} total={total} onPageChange={setPage} />}
-    {addOpen && <AddClientModal onClose={() => setAddOpen(false)} onAdd={() => { setAddOpen(false); void load(); }} />}
+    {addOpen && <AddClientModal onClose={() => setAddOpen(false)} onAdd={() => { setAddOpen(false); void refetch(); }} />}
     {deleteTarget && <DeleteClientModal client={deleteTarget} deleting={deleting} onCancel={() => !deleting && setDeleteTarget(null)} onConfirm={() => void confirmDelete()} />}
   </div>;
 }

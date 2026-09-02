@@ -7,11 +7,11 @@ import {
   completeApproveExtraService,
   getExtraService,
   getExtraServiceWorkersDropdown,
-  getExtraServices,
   rejectExtraService,
   type ExtraServiceRequest,
   type ExtraServiceWorkerDropdownItem,
 } from "@/services/actions/extraServices";
+import { useGetExtraServicesQuery } from "@/redux/api/dashboardApi";
 
 const label = (value: string) => value.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
 const statusColor: Record<string, string> = {
@@ -23,28 +23,15 @@ const statusColor: Record<string, string> = {
 };
 
 export default function ExtraServicesPage() {
-  const [items, setItems] = useState<ExtraServiceRequest[]>([]);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
   const [selected, setSelected] = useState<ExtraServiceRequest | null>(null);
   const [detailsLoading, setDetailsLoading] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const load = () => {
-    setLoading(true);
-    void getExtraServices({ search, status: status || undefined }).then((result) => {
-      setLoading(false);
-      if (!result.success) return setError(result.error);
-      setError("");
-      setItems(result.data.requests);
-    });
-  };
-
-  useEffect(() => {
-    const timer = window.setTimeout(load, 300);
-    return () => window.clearTimeout(timer);
-  }, [search, status]);
+  const { data: servicesRes, isLoading: loading, refetch } = useGetExtraServicesQuery({ status: status || undefined });
+  const rawItems: ExtraServiceRequest[] = servicesRes?.requests ?? [];
+  const items = search.trim() ? rawItems.filter(item => item.title.toLowerCase().includes(search.toLowerCase())) : rawItems;
 
   const open = async (item: ExtraServiceRequest) => {
     setSelected(item);
@@ -111,7 +98,7 @@ export default function ExtraServicesPage() {
           onClose={() => setSelected(null)}
           onDone={() => {
             setSelected(null);
-            load();
+            void refetch();
           }}
           onError={setError}
         />

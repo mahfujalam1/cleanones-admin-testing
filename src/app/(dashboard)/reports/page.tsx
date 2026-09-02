@@ -21,14 +21,16 @@ type ReportRange = "Week" | "Month" | "Quarter" | "Year";
 
 const ranges: ReportRange[] = ["Week", "Month", "Quarter", "Year"];
 
+import { useGetQualityControlReportQuery } from "@/redux/api/reportsApi";
+
 export default function ReportsPage() {
   const [activeRange, setActiveRange] = useState<ReportRange>("Month");
-  const [report, setReport] = useState<QualityControlReport | null>(null);
-  const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
   const [error, setError] = useState("");
   const timeframe = activeRange.toLowerCase() as ReportTimeframe;
-  useEffect(() => { setLoading(true); void getQualityControlReport(timeframe).then((result) => { setLoading(false); if (!result.success) return setError(result.error); setError(""); setReport(result.data); }); }, [timeframe]);
+
+  const { data: report, isLoading: loading } = useGetQualityControlReportQuery(timeframe);
+
   const downloadPdf = async () => { setExporting(true); const result = await exportQualityControlPdf(timeframe); setExporting(false); if (!result.success) return setError(result.error); window.open(result.data, "_blank", "noopener,noreferrer"); };
   const shiftTrendData = (report?.shift_trends ?? []).map((item) => ({ label: item.label, count: item.count }));
   const distribution = report?.photo_quality_distribution;

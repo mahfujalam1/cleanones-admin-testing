@@ -7,8 +7,9 @@ import { BulkImportModal } from '@/components/shared/BulkImportModal';
 import { TbBuilding } from 'react-icons/tb';
 import { Location } from '../../../components/locations/types';
 import { CreateLocationModal } from '@/components/locations/CreateLocationModal';
-import { getLocations, getClientOptions, type ClientOption } from '@/services/actions/locations';
+import { getClientOptions, type ClientOption } from '@/services/actions/locations';
 import { getRoomLocations } from '@/services/actions/rooms';
+import { useGetLocationsQuery } from '@/redux/api/dashboardApi';
 import { CardGridSkeleton } from '@/components/shared/SkeletonLoader';
 import { BackendPagination } from '@/components/shared/BackendPagination';
 import { Select } from '@/components/ui/select';
@@ -17,16 +18,13 @@ const ALL_FILTER_VALUE = '__all__';
 type LocationOption = { id: string; name: string; total_rooms: number };
 
 export default function LocationsPage() {
-    const [locations, setLocations] = useState<Location[]>([]);
     const [search, setSearch] = useState('');
     const [showModal, setShowModal] = useState(false);
     const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
     const [importOpen, setImportOpen] = useState(false);
-    const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [filterError, setFilterError] = useState('');
     const [page, setPage] = useState(1);
-    const [total, setTotal] = useState(0);
     const limit = 12;
 
     const [clientId, setClientId] = useState('');
@@ -35,6 +33,30 @@ export default function LocationsPage() {
     const [locationOptions, setLocationOptions] = useState<LocationOption[]>([]);
     const [clientsLoading, setClientsLoading] = useState(true);
     const [locationsLoading, setLocationsLoading] = useState(false);
+
+    const { data: locationsRes, isLoading: loading, refetch } = useGetLocationsQuery({
+        search: search.trim() || undefined,
+        client_id: clientId || undefined,
+        location_id: locationId || undefined,
+        page,
+        limit,
+    });
+
+    const rawLocations = locationsRes?.locations ?? [];
+    const total = locationsRes?.total_count ?? 0;
+    const locations: Location[] = rawLocations.map((item) => ({
+        id: item.location_id,
+        name: item.location_name,
+        client: item.client_company_name,
+        address: item.address,
+        floors: item.floors,
+        rooms: item.rooms,
+        requiredHours: item.required_hours_numeric,
+        assignedEmployees: [],
+        createdDate: item.created_at,
+        totalWorkersCount: 0,
+        notes: '',
+    }));
 
     useEffect(() => {
         let active = true;
@@ -63,39 +85,6 @@ export default function LocationsPage() {
         return () => { active = false; };
     }, [clientId]);
 
-    const loadLocations = useCallback(async () => {
-        setLoading(true);
-        const result = await getLocations({
-            page,
-            search: search.trim(),
-            clientId: clientId || undefined,
-            locationId: locationId || undefined,
-            limit,
-        });
-        setLoading(false);
-        if (!result.success) {
-            setError(result.error);
-            return;
-        }
-        setError('');
-        setTotal(result.data.total_count);
-        setLocations(result.data.locations.map((item) => ({
-            id: item.location_id,
-            name: item.location_name,
-            client: item.client_company_name,
-            address: item.address,
-            floors: item.floors,
-            rooms: item.rooms,
-            requiredHours: item.required_hours_numeric,
-            assignedEmployees: [],
-        })));
-    }, [clientId, locationId, page, search]);
-
-    useEffect(() => {
-        const timeout = window.setTimeout(() => { void loadLocations(); }, 300);
-        return () => window.clearTimeout(timeout);
-    }, [loadLocations]);
-
     const handleClientChange = (value: string) => {
         const nextClientId = value === ALL_FILTER_VALUE ? '' : value;
         setFilterError('');
@@ -115,7 +104,7 @@ export default function LocationsPage() {
 
     const handleAdd = () => {
         setShowModal(false);
-        void loadLocations();
+        void refetch();
     };
 
     return (
@@ -218,7 +207,7 @@ export default function LocationsPage() {
                     onClose={() => setSelectedLocation(null)}
                 />
             )}
-            {importOpen && <BulkImportModal mode="locations" onImported={() => { setImportOpen(false); void loadLocations(); }} onClose={() => setImportOpen(false)} />}
+            {importOpen && <BulkImportModal mode="locations" onImported={() => { setImportOpen(false); void refetch(); }} onClose={() => setImportOpen(false)} />}
         </div>
     );
 }

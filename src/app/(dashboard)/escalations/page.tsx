@@ -2,7 +2,8 @@
 import { useEffect, useState } from "react";
 import { MdClose, MdOutlinePerson, MdSearch, MdWarningAmber } from "react-icons/md";
 import { CardGridSkeleton, DetailSkeleton } from "@/components/shared/SkeletonLoader";
-import { getEscalation, getEscalations, updateEscalationStatus, type EscalationApi } from "@/services/actions/escalations";
+import { getEscalation, updateEscalationStatus, type EscalationApi } from "@/services/actions/escalations";
+import { useGetEscalationsQuery } from "@/redux/api/escalationsApi";
 
 const severityStyle: Record<string, string> = { emergency: "border-l-red-500 text-red-500 bg-red-50", high: "border-l-amber-500 text-amber-500 bg-amber-50", medium: "border-l-sky-500 text-sky-500 bg-sky-50", low: "border-l-emerald-500 text-emerald-500 bg-emerald-50" };
 const statusStyle: Record<string, string> = { open: "text-red-500", in_progress: "text-amber-500", resolved: "text-emerald-500", closed: "text-slate-500" };
@@ -10,13 +11,19 @@ const label = (value: string) => value.replaceAll("_", " ").replace(/\b\w/g, (le
 
 export default function EscalationsPage() {
   const [search, setSearch] = useState(""); const [status, setStatus] = useState("");
-  const [items, setItems] = useState<EscalationApi[]>([]); const [counts, setCounts] = useState({ open: 0, progress: 0, resolved: 0 });
   const [selected, setSelected] = useState<EscalationApi | null>(null); const [drawerLoading, setDrawerLoading] = useState(false);
-  const [loading, setLoading] = useState(true); const [error, setError] = useState("");
-  const load = () => { setLoading(true); void getEscalations({ search, status: status || undefined }).then((result) => { setLoading(false); if (!result.success) return setError(result.error); setError(""); setItems(result.data.escalations); setCounts({ open: result.data.open_count, progress: result.data.in_progress_count, resolved: result.data.resolved_count }); }); };
-  useEffect(() => { const timer = window.setTimeout(load, 300); return () => window.clearTimeout(timer); }, [search, status]);
+  const [error, setError] = useState("");
+
+  const { data: escalationsRes, isLoading: loading, refetch } = useGetEscalationsQuery({ search: search.trim() || undefined, status: status || undefined });
+  const items = escalationsRes?.escalations ?? [];
+  const counts = {
+    open: escalationsRes?.open_count ?? 0,
+    progress: escalationsRes?.in_progress_count ?? 0,
+    resolved: escalationsRes?.resolved_count ?? 0,
+  };
+
   const openDrawer = async (item: EscalationApi) => { setSelected(item); setDrawerLoading(true); const result = await getEscalation(item.escalation_id); setDrawerLoading(false); if (result.success) setSelected(result.data); else setError(result.error); };
-  const update = async (next: string, notes: string) => { if (!selected) return false; const result = await updateEscalationStatus(selected.escalation_id, next, notes); if (!result.success) { setError(result.error); return false; } setSelected(null); load(); return true; };
+  const update = async (next: string, notes: string) => { if (!selected) return false; const result = await updateEscalationStatus(selected.escalation_id, next, notes); if (!result.success) { setError(result.error); return false; } setSelected(null); void refetch(); return true; };
 
   return <div className="space-y-5 pb-10">
     <div className="flex flex-wrap gap-2"><div className="relative min-w-[260px] flex-1"><MdSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" /><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search escalations..." className="h-10 w-full rounded border border-slate-200 bg-white pl-9 pr-3 text-sm outline-none focus:border-sky-400" /></div><select value={status} onChange={(e) => setStatus(e.target.value)} className="h-10 rounded border border-slate-200 bg-white px-3 text-sm"><option value="">All statuses</option><option value="open">Open ({counts.open})</option><option value="in_progress">In Progress ({counts.progress})</option><option value="resolved">Resolved ({counts.resolved})</option><option value="closed">Closed</option></select></div>
