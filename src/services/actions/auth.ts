@@ -3,7 +3,7 @@ const REFRESH = "cleanones_manager_refresh_token";
 const BASE = (process.env.NEXT_PUBLIC_API_BASE_URL ?? process.env.API_BASE_URL ?? "http://10.10.28.191:8084").replace(/\/$/, "");
 
 export type AuthResponse = { message: string; access_token: string; refresh_token: string; token_type: string; name: string; role: string; is_approved: boolean; approval_status: string; is_temporary_password?: boolean };
-export type ActionResult<T = string> = { success: true; data: T } | { success: false; error: string };
+export type ActionResult<T = string> = { success: true; data: T } | { success: false; error: string; status?: number };
 
 function setClientCookie(name: string, value: string, maxAgeSeconds?: number) {
   if (typeof document === "undefined") return;
@@ -41,7 +41,7 @@ function message(value: unknown, fallback: string) {
 }
 
 async function request<T>(path: string, init: RequestInit): Promise<ActionResult<T>> {
-  if (!BASE) return { success: false, error: "API_BASE_URL is not configured" };
+  if (!BASE) return { success: false, error: "API_BASE_URL is not configured", status: 500 };
   const method = (init.method ?? "GET").toUpperCase();
   const url = `${BASE}${path}`;
   const startedAt = Date.now();
@@ -57,13 +57,13 @@ async function request<T>(path: string, init: RequestInit): Promise<ActionResult
     if (process.env.NODE_ENV !== "production") {
       console.info(`[API] ${method} ${url} -> ${response.status} (${Date.now() - startedAt}ms)`);
     }
-    if (!response.ok) return { success: false, error: message(body, "Request failed") };
+    if (!response.ok) return { success: false, error: message(body, "Request failed"), status: response.status };
     return { success: true, data: (body ?? text) as T };
   } catch (error) {
     if (process.env.NODE_ENV !== "production") {
       console.error(`[API] ${method} ${url} -> NETWORK ERROR (${Date.now() - startedAt}ms)`, error);
     }
-    return { success: false, error: "Unable to connect to the server" };
+    return { success: false, error: "Unable to connect to the server", status: 500 };
   }
 }
 
@@ -128,7 +128,10 @@ export async function authenticated<T>(path: string, init: RequestInit): Promise
   }
   if (!token) { const refresh = await refreshSession(); if (!refresh.success) return refresh as ActionResult<T>; token = refresh.data.access_token; }
   let result = await request<T>(path, { ...init, headers: { ...init.headers, Authorization: `Bearer ${token}` } } as RequestInit);
-  if (!result.success && result.error.includes("401")) { const refresh = await refreshSession(); if (refresh.success) result = await request<T>(path, { ...init, headers: { ...init.headers, Authorization: `Bearer ${refresh.data.access_token}` } } as RequestInit); }
+  if (!result.success && (result.status === 401 || result.status === 403 || result.error.includes("401") || result.error.toLowerCase().includes("credential") || result.error.toLowerCase().includes("unauthorized"))) {
+    const refresh = await refreshSession();
+    if (refresh.success) result = await request<T>(path, { ...init, headers: { ...init.headers, Authorization: `Bearer ${refresh.data.access_token}` } } as RequestInit);
+  }
   return result;
 }
 export async function changePassword(input: { old_password: string; new_password: string }) { return authenticated<string>("/auth/change-password", { method: "POST", body: JSON.stringify(input) }); }
