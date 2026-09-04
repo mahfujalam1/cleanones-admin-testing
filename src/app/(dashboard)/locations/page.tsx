@@ -13,11 +13,18 @@ import { useGetLocationsQuery } from '@/redux/api/dashboardApi';
 import { CardGridSkeleton } from '@/components/shared/SkeletonLoader';
 import { BackendPagination } from '@/components/shared/BackendPagination';
 import { Select } from '@/components/ui/select';
+import { usePathname } from 'next/navigation';
+import { getLocale } from '@/lib/locale';
+import { getDashboardTranslation, DashboardTranslationDict } from '@/lib/translations';
 
 const ALL_FILTER_VALUE = '__all__';
 type LocationOption = { id: string; name: string; total_rooms: number };
 
 export default function LocationsPage() {
+    const pathname = usePathname();
+    const locale = getLocale(pathname);
+    const t = getDashboardTranslation(locale);
+
     const [search, setSearch] = useState('');
     const [showModal, setShowModal] = useState(false);
     const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
@@ -116,7 +123,7 @@ export default function LocationsPage() {
                         <MdSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg" />
                         <input
                             type="text"
-                            placeholder="Search locations..."
+                            placeholder={t.locations.searchPlaceholder}
                             value={search}
                             onChange={(e) => {
                                 setSearch(e.target.value);
@@ -129,23 +136,23 @@ export default function LocationsPage() {
                         value={clientsLoading ? '' : clientId || ALL_FILTER_VALUE}
                         onValueChange={handleClientChange}
                         options={[
-                            { value: ALL_FILTER_VALUE, label: 'All clients' },
+                            { value: ALL_FILTER_VALUE, label: t.common.allClients },
                             ...clients.map((client) => ({
                                 value: client.id,
                                 label: client.company_name || client.primary_contact_name || 'Unnamed client',
                             })),
                         ]}
-                        placeholder={clientsLoading ? 'Loading clients...' : 'All clients'}
+                        placeholder={clientsLoading ? `${t.common.allClients}...` : t.common.allClients}
                         disabled={clientsLoading}
                     />
                     <Select
                         value={locationsLoading ? '' : locationId || (clientId ? ALL_FILTER_VALUE : '')}
                         onValueChange={handleLocationChange}
                         options={[
-                            { value: ALL_FILTER_VALUE, label: 'All locations' },
+                            { value: ALL_FILTER_VALUE, label: t.common.allLocations },
                             ...locationOptions.map((location) => ({ value: location.id, label: location.name })),
                         ]}
-                        placeholder={!clientId ? 'Select client first' : locationsLoading ? 'Loading locations...' : 'All locations'}
+                        placeholder={!clientId ? t.common.allLocations : locationsLoading ? `${t.common.allLocations}...` : t.common.allLocations}
                         disabled={!clientId || locationsLoading}
                     />
                 </div>
@@ -155,13 +162,13 @@ export default function LocationsPage() {
                         onClick={() => setImportOpen(true)}
                         className="flex h-10 items-center gap-1.5 rounded border border-gray-200 bg-white px-4 text-sm font-semibold text-gray-700 shadow-sm hover:border-sky-300"
                     >
-                        <MdUploadFile className="text-lg text-sky-500" /> Bulk Import
+                        <MdUploadFile className="text-lg text-sky-500" /> {t.common.bulkImport}
                     </button>
                     <button
                         onClick={() => setShowModal(true)}
                         className="flex h-10 items-center justify-center gap-1.5 rounded bg-[#0ea5e9] px-4 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#0284c7] cursor-pointer whitespace-nowrap"
                     >
-                        + Add Location
+                        {t.locations.addLocation}
                     </button>
                 </div>
             </div>
@@ -174,8 +181,8 @@ export default function LocationsPage() {
                 {loading ? <CardGridSkeleton /> : locations.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-24 text-center">
                         <MdOutlineLocationOn className="text-5xl text-gray-300 mb-3" />
-                        <p className="text-sm font-semibold text-gray-500">No locations found</p>
-                        <p className="text-xs text-gray-400 mt-1">Try a different search or add a new location.</p>
+                        <p className="text-sm font-semibold text-gray-500">{t.locations.noLocationsFound}</p>
+                        <p className="text-xs text-gray-400 mt-1">{t.common.adjustFilters}</p>
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4  gap-4">
@@ -185,6 +192,7 @@ export default function LocationsPage() {
                                 location={location}
                                 onClick={() => setSelectedLocation(location)}
                                 isSelected={selectedLocation?.id === location.id}
+                                t={t}
                             />
                         ))}
                     </div>
@@ -216,9 +224,10 @@ interface LocationCardProps {
     location: Location;
     onClick: () => void;
     isSelected: boolean;
+    t: DashboardTranslationDict;
 }
 
-function LocationCard({ location, onClick, isSelected }: LocationCardProps) {
+function LocationCard({ location, onClick, isSelected, t }: LocationCardProps) {
     return (
         <div
             onClick={onClick}
@@ -251,17 +260,18 @@ function LocationCard({ location, onClick, isSelected }: LocationCardProps) {
             <div className="grid grid-cols-3 divide-x divide-gray-100 mt-auto">
                 <div className="px-2 py-2 text-center">
                     <p className="text-sm font-bold text-gray-900">{location.floors}</p>
-                    <p className="text-[10px] text-gray-400">Floors</p>
+                    <p className="text-[10px] text-gray-400">{t.common.floors}</p>
                 </div>
                 <div className="px-2 py-2 text-center">
                     <p className="text-sm font-bold text-gray-900">{location.rooms}</p>
-                    <p className="text-[10px] text-gray-400">Rooms</p>
+                    <p className="text-[10px] text-gray-400">{t.common.rooms}</p>
                 </div>
                 <div className="px-2 py-2 text-center">
                     <p className="text-sm font-bold text-gray-900">{location.requiredHours}h</p>
-                    <p className="text-[10px] text-gray-400">Required</p>
+                    <p className="text-[10px] text-gray-400">{t.common.required}</p>
                 </div>
             </div>
         </div>
     );
 }
+

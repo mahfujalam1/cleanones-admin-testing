@@ -2,6 +2,9 @@
 
 import React from 'react';
 import { Worker } from './types';
+import { usePathname } from 'next/navigation';
+import { getLocale } from '@/lib/locale';
+import { getDashboardTranslation } from '@/lib/translations';
 
 interface WorkersTableProps {
   workers: Worker[];
@@ -9,6 +12,10 @@ interface WorkersTableProps {
 }
 
 export function WorkersTable({ workers, onViewWorker }: WorkersTableProps) {
+  const pathname = usePathname();
+  const locale = getLocale(pathname);
+  const t = getDashboardTranslation(locale);
+
   const statusColor = (status: Worker['status']) => {
     switch (status) {
       case 'On Shift': return 'text-[#0ea5e9]';
@@ -23,19 +30,19 @@ export function WorkersTable({ workers, onViewWorker }: WorkersTableProps) {
       : 'bg-[#8b5cf6]/10 text-[#8b5cf6]';
 
   return (
-    <div className="dashboard-card overflow-hidden">
+    <div className="dashboard-card overflow-hidden border border-slate-200 bg-white rounded-lg">
       <div className="overflow-x-auto w-full">
         <div className="min-w-[1000px]">
           {/* Header row */}
           <div className="grid grid-cols-[2fr_1.2fr_1.2fr_1.4fr_1.4fr_0.8fr_0.8fr_0.6fr] gap-2 px-6 py-3 border-b border-gray-100 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-            <div>Name</div>
-            <div>Worker Type</div>
-            <div>Position</div>
-            <div>Location</div>
-            <div>Languages</div>
-            <div>Hours</div>
-            <div>Status</div>
-            <div>Action</div>
+            <div>{t.managerAccess.name}</div>
+            <div>{t.managerAccess.role}</div>
+            <div>{t.managerAccess.permissions}</div>
+            <div>{t.extraServices.location}</div>
+            <div>{t.settings.language}</div>
+            <div>{t.common.duration}</div>
+            <div>{t.common.status}</div>
+            <div>{t.topbar.viewAll}</div>
           </div>
 
           {/* Rows */}
@@ -92,11 +99,14 @@ export function WorkersTable({ workers, onViewWorker }: WorkersTableProps) {
                 onClick={() => onViewWorker(worker)}
                 className="text-xs text-[#0ea5e9] font-medium hover:underline cursor-pointer opacity-60 group-hover:opacity-100 transition-opacity"
               >
-                View
+                {t.topbar.viewAll}
               </button>
             </div>
           </div>
         ))}
+        {workers.length === 0 && (
+          <p className="py-12 text-center text-xs text-slate-400">{t.common.noDataFound}</p>
+        )}
           </div>
         </div>
       </div>

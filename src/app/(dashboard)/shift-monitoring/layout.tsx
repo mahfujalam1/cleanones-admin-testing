@@ -5,20 +5,23 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { getLocale, localizePath, stripLocale } from '@/lib/locale';
 
+import { getDashboardTranslation } from '@/lib/translations';
+
 export default function ShiftMonitoringLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const locale = getLocale(pathname);
   const routePath = stripLocale(pathname);
+  const t = getDashboardTranslation(locale);
 
   const tabs = [
     { 
-      name: 'Live Status', 
+      name: t.shiftMonitoring.title, 
       path: '/shift-monitoring',
       icon: <span className="text-lg">⚡</span>,
       exact: true
     },
     { 
-      name: 'Attendance & Time Tracking', 
+      name: t.dashboard.workerAttendance, 
       path: '/shift-monitoring/attendance-and-time-tracking',
       icon: (
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -28,7 +31,7 @@ export default function ShiftMonitoringLayout({ children }: { children: React.Re
       exact: false
     },
     { 
-      name: 'Location Statistics', 
+      name: t.dashboard.liveOperationsByClient, 
       path: '/shift-monitoring/location-statistics',
       icon: (
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

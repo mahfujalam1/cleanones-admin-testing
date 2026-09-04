@@ -13,6 +13,9 @@ import { createWorker, getWorkerApprovals } from '@/services/actions/workers';
 import { useGetWorkersQuery } from '@/redux/api/dashboardApi';
 import { TableSkeleton } from '@/components/shared/SkeletonLoader';
 import { BackendPagination } from '@/components/shared/BackendPagination';
+import { usePathname } from 'next/navigation';
+import { getLocale } from '@/lib/locale';
+import { getDashboardTranslation } from '@/lib/translations';
 
 type NewWorker = Omit<Worker, 'id' | 'code' | 'completedShifts' | 'avgPhotoScore' | 'weeklyAvailability' | 'monthlyHours' | 'lateDays' | 'absentDays' | 'attendanceRecords' | 'documents' | 'invoices' | 'shiftRecords'> & {
   nidFile?: string;
@@ -24,6 +27,10 @@ const WORKER_FILTERS: WorkerFilter[] = ['All Workers', 'Employees', 'Freelancers
 const STATUS_FILTERS: StatusFilter[] = ['All', 'On Shift', 'Active', 'Off Duty'];
 
 export default function WorkersPage() {
+  const pathname = usePathname();
+  const locale = getLocale(pathname);
+  const t = getDashboardTranslation(locale);
+
   const [pendingCount, setPendingCount] = useState(0);
   const [error, setError] = useState('');
   const [page, setPage] = useState(1); const limit = 10;
@@ -105,7 +112,7 @@ export default function WorkersPage() {
           <MdSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg" />
           <input
             type="text"
-            placeholder="Search workers..."
+            placeholder={t.workers.searchPlaceholder}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-9 pr-4 py-2 border border-gray-200 rounded text-sm w-64 focus:outline-none shadow-sm bg-gray-50"
@@ -124,7 +131,7 @@ export default function WorkersPage() {
                   : 'text-gray-600 hover:text-gray-900'
                 }`}
             >
-              {f}
+              {f === 'All Workers' ? t.common.allWorkers : f === 'Employees' ? t.workers.employees : t.workers.freelancers}
             </button>
           ))}
         </div>
@@ -140,7 +147,7 @@ export default function WorkersPage() {
                   : 'text-gray-600 hover:text-gray-900'
                 }`}
             >
-              {f}
+              {f === 'All' ? t.dashboard.all : f === 'Active' ? t.common.active : f === 'On Shift' ? t.dashboard.activeShifts : t.shiftMonitoring.missing}
             </button>
           ))}
         </div>
@@ -149,27 +156,27 @@ export default function WorkersPage() {
         {/* Spacer + Add */}
         <div className="ml-auto flex gap-2">
           <button onClick={() => setImportOpen(true)} className="flex h-9 items-center gap-1.5 rounded border border-gray-200 bg-white px-4 text-sm font-semibold text-gray-700 shadow-sm hover:border-sky-300">
-            <MdUploadFile className="text-lg text-sky-500" /> Bulk Import
+            <MdUploadFile className="text-lg text-sky-500" /> {t.common.bulkImport}
           </button>
           <button
             onClick={() => setAddModalOpen(true)}
             className="flex items-center gap-1.5 h-9 px-4 bg-[#0ea5e9] hover:bg-[#0284c7] text-white text-sm font-semibold rounded shadow-sm transition-colors cursor-pointer"
           >
             <MdAdd className="text-lg" />
-            Add Worker
+            {t.workers.addWorker}
           </button>
         </div>
       </div>
 
       {/* Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard icon={<MdPeople className="text-[#0ea5e9] text-2xl" />} value={counts.total} label="Total Workers" />
-        <StatCard icon={<MdBadge className="text-[#6366f1] text-2xl" />} value={counts.employees} label="Employees" />
-        <StatCard icon={<MdWorkOutline className="text-[#f59e0b] text-2xl" />} value={counts.freelancers} label="Freelancers" />
+        <StatCard icon={<MdPeople className="text-[#0ea5e9] text-2xl" />} value={counts.total} label={t.workers.totalWorkers} />
+        <StatCard icon={<MdBadge className="text-[#6366f1] text-2xl" />} value={counts.employees} label={t.workers.employees} />
+        <StatCard icon={<MdWorkOutline className="text-[#f59e0b] text-2xl" />} value={counts.freelancers} label={t.workers.freelancers} />
         <StatCard
           icon={<MdHourglassTop className="text-amber-500 text-2xl" />}
           value={pendingCount}
-          label="Pending Approvals"
+          label={t.workers.pendingApprovals}
           onClick={() => setPendingModalOpen(true)}
           badgeText={pendingCount > 0 ? "Review Requests" : undefined}
           highlight={pendingCount > 0}
@@ -256,4 +263,5 @@ function StatCard({
     </div>
   );
 }
+
 

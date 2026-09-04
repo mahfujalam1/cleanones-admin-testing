@@ -40,9 +40,16 @@ const TABLE_HEADERS = [
 
 // ── Component ────────────────────────────────────────────────────────────────
 
+import { usePathname } from "next/navigation";
+import { getLocale } from "@/lib/locale";
+import { getDashboardTranslation } from "@/lib/translations";
 import { useGetPhotoReviewsQuery } from "@/redux/api/photoReviewsApi";
 
 export function PhotoReviewsPage() {
+    const pathname = usePathname();
+    const locale = getLocale(pathname);
+    const t = getDashboardTranslation(locale);
+
     const [activeFilter, setActiveFilter] = useState<ReviewStatus | "All">("All");
     const [search, setSearch] = useState("");
     const [page, setPage] = useState(1);
@@ -50,6 +57,26 @@ export function PhotoReviewsPage() {
     const [approveReview, setApproveReview] = useState<PhotoReview | null>(null);
     const [rejectReview, setRejectReview] = useState<PhotoReview | null>(null);
     const [error, setError] = useState("");
+
+    const filterTabs: { label: string; value: ReviewStatus | "All" }[] = [
+        { label: t.dashboard.all, value: "All" },
+        { label: t.photoReviews.pending, value: "Pending Review" },
+        { label: t.photoReviews.approved, value: "Approved" },
+        { label: t.photoReviews.rejected, value: "Rejected" },
+    ];
+
+    const tableHeaders = [
+        t.photoReviews.reviewId,
+        t.roster.worker,
+        t.extraServices.client,
+        t.extraServices.location,
+        t.extraServices.room,
+        t.roster.date,
+        t.photoReviews.score,
+        t.photoReviews.aiConfidence,
+        t.common.status,
+        t.common.actions || t.photoReviews.actions,
+    ];
 
     const status = activeFilter === "All" ? undefined : activeFilter.toLowerCase().replaceAll(" ", "_");
     const { data: reviewsRes, isLoading: loading, refetch } = useGetPhotoReviewsQuery({
@@ -170,7 +197,7 @@ export function PhotoReviewsPage() {
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                         <input
                             type="text"
-                            placeholder="Search by ID, cleaner, location, room..."
+                            placeholder={t.photoReviews.searchPlaceholder}
                             value={search}
                             onChange={(e) => handleSearch(e.target.value)}
                             className="w-full pl-9 pr-3 py-2 text-xs bg-white border border-gray-200 rounded text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#0ea5e9] focus:border-[#0ea5e9]"
@@ -179,7 +206,7 @@ export function PhotoReviewsPage() {
 
                     {/* Filter tabs */}
                     <div className="flex gap-1 rounded border border-gray-200 bg-white p-1 shrink-0">
-                        {FILTER_TABS.map((tab) => (
+                        {filterTabs.map((tab) => (
                             <button
                                 key={tab.value}
                                 onClick={() => handleFilterChange(tab.value)}
@@ -198,7 +225,7 @@ export function PhotoReviewsPage() {
                 {/* Pending pill */}
                 {pendingCount > 0 && (
                     <span className="text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-full whitespace-nowrap">
-                        {pendingCount} pending review{pendingCount !== 1 ? "s" : ""}
+                        {pendingCount} {t.photoReviews.pending}
                     </span>
                 )}
             </div>
@@ -209,7 +236,7 @@ export function PhotoReviewsPage() {
                     <table className="w-full text-sm border-collapse min-w-[720px]">
                         <thead>
                             <tr className="bg-slate-50 border-b border-slate-200">
-                                {TABLE_HEADERS.map((h, i) => (
+                                {tableHeaders.map((h, i) => (
                                     <th
                                         key={i}
                                         className="text-left text-[11px] font-bold uppercase tracking-wider text-slate-500 px-4 py-3 whitespace-nowrap"
@@ -222,14 +249,14 @@ export function PhotoReviewsPage() {
                         <tbody className="divide-y divide-slate-100">
                             {loading ? (
                                 <tr>
-                                    <td colSpan={TABLE_HEADERS.length} className="p-0">
-                                        <TableSkeleton rows={7} columns={TABLE_HEADERS.length} />
+                                    <td colSpan={tableHeaders.length} className="p-0">
+                                        <TableSkeleton rows={7} columns={tableHeaders.length} />
                                     </td>
                                 </tr>
                             ) : paginated.length === 0 ? (
                                 <tr>
-                                    <td colSpan={TABLE_HEADERS.length} className="text-center py-14 text-xs text-slate-400">
-                                        No reviews found.
+                                    <td colSpan={tableHeaders.length} className="text-center py-14 text-xs text-slate-400">
+                                        {t.photoReviews.noReviews}
                                     </td>
                                 </tr>
                             ) : (

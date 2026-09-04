@@ -1,10 +1,13 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { MdAccessTime, MdAdd, MdArrowForward, MdBusiness, MdCall, MdCalendarToday, MdCheckCircle, MdClose, MdLocationOn, MdPeople, MdUploadFile, MdWarningAmber } from "react-icons/md";
 import { CardGridSkeleton, DetailSkeleton } from "@/components/shared/SkeletonLoader";
 import { useGetDashboardOverviewQuery, useGetInProgressShiftsQuery } from "@/redux/api/dashboardApi";
 import type { DashboardOverview, InProgressShift } from "@/services/actions/dashboard";
+import { getLocale } from "@/lib/locale";
+import { getDashboardTranslation } from "@/lib/translations";
 
 const normalizeStatus = (value: string) => value.toLowerCase().replaceAll(" ", "_");
 const uniqueBy = <T,>(items: T[], getKey: (item: T) => string) => {
@@ -17,6 +20,10 @@ const uniqueBy = <T,>(items: T[], getKey: (item: T) => string) => {
   });
 };
 export default function DashboardPage() {
+  const pathname = usePathname();
+  const locale = getLocale(pathname);
+  const t = getDashboardTranslation(locale);
+
   const [filter, setFilter] = useState("");
   const [actionsOpen, setActionsOpen] = useState(false);
   const [selectedLateWorker, setSelectedLateWorker] = useState<{
@@ -32,7 +39,7 @@ export default function DashboardPage() {
   const shifts: InProgressShift[] = shiftsRes?.shifts ?? [];
 
   if (loadingOverview && !overview) return <div className="space-y-5"><DetailSkeleton blocks={2} /><CardGridSkeleton cards={4} /><DetailSkeleton blocks={7} /></div>;
-  if (!overview) return <p className="rounded bg-red-50 p-4 text-sm text-red-700">Dashboard could not be loaded</p>;
+  if (!overview) return <p className="rounded bg-red-50 p-4 text-sm text-red-700">{t.common.noDataFound}</p>;
 
   const attentionPills = uniqueBy(overview.attention_banner.call_pills, (item) => item.worker_id);
   const liveGroups = uniqueBy(overview.live_operations_by_client, (group) => `${group.client_id}-${group.location_id}`).map((group) => ({
@@ -45,21 +52,34 @@ export default function DashboardPage() {
   });
   const cards = overview.summary_cards;
 
+  const translateGreeting = (greeting: string) => {
+    if (!greeting) return "";
+    let str = greeting;
+    if (str.startsWith("Good morning")) {
+      str = str.replace("Good morning", t.dashboard.goodMorning);
+    } else if (str.startsWith("Good afternoon")) {
+      str = str.replace("Good afternoon", t.dashboard.goodAfternoon);
+    } else if (str.startsWith("Good evening")) {
+      str = str.replace("Good evening", t.dashboard.goodEvening);
+    }
+    return str;
+  };
+
   return (
     <div className="space-y-6 pb-10">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[.18em] text-sky-600">Operations overview</p>
-          <h1 className="mt-1 text-2xl font-bold text-slate-950">{overview.greeting}</h1>
+          <p className="text-xs font-semibold uppercase tracking-[.18em] text-sky-600">{t.dashboard.overview}</p>
+          <h1 className="mt-1 text-2xl font-bold text-slate-950">{translateGreeting(overview.greeting)}</h1>
           <p className="mt-1 text-sm text-slate-500">{overview.subtitle_date}</p>
         </div>
         <div className="relative">
           <button onClick={() => setActionsOpen((open) => !open)} className="flex h-10 items-center gap-2 rounded bg-sky-500 px-4 text-sm font-semibold text-white">
-            <MdAdd />Create or add
+            <MdAdd />{t.dashboard.createOrAdd}
           </button>
           {actionsOpen && (
             <div className="absolute right-0 z-20 mt-2 w-56 rounded border bg-white p-1.5 shadow">
-              {[["Create a shift", "/roster", MdCalendarToday], ["Add client or location", "/clients", MdBusiness], ["Bulk import data", "/users", MdUploadFile]].map(([label, href, Icon]) => (
+              {[[t.dashboard.createShift, "/roster", MdCalendarToday], [t.dashboard.addClientOrLocation, "/clients", MdBusiness], [t.dashboard.bulkImportData, "/users", MdUploadFile]].map(([label, href, Icon]) => (
                 <Link key={label as string} href={href as string} className="flex items-center gap-3 rounded px-3 py-2.5 text-sm hover:bg-slate-50">
                   <Icon className="text-sky-500" />{label as string}
                 </Link>
@@ -78,14 +98,14 @@ export default function DashboardPage() {
           <div className="flex-1 min-w-48">
             <div className="flex flex-wrap items-center gap-2">
               <h2 className={`font-bold ${overview.attention_banner.people_need_attention_count > 0 ? "text-red-950" : "text-slate-900"}`}>
-                {overview.attention_banner.people_need_attention_count} people need attention
+                {overview.attention_banner.people_need_attention_count} {t.dashboard.peopleNeedAttention}
               </h2>
               <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold ${overview.attention_banner.people_need_attention_count > 0 ? "bg-red-100 text-red-700" : "bg-emerald-100 text-emerald-700"}`}>
-                {overview.attention_banner.people_need_attention_count > 0 ? overview.attention_banner.badge_text : "All on time"}
+                {overview.attention_banner.people_need_attention_count > 0 ? overview.attention_banner.badge_text : t.dashboard.allOnTime}
               </span>
             </div>
             <p className={`text-xs sm:text-sm mt-0.5 ${overview.attention_banner.people_need_attention_count > 0 ? "text-red-700" : "text-slate-500"}`}>
-              {overview.attention_banner.people_need_attention_count > 0 ? overview.attention_banner.banner_subtitle : "No workers require immediate attention or replacement."}
+              {overview.attention_banner.people_need_attention_count > 0 ? overview.attention_banner.banner_subtitle : t.dashboard.noWorkersRequireAttention}
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -108,7 +128,7 @@ export default function DashboardPage() {
               ))
             ) : (
               <span className="text-xs text-emerald-700 font-medium bg-emerald-50 border border-emerald-200/80 rounded-lg px-3 py-1.5">
-                ✓ All shifts on schedule
+                {t.dashboard.allShiftsOnSchedule}
               </span>
             )}
           </div>
@@ -120,14 +140,14 @@ export default function DashboardPage() {
         <div className="flex items-center gap-2">
           <MdAccessTime className={`text-lg ${fallingBehind.length > 0 ? "text-amber-600" : "text-slate-400"}`} />
           <h2 className={`font-bold text-sm sm:text-base ${fallingBehind.length > 0 ? "text-amber-950" : "text-slate-900"}`}>
-            Falling behind schedule
+            {t.dashboard.fallingBehindSchedule}
           </h2>
           <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${fallingBehind.length > 0 ? "bg-amber-200/90 text-amber-900" : "bg-slate-100 text-slate-600"}`}>
-            {fallingBehind.length} alerts
+            {fallingBehind.length} {t.dashboard.alerts}
           </span>
         </div>
         <p className="text-xs text-slate-500 mt-1">
-          {fallingBehind.length > 0 ? "Shift is nearly over and assigned objects may not finish on time." : "All active shifts are currently progressing according to schedule."}
+          {fallingBehind.length > 0 ? t.dashboard.shiftNearlyOver : t.dashboard.allActiveShiftsProgressing}
         </p>
         {fallingBehind.length > 0 && (
           <div className="mt-3 grid gap-2.5 lg:grid-cols-2">
@@ -158,21 +178,21 @@ export default function DashboardPage() {
 
       {/* 4 Summary Cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Metric icon={<MdAccessTime />} value={cards.active_shifts_count} label="Active shifts" tone="bg-sky-50 text-sky-600" />
-        <Metric icon={<MdPeople />} value={cards.workers_on_site_count} label="Workers on site" tone="bg-violet-50 text-violet-600" />
-        <Metric icon={<MdWarningAmber />} value={cards.late_no_show_count} label="Late / no show" tone="bg-red-50 text-red-600" />
-        <Metric icon={<MdCheckCircle />} value={cards.reviews_pending_count} label="Reviews pending" tone="bg-amber-50 text-amber-600" />
+        <Metric icon={<MdAccessTime />} value={cards.active_shifts_count} label={t.dashboard.activeShifts} tone="bg-sky-50 text-sky-600" />
+        <Metric icon={<MdPeople />} value={cards.workers_on_site_count} label={t.dashboard.workersOnSite} tone="bg-violet-50 text-violet-600" />
+        <Metric icon={<MdWarningAmber />} value={cards.late_no_show_count} label={t.dashboard.lateNoShow} tone="bg-red-50 text-red-600" />
+        <Metric icon={<MdCheckCircle />} value={cards.reviews_pending_count} label={t.dashboard.reviewsPending} tone="bg-amber-50 text-amber-600" />
       </div>
 
       {/* Live Operations by Client */}
       <section className="dashboard-card overflow-hidden">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b p-5">
           <div>
-            <h2 className="font-bold text-slate-900">Live operations by client</h2>
-            <p className="text-xs text-slate-500">Locations first, then people working there</p>
+            <h2 className="font-bold text-slate-900">{t.dashboard.liveOperationsByClient}</h2>
+            <p className="text-xs text-slate-500">{t.dashboard.locationsFirst}</p>
           </div>
           <div className="flex rounded-lg bg-slate-100 p-1">
-            {[["", "All"], ["on_time", "On time"], ["late", "Late"], ["no_show", "No show"]].map(([value, text]) => (
+            {[["", t.dashboard.all], ["on_time", t.dashboard.onTime], ["late", t.dashboard.late], ["no_show", t.dashboard.noShow]].map(([value, text]) => (
               <button key={text} onClick={() => setFilter(value)} className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-all ${filter === value ? "bg-white text-sky-600 shadow-2xs" : "text-slate-500 hover:text-slate-700"}`}>
                 {text}
               </button>
@@ -192,7 +212,7 @@ export default function DashboardPage() {
                 </div>
                 <span className="ml-auto text-xs text-slate-400">{group.roster_count_text}</span>
                 <Link href={`/live-operations?clientId=${encodeURIComponent(group.client_id)}&locationId=${encodeURIComponent(group.location_id)}`} className="text-xs font-semibold text-sky-600 hover:underline">
-                  View all
+                  {t.topbar.viewAll}
                 </Link>
               </div>
               <div className="space-y-1.5">
@@ -219,7 +239,7 @@ export default function DashboardPage() {
               </div>
             </div>
           ))}
-          {liveGroups.length === 0 && <p className="py-16 text-center text-sm text-slate-500">No live operations found</p>}
+          {liveGroups.length === 0 && <p className="py-16 text-center text-sm text-slate-500">{t.common.noDataFound}</p>}
         </div>
       </section>
 
@@ -227,19 +247,19 @@ export default function DashboardPage() {
       <Link href="/escalations" className="dashboard-card flex items-center gap-4 p-5 hover:border-amber-300 transition-colors">
         <MdWarningAmber className="text-2xl text-amber-500" />
         <div>
-          <p className="font-bold text-slate-900">{overview.open_escalations_banner.open_escalations_count} open escalations</p>
-          <p className="text-xs text-slate-500">{overview.open_escalations_banner.subtitle}</p>
+          <p className="font-bold text-slate-900">{overview.open_escalations_banner.open_escalations_count} {t.dashboard.openEscalations}</p>
+          <p className="text-xs text-slate-500">{overview.open_escalations_banner.subtitle || t.dashboard.allEscalationsResolved}</p>
         </div>
         <MdArrowForward className="ml-auto text-slate-400" />
       </Link>
 
-      {/* Attendance Alert Modal (Matching Screenshot 1) */}
+      {/* Attendance Alert Modal */}
       {selectedLateWorker && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4 animate-in fade-in">
           <div className="w-full max-w-sm rounded-xl bg-white p-5 shadow-2xl border border-slate-200 animate-in zoom-in-95">
             <div className="flex items-center justify-between pb-2">
               <span className="text-[11px] font-bold uppercase tracking-wider text-red-500">
-                Attendance Alert
+                {t.dashboard.attendanceAlert}
               </span>
               <button
                 type="button"
@@ -251,7 +271,7 @@ export default function DashboardPage() {
             </div>
             <h3 className="text-base font-bold text-slate-900 mb-3">{selectedLateWorker.worker_name}</h3>
             <div className="rounded-lg bg-red-50 p-4 text-red-700 border border-red-100 mb-4">
-              <b className="block text-sm font-bold">{selectedLateWorker.late_duration_text || "Late"}</b>
+              <b className="block text-sm font-bold">{selectedLateWorker.late_duration_text || t.dashboard.late}</b>
               {selectedLateWorker.delay_reason && (
                 <p className="text-xs text-red-600 mt-1">Reason: {selectedLateWorker.delay_reason}</p>
               )}
@@ -262,7 +282,7 @@ export default function DashboardPage() {
                 className="w-full flex items-center justify-center gap-1.5 h-10 rounded-lg border border-emerald-600 text-emerald-700 text-xs font-semibold hover:bg-emerald-50 transition-colors"
               >
                 <MdCall className="text-sm" />
-                Call employee
+                {t.dashboard.callEmployee}
               </a>
             </div>
           </div>
@@ -281,3 +301,4 @@ function Metric({ icon, value, label, tone }: { icon: React.ReactNode; value: nu
     </div>
   );
 }
+

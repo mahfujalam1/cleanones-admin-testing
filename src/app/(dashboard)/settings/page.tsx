@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   MdChevronRight,
   MdDescription,
@@ -14,8 +15,14 @@ import { changePassword } from "@/services/actions/auth";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setUser } from "@/store/slices/auth.slice";
 import { DetailSkeleton } from "@/components/shared/SkeletonLoader";
+import { getLocale } from "@/lib/locale";
+import { getDashboardTranslation } from "@/lib/translations";
 
 export default function SettingsPage() {
+  const pathname = usePathname();
+  const locale = getLocale(pathname);
+  const t = getDashboardTranslation(locale);
+
   const dispatch = useAppDispatch();
   const user = useAppSelector((state) => state.auth.user);
   const [company, setCompany] = useState({ company_name: "", email: "", phone: "", address: "", website: "" });
@@ -37,7 +44,7 @@ export default function SettingsPage() {
   useEffect(() => {
     void getManagerProfile().then((result) => { if (result.success && user) { const next = { ...user, id: result.data.id, name: result.data.full_name, email: result.data.email, profilePhoto: result.data.profile_photo }; dispatch(setUser(next)); localStorage.setItem("cleanones-dashboard-user", JSON.stringify(next)); } });
     void getCompanyProfile().then((result) => { if (result.success) setCompany({ company_name: result.data.company_name, email: result.data.email, phone: result.data.phone, address: result.data.address, website: result.data.website }); setLoading(false); });
-  }, [dispatch]);
+  }, [dispatch, user]);
 
   const saveProfile = async () => {
     if (!company.company_name.trim() || !company.email.trim()) return setProfileMessage("Company name and email are required");
@@ -80,38 +87,55 @@ export default function SettingsPage() {
     setConfirmPassword("");
   };
 
+  const companyFields = [
+    { key: "company_name", label: t.settings.companyName, type: "text" },
+    { key: "email", label: t.settings.companyEmail, type: "email" },
+    { key: "phone", label: t.settings.phoneNumber, type: "text" },
+    { key: "address", label: t.settings.address, type: "text" },
+    { key: "website", label: t.settings.website, type: "text" },
+  ] as const;
+
   return (
     <div className="space-y-6 pb-10">
       <div className="grid grid-cols-1 items-start gap-5 xl:grid-cols-2">
         <section className="flex min-w-0 flex-col">
           <h2 className="mb-3 flex h-7 items-center text-lg font-bold leading-none text-slate-950">
-            Company Profile
+            {t.settings.companyProfile}
           </h2>
           <div className="dashboard-card p-5">
-            {loading ? <DetailSkeleton blocks={5} /> :
-            <div className="space-y-4">
-              {([['company_name', 'Company Name'], ['email', 'Company Email'], ['phone', 'Phone Number'], ['address', 'Address'], ['website', 'Website']] as const).map(([key, label]) => <label key={key} className="block">
-                  <span className="mb-2 block text-xs font-medium text-slate-500">
-                    {label}
-                  </span>
-                  <input
-                    type={key === 'email' ? 'email' : 'text'}
-                    value={company[key]}
-                    onChange={(event) => setCompany((current) => ({ ...current, [key]: event.target.value }))}
-                    className="h-10 w-full rounded border border-gray-200 bg-gray-100 px-4 text-sm text-slate-800 shadow-sm outline-none transition-colors focus:border-[#0ea5e9] focus:bg-white focus:ring-1 focus:ring-[#0ea5e9]"
-                  />
-                </label>)}
-            </div>}
+            {loading ? (
+              <DetailSkeleton blocks={5} />
+            ) : (
+              <div className="space-y-4">
+                {companyFields.map(({ key, label, type }) => (
+                  <label key={key} className="block">
+                    <span className="mb-2 block text-xs font-medium text-slate-500">
+                      {label}
+                    </span>
+                    <input
+                      type={type}
+                      value={company[key]}
+                      onChange={(event) => setCompany((current) => ({ ...current, [key]: event.target.value }))}
+                      className="h-10 w-full rounded border border-gray-200 bg-gray-100 px-4 text-sm text-slate-800 shadow-sm outline-none transition-colors focus:border-[#0ea5e9] focus:bg-white focus:ring-1 focus:ring-[#0ea5e9]"
+                    />
+                  </label>
+                ))}
+              </div>
+            )}
 
-            {profileMessage && <p className={`mt-3 text-xs font-medium ${profileMessage.includes("successfully") ? "text-emerald-600" : "text-red-600"}`}>{profileMessage}</p>}
+            {profileMessage && (
+              <p className={`mt-3 text-xs font-medium ${profileMessage.includes("successfully") ? "text-emerald-600" : "text-red-600"}`}>
+                {profileMessage}
+              </p>
+            )}
 
             <button
               type="button"
               onClick={saveProfile}
               disabled={saving}
-              className="mt-4 h-10 rounded bg-[#0ea5e9] px-5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-[#0284c7]"
+              className="mt-4 h-10 rounded bg-[#0ea5e9] px-5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-[#0284c7] cursor-pointer"
             >
-              {saving ? "Saving..." : "Save Changes"}
+              {saving ? t.settings.saving : t.settings.saveChanges}
             </button>
           </div>
         </section>
@@ -119,13 +143,13 @@ export default function SettingsPage() {
         <section className="flex min-w-0 flex-col">
           <h2 className="mb-3 flex h-7 items-center gap-2 text-lg font-bold leading-none text-slate-950">
             <MdVpnKey className="text-xl" />
-            Change Password
+            {t.settings.changePassword}
           </h2>
           <form onSubmit={handlePasswordChange} className="dashboard-card p-5">
             <div className="space-y-4">
               <label className="block">
                 <span className="mb-2 block text-xs font-medium text-slate-500">
-                  Current Password
+                  {t.settings.currentPassword}
                 </span>
                 <div className="relative">
                   <input
@@ -139,7 +163,7 @@ export default function SettingsPage() {
                   <button
                     type="button"
                     onClick={() => setShowOld(!showOld)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-lg text-slate-400 hover:text-slate-600"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-lg text-slate-400 hover:text-slate-600 cursor-pointer"
                   >
                     {showOld ? <TbEyeOff /> : <TbEye />}
                   </button>
@@ -148,7 +172,7 @@ export default function SettingsPage() {
 
               <label className="block">
                 <span className="mb-2 block text-xs font-medium text-slate-500">
-                  New Password
+                  {t.settings.newPassword}
                 </span>
                 <div className="relative">
                   <input
@@ -162,7 +186,7 @@ export default function SettingsPage() {
                   <button
                     type="button"
                     onClick={() => setShowNew(!showNew)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-lg text-slate-400 hover:text-slate-600"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-lg text-slate-400 hover:text-slate-600 cursor-pointer"
                   >
                     {showNew ? <TbEyeOff /> : <TbEye />}
                   </button>
@@ -171,7 +195,7 @@ export default function SettingsPage() {
 
               <label className="block">
                 <span className="mb-2 block text-xs font-medium text-slate-500">
-                  Confirm New Password
+                  {t.settings.confirmPassword}
                 </span>
                 <div className="relative">
                   <input
@@ -185,7 +209,7 @@ export default function SettingsPage() {
                   <button
                     type="button"
                     onClick={() => setShowConfirm(!showConfirm)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-lg text-slate-400 hover:text-slate-600"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-lg text-slate-400 hover:text-slate-600 cursor-pointer"
                   >
                     {showConfirm ? <TbEyeOff /> : <TbEye />}
                   </button>
@@ -201,28 +225,28 @@ export default function SettingsPage() {
               disabled={passwordLoading}
               className="mt-4 h-10 rounded bg-[#0ea5e9] px-5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-[#0284c7] disabled:opacity-60 cursor-pointer"
             >
-              {passwordLoading ? "Updating..." : "Update Password"}
+              {passwordLoading ? t.settings.updating : t.settings.updatePassword}
             </button>
           </form>
         </section>
       </div>
 
       <section>
-        <h2 className="mb-3 flex h-7 items-center text-lg font-bold leading-none text-slate-950">Legal</h2>
+        <h2 className="mb-3 flex h-7 items-center text-lg font-bold leading-none text-slate-950">{t.settings.legal}</h2>
         <div className="dashboard-card overflow-hidden">
           <LegalRow
             href="/settings/legal/privacy-policy"
             icon={<MdSecurity />}
             iconClassName="bg-[#e0f2fe] text-[#0ea5e9]"
-            title="Privacy Policy"
-            subtitle="How we collect and protect your data"
+            title={t.settings.privacyPolicy}
+            subtitle={t.settings.privacyPolicySubtitle}
           />
           <LegalRow
             href="/settings/legal/terms-and-conditions"
             icon={<MdDescription />}
             iconClassName="bg-[#ede9fe] text-[#8b5cf6]"
-            title="Terms & Conditions"
-            subtitle="Rules and guidelines for platform use"
+            title={t.settings.termsAndConditions}
+            subtitle={t.settings.termsAndConditionsSubtitle}
           />
         </div>
       </section>

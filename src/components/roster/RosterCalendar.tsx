@@ -14,7 +14,15 @@ import { type RosterShift } from '@/services/actions/roster';
 import { ContentSkeleton } from '@/components/shared/SkeletonLoader';
 import { useGetDailyRosterQuery, useGetWeeklyRosterQuery, useGetMonthlyRosterQuery } from '@/redux/api/rosterApi';
 
+import { usePathname } from 'next/navigation';
+import { getLocale } from '@/lib/locale';
+import { getDashboardTranslation } from '@/lib/translations';
+
 export function RosterCalendar() {
+  const pathname = usePathname();
+  const locale = getLocale(pathname);
+  const t = getDashboardTranslation(locale);
+
   const [view, setView] = useState<'Day' | 'Week' | 'Month'>('Day');
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
@@ -153,22 +161,22 @@ export function RosterCalendar() {
               <MdCalendarToday className="text-base" />
             </span>
             <div>
-              <h1 className="text-lg font-semibold tracking-tight text-slate-800">Roster</h1>
-              <p className="text-xs text-slate-500">Plan shifts and coordinate team coverage.</p>
+              <h1 className="text-lg font-semibold tracking-tight text-slate-800">{t.roster.title}</h1>
+              <p className="text-xs text-slate-500">{t.dashboard.allShiftsOnSchedule}</p>
             </div>
           </div>
         </div>
         <div className="flex items-center gap-2 text-xs text-slate-500">
           <span className="rounded border border-gray-200 bg-white px-2.5 py-1.5">
-            <strong className="font-semibold text-slate-700">{stats.totalShifts || shifts.length}</strong> shifts
+            <strong className="font-semibold text-slate-700">{stats.totalShifts || shifts.length}</strong> {t.shiftMonitoring.shiftsCount}
           </span>
           {Boolean(stats.totalHours) && (
             <span className="rounded border border-gray-200 bg-white px-2.5 py-1.5">
-              <strong className="font-semibold text-slate-700">{stats.totalHours}</strong> hrs
+              <strong className="font-semibold text-slate-700">{stats.totalHours}</strong> {t.common.duration}
             </span>
           )}
           <span className="rounded border border-gray-200 bg-white px-2.5 py-1.5">
-            <strong className="font-semibold text-slate-700">{stats.totalMembers}</strong> team members
+            <strong className="font-semibold text-slate-700">{stats.totalMembers}</strong> {t.workers.employees}
           </span>
         </div>
       </div>
@@ -176,7 +184,7 @@ export function RosterCalendar() {
       <div className="flex flex-col gap-3 rounded border border-gray-200 bg-white p-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex w-full flex-wrap items-center gap-2 lg:w-auto">
           <button onClick={handleToday} className="h-8 rounded border border-gray-300 bg-white px-3 text-xs font-semibold text-slate-700 transition-colors hover:bg-gray-50">
-            Today
+            {t.dashboard.onTime}
           </button>
           <div className="flex shrink-0 overflow-hidden rounded border border-gray-300 bg-white">
             <button onClick={handlePrev} aria-label="Previous period" className="flex h-8 w-8 items-center justify-center border-r border-gray-300 text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-800">
@@ -197,15 +205,15 @@ export function RosterCalendar() {
                 onClick={() => setView(v)}
                 className={`h-7 rounded px-3 transition-colors ${view === v ? 'border border-gray-200 bg-white text-primary' : 'border border-transparent text-gray-500 hover:text-gray-800'}`}
               >
-                {v}
+                {v === 'Day' ? t.roster.dayView : v === 'Week' ? t.roster.weekView : t.roster.date}
               </button>
             ))}
           </div>
           <button
             onClick={() => setShowCreateModal(true)}
-            className="ml-auto flex h-8 shrink-0 items-center gap-1.5 rounded border border-primary bg-primary px-3 text-xs font-semibold text-white transition-colors hover:bg-[#008bc7] lg:ml-0"
+            className="ml-auto flex h-8 shrink-0 items-center gap-1.5 rounded border border-primary bg-primary px-3 text-xs font-semibold text-white transition-colors hover:bg-[#008bc7] lg:ml-0 cursor-pointer"
           >
-            <MdAdd className="text-base" /> Create Shift
+            <MdAdd className="text-base" /> {t.roster.createShift}
           </button>
         </div>
       </div>

@@ -74,7 +74,15 @@ function formatDateDivider(dateStr: string): string {
   });
 }
 
+import { usePathname } from "next/navigation";
+import { getLocale } from "@/lib/locale";
+import { getDashboardTranslation } from "@/lib/translations";
+
 export default function ChatPage() {
+  const pathname = usePathname();
+  const locale = getLocale(pathname);
+  const t = getDashboardTranslation(locale);
+
   const user = useAppSelector((state) => state.auth.user);
   const [tab, setTab] = useState<Tab>("clients");
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -464,18 +472,18 @@ export default function ChatPage() {
       <header className="flex items-end justify-between">
         <div>
           <h1 className="text-lg font-semibold text-slate-800">
-            Conversations
+            {t.chat.title}
           </h1>
           <p className="text-xs text-slate-500">
-            Realtime client, worker and group chat.
+            {t.chat.activeChats}
           </p>
         </div>
         <button
           onClick={() => setShowCreate(true)}
-          className="flex h-9 items-center gap-2 rounded bg-sky-500 px-3 text-xs font-semibold text-white"
+          className="flex h-9 items-center gap-2 rounded bg-sky-500 px-3 text-xs font-semibold text-white cursor-pointer"
         >
           <MdGroupAdd />
-          New chat
+          + {t.chat.title}
         </button>
       </header>
       {error && (
@@ -489,9 +497,9 @@ export default function ChatPage() {
                 <button
                   key={item}
                   onClick={() => setTab(item)}
-                  className={`h-7 rounded text-[10px] font-semibold capitalize ${tab === item ? "bg-white text-sky-600 shadow-sm" : "text-slate-500"}`}
+                  className={`h-7 rounded text-[10px] font-semibold ${tab === item ? "bg-white text-sky-600 shadow-sm" : "text-slate-500"}`}
                 >
-                  {item}
+                  {item === "clients" ? t.nav.clients : item === "workers" ? t.nav.workers : t.chat.activeChats}
                 </button>
               ))}
             </div>
@@ -500,7 +508,7 @@ export default function ChatPage() {
               <input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search conversations..."
+                placeholder={t.common.search}
                 className="h-9 w-full rounded border bg-slate-50 pl-9 pr-3 text-xs"
               />
             </label>
@@ -527,14 +535,14 @@ export default function ChatPage() {
                     {item.subtitle}
                   </p>
                   <p className="mt-1 truncate text-[10px] text-slate-400">
-                    {item.last_message?.text || "No messages yet"}
+                    {item.last_message?.text || t.chat.noMessages}
                   </p>
                 </button>
               ))
             )}
             {!loading && filtered.length === 0 && (
               <p className="py-12 text-center text-xs text-slate-400">
-                No conversations
+                {t.common.noDataFound}
               </p>
             )}
           </div>
@@ -713,13 +721,13 @@ export default function ChatPage() {
             </>
           ) : (
             <div className="flex flex-1 items-center justify-center text-sm text-slate-400">
-              Select a conversation
+              {t.chat.noMessages}
             </div>
           )}
         </section>
         <aside className="hidden overflow-y-auto border-l p-4 xl:block">
           <h3 className="text-xs font-bold uppercase text-slate-400">
-            Participants ({participants.length})
+            {t.chat.activeChats} ({participants.length})
           </h3>
           <div className="mt-3 space-y-2">
             {participants.map((item) => (

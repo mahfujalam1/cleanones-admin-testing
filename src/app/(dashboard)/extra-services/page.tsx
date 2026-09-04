@@ -22,7 +22,15 @@ const statusColor: Record<string, string> = {
   rejected: "bg-red-50 text-red-700",
 };
 
+import { usePathname } from "next/navigation";
+import { getLocale } from "@/lib/locale";
+import { getDashboardTranslation } from "@/lib/translations";
+
 export default function ExtraServicesPage() {
+  const pathname = usePathname();
+  const locale = getLocale(pathname);
+  const t = getDashboardTranslation(locale);
+
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
   const [selected, setSelected] = useState<ExtraServiceRequest | null>(null);
@@ -50,17 +58,17 @@ export default function ExtraServicesPage() {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search extra services..."
+            placeholder={t.extraServices.searchPlaceholder}
             className="h-10 w-full rounded border bg-white pl-9 pr-3 text-sm outline-none focus:border-sky-400"
           />
         </div>
         <select value={status} onChange={(e) => setStatus(e.target.value)} className="h-10 rounded border bg-white px-3 text-sm">
-          <option value="">All statuses</option>
-          <option value="under_review">Under Review</option>
-          <option value="approved">Approved</option>
-          <option value="in_progress">In Progress</option>
-          <option value="completed">Completed</option>
-          <option value="rejected">Rejected</option>
+          <option value="">{t.extraServices.allStatuses}</option>
+          <option value="under_review">{t.extraServices.underReview}</option>
+          <option value="approved">{t.extraServices.approved}</option>
+          <option value="in_progress">{t.extraServices.inProgress}</option>
+          <option value="completed">{t.extraServices.completed}</option>
+          <option value="rejected">{t.extraServices.rejected}</option>
         </select>
       </div>
 
@@ -87,7 +95,7 @@ export default function ExtraServicesPage() {
               </div>
             </button>
           ))}
-          {items.length === 0 && <p className="col-span-full rounded border bg-white py-16 text-center text-sm text-slate-500">No extra service requests found</p>}
+          {items.length === 0 && <p className="col-span-full rounded border bg-white py-16 text-center text-sm text-slate-500">{t.extraServices.noRequests}</p>}
         </div>
       )}
 

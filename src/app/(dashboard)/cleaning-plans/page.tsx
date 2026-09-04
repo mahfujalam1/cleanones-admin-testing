@@ -4,8 +4,11 @@ import { CreatePlanModal } from '@/components/cleaningPlans/CreatePlanModal';
 import { PlanDetailSidebar } from '@/components/cleaningPlans/PlanDetailsSidebar';
 import { CleaningPlan } from '@/components/cleaningPlans/types';
 import React, { useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
+import { getLocale } from '@/lib/locale';
+import { getDashboardTranslation, type DashboardTranslationDict } from '@/lib/translations';
 import { MdSearch } from 'react-icons/md';
-import { TbClipboardList, TbClock, TbCamera, TbChecklist, TbUser, TbMapPin, TbDoor, TbPinned, TbTrash } from 'react-icons/tb';
+import { TbClipboardList, TbClock, TbCamera, TbChecklist, TbUser, TbMapPin, TbDoor, TbTrash } from 'react-icons/tb';
 import { deleteCleaningPlan, getPlanRooms, type PlanRoomOption } from '@/services/actions/cleaningPlans';
 import { useGetCleaningPlansQuery } from '@/redux/api/dashboardApi';
 import { CardGridSkeleton } from '@/components/shared/SkeletonLoader';
@@ -17,6 +20,10 @@ import { getWorkers, type WorkerApi } from '@/services/actions/workers';
 import { WorkerAssignmentModal } from '@/components/cleaningPlans/WorkerAssignmentModal';
 
 export default function CleaningPlansPage() {
+    const pathname = usePathname();
+    const locale = getLocale(pathname);
+    const t = getDashboardTranslation(locale);
+
     const [search, setSearch] = useState('');
     const [showModal, setShowModal] = useState(false);
     const [selectedPlan, setSelectedPlan] = useState<CleaningPlan | null>(null);
@@ -73,20 +80,20 @@ export default function CleaningPlansPage() {
                         <MdSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg" />
                         <input
                             type="text"
-                            placeholder="Search cleaning plans..."
+                            placeholder={t.plans.searchPlaceholder}
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                             className="h-10 w-full rounded border border-gray-200 bg-gray-50 pl-9 pr-4 text-sm font-medium text-gray-700 focus:outline-none"
                         />
                     </div>
-                    <Select value={clientId} onValueChange={setClientId} options={[{ value: 'all', label: 'All Clients' }, ...clients.map((c) => ({ value: c.id, label: c.company_name }))]} />
-                    <Select value={locationId} onValueChange={setLocationId} options={[{ value: 'all', label: 'All Locations' }, ...locations.map((l) => ({ value: l.id, label: l.name }))]} />
-                    <Select value={roomId} onValueChange={setRoomId} options={[{ value: 'all', label: 'All Rooms' }, ...roomOptions.map((r) => ({ value: r.room_id, label: r.room_name }))]} />
-                    <Select value={workerId} onValueChange={setWorkerId} options={[{ value: 'all', label: 'All Workers' }, ...workers.map((w) => ({ value: w.worker_id, label: w.full_name }))]} />
+                    <Select value={clientId} onValueChange={setClientId} options={[{ value: 'all', label: t.common.allClients }, ...clients.map((c) => ({ value: c.id, label: c.company_name }))]} />
+                    <Select value={locationId} onValueChange={setLocationId} options={[{ value: 'all', label: t.common.allLocations }, ...locations.map((l) => ({ value: l.id, label: l.name }))]} />
+                    <Select value={roomId} onValueChange={setRoomId} options={[{ value: 'all', label: t.common.allRooms }, ...roomOptions.map((r) => ({ value: r.room_id, label: r.room_name }))]} />
+                    <Select value={workerId} onValueChange={setWorkerId} options={[{ value: 'all', label: t.common.allWorkers }, ...workers.map((w) => ({ value: w.worker_id, label: w.full_name }))]} />
                 </div>
                 <div className="flex justify-end shrink-0">
                     <button onClick={() => setShowModal(true)} className="flex h-10 items-center justify-center gap-1.5 rounded bg-[#0ea5e9] px-4 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#0284c7] cursor-pointer whitespace-nowrap">
-                        + Add Cleaning Plan
+                        {t.plans.addPlan}
                     </button>
                 </div>
             </div>
@@ -96,8 +103,8 @@ export default function CleaningPlansPage() {
             {loading ? <CardGridSkeleton /> : plans.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-24 text-center">
                     <TbClipboardList className="mb-3 text-5xl text-gray-300" />
-                    <p className="text-sm font-semibold text-gray-500">No cleaning plans found</p>
-                    <p className="mt-1 text-xs text-gray-400">Try adjusting search or filters.</p>
+                    <p className="text-sm font-semibold text-gray-500">{t.plans.noPlansFound}</p>
+                    <p className="mt-1 text-xs text-gray-400">{t.common.adjustFilters}</p>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -105,6 +112,7 @@ export default function CleaningPlansPage() {
                         <PlanCard
                             key={plan.id}
                             plan={plan}
+                            t={t}
                             onClick={() => setSelectedPlan(plan)}
                             isSelected={selectedPlan?.id === plan.id}
                             onDelete={() => void handleDelete(plan.id)}
@@ -133,13 +141,14 @@ export default function CleaningPlansPage() {
 
 interface PlanCardProps {
     plan: CleaningPlan;
+    t: DashboardTranslationDict;
     onClick: () => void;
     isSelected: boolean;
     onDelete: () => void;
     onAssign: () => void;
 }
 
-function PlanCard({ plan, onClick, isSelected, onDelete, onAssign }: PlanCardProps) {
+function PlanCard({ plan, t, onClick, isSelected, onDelete, onAssign }: PlanCardProps) {
     return (
         <div
             onClick={onClick}
@@ -156,7 +165,7 @@ function PlanCard({ plan, onClick, isSelected, onDelete, onAssign }: PlanCardPro
                         <div className="flex items-center gap-2">
                             <p className="text-xs font-bold text-gray-900 leading-tight line-clamp-1">{plan.name}</p>
                             <span className={`rounded px-1.5 py-0.5 text-[9px] font-semibold shrink-0 ${plan.aiValid ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-100 text-gray-500'}`}>
-                                {plan.aiValid ? 'Active' : 'Inactive'}
+                                {plan.aiValid ? t.common.active : t.common.inactive}
                             </span>
                         </div>
                         <p className="text-xs text-gray-500 mt-0.5 truncate">{plan.client || 'No client'}</p>
@@ -211,17 +220,17 @@ function PlanCard({ plan, onClick, isSelected, onDelete, onAssign }: PlanCardPro
                     <div className="py-2 flex flex-col items-center gap-0.5">
                         <TbClock className="text-gray-300 text-sm" />
                         <p className="text-xs font-bold text-gray-800">{plan.duration}m</p>
-                        <p className="text-[10px] text-gray-400">Duration</p>
+                        <p className="text-[10px] text-gray-400">{t.common.duration}</p>
                     </div>
                     <div className="py-2 flex flex-col items-center gap-0.5">
                         <TbCamera className="text-gray-300 text-sm" />
                         <p className="text-xs font-bold text-gray-800">{plan.photos}</p>
-                        <p className="text-[10px] text-gray-400">Photos</p>
+                        <p className="text-[10px] text-gray-400">{t.common.photos}</p>
                     </div>
                     <div className="py-2 flex flex-col items-center gap-0.5">
                         <TbChecklist className="text-gray-300 text-sm" />
                         <p className="text-xs font-bold text-gray-800">{plan.tasks}</p>
-                        <p className="text-[10px] text-gray-400">Tasks</p>
+                        <p className="text-[10px] text-gray-400">{t.common.tasks}</p>
                     </div>
                 </div>
             </div>
@@ -229,7 +238,7 @@ function PlanCard({ plan, onClick, isSelected, onDelete, onAssign }: PlanCardPro
             {/* Assign Button at Bottom */}
             <div className="border-t border-gray-100 p-2.5 mt-auto" onClick={(event) => event.stopPropagation()}>
                 <button onClick={onAssign} className="flex h-8 w-full items-center justify-center gap-1.5 rounded border border-sky-200 bg-sky-50 text-xs font-semibold text-sky-600 transition hover:border-sky-400 hover:bg-sky-100 cursor-pointer">
-                    <TbUser className="text-sm"/> Assign workers
+                    <TbUser className="text-sm"/> {t.common.assignWorkers}
                 </button>
             </div>
         </div>

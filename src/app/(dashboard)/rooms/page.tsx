@@ -6,6 +6,9 @@ const AddRoomModal = dynamic(() => import('@/components/rooms/AddRoomModal').the
 const RoomDetailSidebar = dynamic(() => import('@/components/rooms/RoomDetailsSidebar').then((mod) => mod.RoomDetailSidebar), { ssr: false });
 import { Room, RoomType } from '@/components/rooms/types';
 import React, { useCallback, useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
+import { getLocale } from '@/lib/locale';
+import { getDashboardTranslation } from '@/lib/translations';
 import { MdSearch } from 'react-icons/md';
 import { TbDoor, TbClock, TbCamera, TbChecklist } from 'react-icons/tb';
 import { getRoomLocations, getRooms } from '@/services/actions/rooms';
@@ -31,6 +34,9 @@ const typeColors: Record<RoomType, { text: string; bg: string }> = {
 };
 
 export default function RoomsPage() {
+    const pathname = usePathname();
+    const locale = getLocale(pathname);
+    const t = getDashboardTranslation(locale);
     const [search, setSearch] = useState('');
     const [showModal, setShowModal] = useState(false);
     const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
@@ -147,15 +153,15 @@ export default function RoomsPage() {
         <div className="min-h-screen">
             {/* Filters & Action Bar */}
             <div className="mb-5 flex flex-col gap-3 rounded border border-gray-200 bg-white p-3 xl:flex-row xl:items-center xl:justify-between">
-                <div className="grid flex-1 grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                <div className="grid flex-1 grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
                     <div className="relative">
                         <MdSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg" />
                         <input
                             type="text"
-                            placeholder="Search rooms..."
+                            placeholder={t.rooms.searchPlaceholder}
                             value={search}
-                            onChange={(event) => {
-                                setSearch(event.target.value);
+                            onChange={(e) => {
+                                setSearch(e.target.value);
                                 setPage(1);
                             }}
                             className="h-10 w-full rounded border border-gray-200 bg-gray-50 pl-9 pr-3 text-sm text-slate-800 outline-none transition-colors placeholder:text-slate-400 focus:border-[#0ea5e9] focus:bg-white focus:ring-1 focus:ring-[#0ea5e9]"
@@ -165,55 +171,57 @@ export default function RoomsPage() {
                         value={clientsLoading ? '' : clientId || ALL_FILTER_VALUE}
                         onValueChange={handleClientChange}
                         options={[
-                            { value: ALL_FILTER_VALUE, label: 'All clients' },
+                            { value: ALL_FILTER_VALUE, label: t.common.allClients },
                             ...clients.map((client) => ({
                                 value: client.id,
                                 label: client.company_name || client.primary_contact_name || 'Unnamed client',
                             })),
                         ]}
-                        placeholder={clientsLoading ? 'Loading clients...' : 'All clients'}
+                        placeholder={clientsLoading ? `${t.common.allClients}...` : t.common.allClients}
                         disabled={clientsLoading}
                     />
                     <Select
                         value={locationsLoading ? '' : locationId || (clientId ? ALL_FILTER_VALUE : '')}
                         onValueChange={handleLocationChange}
                         options={[
-                            { value: ALL_FILTER_VALUE, label: 'All locations' },
+                            { value: ALL_FILTER_VALUE, label: t.common.allLocations },
                             ...locations.map((location) => ({ value: location.id, label: location.name })),
                         ]}
-                        placeholder={!clientId ? 'Select client first' : locationsLoading ? 'Loading locations...' : 'All locations'}
+                        placeholder={!clientId ? t.common.allLocations : locationsLoading ? `${t.common.allLocations}...` : t.common.allLocations}
                         disabled={!clientId || locationsLoading}
                     />
                     <Select
-                        value={roomOptionsLoading ? '' : roomId || (locationId ? ALL_FILTER_VALUE : '')}
+                        value={roomOptionsLoading ? '' : roomId || (clientId && locationId ? ALL_FILTER_VALUE : '')}
                         onValueChange={handleRoomChange}
                         options={[
-                            { value: ALL_FILTER_VALUE, label: 'All rooms' },
+                            { value: ALL_FILTER_VALUE, label: t.common.allRooms },
                             ...roomOptions.map((room) => ({ value: room.room_id, label: room.room_name })),
                         ]}
-                        placeholder={!locationId ? 'Select location first' : roomOptionsLoading ? 'Loading rooms...' : 'All rooms'}
-                        disabled={!locationId || roomOptionsLoading}
+                        placeholder={!clientId || !locationId ? t.common.allRooms : roomOptionsLoading ? `${t.common.allRooms}...` : t.common.allRooms}
+                        disabled={!clientId || !locationId || roomOptionsLoading}
                     />
                 </div>
+
                 <div className="flex justify-end shrink-0">
                     <button
                         onClick={() => setShowModal(true)}
                         className="flex h-10 items-center justify-center gap-1.5 rounded bg-[#0ea5e9] px-4 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#0284c7] cursor-pointer whitespace-nowrap"
                     >
-                        + Add Room
+                        {t.rooms.addRoom}
                     </button>
                 </div>
             </div>
 
             {/* Cards Grid */}
             <div>
-                {filterError && <p className="mb-4 rounded border border-red-200 bg-red-50 p-3 text-xs text-red-700">{filterError}</p>}
-                {error && <p className="mb-4 rounded border border-red-200 bg-red-50 p-3 text-xs text-red-700">{error}</p>}
+                {filterError && <p className="mb-4 rounded border border-red-200 bg-red-50 p-3 text-xs font-medium text-red-700">{filterError}</p>}
+                {error && <p className="mb-4 rounded border border-red-200 bg-red-50 p-3 text-xs font-medium text-red-700">{error}</p>}
+
                 {loading ? <CardGridSkeleton /> : rooms.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-24 text-center">
                         <TbDoor className="text-5xl text-gray-300 mb-3" />
-                        <p className="text-sm font-semibold text-gray-500">No rooms found</p>
-                        <p className="text-xs text-gray-400 mt-1">Try a different search or add a new room.</p>
+                        <p className="text-sm font-semibold text-gray-500">{t.rooms.noRoomsFound}</p>
+                        <p className="text-xs text-gray-400 mt-1">{t.common.adjustFilters}</p>
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
