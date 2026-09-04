@@ -22,6 +22,7 @@ export default function CleaningPlansPage() {
     const [selectedPlan, setSelectedPlan] = useState<CleaningPlan | null>(null);
     const [assigningPlan, setAssigningPlan] = useState<CleaningPlan | null>(null);
     const [error, setError] = useState('');
+    const [filterError, setFilterError] = useState('');
     const [clients, setClients] = useState<ClientOption[]>([]);
     const [locations, setLocations] = useState<Array<{ id: string; name: string }>>([]);
     const [roomOptions, setRoomOptions] = useState<PlanRoomOption[]>([]);
@@ -39,9 +40,18 @@ export default function CleaningPlansPage() {
     const total = plansRes?.total_count ?? 0;
     const plans: CleaningPlan[] = rawPlans.map((item) => ({ id: item.id, name: item.title, client: (item.client_names ?? []).join(', '), location: item.date ? `${item.date} · ${item.start_time}` : '', rooms: item.room_names ?? [], duration: item.duration_minutes, photos: item.total_photos_count, tasks: item.total_tasks_count, aiValid: item.is_active, checklistTasks: [], photoRequirements: [] }));
 
-    useEffect(() => { void getClientOptions(1, 100).then((result) => result.success ? setClients(result.data.clients ?? []) : setError(result.error)); void getWorkers({ limit: 100 }).then((result) => result.success ? setWorkers(result.data.workers ?? []) : setError(result.error)); }, []);
-    useEffect(() => { setLocationId('all'); setRoomId('all'); setLocations([]); setRoomOptions([]); if (clientId !== 'all') void getRoomLocations(clientId).then((result) => result.success ? setLocations(result.data.locations ?? []) : setError(result.error)); }, [clientId]);
-    useEffect(() => { setRoomId('all'); setRoomOptions([]); if (locationId !== 'all') void getPlanRooms({ clientId: clientId === 'all' ? undefined : clientId, locationId, limit: 100 }).then((result) => result.success ? setRoomOptions(result.data.rooms ?? []) : setError(result.error)); }, [clientId, locationId]);
+    useEffect(() => {
+        void getClientOptions(1, 100).then((result) => result.success ? setClients(result.data.clients ?? []) : setFilterError(result.error));
+        void getWorkers({ limit: 50 }).then((result) => result.success ? setWorkers(result.data.workers ?? []) : setFilterError(result.error));
+    }, []);
+    useEffect(() => {
+        setLocationId('all'); setRoomId('all'); setLocations([]); setRoomOptions([]);
+        if (clientId !== 'all') void getRoomLocations(clientId).then((result) => result.success ? setLocations(result.data.locations ?? []) : setFilterError(result.error));
+    }, [clientId]);
+    useEffect(() => {
+        setRoomId('all'); setRoomOptions([]);
+        if (locationId !== 'all') void getPlanRooms({ clientId: clientId === 'all' ? undefined : clientId, locationId, limit: 100 }).then((result) => result.success ? setRoomOptions(result.data.rooms ?? []) : setFilterError(result.error));
+    }, [clientId, locationId]);
 
     const handleAdd = () => {
         setShowModal(false);
@@ -58,7 +68,7 @@ export default function CleaningPlansPage() {
         <div className="min-h-screen">
             {/* Filters & Action Bar */}
             <div className="mb-5 flex flex-col gap-3 rounded border border-gray-200 bg-white p-3 xl:flex-row xl:items-center xl:justify-between">
-                <div className="grid flex-1 grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid flex-1 grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
                     <div className="relative">
                         <MdSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg" />
                         <input
@@ -66,7 +76,7 @@ export default function CleaningPlansPage() {
                             placeholder="Search cleaning plans..."
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            className="w-full rounded border border-gray-200 bg-gray-50 py-2 pl-9 pr-4 text-sm font-medium text-gray-700 focus:outline-none"
+                            className="h-10 w-full rounded border border-gray-200 bg-gray-50 pl-9 pr-4 text-sm font-medium text-gray-700 focus:outline-none"
                         />
                     </div>
                     <Select value={clientId} onValueChange={setClientId} options={[{ value: 'all', label: 'All Clients' }, ...clients.map((c) => ({ value: c.id, label: c.company_name }))]} />
@@ -74,8 +84,8 @@ export default function CleaningPlansPage() {
                     <Select value={roomId} onValueChange={setRoomId} options={[{ value: 'all', label: 'All Rooms' }, ...roomOptions.map((r) => ({ value: r.room_id, label: r.room_name }))]} />
                     <Select value={workerId} onValueChange={setWorkerId} options={[{ value: 'all', label: 'All Workers' }, ...workers.map((w) => ({ value: w.worker_id, label: w.full_name }))]} />
                 </div>
-                <div className="flex justify-end">
-                    <button onClick={() => setShowModal(true)} className="flex h-10 items-center gap-1.5 rounded bg-[#0ea5e9] px-4 text-sm font-semibold text-white shadow-sm hover:bg-[#0284c7]">
+                <div className="flex justify-end shrink-0">
+                    <button onClick={() => setShowModal(true)} className="flex h-10 items-center justify-center gap-1.5 rounded bg-[#0ea5e9] px-4 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#0284c7] cursor-pointer whitespace-nowrap">
                         + Add Cleaning Plan
                     </button>
                 </div>
@@ -92,34 +102,14 @@ export default function CleaningPlansPage() {
             ) : (
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                     {plans.map((plan) => (
-                        <article key={plan.id} onClick={() => setSelectedPlan(plan)} className="cursor-pointer rounded border border-gray-200 bg-white p-4 shadow-sm transition-all hover:border-sky-300 hover:shadow-md">
-                            <div className="flex items-start justify-between gap-2">
-                                <div>
-                                    <h3 className="text-sm font-bold text-gray-900">{plan.name}</h3>
-                                    <p className="mt-0.5 text-xs text-gray-500">{plan.client || 'No client'}</p>
-                                </div>
-                                <button onClick={(e) => { e.stopPropagation(); void handleDelete(plan.id); }} className="rounded p-1 text-gray-400 hover:bg-red-50 hover:text-red-600">
-                                    <TbTrash className="text-lg" />
-                                </button>
-                            </div>
-
-                            <div className="mt-3 flex flex-wrap gap-3 text-xs text-gray-500">
-                                <span className="flex items-center gap-1"><TbMapPin className="text-sky-500" /> {plan.location || '—'}</span>
-                                <span className="flex items-center gap-1"><TbDoor className="text-sky-500" /> {plan.rooms.length} rooms</span>
-                                <span className="flex items-center gap-1"><TbClock className="text-sky-500" /> {plan.duration} min</span>
-                                <span className="flex items-center gap-1"><TbChecklist className="text-sky-500" /> {plan.tasks} tasks</span>
-                                <span className="flex items-center gap-1"><TbCamera className="text-sky-500" /> {plan.photos} photos</span>
-                            </div>
-
-                            <div className="mt-4 flex items-center justify-between border-t border-gray-100 pt-3">
-                                <span className={`rounded px-2 py-0.5 text-[10px] font-semibold ${plan.aiValid ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-100 text-gray-500'}`}>
-                                    {plan.aiValid ? 'Active' : 'Inactive'}
-                                </span>
-                                <button onClick={(e) => { e.stopPropagation(); setAssigningPlan(plan); }} className="text-xs font-semibold text-sky-600 hover:underline">
-                                    Assign Workers
-                                </button>
-                            </div>
-                        </article>
+                        <PlanCard
+                            key={plan.id}
+                            plan={plan}
+                            onClick={() => setSelectedPlan(plan)}
+                            isSelected={selectedPlan?.id === plan.id}
+                            onDelete={() => void handleDelete(plan.id)}
+                            onAssign={() => setAssigningPlan(plan)}
+                        />
                     ))}
                 </div>
             )}
@@ -163,17 +153,19 @@ function PlanCard({ plan, onClick, isSelected, onDelete, onAssign }: PlanCardPro
                         <TbClipboardList className="text-[#0ea5e9] text-base" />
                     </div>
                     <div className="min-w-0 flex-1">
-                        <p className="text-xs font-semibold text-gray-900 leading-tight line-clamp-1">{plan.name}</p>
-                        <p className="text-[10px] text-gray-400 mt-0.5">{plan.id}</p>
+                        <div className="flex items-center gap-2">
+                            <p className="text-xs font-bold text-gray-900 leading-tight line-clamp-1">{plan.name}</p>
+                            <span className={`rounded px-1.5 py-0.5 text-[9px] font-semibold shrink-0 ${plan.aiValid ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-100 text-gray-500'}`}>
+                                {plan.aiValid ? 'Active' : 'Inactive'}
+                            </span>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-0.5 truncate">{plan.client || 'No client'}</p>
                     </div>
                     {/* Action icons */}
                     <div className="flex items-center gap-0.5 shrink-0" onClick={(e) => e.stopPropagation()}>
-                        <button className="p-1 text-gray-300 hover:text-[#0ea5e9] transition-colors cursor-pointer">
-                            <TbPinned className="text-sm" />
-                        </button>
                         <button
                             onClick={onDelete}
-                            className="p-1 text-gray-300 hover:text-red-400 transition-colors cursor-pointer"
+                            className="p-1 text-gray-300 hover:text-red-500 transition-colors cursor-pointer"
                         >
                             <TbTrash className="text-sm" />
                         </button>
@@ -181,25 +173,23 @@ function PlanCard({ plan, onClick, isSelected, onDelete, onAssign }: PlanCardPro
                 </div>
 
                 {/* Client + Location */}
-                <div className="px-3.5 pb-2 space-y-1">
-                    <div className="flex items-center gap-1.5">
-                        <TbUser className="text-gray-300 text-xs shrink-0" />
-                        <p className="text-xs text-gray-500 truncate">{plan.client}</p>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                        <TbMapPin className="text-gray-300 text-xs shrink-0" />
-                        <p className="text-xs text-gray-500 truncate">{plan.location}</p>
-                    </div>
+                <div className="px-3.5 pb-2.5 space-y-1">
+                    {plan.location && (
+                        <div className="flex items-center gap-1.5">
+                            <TbMapPin className="text-gray-400 text-xs shrink-0" />
+                            <p className="text-xs text-gray-400 truncate">{plan.location}</p>
+                        </div>
+                    )}
                     {(plan.rooms ?? []).length > 0 && (
                         <div className="flex items-center gap-1.5 pt-0.5">
-                            <TbDoor className="text-gray-300 text-xs shrink-0" />
+                            <TbDoor className="text-gray-400 text-xs shrink-0" />
                             <div className="flex flex-wrap gap-1">
                                 {(plan.rooms ?? []).slice(0, 3).map((r, index) => (
                                     <span key={`${plan.id}-${index}-${r}`} className="text-[10px] font-medium text-[#0ea5e9] bg-[#e0f2fe] px-1.5 py-0.5 rounded">
                                         {r}
                                     </span>
                                 ))}
-                                {(plan.rooms ?? []).length > 3 && (
+                                {(plan.rooms ?? []).slice(3).length > 0 && (
                                     <span className="text-[10px] text-gray-400">+{(plan.rooms ?? []).length - 3}</span>
                                 )}
                             </div>
@@ -238,7 +228,7 @@ function PlanCard({ plan, onClick, isSelected, onDelete, onAssign }: PlanCardPro
 
             {/* Assign Button at Bottom */}
             <div className="border-t border-gray-100 p-2.5 mt-auto" onClick={(event) => event.stopPropagation()}>
-                <button onClick={onAssign} className="flex h-8 w-full items-center justify-center gap-1.5 rounded border border-sky-200 bg-sky-50 text-xs font-semibold text-sky-600 transition hover:border-sky-400 hover:bg-sky-100">
+                <button onClick={onAssign} className="flex h-8 w-full items-center justify-center gap-1.5 rounded border border-sky-200 bg-sky-50 text-xs font-semibold text-sky-600 transition hover:border-sky-400 hover:bg-sky-100 cursor-pointer">
                     <TbUser className="text-sm"/> Assign workers
                 </button>
             </div>

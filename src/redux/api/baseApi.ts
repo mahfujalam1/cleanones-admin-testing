@@ -15,7 +15,7 @@ function getCookieValue(name: string): string | null {
 
 function getApiBaseUrl(): string {
   const configured = (process.env.NEXT_PUBLIC_API_BASE_URL ?? process.env.API_BASE_URL ?? "http://18.198.109.196:8080").replace(/\/$/, "");
-  if (typeof window !== "undefined" && window.location.protocol === "https:" && configured.startsWith("http://")) {
+  if (typeof window !== "undefined") {
     return "/api/proxy";
   }
   return configured;

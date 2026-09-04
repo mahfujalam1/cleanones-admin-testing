@@ -103,7 +103,7 @@ export const dashboardApi = baseApi.injectEndpoints({
         });
         if (params?.status) qp.append("status", params.status);
         if (params?.priority) qp.append("priority", params.priority);
-        return `/manager/extra-services/requests?${qp.toString()}`;
+        return `/manager/extra-services?${qp.toString()}`;
       },
       providesTags: ["extraServices" as never],
     }),
