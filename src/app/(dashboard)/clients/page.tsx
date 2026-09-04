@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { MdAdd, MdBusinessCenter, MdClose, MdDelete, MdLocationOn, MdRestore, MdSearch, MdWarningAmber } from "react-icons/md";
 import { AddClientModal } from "@/components/clients/AddClientModal";
@@ -29,11 +29,33 @@ export default function ClientsPage() {
   const [deleting, setDeleting] = useState(false);
   const limit = 9;
 
-  const { data: clientsRes, isLoading: loading, refetch } = useGetClientsQuery({ search: search.trim() || undefined, page, limit });
+  const [deletedClients, setDeletedClients] = useState<import("@/services/actions/clients").ClientSummary[]>([]);
+  const [deletedTotal, setDeletedTotal] = useState(0);
+  const [loadingDeleted, setLoadingDeleted] = useState(false);
 
-  const rawClients = clientsRes?.clients ?? [];
-  const total = clientsRes?.total_count ?? 0;
-  const clients: Client[] = rawClients.filter((item) => !item.is_signup).map((item) => ({
+  const { data: clientsRes, isLoading: loadingActive, refetch } = useGetClientsQuery({ search: search.trim() || undefined, page, limit });
+
+  useEffect(() => {
+    if (mode === "deleted") {
+      setLoadingDeleted(true);
+      setError("");
+      void getDeletedClients(page, limit, search.trim() || undefined).then((result) => {
+        setLoadingDeleted(false);
+        if (result.success) {
+          setDeletedClients(result.data.clients ?? []);
+          setDeletedTotal(result.data.total_count ?? 0);
+        } else {
+          setError(result.error);
+        }
+      });
+    }
+  }, [mode, page, search]);
+
+  const loading = mode === "active" ? loadingActive : loadingDeleted;
+  const rawClients = mode === "active" ? (clientsRes?.clients ?? []) : deletedClients;
+  const total = mode === "active" ? (clientsRes?.total_count ?? 0) : deletedTotal;
+
+  const clients: Client[] = rawClients.map((item) => ({
     id: item.id, name: item.company_name, industry: item.industry, status: item.status,
     mainContactName: item.primary_contact_name, email: item.email, phone: item.phone,
     locationsCount: item.locations_count, contractStatus: item.contract_status,
@@ -45,6 +67,14 @@ export default function ClientsPage() {
     const result = await restoreClient(client.id);
     if (!result.success) return setError(result.error);
     void refetch();
+    if (mode === "deleted") {
+      void getDeletedClients(page, limit, search.trim() || undefined).then((res) => {
+        if (res.success) {
+          setDeletedClients(res.data.clients ?? []);
+          setDeletedTotal(res.data.total_count ?? 0);
+        }
+      });
+    }
   };
 
   const confirmDelete = async () => {
