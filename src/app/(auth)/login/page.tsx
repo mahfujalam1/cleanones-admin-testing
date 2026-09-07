@@ -110,10 +110,6 @@ export default function LoginPage() {
           </button>
           {error && <p className="rounded border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700">{error}</p>}
         </form>
-
-        <div className="mt-6 text-center text-xs text-slate-400">
-          Don&apos;t have an account? <span className="font-medium text-primary">Contact your cleaning company.</span>
-        </div>
       </div>
     </div>
   );

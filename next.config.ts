@@ -11,6 +11,7 @@ const targetApi = (process.env.API_BASE_URL ?? process.env.NEXT_PUBLIC_API_BASE_
 
 const nextConfig: NextConfig = {
   turbopack: {},
+  allowedDevOrigins: ["10.10.28.193"],
   async rewrites() {
     return [
       {
