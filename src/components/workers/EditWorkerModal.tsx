@@ -23,7 +23,7 @@ export function EditWorkerModal({ worker, onClose, onUpdate, error: externalErro
   const [email, setEmail] = useState(worker.email || '');
   const [phone, setPhone] = useState(worker.phone || '');
   const [hourlyRate, setHourlyRate] = useState<number | ''>(worker.hourlyRate ?? 25);
-  
+
   // Status mapping
   const initialStatusMap = (): 'active' | 'on_shift' | 'off_duty' | 'suspended' | 'banned' => {
     const s = (worker.status || '').toLowerCase().replace(' ', '_');
@@ -228,7 +228,7 @@ export function EditWorkerModal({ worker, onClose, onUpdate, error: externalErro
                 <label className="text-xs font-semibold text-gray-700 mb-1.5 block">Phone Number</label>
                 <input
                   type="tel"
-                  placeholder="+8801700000000"
+                  placeholder="Phone Number"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   className="w-full h-10 rounded border border-gray-300 bg-white px-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#0ea5e9] focus:border-[#0ea5e9] transition-colors"
@@ -327,11 +327,10 @@ export function EditWorkerModal({ worker, onClose, onUpdate, error: externalErro
                       type="button"
                       key={lang}
                       onClick={() => toggleLanguage(lang)}
-                      className={`text-xs font-medium px-3 py-1.5 rounded-full border transition-colors cursor-pointer ${
-                        isSelected
+                      className={`text-xs font-medium px-3 py-1.5 rounded-full border transition-colors cursor-pointer ${isSelected
                           ? 'bg-[#0ea5e9] text-white border-[#0ea5e9]'
                           : 'bg-white text-gray-500 border-gray-300 hover:border-gray-400'
-                      }`}
+                        }`}
                     >
                       {lang}
                     </button>
