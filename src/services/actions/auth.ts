@@ -1,11 +1,7 @@
 const ACCESS = "cleanones_manager_access_token";
 const REFRESH = "cleanones_manager_refresh_token";
 function getBaseUrl(): string {
-  const configured = (process.env.NEXT_PUBLIC_API_BASE_URL ?? process.env.API_BASE_URL ?? "http://18.198.109.196:8080").replace(/\/$/, "");
-  if (typeof window !== "undefined") {
-    return "/api/proxy";
-  }
-  return configured;
+  return (process.env.NEXT_PUBLIC_API_BASE_URL ?? process.env.API_BASE_URL ?? "").replace(/\/$/, "");
 }
 
 export type AuthResponse = { message: string; access_token: string; refresh_token: string; token_type: string; name: string; role: string; is_approved: boolean; approval_status: string; is_temporary_password?: boolean };

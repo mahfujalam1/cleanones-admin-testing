@@ -38,7 +38,7 @@ type Tab = "clients" | "workers" | "groups";
 type Candidate = { id: string; name: string; type: "client" | "worker" };
 
 function getWebSocketUrl(userId: string): string {
-  const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || "http://18.198.109.196:8080";
+  const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || "";
   const isHttps = typeof window !== "undefined" && window.location.protocol === "https:";
   try {
     const url = new URL(apiBase);
