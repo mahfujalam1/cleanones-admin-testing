@@ -5,13 +5,15 @@ import { Worker } from './types';
 import { usePathname } from 'next/navigation';
 import { getLocale } from '@/lib/locale';
 import { getDashboardTranslation } from '@/lib/translations';
+import { MdEdit } from 'react-icons/md';
 
 interface WorkersTableProps {
   workers: Worker[];
   onViewWorker: (worker: Worker) => void;
+  onEditWorker?: (worker: Worker) => void;
 }
 
-export function WorkersTable({ workers, onViewWorker }: WorkersTableProps) {
+export function WorkersTable({ workers, onViewWorker, onEditWorker }: WorkersTableProps) {
   const pathname = usePathname();
   const locale = getLocale(pathname);
   const t = getDashboardTranslation(locale);
@@ -21,6 +23,9 @@ export function WorkersTable({ workers, onViewWorker }: WorkersTableProps) {
       case 'On Shift': return 'text-[#0ea5e9]';
       case 'Active': return 'text-[#10b981]';
       case 'Off Duty': return 'text-gray-400';
+      case 'Suspended': return 'text-amber-500';
+      case 'Banned': return 'text-red-500';
+      default: return 'text-gray-500';
     }
   };
 
@@ -34,7 +39,7 @@ export function WorkersTable({ workers, onViewWorker }: WorkersTableProps) {
       <div className="overflow-x-auto w-full">
         <div className="min-w-[1000px]">
           {/* Header row */}
-          <div className="grid grid-cols-[2fr_1.2fr_1.2fr_1.4fr_1.4fr_0.8fr_0.8fr_0.6fr] gap-2 px-6 py-3 border-b border-gray-100 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+          <div className="grid grid-cols-[2fr_1.2fr_1.2fr_1.4fr_1.4fr_0.8fr_0.8fr_0.8fr] gap-2 px-6 py-3 border-b border-gray-100 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
             <div>{t.managerAccess.name}</div>
             <div>{t.managerAccess.role}</div>
             <div>{t.managerAccess.permissions}</div>
@@ -42,7 +47,7 @@ export function WorkersTable({ workers, onViewWorker }: WorkersTableProps) {
             <div>{t.settings.language}</div>
             <div>{t.common.duration}</div>
             <div>{t.common.status}</div>
-            <div>{t.topbar.viewAll}</div>
+            <div className="text-right">Actions</div>
           </div>
 
           {/* Rows */}
@@ -50,7 +55,7 @@ export function WorkersTable({ workers, onViewWorker }: WorkersTableProps) {
         {workers.map((worker) => (
           <div
             key={worker.id}
-            className="grid grid-cols-[2fr_1.2fr_1.2fr_1.4fr_1.4fr_0.8fr_0.8fr_0.6fr] gap-2 items-center px-6 py-4 hover:bg-gray-50/60 transition-colors group"
+            className="grid grid-cols-[2fr_1.2fr_1.2fr_1.4fr_1.4fr_0.8fr_0.8fr_0.8fr] gap-2 items-center px-6 py-4 hover:bg-gray-50/60 transition-colors group"
           >
             {/* Name */}
             <div className="flex items-center gap-3 min-w-0">
@@ -93,14 +98,23 @@ export function WorkersTable({ workers, onViewWorker }: WorkersTableProps) {
               {worker.status}
             </div>
 
-            {/* View */}
-            <div>
+            {/* Actions */}
+            <div className="flex items-center justify-end gap-2">
               <button
                 onClick={() => onViewWorker(worker)}
-                className="text-xs text-[#0ea5e9] font-medium hover:underline cursor-pointer opacity-60 group-hover:opacity-100 transition-opacity"
+                className="text-xs text-[#0ea5e9] font-medium hover:underline cursor-pointer opacity-80 group-hover:opacity-100 transition-opacity"
               >
                 {t.topbar.viewAll}
               </button>
+              {onEditWorker && (
+                <button
+                  onClick={() => onEditWorker(worker)}
+                  className="p-1 rounded text-gray-400 hover:text-[#0ea5e9] hover:bg-sky-50 transition-colors cursor-pointer"
+                  title="Edit Worker Details"
+                >
+                  <MdEdit className="text-base" />
+                </button>
+              )}
             </div>
           </div>
         ))}
@@ -113,3 +127,4 @@ export function WorkersTable({ workers, onViewWorker }: WorkersTableProps) {
     </div>
   );
 }
+

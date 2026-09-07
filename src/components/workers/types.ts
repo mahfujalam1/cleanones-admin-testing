@@ -9,10 +9,12 @@ export interface Worker {
   hourlyRate?: number;
   languages: string[];
   hours: string;
-  status: 'On Shift' | 'Active' | 'Off Duty';
+  status: 'On Shift' | 'Active' | 'Off Duty' | 'Suspended' | 'Banned';
   email: string;
   phone: string;
   code: string;
+  nationalId?: string;
+  certificates?: string[];
   completedShifts: number;
   avgPhotoScore: number;
   weeklyAvailability: boolean[]; // Mon–Sun, 7 items

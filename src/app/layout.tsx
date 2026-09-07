@@ -10,24 +10,21 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "CleanOnes - Next-level cleaning",
+  title: "CleanOnes Next level cleaning service",
   description: "Cleaning workforce management on one platform",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "CleanOnes Dashboard",
+    title: "CleanOnes Next level cleaning service",
   },
   icons: {
     icon: [
-      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
-      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
-      { url: "/icon.png" },
+      { url: "/fav.svg", type: "image/svg+xml" },
+      { url: "/favicon.svg", type: "image/svg+xml" },
     ],
-    apple: [
-      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
-      { url: "/icon.png" },
-    ],
+    shortcut: "/fav.svg",
+    apple: "/fav.svg",
   },
 };
 

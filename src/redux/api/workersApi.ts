@@ -2,6 +2,7 @@ import { baseApi } from "./baseApi";
 import type {
   WorkerApi,
   WorkerInput,
+  UpdateWorkerInput,
   GetWorkerApprovalsResponse,
   ApproveWorkerInput,
 } from "@/services/actions/workers";
@@ -73,6 +74,14 @@ export const workersApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ["workers" as never, "users" as never],
     }),
+    updateWorkerDetails: builder.mutation<WorkerApi, { workerId: string; body: UpdateWorkerInput }>({
+      query: ({ workerId, body }) => ({
+        url: `/manager/workers/${encodeURIComponent(workerId)}`,
+        method: "PATCH",
+        body,
+      }),
+      invalidatesTags: ["workers" as never, "users" as never],
+    }),
     updateWorkerStatus: builder.mutation<string, { workerId: string; status: string; reason: string }>({
       query: ({ workerId, status, reason }) => ({
         url: `/manager/workers/${encodeURIComponent(workerId)}/status`,
@@ -120,9 +129,11 @@ export const {
   useGetWorkerApprovalsQuery,
   useGetAvailableWorkersQuery,
   useCreateWorkerMutation,
+  useUpdateWorkerDetailsMutation,
   useUpdateWorkerStatusMutation,
   useDeleteWorkerMutation,
   useRestoreWorkerMutation,
   useApproveWorkerMutation,
   useRejectWorkerMutation,
 } = workersApi;
+

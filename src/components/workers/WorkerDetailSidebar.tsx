@@ -2,12 +2,13 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { MdOutlineClose, MdEmail, MdPhone, MdLocationOn, MdDescription } from 'react-icons/md';
+import { MdOutlineClose, MdEmail, MdPhone, MdLocationOn, MdDescription, MdEdit, MdAttachMoney } from 'react-icons/md';
 import { Worker, WorkerSidebarTab } from './types';
 
 interface WorkerDetailSidebarProps {
   worker: Worker;
   onClose: () => void;
+  onEdit?: (worker: Worker) => void;
 }
 
 const TABS: WorkerSidebarTab[] = [
@@ -22,7 +23,7 @@ const TABS: WorkerSidebarTab[] = [
 
 const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-export function WorkerDetailSidebar({ worker, onClose }: WorkerDetailSidebarProps) {
+export function WorkerDetailSidebar({ worker, onClose, onEdit }: WorkerDetailSidebarProps) {
   const [activeTab, setActiveTab] = useState<WorkerSidebarTab>('General');
   const tabsRef = useRef<HTMLDivElement>(null);
 
@@ -42,6 +43,12 @@ export function WorkerDetailSidebar({ worker, onClose }: WorkerDetailSidebarProp
       case 'Active':
         return 'text-[#10b981]';
       case 'Off Duty':
+        return 'text-gray-400';
+      case 'Suspended':
+        return 'text-amber-500';
+      case 'Banned':
+        return 'text-red-500';
+      default:
         return 'text-gray-400';
     }
   };
@@ -65,14 +72,25 @@ export function WorkerDetailSidebar({ worker, onClose }: WorkerDetailSidebarProp
       <div className="fixed inset-y-0 right-0 z-50 flex h-dvh w-full flex-col border-l border-gray-200 bg-white sm:w-[420px] animate-in slide-in-from-right duration-300">
         {/* Header */}
         <div className="bg-[#1a2332] text-white p-5 relative flex-shrink-0">
-          <button
-            className="absolute top-4 right-4 text-gray-400 hover:text-white cursor-pointer transition-colors"
-            onClick={onClose}
-          >
-            <MdOutlineClose className="text-xl" />
-          </button>
+          <div className="absolute top-4 right-4 flex items-center gap-2">
+            {onEdit && (
+              <button
+                onClick={() => onEdit(worker)}
+                className="flex items-center gap-1 text-xs font-semibold bg-white/10 hover:bg-white/20 text-white px-2.5 py-1 rounded transition-colors cursor-pointer"
+                title="Edit Worker Details"
+              >
+                <MdEdit className="text-sm" /> Edit
+              </button>
+            )}
+            <button
+              className="text-gray-400 hover:text-white cursor-pointer transition-colors p-1"
+              onClick={onClose}
+            >
+              <MdOutlineClose className="text-xl" />
+            </button>
+          </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 pr-20">
             <img src="/avatar-placeholder.svg" alt={worker.name} className="h-12 w-12 shrink-0 rounded-full border border-white/20 object-cover" />
             <div className="flex-1 min-w-0">
               <h3 className="font-bold text-lg leading-tight truncate">{worker.name}</h3>
@@ -110,7 +128,7 @@ export function WorkerDetailSidebar({ worker, onClose }: WorkerDetailSidebarProp
 
         {/* Tab content */}
         <div className="flex-1 overflow-y-auto">
-          {activeTab === 'General' && <GeneralTab worker={worker} />}
+          {activeTab === 'General' && <GeneralTab worker={worker} onEdit={onEdit} />}
           {activeTab === 'Performance' && <PerformanceTab worker={worker} />}
           {activeTab === 'Shifts' && <ShiftsTab worker={worker} />}
           {activeTab === 'Attendance' && <AttendanceTab worker={worker} />}
@@ -147,17 +165,30 @@ export function WorkerDetailSidebar({ worker, onClose }: WorkerDetailSidebarProp
 
 /* ─── General Tab ─────────────────────────────────────── */
 
-function GeneralTab({ worker }: { worker: Worker }) {
+function GeneralTab({ worker, onEdit }: { worker: Worker; onEdit?: (worker: Worker) => void }) {
   return (
     <div className="p-5 space-y-5">
+      {onEdit && (
+        <button
+          onClick={() => onEdit(worker)}
+          className="w-full flex items-center justify-center gap-2 py-2 px-4 rounded border border-[#0ea5e9] text-[#0ea5e9] hover:bg-[#0ea5e9] hover:text-white text-xs font-semibold transition-colors cursor-pointer"
+        >
+          <MdEdit className="text-base" /> Edit Worker Details
+        </button>
+      )}
+
       {/* Email */}
       <InfoCard
         icon={<MdEmail className="text-[#0ea5e9]" />}
         label="Email"
         value={
-          <a href={`mailto:${worker.email}`} className="text-[#0ea5e9] hover:underline text-sm font-medium">
-            {worker.email}
-          </a>
+          worker.email ? (
+            <a href={`mailto:${worker.email}`} className="text-[#0ea5e9] hover:underline text-sm font-medium">
+              {worker.email}
+            </a>
+          ) : (
+            <span className="text-sm text-gray-400 italic">Not set</span>
+          )
         }
       />
 
@@ -165,34 +196,46 @@ function GeneralTab({ worker }: { worker: Worker }) {
       <InfoCard
         icon={<MdPhone className="text-[#10b981]" />}
         label="Phone"
-        value={<span className="text-sm font-semibold text-gray-900">{worker.phone}</span>}
+        value={<span className="text-sm font-semibold text-gray-900">{worker.phone || 'N/A'}</span>}
+      />
+
+      {/* Hourly Rate */}
+      <InfoCard
+        icon={<MdAttachMoney className="text-[#8b5cf6]" />}
+        label="Hourly Rate"
+        value={<span className="text-sm font-semibold text-gray-900">€{worker.hourlyRate ?? 25}/hr</span>}
       />
 
       {/* Location */}
       <InfoCard
         icon={<MdLocationOn className="text-[#f59e0b]" />}
         label="Location"
-        value={<span className="text-sm font-semibold text-gray-900">{worker.location}</span>}
+        value={<span className="text-sm font-semibold text-gray-900">{worker.location || 'N/A'}</span>}
       />
 
       {/* Languages */}
       <div>
         <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Languages</div>
         <div className="flex flex-wrap gap-2">
-          {worker.languages.map((lang) => (
-            <span key={lang} className="text-xs font-medium px-2.5 py-1 rounded-full bg-[#e0f2fe] text-[#0284c7]">
-              {lang}
-            </span>
-          ))}
+          {worker.languages && worker.languages.length > 0 ? (
+            worker.languages.map((lang) => (
+              <span key={lang} className="text-xs font-medium px-2.5 py-1 rounded-full bg-[#e0f2fe] text-[#0284c7]">
+                {lang}
+              </span>
+            ))
+          ) : (
+            <span className="text-xs text-gray-400 italic">None specified</span>
+          )}
         </div>
       </div>
 
       {/* Position */}
       <div>
         <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Position</div>
-        <div className="text-sm font-semibold text-gray-900">{worker.position}</div>
+        <div className="text-sm font-semibold text-gray-900">{worker.position || 'N/A'}</div>
       </div>
     </div>
+
   );
 }
 

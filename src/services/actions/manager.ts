@@ -8,7 +8,7 @@ export type Faq = { _id: string; serial_no: number; question: string; answer: st
 
 const json = (body: unknown): RequestInit => ({ headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
 export async function getManagerProfile() { return authenticated<ManagerProfile>("/manager/me", { method: "GET" }); }
-export async function updateManagerProfile(input: Pick<ManagerProfile, "full_name" | "phone" | "address" | "website" | "is_active">) { return authenticated<ManagerProfile>("/manager/me", { method: "PATCH", ...json(input) }); }
+export async function updateManagerProfile(input: Partial<Pick<ManagerProfile, "full_name" | "phone" | "address" | "website" | "is_active">>) { return authenticated<ManagerProfile>("/manager/me", { method: "PATCH", ...json(input) }); }
 export async function getCompanyProfile() { return authenticated<CompanyProfile>("/manager/company-profile", { method: "GET" }); }
 export async function updateCompanyProfile(input: Omit<CompanyProfile, "updated_at">) { return authenticated<CompanyProfile>("/manager/company-profile", { method: "PATCH", ...json(input) }); }
 export async function getLegalDocument(type: string) { return authenticated<LegalDocument>(`/manager/legal-documents/${encodeURIComponent(type)}`, { method: "GET" }); }

@@ -19,8 +19,8 @@ export function Select({ value, onValueChange, options, placeholder = "Select an
       <BaseSelect.Icon><ChevronDown className="h-4 w-4 text-gray-400" /></BaseSelect.Icon>
     </BaseSelect.Trigger>
     <BaseSelect.Portal>
-      <BaseSelect.Positioner sideOffset={6} className="z-[100] outline-none">
-        <BaseSelect.Popup className="max-h-64 min-w-[var(--anchor-width)] origin-[var(--transform-origin)] overflow-y-auto rounded border border-gray-200 bg-white p-1 shadow-lg outline-none">
+      <BaseSelect.Positioner side="bottom" align="start" sideOffset={4} className="z-[100] outline-none min-w-[var(--anchor-width)]">
+        <BaseSelect.Popup className="max-h-64 w-[var(--anchor-width)] origin-[var(--transform-origin)] overflow-y-auto rounded border border-gray-200 bg-white p-1 shadow-lg outline-none">
           {options.map((option) => <BaseSelect.Item key={option.value} value={option.value} disabled={option.disabled} className="flex cursor-default items-center gap-2 rounded px-3 py-2 text-sm text-gray-700 outline-none data-[highlighted]:bg-sky-50 data-[highlighted]:text-sky-700 data-[disabled]:opacity-40">
             <BaseSelect.ItemIndicator className="flex h-4 w-4 items-center"><Check className="h-4 w-4 text-sky-500" /></BaseSelect.ItemIndicator>
             <BaseSelect.ItemText>{option.label}</BaseSelect.ItemText>

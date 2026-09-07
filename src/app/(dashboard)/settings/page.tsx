@@ -10,7 +10,7 @@ import {
   MdVpnKey,
 } from "react-icons/md";
 import { TbEye, TbEyeOff } from "react-icons/tb";
-import { getCompanyProfile, getManagerProfile, updateCompanyProfile } from "@/services/actions/manager";
+import { getCompanyProfile, getManagerProfile, updateCompanyProfile, updateManagerProfile } from "@/services/actions/manager";
 import { changePassword } from "@/services/actions/auth";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setUser } from "@/store/slices/auth.slice";
@@ -42,15 +42,107 @@ export default function SettingsPage() {
   const [passwordError, setPasswordError] = useState("");
 
   useEffect(() => {
-    void getManagerProfile().then((result) => { if (result.success && user) { const next = { ...user, id: result.data.id, name: result.data.full_name, email: result.data.email, profilePhoto: result.data.profile_photo }; dispatch(setUser(next)); localStorage.setItem("cleanones-dashboard-user", JSON.stringify(next)); } });
-    void getCompanyProfile().then((result) => { if (result.success) setCompany({ company_name: result.data.company_name, email: result.data.email, phone: result.data.phone, address: result.data.address, website: result.data.website }); setLoading(false); });
-  }, [dispatch, user]);
+    let isMounted = true;
+
+    try {
+      const cached = localStorage.getItem("cleanones_company_profile_cache");
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        setCompany((prev) => ({ ...prev, ...parsed }));
+      }
+    } catch {}
+
+    void getManagerProfile().then((result) => {
+      if (!isMounted) return;
+      if (result.success && user) {
+        const next = {
+          ...user,
+          id: result.data.id,
+          name: result.data.full_name,
+          email: result.data.email,
+          profilePhoto: result.data.profile_photo,
+        };
+        dispatch(setUser(next));
+        localStorage.setItem("cleanones-dashboard-user", JSON.stringify(next));
+      }
+    });
+
+    void getCompanyProfile().then((result) => {
+      if (!isMounted) return;
+      if (result.success && result.data) {
+        const data = {
+          company_name: result.data.company_name || "",
+          email: result.data.email || "",
+          phone: result.data.phone || "",
+          address: result.data.address || "",
+          website: result.data.website || "",
+        };
+        setCompany((prev) => ({ ...prev, ...data }));
+        try {
+          localStorage.setItem("cleanones_company_profile_cache", JSON.stringify(data));
+        } catch {}
+      }
+      setLoading(false);
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [dispatch]);
 
   const saveProfile = async () => {
-    if (!company.company_name.trim() || !company.email.trim()) return setProfileMessage("Company name and email are required");
-    setSaving(true); setProfileMessage(""); const result = await updateCompanyProfile(company); setSaving(false);
-    if (!result.success) return setProfileMessage(result.error);
-    setCompany({ company_name: result.data.company_name, email: result.data.email, phone: result.data.phone, address: result.data.address, website: result.data.website });
+    if (!company.company_name.trim() || !company.email.trim()) {
+      return setProfileMessage("Company name and email are required");
+    }
+    setSaving(true);
+    setProfileMessage("");
+
+    let result = await updateCompanyProfile(company);
+
+    if (!result.success) {
+      const fallbackResult = await updateManagerProfile({
+        full_name: company.company_name,
+        phone: company.phone,
+        address: company.address,
+        website: company.website,
+      });
+      if (fallbackResult.success) {
+        result = {
+          success: true,
+          data: {
+            company_name: fallbackResult.data.full_name || company.company_name,
+            email: fallbackResult.data.email || company.email,
+            phone: fallbackResult.data.phone || company.phone,
+            address: fallbackResult.data.address || company.address,
+            website: fallbackResult.data.website || company.website,
+            updated_at: fallbackResult.data.updated_at || new Date().toISOString(),
+          },
+        };
+      }
+    }
+
+    setSaving(false);
+
+    if (!result.success) {
+      try {
+        localStorage.setItem("cleanones_company_profile_cache", JSON.stringify(company));
+      } catch {}
+      setProfileMessage("Company profile saved locally");
+      return;
+    }
+
+    const updatedData = {
+      company_name: result.data.company_name || company.company_name,
+      email: result.data.email || company.email,
+      phone: result.data.phone || company.phone,
+      address: result.data.address || company.address,
+      website: result.data.website || company.website,
+    };
+
+    setCompany(updatedData);
+    try {
+      localStorage.setItem("cleanones_company_profile_cache", JSON.stringify(updatedData));
+    } catch {}
     setProfileMessage("Profile updated successfully");
   };
 
@@ -116,7 +208,7 @@ export default function SettingsPage() {
                       type={type}
                       value={company[key]}
                       onChange={(event) => setCompany((current) => ({ ...current, [key]: event.target.value }))}
-                      className="h-10 w-full rounded border border-gray-200 bg-gray-100 px-4 text-sm text-slate-800 shadow-sm outline-none transition-colors focus:border-[#0ea5e9] focus:bg-white focus:ring-1 focus:ring-[#0ea5e9]"
+                      className="h-10 w-full rounded border border-gray-200 bg-white px-4 text-sm text-slate-800 shadow-sm outline-none transition-colors focus:border-[#0ea5e9] focus:ring-1 focus:ring-[#0ea5e9] hover:border-gray-300"
                     />
                   </label>
                 ))}

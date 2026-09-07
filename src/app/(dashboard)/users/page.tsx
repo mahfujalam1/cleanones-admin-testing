@@ -8,8 +8,9 @@ import { WorkersTable } from '@/components/workers/WorkersTable';
 import { WorkerDetailSidebar } from '@/components/workers/WorkerDetailSidebar';
 import { AddWorkerModal } from '@/components/workers/AddWorkerModal';
 import { PendingApprovalsModal } from '@/components/workers/PendingApprovalsModal';
+import { EditWorkerModal } from '@/components/workers/EditWorkerModal';
 import type { Worker } from '@/components/workers/types';
-import { createWorker, getWorkerApprovals } from '@/services/actions/workers';
+import { createWorker, updateWorkerDetails, getWorkerApprovals, type UpdateWorkerInput } from '@/services/actions/workers';
 import { useGetWorkersQuery } from '@/redux/api/dashboardApi';
 import { TableSkeleton } from '@/components/shared/SkeletonLoader';
 import { BackendPagination } from '@/components/shared/BackendPagination';
@@ -39,9 +40,32 @@ export default function WorkersPage() {
   const [workerFilter, setWorkerFilter] = useState<WorkerFilter>('All Workers');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('All');
   const [selectedWorkerId, setSelectedWorkerId] = useState<string | null>(null);
+  const [editingWorker, setEditingWorker] = useState<Worker | null>(null);
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [pendingModalOpen, setPendingModalOpen] = useState(false);
+
+  const [workerCache, setWorkerCache] = useState<Record<string, Partial<import('@/services/actions/workers').WorkerApi>>>({});
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('cleanones_worker_cache');
+      if (saved) setWorkerCache(JSON.parse(saved));
+    } catch {}
+  }, []);
+
+  const updateCache = (workerId: string, details: Partial<import('@/services/actions/workers').WorkerApi>) => {
+    setWorkerCache((prev) => {
+      const updated = {
+        ...prev,
+        [workerId]: { ...(prev[workerId] || {}), ...details }
+      };
+      try {
+        localStorage.setItem('cleanones_worker_cache', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+  };
 
   const type = workerFilter === 'Employees' ? 'employee' : workerFilter === 'Freelancers' ? 'freelancer' : undefined;
 
@@ -54,7 +78,7 @@ export default function WorkersPage() {
 
   const rawWorkers = workersRes?.workers ?? [];
   const totalWorkers = workersRes?.total_count ?? 0;
-  const workers = rawWorkers.map(mapWorker);
+  const workers = rawWorkers.map((item) => mapWorker(item, workerCache));
   const counts = {
     total: totalWorkers,
     employees: rawWorkers.filter(w => (w.worker_type || '').toLowerCase() === 'employee').length,
@@ -100,8 +124,41 @@ export default function WorkersPage() {
     if (!result.success) {
       return result.error;
     }
+    updateCache(result.data?.worker_id || '', {
+      full_name: data.name,
+      email: data.email,
+      phone: data.phone,
+      position: data.position,
+      location: data.location,
+      hourly_rate: rate,
+      languages: data.languages,
+    });
     void refetch();
     setAddModalOpen(false);
+  };
+
+  const handleUpdateWorker = async (workerId: string, input: UpdateWorkerInput): Promise<string | void> => {
+    const result = await updateWorkerDetails(workerId, input);
+    if (!result.success) {
+      return result.error;
+    }
+    const updatedObj: Partial<import('@/services/actions/workers').WorkerApi> = {
+      full_name: input.full_name || input.name,
+      email: input.email,
+      phone: input.phone || input.phone_number,
+      position: input.position,
+      base_location: input.base_location,
+      location: input.base_location,
+      hourly_rate: input.hourly_rate,
+      languages: input.languages,
+      status: input.status,
+      national_id: input.national_id,
+      certificates: input.certificates,
+      ...(typeof result.data === 'object' && result.data ? result.data : {}),
+    };
+    updateCache(workerId, updatedObj);
+    void refetch();
+    setEditingWorker(null);
   };
 
   return (
@@ -185,7 +242,17 @@ export default function WorkersPage() {
 
       {/* Table */}
       {error && <p className="rounded border border-red-200 bg-red-50 p-3 text-xs text-red-700">{error}</p>}
-      {loading ? <div className="overflow-hidden rounded border border-slate-200 bg-white"><TableSkeleton rows={7} columns={7} /></div> : <WorkersTable workers={filtered} onViewWorker={(w) => setSelectedWorkerId(w.id)} />}
+      {loading ? (
+        <div className="overflow-hidden rounded border border-slate-200 bg-white">
+          <TableSkeleton rows={7} columns={7} />
+        </div>
+      ) : (
+        <WorkersTable
+          workers={filtered}
+          onViewWorker={(w) => setSelectedWorkerId(w.id)}
+          onEditWorker={(w) => setEditingWorker(w)}
+        />
+      )}
       <BackendPagination page={page} limit={limit} total={counts.total} onPageChange={setPage} />
 
       {/* Sidebar */}
@@ -193,6 +260,10 @@ export default function WorkersPage() {
         <WorkerDetailSidebar
           worker={selectedWorker}
           onClose={() => setSelectedWorkerId(null)}
+          onEdit={(w) => {
+            setSelectedWorkerId(null);
+            setEditingWorker(w);
+          }}
         />
       )}
 
@@ -201,6 +272,15 @@ export default function WorkersPage() {
         <AddWorkerModal
           onClose={() => setAddModalOpen(false)}
           onAdd={handleAddWorker}
+        />
+      )}
+
+      {/* Edit Modal */}
+      {editingWorker && (
+        <EditWorkerModal
+          worker={editingWorker}
+          onClose={() => setEditingWorker(null)}
+          onUpdate={handleUpdateWorker}
         />
       )}
 
@@ -220,7 +300,57 @@ export default function WorkersPage() {
   );
 }
 
-function mapWorker(item: import('@/services/actions/workers').WorkerApi): Worker { const status = item.status.toLowerCase() === 'on_shift' ? 'On Shift' : item.status.toLowerCase() === 'off_duty' ? 'Off Duty' : 'Active'; return { id: item.worker_id, code: item.worker_id, name: item.full_name, initials: item.full_name.split(' ').map((part) => part[0]).join('').slice(0, 2), avatarColor: 'bg-sky-500', workerType: item.worker_type.toLowerCase() === 'freelancer' ? 'Freelancer' : 'Employee', position: item.position, location: item.location, languages: item.languages, hours: item.hours_worked, status, email: '', phone: '', completedShifts: 0, avgPhotoScore: 0, weeklyAvailability: [], monthlyHours: item.hours_worked, lateDays: 0, absentDays: 0, attendanceRecords: [], documents: [], totalEarned: 0, totalPaid: 0, remaining: 0, invoices: [], shiftRecords: [] }; }
+function mapWorker(
+  item: import('@/services/actions/workers').WorkerApi,
+  cache: Record<string, Partial<import('@/services/actions/workers').WorkerApi>> = {}
+): Worker {
+  const cached = cache[item.worker_id] || {};
+  const merged = { ...item, ...cached };
+
+  const s = (merged.status || item.status || '').toLowerCase().replaceAll(' ', '_');
+  let status: Worker['status'] = 'Active';
+  if (s === 'on_shift') status = 'On Shift';
+  else if (s === 'off_duty') status = 'Off Duty';
+  else if (s === 'suspended') status = 'Suspended';
+  else if (s === 'banned') status = 'Banned';
+  else status = 'Active';
+
+  const rawPhone = merged.phone || (merged as any).phone_number || (merged as any).mobile || (merged as any).mobile_number || (merged as any).phone_no || item.phone || (item as any).phone_number || (item as any).mobile || (item as any).mobile_number || (item as any).phone_no || '';
+  const rawEmail = merged.email || (merged as any).email_address || item.email || (item as any).email_address || '';
+
+  return {
+    id: item.worker_id,
+    code: item.worker_id,
+    name: merged.full_name || merged.name || item.full_name || item.name || '',
+    initials: (merged.full_name || merged.name || item.full_name || item.name || 'W').split(' ').map((part) => part[0]).join('').slice(0, 2).toUpperCase(),
+    avatarColor: 'bg-sky-500',
+    workerType: (merged.worker_type || item.worker_type || '').toLowerCase() === 'freelancer' ? 'Freelancer' : 'Employee',
+    position: merged.position || item.position || '',
+    location: merged.location || merged.base_location || item.location || item.base_location || '',
+    hourlyRate: merged.hourly_rate ?? item.hourly_rate ?? 25,
+    languages: merged.languages || item.languages || [],
+    hours: item.hours_worked || '0h',
+    status,
+    email: rawEmail,
+    phone: rawPhone,
+    nationalId: merged.national_id || item.national_id,
+    certificates: merged.certificates || item.certificates,
+    completedShifts: 0,
+    avgPhotoScore: 0,
+    weeklyAvailability: [],
+    monthlyHours: item.hours_worked || '0h',
+    lateDays: 0,
+    absentDays: 0,
+    attendanceRecords: [],
+    documents: [],
+    totalEarned: 0,
+    totalPaid: 0,
+    remaining: 0,
+    invoices: [],
+    shiftRecords: []
+  };
+}
+
 
 /* ─── Stat Card ──────────────────────────────────────── */
 

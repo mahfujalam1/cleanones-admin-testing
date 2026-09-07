@@ -28,7 +28,7 @@ export function AddWorkerModal({ onClose, onAdd, error: externalError }: AddWork
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [hourlyRate, setHourlyRate] = useState<number | ''>(25);
-  const [status, setStatus] = useState<'On Shift' | 'Active' | 'Off Duty'>('Active');
+  const [status, setStatus] = useState<Worker['status']>('Active');
   const [location, setLocation] = useState('');
   const [locationOptions, setLocationOptions] = useState<Array<{ id: string; name: string }>>([]);
   const [locationsLoading, setLocationsLoading] = useState(true);
@@ -238,7 +238,7 @@ export function AddWorkerModal({ onClose, onAdd, error: externalError }: AddWork
                 <label className="text-xs font-semibold text-gray-700 mb-1.5 block">Status</label>
                 <select
                   value={status}
-                  onChange={(e) => setStatus(e.target.value as NewWorker['status'])}
+                  onChange={(e) => setStatus(e.target.value as Worker['status'])}
                   className="w-full h-10 rounded border border-gray-300 bg-white px-3 text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-[#0ea5e9] focus:border-[#0ea5e9] transition-colors appearance-none cursor-pointer"
                 >
                   <option value="Active">Active</option>
