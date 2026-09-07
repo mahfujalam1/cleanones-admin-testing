@@ -9,7 +9,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { getLocale } from '@/lib/locale';
 import { getDashboardTranslation } from '@/lib/translations';
-import { MdSearch } from 'react-icons/md';
+import { MdAdd, MdSearch } from 'react-icons/md';
 import { TbDoor, TbClock, TbCamera, TbChecklist } from 'react-icons/tb';
 import { getRoomLocations, getRooms } from '@/services/actions/rooms';
 import { getClientOptions, type ClientOption } from '@/services/actions/locations';
@@ -207,7 +207,7 @@ export default function RoomsPage() {
                         onClick={() => setShowModal(true)}
                         className="flex h-10 items-center justify-center gap-1.5 rounded bg-[#0ea5e9] px-4 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#0284c7] cursor-pointer whitespace-nowrap"
                     >
-                        {t.rooms.addRoom}
+                        <MdAdd className="text-lg" /> {t.rooms.addRoom}
                     </button>
                 </div>
             </div>

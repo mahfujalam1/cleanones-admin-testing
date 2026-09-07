@@ -134,15 +134,15 @@ export const translations: Record<string, DashboardTranslationDict> = {
       actions: "Actions",
     },
     plans: {
-      title: "Cleaning Plans", addPlan: "+ Add Cleaning Plan", searchPlaceholder: "Search cleaning plans...",
+      title: "Cleaning Plans", addPlan: "Add Cleaning Plan", searchPlaceholder: "Search cleaning plans...",
       noPlansFound: "No cleaning plans found",
     },
     rooms: {
-      title: "Rooms", addRoom: "+ Add Room", searchPlaceholder: "Search rooms...",
+      title: "Rooms", addRoom: "Add Room", searchPlaceholder: "Search rooms...",
       noRoomsFound: "No rooms found",
     },
     locations: {
-      title: "Locations", addLocation: "+ Add Location", searchPlaceholder: "Search locations...",
+      title: "Locations", addLocation: "Add Location", searchPlaceholder: "Search locations...",
       noLocationsFound: "No locations found",
     },
     workers: {
@@ -151,7 +151,7 @@ export const translations: Record<string, DashboardTranslationDict> = {
       pendingApprovals: "Pending Approvals",
     },
     clients: {
-      title: "Clients", addClient: "+ Add Client", searchPlaceholder: "Search clients...",
+      title: "Clients", addClient: "Add Client", searchPlaceholder: "Search clients...",
       noClientsFound: "No clients found",
     },
     dashboard: {
@@ -221,12 +221,12 @@ export const translations: Record<string, DashboardTranslationDict> = {
       termsAndConditionsSubtitle: "Rules and guidelines for platform use",
     },
     roster: {
-      title: "Shift Roster", addShift: "+ Create Shift", searchPlaceholder: "Search roster...",
+      title: "Shift Roster", addShift: "Create Shift", searchPlaceholder: "Search roster...",
       worker: "Worker", location: "Location", room: "Room", startTime: "Start Time", endTime: "End Time",
       date: "Date", createShift: "Create Shift", weekView: "Week View", dayView: "Day View", noShifts: "No shifts scheduled",
     },
     managerAccess: {
-      title: "Manager Access Control", addManager: "+ Add Manager", name: "Name", email: "Email",
+      title: "Manager Access Control", addManager: "Add Manager", name: "Name", email: "Email",
       role: "Role", permissions: "Permissions", activeManagers: "Active Managers", noManagers: "No managers found",
     },
     chat: {
@@ -256,15 +256,15 @@ export const translations: Record<string, DashboardTranslationDict> = {
       actions: "Acties",
     },
     plans: {
-      title: "Schoonmaakplannen", addPlan: "+ Schoonmaakplan toevoegen", searchPlaceholder: "Zoek schoonmaakplannen...",
+      title: "Schoonmaakplannen", addPlan: "Schoonmaakplan toevoegen", searchPlaceholder: "Zoek schoonmaakplannen...",
       noPlansFound: "Geen schoonmaakplannen gevonden",
     },
     rooms: {
-      title: "Kamers", addRoom: "+ Kamer toevoegen", searchPlaceholder: "Zoek kamers...",
+      title: "Kamers", addRoom: "Kamer toevoegen", searchPlaceholder: "Zoek kamers...",
       noRoomsFound: "Geen kamers gevonden",
     },
     locations: {
-      title: "Locaties", addLocation: "+ Locatie toevoegen", searchPlaceholder: "Zoek locaties...",
+      title: "Locaties", addLocation: "Locatie toevoegen", searchPlaceholder: "Zoek locaties...",
       noLocationsFound: "Geen locaties gevonden",
     },
     workers: {
@@ -273,7 +273,7 @@ export const translations: Record<string, DashboardTranslationDict> = {
       pendingApprovals: "In afwachting van goedkeuring",
     },
     clients: {
-      title: "Klanten", addClient: "+ Klant toevoegen", searchPlaceholder: "Zoek klanten...",
+      title: "Klanten", addClient: "Klant toevoegen", searchPlaceholder: "Zoek klanten...",
       noClientsFound: "Geen klanten gevonden",
     },
     dashboard: {
@@ -343,12 +343,12 @@ export const translations: Record<string, DashboardTranslationDict> = {
       termsAndConditionsSubtitle: "Regels en richtlijnen voor platformgebruik",
     },
     roster: {
-      title: "Dienstroster", addShift: "+ Dienst Maken", searchPlaceholder: "Zoek in rooster...",
+      title: "Dienstroster", addShift: "Dienst Maken", searchPlaceholder: "Zoek in rooster...",
       worker: "Medewerker", location: "Locatie", room: "Kamer", startTime: "Starttijd", endTime: "Eindtijd",
       date: "Datum", createShift: "Dienst Maken", weekView: "Weekweergave", dayView: "Dagweergave", noShifts: "Geen diensten gepland",
     },
     managerAccess: {
-      title: "Manager Toegangsbeheer", addManager: "+ Manager Toevoegen", name: "Naam", email: "E-mail",
+      title: "Manager Toegangsbeheer", addManager: "Manager Toevoegen", name: "Naam", email: "E-mail",
       role: "Rol", permissions: "Machtigingen", activeManagers: "Actieve Managers", noManagers: "Geen managers gevonden",
     },
     chat: {
@@ -378,15 +378,15 @@ export const translations: Record<string, DashboardTranslationDict> = {
       actions: "Akcje",
     },
     plans: {
-      title: "Plany Sprzątania", addPlan: "+ Dodaj Plan Sprzątania", searchPlaceholder: "Szukaj planów sprzątania...",
+      title: "Plany Sprzątania", addPlan: "Dodaj Plan Sprzątania", searchPlaceholder: "Szukaj planów sprzątania...",
       noPlansFound: "Nie znaleziono planów sprzątania",
     },
     rooms: {
-      title: "Pokoje", addRoom: "+ Dodaj Pokój", searchPlaceholder: "Szukaj pokoi...",
+      title: "Pokoje", addRoom: "Dodaj Pokój", searchPlaceholder: "Szukaj pokoi...",
       noRoomsFound: "Nie znaleziono pokoi",
     },
     locations: {
-      title: "Lokalizacje", addLocation: "+ Dodaj Lokalizację", searchPlaceholder: "Szukaj lokalizacji...",
+      title: "Lokalizacje", addLocation: "Dodaj Lokalizację", searchPlaceholder: "Szukaj lokalizacji...",
       noLocationsFound: "Nie znaleziono lokalizacji",
     },
     workers: {
@@ -395,7 +395,7 @@ export const translations: Record<string, DashboardTranslationDict> = {
       pendingApprovals: "Oczekujące Zatwierdzenia",
     },
     clients: {
-      title: "Klienci", addClient: "+ Dodaj Klienta", searchPlaceholder: "Szukaj klientów...",
+      title: "Klienci", addClient: "Dodaj Klienta", searchPlaceholder: "Szukaj klientów...",
       noClientsFound: "Nie znaleziono klientów",
     },
     dashboard: {
@@ -465,12 +465,12 @@ export const translations: Record<string, DashboardTranslationDict> = {
       termsAndConditionsSubtitle: "Zasady i wytyczne korzystania z platformy",
     },
     roster: {
-      title: "Grafik Zmian", addShift: "+ Utwórz Zmianę", searchPlaceholder: "Szukaj w grafiku...",
+      title: "Grafik Zmian", addShift: "Utwórz Zmianę", searchPlaceholder: "Szukaj w grafiku...",
       worker: "Pracownik", location: "Lokalizacja", room: "Pokój", startTime: "Czas Rozpoczęcia", endTime: "Czas Zakończenia",
       date: "Data", createShift: "Utwórz Zmianę", weekView: "Widok Tygodnia", dayView: "Widok Dnia", noShifts: "Brak zaplanowanych zmian",
     },
     managerAccess: {
-      title: "Kontrola Dostępów Menedżerów", addManager: "+ Dodaj Menedżera", name: "Imię i nazwisko", email: "E-mail",
+      title: "Kontrola Dostępów Menedżerów", addManager: "Dodaj Menedżera", name: "Imię i nazwisko", email: "E-mail",
       role: "Rola", permissions: "Uprawnienia", activeManagers: "Aktywni Menedżerowie", noManagers: "Nie znaleziono menedżerów",
     },
     chat: {
@@ -500,15 +500,15 @@ export const translations: Record<string, DashboardTranslationDict> = {
       actions: "Дії",
     },
     plans: {
-      title: "Плани Прибирання", addPlan: "+ Додати План Прибирання", searchPlaceholder: "Пошук планів прибирання...",
+      title: "Плани Прибирання", addPlan: "Додати План Прибирання", searchPlaceholder: "Пошук планів прибирання...",
       noPlansFound: "Планів прибирання не знайдено",
     },
     rooms: {
-      title: "Кімнати", addRoom: "+ Додати Кімнату", searchPlaceholder: "Пошук кімнат...",
+      title: "Кімнати", addRoom: "Додати Кімнату", searchPlaceholder: "Пошук кімнат...",
       noRoomsFound: "Кімнат не знайдено",
     },
     locations: {
-      title: "Локації", addLocation: "+ Додати Локацію", searchPlaceholder: "Пошук локацій...",
+      title: "Локації", addLocation: "Додати Локацію", searchPlaceholder: "Пошук локацій...",
       noLocationsFound: "Локацій не знайдено",
     },
     workers: {
@@ -517,7 +517,7 @@ export const translations: Record<string, DashboardTranslationDict> = {
       pendingApprovals: "Очікують Затвердження",
     },
     clients: {
-      title: "Клієнти", addClient: "+ Додати Клієнта", searchPlaceholder: "Пошук клієнтів...",
+      title: "Клієнти", addClient: "Додати Клієнта", searchPlaceholder: "Пошук клієнтів...",
       noClientsFound: "Клієнтів не знайдено",
     },
     dashboard: {
@@ -587,12 +587,12 @@ export const translations: Record<string, DashboardTranslationDict> = {
       termsAndConditionsSubtitle: "Правила та інструкції використання платформи",
     },
     roster: {
-      title: "Графік Змін", addShift: "+ Створити Зміну", searchPlaceholder: "Пошук у графіку...",
+      title: "Графік Змін", addShift: "Створити Зміну", searchPlaceholder: "Пошук у графіку...",
       worker: "Працівник", location: "Локація", room: "Кімната", startTime: "Час Початку", endTime: "Час Завершення",
       date: "Дата", createShift: "Створити Зміну", weekView: "Тижневий Вигляд", dayView: "Денний Вигляд", noShifts: "Запланованих змін немає",
     },
     managerAccess: {
-      title: "Контроль Доступу Менеджерів", addManager: "+ Додати Менеджера", name: "Ім'я", email: "Email",
+      title: "Контроль Доступу Менеджерів", addManager: "Додати Менеджера", name: "Ім'я", email: "Email",
       role: "Роль", permissions: "Права доступу", activeManagers: "Активні Менеджери", noManagers: "Менеджерів не знайдено",
     },
     chat: {
@@ -622,15 +622,15 @@ export const translations: Record<string, DashboardTranslationDict> = {
       actions: "Ações",
     },
     plans: {
-      title: "Planos de Limpeza", addPlan: "+ Adicionar Plano de Limpeza", searchPlaceholder: "Pesquisar planos...",
+      title: "Planos de Limpeza", addPlan: "Adicionar Plano de Limpeza", searchPlaceholder: "Pesquisar planos...",
       noPlansFound: "Nenhum plano encontrado",
     },
     rooms: {
-      title: "Divisões", addRoom: "+ Adicionar Divisão", searchPlaceholder: "Pesquisar divisões...",
+      title: "Divisões", addRoom: "Adicionar Divisão", searchPlaceholder: "Pesquisar divisões...",
       noRoomsFound: "Nenhuma divisão encontrada",
     },
     locations: {
-      title: "Localizações", addLocation: "+ Adicionar Localização", searchPlaceholder: "Pesquisar localizações...",
+      title: "Localizações", addLocation: "Adicionar Localização", searchPlaceholder: "Pesquisar localizações...",
       noLocationsFound: "Nenhuma localização encontrada",
     },
     workers: {
@@ -639,7 +639,7 @@ export const translations: Record<string, DashboardTranslationDict> = {
       pendingApprovals: "Aprovações Pendentes",
     },
     clients: {
-      title: "Clientes", addClient: "+ Adicionar Cliente", searchPlaceholder: "Pesquisar clientes...",
+      title: "Clientes", addClient: "Adicionar Cliente", searchPlaceholder: "Pesquisar clientes...",
       noClientsFound: "Nenhum cliente encontrado",
     },
     dashboard: {
@@ -709,12 +709,12 @@ export const translations: Record<string, DashboardTranslationDict> = {
       termsAndConditionsSubtitle: "Regras e orientações para utilização da plataforma",
     },
     roster: {
-      title: "Escala de Turnos", addShift: "+ Criar Turno", searchPlaceholder: "Pesquisar na escala...",
+      title: "Escala de Turnos", addShift: "Criar Turno", searchPlaceholder: "Pesquisar na escala...",
       worker: "Trabalhador", location: "Localização", room: "Divisão", startTime: "Hora de Início", endTime: "Hora de Fim",
       date: "Data", createShift: "Criar Turno", weekView: "Vista de Semana", dayView: "Vista de Dia", noShifts: "Nenhum turno agendado",
     },
     managerAccess: {
-      title: "Controlo de Acesso de Gestores", addManager: "+ Adicionar Gestor", name: "Nome", email: "Email",
+      title: "Controlo de Acesso de Gestores", addManager: "Adicionar Gestor", name: "Nome", email: "Email",
       role: "Função", permissions: "Permissões", activeManagers: "Gestores Ativos", noManagers: "Nenhum gestor encontrado",
     },
     chat: {
@@ -744,15 +744,15 @@ export const translations: Record<string, DashboardTranslationDict> = {
       actions: "الإجراءات",
     },
     plans: {
-      title: "خطط التنظيف", addPlan: "+ إضافة خطة تنظيف", searchPlaceholder: "البحث في خطط التنظيف...",
+      title: "خطط التنظيف", addPlan: "إضافة خطة تنظيف", searchPlaceholder: "البحث في خطط التنظيف...",
       noPlansFound: "لم يتم العثور على خطط تنظيف",
     },
     rooms: {
-      title: "الغرف", addRoom: "+ إضافة غرفة", searchPlaceholder: "البحث في الغرف...",
+      title: "الغرف", addRoom: "إضافة غرفة", searchPlaceholder: "البحث في الغرف...",
       noRoomsFound: "لم يتم العثور على غرف",
     },
     locations: {
-      title: "المواقع", addLocation: "+ إضافة موقع", searchPlaceholder: "البحث في المواقع...",
+      title: "المواقع", addLocation: "إضافة موقع", searchPlaceholder: "البحث في المواقع...",
       noLocationsFound: "لم يتم العثور على مواقع",
     },
     workers: {
@@ -761,7 +761,7 @@ export const translations: Record<string, DashboardTranslationDict> = {
       pendingApprovals: "في انتظار الموافقة",
     },
     clients: {
-      title: "العملاء", addClient: "+ إضافة عميل", searchPlaceholder: "البحث في العملاء...",
+      title: "العملاء", addClient: "إضافة عميل", searchPlaceholder: "البحث في العملاء...",
       noClientsFound: "لم يتم العثور على عملاء",
     },
     dashboard: {
@@ -831,12 +831,12 @@ export const translations: Record<string, DashboardTranslationDict> = {
       termsAndConditionsSubtitle: "القواعد والإرشادات لاستخدام المنصة",
     },
     roster: {
-      title: "جدول الورديات", addShift: "+ إنشاء وردية", searchPlaceholder: "البحث في جدول الورديات...",
+      title: "جدول الورديات", addShift: "إنشاء وردية", searchPlaceholder: "البحث في جدول الورديات...",
       worker: "العامل", location: "الموقع", room: "الغرفة", startTime: "وقت البدء", endTime: "وقت الانتهاء",
       date: "التاريخ", createShift: "إنشاء وردية", weekView: "عرض الأسبوع", dayView: "عرض اليوم", noShifts: "لا توجد ورديات مجدولة",
     },
     managerAccess: {
-      title: "صلاحيات المدراء", addManager: "+ إضافة مدير", name: "الاسم", email: "البريد الإلكتروني",
+      title: "صلاحيات المدراء", addManager: "إضافة مدير", name: "الاسم", email: "البريد الإلكتروني",
       role: "الدور", permissions: "الصلاحيات", activeManagers: "المدراء النشطون", noManagers: "لم يتم العثور على مدراء",
     },
     chat: {
@@ -866,15 +866,15 @@ export const translations: Record<string, DashboardTranslationDict> = {
       actions: "Actions",
     },
     plans: {
-      title: "Plans de Nettoyage", addPlan: "+ Ajouter un Plan", searchPlaceholder: "Rechercher des plans...",
+      title: "Plans de Nettoyage", addPlan: "Ajouter un Plan", searchPlaceholder: "Rechercher des plans...",
       noPlansFound: "Aucun plan de nettoyage trouvé",
     },
     rooms: {
-      title: "Pièces", addRoom: "+ Ajouter une Pièce", searchPlaceholder: "Rechercher des pièces...",
+      title: "Pièces", addRoom: "Ajouter une Pièce", searchPlaceholder: "Rechercher des pièces...",
       noRoomsFound: "Aucune pièce trouvée",
     },
     locations: {
-      title: "Emplacements", addLocation: "+ Ajouter un Emplacement", searchPlaceholder: "Rechercher des emplacements...",
+      title: "Emplacements", addLocation: "Ajouter un Emplacement", searchPlaceholder: "Rechercher des emplacements...",
       noLocationsFound: "Aucun emplacement trouvé",
     },
     workers: {
@@ -883,7 +883,7 @@ export const translations: Record<string, DashboardTranslationDict> = {
       pendingApprovals: "En Attente de Validation",
     },
     clients: {
-      title: "Clients", addClient: "+ Ajouter un Client", searchPlaceholder: "Rechercher des clients...",
+      title: "Clients", addClient: "Ajouter un Client", searchPlaceholder: "Rechercher des clients...",
       noClientsFound: "Aucun client trouvé",
     },
     dashboard: {
@@ -953,12 +953,12 @@ export const translations: Record<string, DashboardTranslationDict> = {
       termsAndConditionsSubtitle: "Règles et directives pour l'utilisation de la plateforme",
     },
     roster: {
-      title: "Planning des Shifts", addShift: "+ Créer un Shift", searchPlaceholder: "Rechercher dans le planning...",
+      title: "Planning des Shifts", addShift: "Créer un Shift", searchPlaceholder: "Rechercher dans le planning...",
       worker: "Employé", location: "Emplacement", room: "Pièce", startTime: "Heure de Début", endTime: "Heure de Fin",
       date: "Date", createShift: "Créer un Shift", weekView: "Vue Semaine", dayView: "Vue Jour", noShifts: "Aucun shift planifié",
     },
     managerAccess: {
-      title: "Contrôle d'Accès Managers", addManager: "+ Ajouter un Manager", name: "Nom", email: "Email",
+      title: "Contrôle d'Accès Managers", addManager: "Ajouter un Manager", name: "Nom", email: "Email",
       role: "Rôle", permissions: "Permissions", activeManagers: "Managers Actifs", noManagers: "Aucun manager trouvé",
     },
     chat: {
@@ -1075,12 +1075,12 @@ export const translations: Record<string, DashboardTranslationDict> = {
       termsAndConditionsSubtitle: "Reglas y pautas para el uso de la plataforma",
     },
     roster: {
-      title: "Turnos Programados", addShift: "+ Crear Turno", searchPlaceholder: "Buscar en turnos...",
+      title: "Turnos Programados", addShift: "Crear Turno", searchPlaceholder: "Buscar en turnos...",
       worker: "Trabajador", location: "Ubicación", room: "Habitación", startTime: "Hora de Inicio", endTime: "Hora de Fin",
       date: "Fecha", createShift: "Crear Turno", weekView: "Vista Semanal", dayView: "Vista Diaria", noShifts: "Sin turnos programados",
     },
     managerAccess: {
-      title: "Control de Acceso de Gerentes", addManager: "+ Agregar Gerente", name: "Nombre", email: "Email",
+      title: "Control de Acceso de Gerentes", addManager: "Agregar Gerente", name: "Nombre", email: "Email",
       role: "Rol", permissions: "Permisos", activeManagers: "Gerentes Activos", noManagers: "No se encontraron gerentes",
     },
     chat: {

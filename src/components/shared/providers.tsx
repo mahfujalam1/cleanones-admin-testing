@@ -4,6 +4,9 @@ import { useEffect } from "react";
 import { Provider } from "react-redux";
 import { store } from "@/store";
 import { initializeAuth } from "@/store/slices/auth.slice";
+import { getCurrentUser } from "@/services/actions/auth";
+import { getManagerProfile } from "@/services/actions/manager";
+import type { DashboardRole } from "@/lib/access-control";
 
 function AuthInitializer({ children }: { children: React.ReactNode }) {
   useEffect(() => {
@@ -15,22 +18,64 @@ function AuthInitializer({ children }: { children: React.ReactNode }) {
     if (savedUser) {
       try {
         store.dispatch(initializeAuth(JSON.parse(savedUser)));
-        return;
       } catch {
         localStorage.removeItem("cleanones-dashboard-user");
       }
     }
 
     if (token) {
-      const fallbackUser = { id: "manager", name: "Manager", email: "manager@cleanones.com", role: "SUPER_ADMIN" as const };
-      try {
-        localStorage.setItem("cleanones-dashboard-user", JSON.stringify(fallbackUser));
-      } catch {}
-      store.dispatch(initializeAuth(fallbackUser));
+      void getCurrentUser().then((res) => {
+        if (res.success && res.data) {
+          const rawRole = (res.data.role || "MANAGER").toUpperCase().replaceAll("-", "_");
+          const role: DashboardRole = (rawRole === "ADMIN" || rawRole === "SUPERADMIN" ? "SUPER_ADMIN" : rawRole) as DashboardRole;
+          const trueId = res.data.id || res.data._id || res.data.user_id || "manager";
+          const trueName = res.data.full_name || res.data.name || "Manager";
+          const syncedUser = {
+            id: trueId,
+            name: trueName,
+            email: res.data.email,
+            role,
+            profilePhoto: res.data.profile_photo,
+          };
+          store.dispatch(initializeAuth(syncedUser));
+          try {
+            localStorage.setItem("cleanones-dashboard-user", JSON.stringify(syncedUser));
+            localStorage.setItem("cleanones-chat-my-id", trueId);
+            localStorage.setItem("cleanones-chat-my-name", trueName);
+          } catch {}
+        }
+      });
+
+      void getManagerProfile().then((res) => {
+        if (res.success && res.data) {
+          const rawRole = (res.data.role || "MANAGER").toUpperCase().replaceAll("-", "_");
+          const role: DashboardRole = (rawRole === "ADMIN" || rawRole === "SUPERADMIN" ? "SUPER_ADMIN" : rawRole) as DashboardRole;
+          const trueId = res.data.id || (res.data as any)._id || "manager";
+          const trueName = res.data.full_name || (res.data as any).name || "Manager";
+          const syncedUser = {
+            id: trueId,
+            name: trueName,
+            email: res.data.email,
+            role,
+            profilePhoto: res.data.profile_photo,
+          };
+          store.dispatch(initializeAuth(syncedUser));
+          try {
+            localStorage.setItem("cleanones-dashboard-user", JSON.stringify(syncedUser));
+            localStorage.setItem("cleanones-chat-my-id", trueId);
+            localStorage.setItem("cleanones-chat-my-name", trueName);
+          } catch {}
+        } else if (!savedUser) {
+          const fallbackUser = { id: "manager", name: "Manager", email: "manager@cleanones.com", role: "SUPER_ADMIN" as const };
+          store.dispatch(initializeAuth(fallbackUser));
+        }
+      });
       return;
     }
 
-    store.dispatch(initializeAuth(null));
+    if (!savedUser) {
+      store.dispatch(initializeAuth(null));
+    }
   }, []);
   return children;
 }

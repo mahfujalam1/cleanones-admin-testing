@@ -151,7 +151,7 @@ export function AddClientModal({ onClose, onAdd }: AddClientModalProps) {
             disabled={saving}
             className="px-5 py-2.5 text-sm font-semibold text-white bg-[#0ea5e9] hover:bg-[#0284c7] rounded shadow-sm transition-colors cursor-pointer disabled:opacity-60"
           >
-            {saving ? 'Adding...' : '+ Add Client'}
+            {saving ? 'Adding...' : 'Add Client'}
           </button>
         </div>
       </form>

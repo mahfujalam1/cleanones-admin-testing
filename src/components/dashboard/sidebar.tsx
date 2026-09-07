@@ -117,8 +117,8 @@ export default function Sidebar() {
                   onMouseEnter={() => handleLinkHover(link.href)}
                   onClick={() => dispatch(closeMobileSidebar())}
                   className={`flex h-9 items-center justify-between rounded px-3 text-sm font-medium transition-colors ${isActive
-                      ? 'bg-[#e5f6fc] text-primary'
-                      : 'text-sidebar-foreground hover:bg-[#f2f9fc] hover:text-foreground'
+                    ? 'bg-[#e5f6fc] text-primary'
+                    : 'text-sidebar-foreground hover:bg-[#f2f9fc] hover:text-foreground'
                     }`}
                 >
                   <span className="flex items-center gap-2.5">
@@ -144,8 +144,8 @@ export default function Sidebar() {
                   onMouseEnter={() => handleLinkHover(link.href)}
                   onClick={() => dispatch(closeMobileSidebar())}
                   className={`flex h-9 items-center justify-between rounded px-3 text-sm font-medium transition-colors ${isActive
-                      ? 'bg-[#e5f6fc] text-primary'
-                      : 'text-sidebar-foreground hover:bg-[#f2f9fc] hover:text-foreground'
+                    ? 'bg-[#e5f6fc] text-primary'
+                    : 'text-sidebar-foreground hover:bg-[#f2f9fc] hover:text-foreground'
                     }`}
                 >
                   <span className="flex items-center gap-2.5">
@@ -158,7 +158,7 @@ export default function Sidebar() {
             })}
           </nav>
 
-          {user?.role === 'SUPER_ADMIN' && (
+          {/* {user?.role === 'SUPER_ADMIN' && (
             <>
               <div className="mx-3 my-4 border-t border-sidebar-border" />
               <div className={`mb-2 px-6 text-xs font-medium uppercase tracking-wider text-sidebar-foreground/70 ${collapsed ? 'lg:hidden' : 'block'}`}>{t.nav.administration}</div>
@@ -169,7 +169,7 @@ export default function Sidebar() {
                 </Link>
               </nav>
             </>
-          )}
+          )} */}
         </div>
 
         {/* Footer */}

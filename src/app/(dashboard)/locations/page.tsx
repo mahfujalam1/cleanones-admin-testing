@@ -2,7 +2,7 @@
 
 import { LocationDetailSidebar } from '@/components/locations/LocationDetailsSidebar';
 import React, { useCallback, useEffect, useState } from 'react';
-import { MdOutlineLocationOn, MdSearch, MdUploadFile } from 'react-icons/md';
+import { MdAdd, MdOutlineLocationOn, MdSearch, MdUploadFile } from 'react-icons/md';
 import { BulkImportModal } from '@/components/shared/BulkImportModal';
 import { TbBuilding } from 'react-icons/tb';
 import { Location } from '../../../components/locations/types';
@@ -168,7 +168,7 @@ export default function LocationsPage() {
                         onClick={() => setShowModal(true)}
                         className="flex h-10 items-center justify-center gap-1.5 rounded bg-[#0ea5e9] px-4 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#0284c7] cursor-pointer whitespace-nowrap"
                     >
-                        {t.locations.addLocation}
+                        <MdAdd className="text-lg" /> {t.locations.addLocation}
                     </button>
                 </div>
             </div>

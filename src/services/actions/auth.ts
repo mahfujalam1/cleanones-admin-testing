@@ -141,8 +141,21 @@ export async function authenticated<T>(path: string, init: RequestInit): Promise
   }
   return result;
 }
+export type CurrentUser = {
+  id?: string;
+  _id?: string;
+  user_id?: string;
+  full_name?: string;
+  name?: string | null;
+  email: string;
+  phone?: string | null;
+  role: string;
+  is_active: boolean;
+  is_verified: boolean;
+  profile_photo?: string;
+};
 export async function changePassword(input: { old_password: string; new_password: string }) { return authenticated<string>("/auth/change-password", { method: "POST", body: JSON.stringify(input) }); }
-export async function getCurrentUser() { return authenticated<unknown>("/auth/me", { method: "GET" }); }
+export async function getCurrentUser() { return authenticated<CurrentUser>("/auth/me", { method: "GET" }); }
 export async function logoutUser() {
   try {
     await authenticated<string>("/auth/logout", { method: "POST" });
