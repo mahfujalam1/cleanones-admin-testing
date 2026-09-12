@@ -1,0 +1,86 @@
+import { Room } from './types';
+
+export const mockRooms: Room[] = [
+    {
+        id: 'R001',
+        name: 'Kamer 201',
+        type: 'Standard',
+        location: 'NH Hotel Amsterdam Centrum',
+        floor: 'Verdieping 2',
+        duration: 45,
+        photos: 4,
+        tasks: 12,
+        cleaningPlan: 'Standard Clean',
+    },
+    {
+        id: 'R002',
+        name: 'Kamer 202',
+        type: 'Deluxe',
+        location: 'NH Hotel Amsterdam Centrum',
+        floor: 'Verdieping 2',
+        duration: 60,
+        photos: 6,
+        tasks: 15,
+        cleaningPlan: 'Deluxe Clean',
+    },
+    {
+        id: 'R003',
+        name: 'Suite 701',
+        type: 'Suite',
+        location: 'Hilton Rotterdam',
+        floor: 'Verdieping 7',
+        duration: 90,
+        photos: 8,
+        tasks: 20,
+        cleaningPlan: 'Suite Deep Clean',
+    },
+    {
+        id: 'R004',
+        name: 'Kamer 105',
+        type: 'Standard',
+        location: 'NH Hotel Groningen',
+        floor: 'Verdieping 1',
+        duration: 45,
+        photos: 4,
+        tasks: 12,
+        cleaningPlan: 'Standard Clean',
+    },
+    {
+        id: 'R005',
+        name: 'Junior Suite 1204',
+        type: 'Junior Suite',
+        location: 'Van der Valk Eindhoven',
+        floor: 'Verdieping 12',
+        duration: 75,
+        photos: 7,
+        tasks: 18,
+        cleaningPlan: 'Junior Suite Clean',
+    },
+    {
+        id: 'R006',
+        name: 'Kamer 301',
+        type: 'Standard',
+        location: 'Zorg & Schoon - UMC Utrecht',
+        floor: 'Verdieping 3',
+        duration: 45,
+        photos: 4,
+        tasks: 12,
+        cleaningPlan: 'Standard Clean',
+    },
+];
+
+export const mockLocations = [
+    'NH Hotel Amsterdam Centrum',
+    'Hilton Rotterdam',
+    'Zorg & Schoon - UMC Utrecht',
+    'Van der Valk Eindhoven',
+    'NH Hotel Groningen',
+    'Haarlem Stadsschouwburg',
+];
+
+export const mockCleaningPlans = [
+    'Standard Clean',
+    'Deluxe Clean',
+    'Suite Deep Clean',
+    'Junior Suite Clean',
+];
