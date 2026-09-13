@@ -4,6 +4,7 @@ export enum tagTypes {
   dashboard = "dashboard",
   chat = "chat",
   cleaningPlans = "cleaningPlans",
+  tasks = "tasks",
   clients = "clients",
   escalations = "escalations",
   extraServices = "extraServices",

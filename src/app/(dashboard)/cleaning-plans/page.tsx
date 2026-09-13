@@ -1,207 +1,235 @@
 "use client";
 
-import { CreatePlanModal } from '@/components/cleaningPlans/CreatePlanModal';
-import { PlanDetailSidebar } from '@/components/cleaningPlans/PlanDetailsSidebar';
-import { PlanCard } from '@/components/cleaningPlans/PlanCard';
-import { CleaningPlan } from '@/components/cleaningPlans/types';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { usePathname } from 'next/navigation';
-import { getLocale } from '@/lib/locale';
-import { getDashboardTranslation } from '@/lib/translations';
-import { MdSearch } from 'react-icons/md';
-import { TbClipboardList } from 'react-icons/tb';
-import { deleteCleaningPlan, getCleaningPlan, getPlanRooms, type PlanRoomOption } from '@/services/actions/cleaningPlans';
-import { useGetCleaningPlansQuery } from '@/redux/api/dashboardApi';
-import { CardGridSkeleton } from '@/components/shared/SkeletonLoader';
-import { BackendPagination } from '@/components/shared/BackendPagination';
-import { Select } from '@/components/ui/select';
-import { getClientOptions, type ClientOption } from '@/services/actions/locations';
-import { getRoomLocations } from '@/services/actions/rooms';
-import { getWorkers, type WorkerApi } from '@/services/actions/workers';
-import { WorkerAssignmentModal } from '@/components/cleaningPlans/WorkerAssignmentModal';
+import { Suspense, useEffect, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { MdAdd, MdOutlineAssignment } from "react-icons/md";
+import { PlanCard } from "@/components/cleaningPlans/PlanCard";
+import { PlanForm } from "@/components/cleaningPlans/PlanForm";
+import { PlanDetailModal } from "@/components/cleaningPlans/PlanDetailModal";
+import { AssignWorkersModal } from "@/components/cleaningPlans/AssignWorkersModal";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
+import { BackendPagination } from "@/components/shared/BackendPagination";
+import { CardGridSkeleton, ErrorNotice, SearchInput } from "@/components/shared/ListStates";
+import { Select } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import { clientLabel, CLIENT_LOOKUP_ARGS, useGetClientsQuery } from "@/redux/api/endpoints/clients.api";
+import { useGetClientLocationsQuery, useGetLocationsQuery } from "@/redux/api/endpoints/locations.api";
+import {
+  useDeleteCleaningPlanMutation,
+  useGetCleaningPlanListQuery,
+  type CleaningPlan,
+} from "@/redux/api/endpoints/cleaningPlans.api";
+import { apiError } from "@/redux/api/apiError";
+import { getLocale, localizePath } from "@/lib/locale";
 
-// Cache for room names and location names from plan details to keep extra calls minimal
-const roomNameCache: Record<string, string[]> = {};
-const locationCache: Record<string, string> = {};
+const LIMIT = 12;
+const PICKER_LIMIT = 100;
+
+function CleaningPlansView() {
+  const router = useRouter();
+  const locale = getLocale(usePathname());
+  const query = useSearchParams();
+
+  const clientId = query.get("client") ?? "";
+  const locationId = query.get("location") ?? "";
+
+  const [search, setSearch] = useState("");
+  const searchTerm = useDebouncedValue(search.trim());
+  const [page, setPage] = useState(1);
+  const [formTarget, setFormTarget] = useState<CleaningPlan | "new" | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<CleaningPlan | null>(null);
+  const [justCreated, setJustCreated] = useState<CleaningPlan | null>(null);
+  const [viewTarget, setViewTarget] = useState<CleaningPlan | null>(null);
+  const [assignTarget, setAssignTarget] = useState<CleaningPlan | null>(null);
+  const [actionError, setActionError] = useState("");
+
+  useEffect(() => setPage(1), [searchTerm, clientId, locationId]);
+
+  /** Narrowing the client clears the location, which no longer belongs to it. */
+  const applyScope = (next: { client?: string; location?: string }) => {
+    const params = new URLSearchParams();
+    if (next.client) params.set("client", next.client);
+    if (next.location) params.set("location", next.location);
+    const suffix = params.toString();
+    router.replace(localizePath(`/cleaning-plans${suffix ? `?${suffix}` : ""}`, locale));
+  };
+
+  // One request, paged and searched by the server — no walking rooms to collect tasks.
+  const { data, isFetching, error } = useGetCleaningPlanListQuery({
+    page,
+    limit: LIMIT,
+    searchTerm: searchTerm || undefined,
+    client: clientId || undefined,
+    location: locationId || undefined,
+  });
+
+  const { data: clientPage } = useGetClientsQuery(CLIENT_LOOKUP_ARGS);
+  const scopedLocations = useGetClientLocationsQuery(
+    { clientId, limit: PICKER_LIMIT, sort: "name" },
+    { skip: !clientId },
+  );
+  const allLocations = useGetLocationsQuery({ limit: PICKER_LIMIT, sort: "name" }, { skip: Boolean(clientId) });
+  const locations = (clientId ? scopedLocations.data : allLocations.data)?.result ?? [];
+
+  const plans = data?.result ?? [];
+  const total = data?.meta.total ?? 0;
+  const message = actionError || (error ? apiError(error) : "");
+
+  const [deletePlan, { isLoading: deleting }] = useDeleteCleaningPlanMutation();
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    setActionError("");
+    try {
+      await deletePlan(deleteTarget._id).unwrap();
+      setDeleteTarget(null);
+    } catch (cause) {
+      setActionError(apiError(cause));
+    }
+  };
+
+  return (
+    <div className="space-y-6 pb-16">
+      <header className="min-w-0">
+        <div className="flex items-center gap-2">
+          <h1 className="text-xl font-bold text-slate-900">Cleaning Plans</h1>
+          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">
+            {total}
+          </span>
+        </div>
+        <p className="mt-1 text-xs text-slate-500">Scheduled cleaning plans across every client location.</p>
+      </header>
+
+      <div className="grid gap-2 rounded-xl bg-white p-2 ring-1 ring-slate-200/70 md:grid-cols-2 xl:grid-cols-[1.4fr_1fr_1fr_auto]">
+        <SearchInput value={search} onChange={setSearch} placeholder="Search cleaning plans…" />
+
+        <Select
+          value={clientId}
+          onValueChange={(value) => applyScope({ client: value })}
+          placeholder="All clients"
+          options={[
+            { value: "", label: "All clients" },
+            ...(clientPage?.result ?? []).map((client) => ({
+              value: client._id,
+              label: clientLabel(client),
+            })),
+          ]}
+        />
+
+        <Select
+          value={locationId}
+          onValueChange={(value) => applyScope({ client: clientId, location: value })}
+          placeholder="All locations"
+          options={[
+            { value: "", label: "All locations" },
+            ...locations.map((location) => ({ value: location._id, label: location.name })),
+          ]}
+        />
+
+        <Button className="md:col-span-2 xl:col-span-1" onClick={() => setFormTarget("new")}>
+          <MdAdd className="text-base" /> Add cleaning plan
+        </Button>
+      </div>
+
+      {message && <ErrorNotice message={message} />}
+
+      {isFetching ? (
+        <CardGridSkeleton />
+      ) : plans.length === 0 ? (
+        <div className="rounded-xl bg-white px-4 py-20 text-center ring-1 ring-slate-200/70">
+          <MdOutlineAssignment className="mx-auto text-5xl text-slate-200" />
+          <p className="mt-4 text-sm font-semibold text-slate-900">No cleaning plans</p>
+          <p className="mx-auto mt-1 max-w-sm text-xs leading-relaxed text-slate-500">
+            {searchTerm || clientId || locationId
+              ? "Nothing matches these filters."
+              : "No cleaning plans have been scheduled yet."}
+          </p>
+        </div>
+      ) : (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {plans.map((plan) => (
+            <PlanCard
+              key={plan._id}
+              plan={plan}
+              onSelect={setViewTarget}
+              onEdit={setFormTarget}
+              onDelete={setDeleteTarget}
+              onAssign={setAssignTarget}
+            />
+          ))}
+        </div>
+      )}
+
+      <BackendPagination page={page} limit={LIMIT} total={total} onPageChange={setPage} />
+
+      {viewTarget && (
+        <PlanDetailModal
+          planId={viewTarget._id}
+          onClose={() => setViewTarget(null)}
+          onEdit={(plan) => {
+            setViewTarget(null);
+            setFormTarget(plan);
+          }}
+          onDelete={(plan) => {
+            setViewTarget(null);
+            setDeleteTarget(plan);
+          }}
+          onAssign={setAssignTarget}
+        />
+      )}
+
+      {assignTarget && (
+        <AssignWorkersModal plan={assignTarget} onClose={() => setAssignTarget(null)} />
+      )}
+
+      {formTarget && (
+        <PlanForm
+          plan={formTarget === "new" ? undefined : formTarget}
+          onClose={() => setFormTarget(null)}
+          // A plan has to exist before tasks can point at it, so the offer comes after creating.
+          onCreated={(created) => {
+            setFormTarget(null);
+            setJustCreated(created);
+          }}
+        />
+      )}
+
+      {justCreated && (
+        <ConfirmDialog
+          title="Plan created"
+          description={`Do you want to add additional tasks to ${justCreated.title}?`}
+          confirmText="Add tasks"
+          cancelText="Not now"
+          destructive={false}
+          onConfirm={() => {
+            const plan = justCreated;
+            setJustCreated(null);
+            setFormTarget(plan);
+          }}
+          onClose={() => setJustCreated(null)}
+        />
+      )}
+
+      {deleteTarget && (
+        <ConfirmDialog
+          title="Delete cleaning plan?"
+          description={`${deleteTarget.title} will be removed.`}
+          confirmText="Delete"
+          loading={deleting}
+          onConfirm={() => void confirmDelete()}
+          onClose={() => !deleting && setDeleteTarget(null)}
+        />
+      )}
+    </div>
+  );
+}
 
 export default function CleaningPlansPage() {
-    const pathname = usePathname();
-    const locale = getLocale(pathname);
-    const t = getDashboardTranslation(locale);
-
-    const [search, setSearch] = useState('');
-    const [showModal, setShowModal] = useState(false);
-    const [editingPlanId, setEditingPlanId] = useState<string | null>(null);
-    const [selectedPlan, setSelectedPlan] = useState<CleaningPlan | null>(null);
-    const [assigningPlan, setAssigningPlan] = useState<CleaningPlan | null>(null);
-    const [error, setError] = useState('');
-    const [filterError, setFilterError] = useState('');
-    const [clients, setClients] = useState<ClientOption[]>([]);
-    const [locations, setLocations] = useState<Array<{ id: string; name: string }>>([]);
-    const [roomOptions, setRoomOptions] = useState<PlanRoomOption[]>([]);
-    const [workers, setWorkers] = useState<WorkerApi[]>([]);
-    const [clientId, setClientId] = useState('all');
-    const [locationId, setLocationId] = useState('all');
-    const [roomId, setRoomId] = useState('all');
-    const [workerId, setWorkerId] = useState('all');
-    const [page, setPage] = useState(1);
-    const limit = 12;
-    const firstClient = useRef(true), firstLocation = useRef(true);
-    const [roomNames, setRoomNames] = useState<Record<string, string[]>>(roomNameCache);
-    const [planLocations, setPlanLocations] = useState<Record<string, string>>(locationCache);
-
-    const { data: plansRes, isLoading: loading, refetch } = useGetCleaningPlansQuery({ search: search.trim() || undefined, page, limit });
-
-    const total = plansRes?.total_count ?? 0;
-    const plans: CleaningPlan[] = useMemo(() => (plansRes?.plans ?? []).map((item) => {
-        const loc = item.location_name || (item.location_names && item.location_names.length ? item.location_names.join(', ') : '') || planLocations[item.id] || '';
-        const schedule = item.date ? `${item.date}${item.start_time ? ` · ${item.start_time}` : ''}` : '';
-        return {
-            id: item.id,
-            name: item.title,
-            client: (item.client_names ?? []).join(', '),
-            location: loc,
-            dateSchedule: schedule,
-            rooms: item.room_names ?? [],
-            duration: item.duration_minutes,
-            photos: item.total_photos_count,
-            tasks: item.total_tasks_count,
-            aiValid: item.is_active,
-            checklistTasks: [],
-            photoRequirements: [],
-        };
-    }), [plansRes, planLocations]);
-
-    useEffect(() => {
-        const missing = plans
-            .filter((p) => !(p.id in roomNameCache) || (!p.location && !(p.id in locationCache)))
-            .map((p) => p.id);
-        if (!missing.length) return;
-        let active = true;
-        void Promise.all(missing.map((id) => getCleaningPlan(id).then((result) => {
-            const rNames = result.success ? (result.data.rooms ?? []).map((room) => room.room_name) : [];
-            const locName = result.success ? (result.data.location_name || result.data.locations?.[0]?.name || '') : '';
-            return [id, rNames, locName] as const;
-        }))).then((entries) => {
-            entries.forEach(([id, names, locName]) => {
-                roomNameCache[id] = names;
-                if (locName) locationCache[id] = locName;
-            });
-            if (active) {
-                setRoomNames({ ...roomNameCache });
-                setPlanLocations({ ...locationCache });
-            }
-        });
-        return () => { active = false; };
-    }, [plans]);
-
-    useEffect(() => {
-        void getClientOptions(1, 100).then((result) => result.success ? setClients(result.data.clients ?? []) : setFilterError(result.error));
-        void getWorkers({ limit: 50 }).then((result) => result.success ? setWorkers(result.data.workers ?? []) : setFilterError(result.error));
-    }, []);
-    useEffect(() => {
-        if (firstClient.current) { firstClient.current = false; return; }
-        setLocationId('all'); setRoomId('all'); setLocations([]); setRoomOptions([]);
-        if (clientId !== 'all') void getRoomLocations(clientId).then((result) => result.success ? setLocations(result.data.locations ?? []) : setFilterError(result.error));
-    }, [clientId]);
-    useEffect(() => {
-        if (firstLocation.current) { firstLocation.current = false; return; }
-        setRoomId('all'); setRoomOptions([]);
-        if (locationId !== 'all') void getPlanRooms({ clientId: clientId === 'all' ? undefined : clientId, locationId, limit: 100 }).then((result) => result.success ? setRoomOptions(result.data.rooms ?? []) : setFilterError(result.error));
-    }, [clientId, locationId]);
-
-    const handleAdd = () => {
-        setShowModal(false);
-        setEditingPlanId(null);
-        void refetch();
-    };
-
-    const handleDelete = async (id: string) => {
-        const result = await deleteCleaningPlan(id); if (!result.success) { setError(result.error); return; }
-        void refetch();
-        if (selectedPlan?.id === id) setSelectedPlan(null);
-    };
-
-    return (
-        <div className="min-h-screen">
-            {/* Filters & Action Bar */}
-            <div className="mb-5 flex flex-col gap-3 rounded border border-gray-200 bg-white p-3 xl:flex-row xl:items-center xl:justify-between">
-                <div className="grid flex-1 grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-                    <div className="relative">
-                        <MdSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg" />
-                        <input
-                            type="text"
-                            placeholder={t.plans.searchPlaceholder}
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            className="h-10 w-full rounded border border-gray-200 bg-gray-50 pl-9 pr-4 text-sm font-medium text-gray-700 focus:outline-none"
-                        />
-                    </div>
-                    <Select value={clientId} onValueChange={setClientId} options={[{ value: 'all', label: t.common.allClients }, ...clients.map((c) => ({ value: c.id, label: c.company_name }))]} />
-                    <Select value={locationId} onValueChange={setLocationId} options={[{ value: 'all', label: t.common.allLocations }, ...locations.map((l) => ({ value: l.id, label: l.name }))]} />
-                    <Select value={roomId} onValueChange={setRoomId} options={[{ value: 'all', label: t.common.allRooms }, ...roomOptions.map((r) => ({ value: r.room_id, label: r.room_name }))]} />
-                    <Select value={workerId} onValueChange={setWorkerId} options={[{ value: 'all', label: t.common.allWorkers }, ...workers.map((w) => ({ value: w.worker_id, label: w.full_name }))]} />
-                </div>
-                <div className="flex justify-end shrink-0">
-                    <button onClick={() => setShowModal(true)} className="flex h-10 items-center justify-center gap-1.5 rounded bg-[#0ea5e9] px-4 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#0284c7] cursor-pointer whitespace-nowrap">
-                        {t.plans.addPlan}
-                    </button>
-                </div>
-            </div>
-
-            {error && <p className="mb-4 rounded border border-red-200 bg-red-50 p-3 text-xs font-medium text-red-700">{error}</p>}
-
-            {loading ? <CardGridSkeleton /> : plans.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-24 text-center">
-                    <TbClipboardList className="mb-3 text-5xl text-gray-300" />
-                    <p className="text-sm font-semibold text-gray-500">{t.plans.noPlansFound}</p>
-                    <p className="mt-1 text-xs text-gray-400">{t.common.adjustFilters}</p>
-                </div>
-            ) : (
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                    {plans.map((plan) => (
-                        <PlanCard
-                            key={plan.id}
-                            plan={{
-                                ...plan,
-                                rooms: roomNames[plan.id]?.length ? roomNames[plan.id] : plan.rooms,
-                                location: plan.location || planLocations[plan.id] || '',
-                            }}
-                            t={t}
-                            onClick={() => setSelectedPlan(plan)}
-                            isSelected={selectedPlan?.id === plan.id}
-                            onDelete={() => void handleDelete(plan.id)}
-                            onEdit={() => setEditingPlanId(plan.id)}
-                            onAssign={() => setAssigningPlan(plan)}
-                        />
-                    ))}
-                </div>
-            )}
-            <BackendPagination page={page} limit={limit} total={total} onPageChange={setPage} />
-
-            {showModal && (
-                <CreatePlanModal onClose={() => setShowModal(false)} onAdd={handleAdd} />
-            )}
-            {editingPlanId && (
-                <CreatePlanModal key={editingPlanId} planId={editingPlanId} onClose={() => setEditingPlanId(null)} onAdd={handleAdd} />
-            )}
-            {assigningPlan && <WorkerAssignmentModal planId={assigningPlan.id} planTitle={assigningPlan.name} onClose={() => setAssigningPlan(null)} onAssigned={() => { void refetch(); }} />}
-
-            {selectedPlan && (
-                <PlanDetailSidebar
-                    plan={selectedPlan}
-                    onClose={() => setSelectedPlan(null)}
-                    onDelete={(id) => { void handleDelete(id); }}
-                    onEdit={() => {
-                        setEditingPlanId(selectedPlan.id);
-                        setSelectedPlan(null);
-                    }}
-                    onAssign={() => {
-                        setAssigningPlan(selectedPlan);
-                        setSelectedPlan(null);
-                    }}
-                />
-            )}
-        </div>
-    );
+  // `useSearchParams` needs a Suspense boundary to keep the route statically renderable.
+  return (
+    <Suspense fallback={<CardGridSkeleton />}>
+      <CleaningPlansView />
+    </Suspense>
+  );
 }

@@ -13,6 +13,8 @@ const START_HOUR = 5;
 const END_HOUR = 20;
 const HOUR_WIDTH = 96;
 const EMPLOYEE_WIDTH = 220;
+/** Narrowest a shift bar may be drawn — enough for "08:15-09:00" to stay inside it. */
+const MIN_SHIFT_WIDTH = 104;
 const colors = ["#0ea5e9", "#0284c7", "#06a7df", "#0891b2", "#38a9db", "#0369a1", "#0b9fd3", "#0284c7"];
 
 export function DayView({ currentDate, shifts, teamMembers, onShiftClick }: DayViewProps) {
@@ -56,10 +58,17 @@ export function DayView({ currentDate, shifts, teamMembers, onShiftClick }: DayV
                 {hours.slice(0, -1).map((hour, index) => <span key={`${hour}-half`} className="absolute inset-y-0 border-r border-dashed border-slate-100" style={{ left: index * HOUR_WIDTH + HOUR_WIDTH / 2 }} />)}
                 {employeeShifts.map((shift, shiftIndex) => {
                   const left = timeToPosition(shift.startTime);
-                  const width = Math.max(timeToPosition(shift.endTime) - left, 60);
+                  const span = timeToPosition(shift.endTime) - left;
+                  // A 30-minute shift is only ~48px wide, far too narrow for its own label, so the
+                  // bar is floored at a width that always fits "08:15-09:00". It then reads a little
+                  // wider than the slot it occupies, which is the trade that keeps the text inside.
+                  const width = Math.max(span, MIN_SHIFT_WIDTH);
                   const color = colors[(rowIndex + shiftIndex) % colors.length];
-                  return <button key={shift.id} onClick={() => onShiftClick(shift)} title={`${shift.workerName}: ${shift.startTime}–${shift.endTime}`} className="absolute top-3.5 flex h-[46px] items-center overflow-hidden rounded border border-white/25 px-3 text-left text-white transition-[filter,transform] hover:z-10 hover:brightness-95 active:scale-[.995]" style={{ left, width, backgroundColor: color }}>
-                    <span className="flex min-w-0 flex-1 items-center gap-2"><b className="shrink-0 text-xs tabular-nums">{shift.startTime}</b><span className="h-5 w-px shrink-0 bg-white/25" /><span className="min-w-0 truncate text-[11px] font-medium"><MdLocationOn className="mr-1 inline text-sm text-white/80" />{shift.location}</span></span><b className="ml-2 shrink-0 text-xs tabular-nums">{shift.endTime}</b>
+                  const showLocation = span >= 150;
+                  return <button key={shift.id} onClick={() => onShiftClick(shift)} title={`${shift.workerName}: ${shift.startTime}–${shift.endTime} · ${shift.location}`} className={`absolute top-3.5 flex h-[46px] items-center overflow-hidden rounded border border-white/25 text-left text-white transition-[filter,transform] hover:z-10 hover:brightness-95 active:scale-[.995] ${showLocation ? "px-3" : "justify-center px-2"}`} style={{ left, width, backgroundColor: color }}>
+                    {showLocation ? <>
+                      <span className="flex min-w-0 flex-1 items-center gap-2"><b className="shrink-0 text-xs tabular-nums">{shift.startTime}</b><span className="h-5 w-px shrink-0 bg-white/25" /><span className="min-w-0 truncate text-[11px] font-medium"><MdLocationOn className="mr-1 inline text-sm text-white/80" />{shift.location}</span></span><b className="ml-2 shrink-0 text-xs tabular-nums">{shift.endTime}</b>
+                    </> : <b className="truncate text-[11px] font-semibold tabular-nums">{shift.startTime}–{shift.endTime}</b>}
                   </button>;
                 })}
               </div>

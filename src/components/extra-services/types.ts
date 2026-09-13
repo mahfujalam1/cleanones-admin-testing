@@ -1,5 +1,6 @@
 import type { ExtraServiceRequest } from "@/services/actions/extraServices";
-import type { PlanDetails, PendingAdditionalTask } from "@/services/actions/cleaningPlans";
+import type { PendingAdditionalTask } from "@/services/actions/cleaningPlans";
+import type { AdditionalTask } from "@/redux/api/endpoints/additionalTasks.api";
 
 export type UnifiedServiceRequest = {
   id: string;
@@ -19,6 +20,8 @@ export type UnifiedServiceRequest = {
   rejection_reason?: string;
   rawExtraService?: ExtraServiceRequest;
   rawPendingTask?: PendingAdditionalTask;
+  /** Present when the row came from `/additional-task/all-additional-tasks`. */
+  rawAdditionalTask?: AdditionalTask;
   isCleaningPlanTask: boolean;
 };
 

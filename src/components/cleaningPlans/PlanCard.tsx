@@ -1,157 +1,179 @@
 "use client";
 
 import React from "react";
-import { TbClipboardList, TbClock, TbCamera, TbChecklist, TbUser, TbMapPin, TbDoor, TbTrash, TbPencil } from "react-icons/tb";
-import type { CleaningPlan } from "./types";
-import type { DashboardTranslationDict } from "@/lib/translations";
+import {
+  MdDeleteOutline,
+  MdModeEditOutline,
+  MdOutlineAssignment,
+  MdOutlineGroupAdd,
+  MdOutlineMeetingRoom,
+  MdOutlinePlace,
+  MdOutlineSchedule,
+} from "react-icons/md";
+import { planCounts, type CleaningPlan } from "@/redux/api/endpoints/cleaningPlans.api";
+import { refDoc, refId } from "@/redux/api/types";
+import { clientLabel, CLIENT_LOOKUP_ARGS, useGetClientsQuery, type Client } from "@/redux/api/endpoints/clients.api";
+import type { Location } from "@/redux/api/endpoints/locations.api";
 
-interface PlanCardProps {
-  plan: CleaningPlan;
-  t: DashboardTranslationDict;
-  onClick: () => void;
-  isSelected: boolean;
-  onDelete: () => void;
-  onEdit: () => void;
-  onAssign: () => void;
+/** "14/09/2026 · 08:00" — the date and start time, which is how a plan is recognised. */
+function formatStart(value?: string) {
+  if (!value) return null;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return value;
+  return `${parsed.toLocaleDateString()} · ${parsed.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
+}
+
+function MetaLine({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {
+  if (!children) return null;
+  return (
+    <p className="flex items-center gap-1.5 truncate text-xs text-slate-500">
+      <span className="shrink-0 text-sm text-slate-400">{icon}</span>
+      <span className="truncate">{children}</span>
+    </p>
+  );
+}
+
+function Stat({ value, label }: { value: React.ReactNode; label: string }) {
+  return (
+    <div className="min-w-0 px-2 py-2.5 text-center">
+      <p className="truncate text-sm font-semibold text-slate-900">{value}</p>
+      <p className="mt-0.5 truncate text-[11px] text-slate-400">{label}</p>
+    </div>
+  );
 }
 
 export function PlanCard({
   plan,
-  t,
-  onClick,
-  isSelected,
-  onDelete,
+  onSelect,
   onEdit,
+  onDelete,
   onAssign,
-}: PlanCardProps) {
+}: {
+  plan: CleaningPlan;
+  onSelect?: (plan: CleaningPlan) => void;
+  onEdit?: (plan: CleaningPlan) => void;
+  onDelete?: (plan: CleaningPlan) => void;
+  onAssign?: (plan: CleaningPlan) => void;
+}) {
+  // The list response sends the client as a bare id, so the name comes from the dropdown's cache
+  // rather than another request.
+  const { data: clientPage } = useGetClientsQuery(CLIENT_LOOKUP_ARGS);
+  const populatedClient = refDoc<Client>(plan.client);
+  const client =
+    populatedClient ?? clientPage?.result.find((candidate) => candidate._id === refId(plan.client));
+
+  const location = refDoc<Location>(plan.location);
+  const counts = planCounts(plan);
+  const active = plan.is_active ?? plan.status === "active";
+
   return (
-    <div
-      onClick={onClick}
-      className={`dashboard-card flex flex-col justify-between h-full cursor-pointer transition-[border-color,box-shadow] hover:border-[#d7dbe4] hover:shadow ${
-        isSelected ? "border-[#0ea5e9]/50 shadow ring-1 ring-[#0ea5e9]/20" : ""
-      }`}
-    >
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Header */}
-        <div className="px-3.5 pt-3 pb-2 flex items-start gap-2.5">
-          <div className="w-8 h-8 rounded bg-[#e0f2fe] flex items-center justify-center shrink-0 mt-0.5">
-            <TbClipboardList className="text-[#0ea5e9] text-base" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2">
-              <p className="text-xs font-bold text-gray-900 leading-tight line-clamp-1">{plan.name}</p>
-              <span
-                className={`rounded px-1.5 py-0.5 text-[9px] font-semibold shrink-0 ${
-                  plan.aiValid ? "bg-emerald-50 text-emerald-600" : "bg-gray-100 text-gray-500"
-                }`}
-              >
-                {plan.aiValid ? t.common.active : t.common.inactive}
-              </span>
-            </div>
-            <p className="text-xs text-gray-500 mt-0.5 truncate">{plan.client || "No client"}</p>
-          </div>
-          {/* Action icons */}
-          <div className="flex items-center gap-0.5 shrink-0" onClick={(e) => e.stopPropagation()}>
-            <button
-              onClick={onDelete}
-              className="p-1 text-gray-300 hover:text-red-500 transition-colors cursor-pointer"
-              title={t.common.delete}
+    <div className="group relative h-full">
+      <article
+        role={onSelect ? "button" : undefined}
+        tabIndex={onSelect ? 0 : undefined}
+        onClick={() => onSelect?.(plan)}
+        onKeyDown={(event) => {
+          if (onSelect && (event.key === "Enter" || event.key === " ")) {
+            event.preventDefault();
+            onSelect(plan);
+          }
+        }}
+        className={`flex h-full flex-col overflow-hidden rounded-xl bg-white ring-1 ring-slate-200/70 transition-all duration-200 ${
+          onSelect
+            ? "cursor-pointer hover:-translate-y-0.5 hover:ring-slate-300 hover:shadow-[0_12px_28px_-18px_rgba(15,23,42,0.45)]"
+            : ""
+        }`}
+      >
+        <div className="flex-1 p-4">
+          <div className="flex items-start gap-3">
+            <span
+              aria-hidden
+              className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-50 text-lg text-slate-400 ring-1 ring-slate-200/70 transition-colors group-hover:bg-sky-50 group-hover:text-primary group-hover:ring-sky-100"
             >
-              <TbTrash className="text-sm" />
-            </button>
-            <button
-              onClick={onEdit}
-              className="p-1 text-gray-300 hover:text-[#0ea5e9] transition-colors cursor-pointer"
-              title={t.common.edit}
-            >
-              <TbPencil className="text-sm" />
-            </button>
-          </div>
-        </div>
+              <MdOutlineAssignment />
+            </span>
 
-        {/* Location, Schedule & Rooms */}
-        <div className="px-3.5 pb-2.5 space-y-1.5">
-          {/* Location */}
-          <div className="flex items-center gap-1.5 min-w-0">
-            <TbMapPin className={`text-sm shrink-0 ${plan.location ? "text-[#0ea5e9]" : "text-gray-300"}`} />
-            <p
-              className={`text-xs truncate ${plan.location ? "font-semibold text-gray-800" : "text-gray-400 italic"}`}
-              title={plan.location || undefined}
-            >
-              {plan.location || "No location specified"}
-            </p>
-          </div>
-
-          {/* Schedule Date & Time */}
-          {plan.dateSchedule && (
-            <div className="flex items-center gap-1.5 text-gray-400 min-w-0">
-              <TbClock className="text-xs shrink-0" />
-              <p className="text-[11px] truncate">{plan.dateSchedule}</p>
-            </div>
-          )}
-
-          {/* Rooms */}
-          {(plan.rooms ?? []).length > 0 && (
-            <div className="flex items-center gap-1.5 pt-0.5 min-w-0">
-              <TbDoor className="text-gray-400 text-xs shrink-0" />
-              <div className="flex flex-wrap gap-1">
-                {(plan.rooms ?? []).slice(0, 3).map((r, index) => (
-                  <span
-                    key={`${plan.id}-${index}-${r}`}
-                    title={r}
-                    className="max-w-[110px] truncate text-[10px] font-medium text-[#0ea5e9] bg-[#e0f2fe] px-1.5 py-0.5 rounded"
-                  >
-                    {r}
-                  </span>
-                ))}
-                {(plan.rooms ?? []).slice(3).length > 0 && (
-                  <span className="text-[10px] text-gray-400">+{(plan.rooms ?? []).length - 3}</span>
-                )}
+            <div className="min-w-0 flex-1 pr-12">
+              <div className="flex items-center gap-2">
+                <h3 className="truncate text-sm font-semibold text-slate-900 transition-colors group-hover:text-primary">
+                  {plan.title}
+                </h3>
+                <span
+                  className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
+                    active ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500"
+                  }`}
+                >
+                  {active ? "Active" : "Inactive"}
+                </span>
               </div>
+              {client && <p className="mt-0.5 truncate text-xs text-slate-500">{clientLabel(client)}</p>}
             </div>
+          </div>
+
+          <div className="mt-3 space-y-1">
+            <MetaLine icon={<MdOutlinePlace />}>{location?.name}</MetaLine>
+            <MetaLine icon={<MdOutlineSchedule />}>{formatStart(plan.date_time)}</MetaLine>
+            <MetaLine icon={<MdOutlineMeetingRoom />}>
+              {counts.rooms ? `${counts.rooms} ${counts.rooms === 1 ? "room" : "rooms"}` : null}
+            </MetaLine>
+          </div>
+        </div>
+
+        {/* Fixed stat strip: every card ends on the same line and the numbers a manager scans for
+            sit in the same place on each one. */}
+        <div className="grid grid-cols-3 divide-x divide-slate-100 border-t border-slate-100 bg-slate-50/60">
+          <Stat
+            value={plan.max_estimated_duration ? `${plan.max_estimated_duration}m` : "—"}
+            label="Duration"
+          />
+          <Stat value={counts.tasks} label="Tasks" />
+          <Stat value={counts.workers} label="Workers" />
+        </div>
+
+        {onAssign && (
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              onAssign(plan);
+            }}
+            className="flex w-full cursor-pointer items-center justify-center gap-1.5 border-t border-slate-100 py-2.5 text-xs font-semibold text-primary transition-colors hover:bg-sky-50"
+          >
+            <MdOutlineGroupAdd className="text-sm" /> Assign workers
+          </button>
+        )}
+      </article>
+
+      {(onEdit || onDelete) && (
+        <div className="absolute right-2.5 top-2.5 flex items-center gap-0.5 transition-opacity lg:opacity-0 lg:group-hover:opacity-100 lg:group-focus-within:opacity-100">
+          {onEdit && (
+            <button
+              type="button"
+              aria-label={`Edit ${plan.title}`}
+              onClick={(event) => {
+                event.stopPropagation();
+                onEdit(plan);
+              }}
+              className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md bg-white/90 text-slate-400 ring-1 ring-slate-200 backdrop-blur transition-colors hover:text-slate-800"
+            >
+              <MdModeEditOutline className="text-[15px]" />
+            </button>
+          )}
+          {onDelete && (
+            <button
+              type="button"
+              aria-label={`Delete ${plan.title}`}
+              onClick={(event) => {
+                event.stopPropagation();
+                onDelete(plan);
+              }}
+              className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md bg-white/90 text-slate-400 ring-1 ring-slate-200 backdrop-blur transition-colors hover:text-red-600"
+            >
+              <MdDeleteOutline className="text-[15px]" />
+            </button>
           )}
         </div>
-
-        {/* Dynamic tasks */}
-        {plan.periodicTasks && (
-          <div className="mx-3.5 mb-2 rounded border border-sky-100 bg-sky-50 p-2 text-xs">
-            <p className="text-[9px] font-bold uppercase tracking-wider text-sky-700">Dynamic tasks</p>
-            <p className="mt-0.5 text-xs text-slate-600">
-              {plan.periodicTasks.filter((task) => task.due).length} periodic task(s) due this week
-            </p>
-            <p className="mt-0.5 text-[10px] text-slate-400">Photos: {plan.photoRotation}</p>
-          </div>
-        )}
-
-        {/* Stats */}
-        <div className="border-t border-gray-100 grid grid-cols-3 divide-x divide-gray-100 mt-auto">
-          <div className="py-2 flex flex-col items-center gap-0.5">
-            <TbClock className="text-gray-300 text-sm" />
-            <p className="text-xs font-bold text-gray-800">{plan.duration}m</p>
-            <p className="text-[10px] text-gray-400">{t.common.duration}</p>
-          </div>
-          <div className="py-2 flex flex-col items-center gap-0.5">
-            <TbCamera className="text-gray-300 text-sm" />
-            <p className="text-xs font-bold text-gray-800">{plan.photos}</p>
-            <p className="text-[10px] text-gray-400">{t.common.photos}</p>
-          </div>
-          <div className="py-2 flex flex-col items-center gap-0.5">
-            <TbChecklist className="text-gray-300 text-sm" />
-            <p className="text-xs font-bold text-gray-800">{plan.tasks}</p>
-            <p className="text-[10px] text-gray-400">{t.common.tasks}</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Assign Button at Bottom */}
-      <div className="border-t border-gray-100 p-2.5 mt-auto" onClick={(event) => event.stopPropagation()}>
-        <button
-          onClick={onAssign}
-          className="flex h-8 w-full items-center justify-center gap-1.5 rounded border border-sky-200 bg-sky-50 text-xs font-semibold text-sky-600 transition hover:border-sky-400 hover:bg-sky-100 cursor-pointer"
-        >
-          <TbUser className="text-sm" /> {t.common.assignWorkers}
-        </button>
-      </div>
+      )}
     </div>
   );
 }

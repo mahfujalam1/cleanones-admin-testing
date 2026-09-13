@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { MdClose } from "react-icons/md";
-import type { SuggestedQuestion, TargetRole } from "@/services/actions/suggestedQuestions";
+import type { SuggestedQuestion } from "@/services/actions/suggestedQuestions";
 import { usePathname } from "next/navigation";
 import { getLocale } from "@/lib/locale";
 import { getHelpTranslation } from "@/lib/translations";
@@ -14,7 +14,7 @@ interface QuestionFormModalProps {
   initialData?: SuggestedQuestion;
   isLoading?: boolean;
   onClose: () => void;
-  onSubmit: (data: { question: string; answer: string; target_role: string; is_active: boolean }) => void;
+  onSubmit: (data: { question: string; answer: string }) => void;
 }
 
 export function QuestionFormModal({
@@ -29,8 +29,6 @@ export function QuestionFormModal({
   const p = getPlaceholderTranslation(getLocale(usePathname()));
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState("");
-  const [targetRole, setTargetRole] = useState<string>("all");
-  const [isActive, setIsActive] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -38,13 +36,9 @@ export function QuestionFormModal({
       if (mode === "edit" && initialData) {
         setQuestion(initialData.question);
         setAnswer(initialData.answer);
-        setTargetRole(initialData.target_role || "all");
-        setIsActive(initialData.is_active);
       } else {
         setQuestion("");
         setAnswer("");
-        setTargetRole("all");
-        setIsActive(true);
       }
       setError("");
     }
@@ -63,12 +57,7 @@ export function QuestionFormModal({
       return;
     }
     setError("");
-    onSubmit({
-      question: question.trim(),
-      answer: answer.trim(),
-      target_role: targetRole,
-      is_active: isActive,
-    });
+    onSubmit({ question: question.trim(), answer: answer.trim() });
   };
 
   return (
@@ -118,37 +107,6 @@ export function QuestionFormModal({
               placeholder={p.notes}
               className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
             />
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
-              {t.targetRole}
-            </label>
-            <select
-              value={targetRole}
-              onChange={(e) => setTargetRole(e.target.value)}
-              className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm text-slate-900 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-            >
-              <option value="all">{t.generalAll}</option>
-              <option value="client">{t.clientsOnly}</option>
-              <option value="worker">{t.workersOnly}</option>
-            </select>
-            <p className="mt-1 text-xs text-slate-500">
-              Determines who sees this question in their chat FAQ suggestions.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2 pt-1">
-            <input
-              type="checkbox"
-              id="is_active_toggle"
-              checked={isActive}
-              onChange={(e) => setIsActive(e.target.checked)}
-              className="h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary/20"
-            />
-            <label htmlFor="is_active_toggle" className="text-xs font-medium text-slate-700 cursor-pointer">
-              Set question as active immediately
-            </label>
           </div>
 
           <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">

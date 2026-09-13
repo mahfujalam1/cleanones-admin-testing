@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { MdSearch, MdClose, MdFilterList } from "react-icons/md";
+import { MdSearch, MdClose } from "react-icons/md";
 import type { GetHelpFilterState } from "./types";
 import { usePathname } from "next/navigation";
 import { getLocale } from "@/lib/locale";
@@ -10,74 +10,51 @@ import { getHelpTranslation } from "@/lib/translations";
 interface GetHelpFiltersProps {
   filters: GetHelpFilterState;
   onChange: (filters: GetHelpFilterState) => void;
+  resultCount?: number;
 }
 
-export function GetHelpFilters({ filters, onChange }: GetHelpFiltersProps) {
+export function GetHelpFilters({ filters, onChange, resultCount }: GetHelpFiltersProps) {
   const t = getHelpTranslation(getLocale(usePathname()));
-  const roleOptions = [
-    { value: "", label: t.allRoles }, { value: "all", label: t.generalAll },
-    { value: "client", label: t.clientsOnly }, { value: "worker", label: t.workersOnly },
-  ];
+
   return (
-    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      {/* Search Input */}
-      <div className="relative flex-1 min-w-[240px] max-w-md">
-        <MdSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-lg" />
+    <div className="rounded-xl border border-slate-200 bg-white p-2.5 shadow-2xs">
+      <div className="relative">
+        <MdSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-lg text-slate-400" />
         <input
           type="text"
           value={filters.search}
           onChange={(e) => onChange({ ...filters, search: e.target.value })}
           placeholder={t.searchQuestion}
-          className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-10 pr-9 text-sm text-slate-900 placeholder:text-slate-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+          className="w-full rounded-lg bg-slate-50 py-2.5 pl-10 pr-9 text-sm text-slate-900 placeholder:text-slate-400 transition-all focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20"
         />
         {filters.search && (
           <button
             type="button"
+            aria-label={t.clear}
             onClick={() => onChange({ ...filters, search: "" })}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+            className="absolute right-2.5 top-1/2 -translate-y-1/2 cursor-pointer rounded p-0.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
           >
             <MdClose />
           </button>
         )}
       </div>
 
-      {/* Target Role & Status Controls */}
-      <div className="flex flex-wrap items-center gap-2">
-        {/* Role Pills */}
-        <div className="flex rounded-xl bg-slate-100 p-1 text-xs font-medium">
-          {roleOptions.map((opt) => {
-            const active = filters.role === opt.value;
-            return (
-              <button
-                key={opt.value}
-                type="button"
-                onClick={() => onChange({ ...filters, role: opt.value })}
-                className={`rounded-lg px-3 py-1.5 transition-all ${active
-                    ? "bg-white text-primary shadow-xs font-semibold"
-                    : "text-slate-600 hover:text-slate-900"
-                  }`}
-              >
-                {opt.label}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Status Dropdown */}
-        <div className="relative">
-          <select
-            value={filters.status}
-            onChange={(e) =>
-              onChange({ ...filters, status: e.target.value as GetHelpFilterState["status"] })
-            }
-            className="rounded-xl border border-slate-200 bg-white py-1.5 pl-3 pr-8 text-xs font-medium text-slate-700 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+      {filters.search && (
+        <div className="mt-2.5 flex items-center gap-2 border-t border-slate-100 pt-2.5 text-xs text-slate-500">
+          {typeof resultCount === "number" && (
+            <span className="font-medium text-slate-600">
+              {resultCount} {resultCount === 1 ? "result" : "results"}
+            </span>
+          )}
+          <button
+            type="button"
+            onClick={() => onChange({ search: "" })}
+            className="ml-auto cursor-pointer rounded-md px-2 py-1 font-semibold text-primary hover:bg-sky-50"
           >
-            <option value="all">{t.statusAll}</option>
-            <option value="active">{t.activeOnly}</option>
-            <option value="inactive">{t.inactiveOnly}</option>
-          </select>
+            {t.clear}
+          </button>
         </div>
-      </div>
+      )}
     </div>
   );
 }

@@ -3,14 +3,16 @@
 import { useMemo, useState } from "react";
 import { MdSearch } from "react-icons/md";
 import { CardGridSkeleton } from "@/components/shared/SkeletonLoader";
-import {
-  useGetExtraServicesQuery,
-  useGetCleaningPlansQuery,
-  useGetClientsQuery,
-} from "@/redux/api/dashboardApi";
+import { useGetExtraServicesQuery, useGetCleaningPlansQuery } from "@/redux/api/dashboardApi";
+// Clients now come from the new backend; the rest of this page is still on the old one.
+import { CLIENT_LOOKUP_ARGS, useGetClientsQuery } from "@/redux/api/endpoints/clients.api";
+import { additionalTaskStatus, useGetAdditionalTasksQuery } from "@/redux/api/endpoints/additionalTasks.api";
 import { ExtraServiceCard } from "@/components/extra-services/ExtraServiceCard";
 import { ExtraServiceModal } from "@/components/extra-services/ExtraServiceModal";
 import type { UnifiedServiceRequest } from "@/components/extra-services/types";
+
+/** The whole list is pulled in one page; this screen filters in the browser. */
+const TASK_PAGE_SIZE = 100;
 
 export default function ExtraServicesPage() {
   const [search, setSearch] = useState("");
@@ -19,7 +21,7 @@ export default function ExtraServicesPage() {
   const [selected, setSelected] = useState<UnifiedServiceRequest | null>(null);
   const [error, setError] = useState("");
 
-  const { data: clientsRes } = useGetClientsQuery({ limit: 100 });
+  const { data: clientsRes } = useGetClientsQuery(CLIENT_LOOKUP_ARGS);
 
   const {
     data: servicesRes,
@@ -37,10 +39,30 @@ export default function ExtraServicesPage() {
     refetch: refetchPlans,
   } = useGetCleaningPlansQuery({ limit: 50 });
 
+  const {
+    data: tasksRes,
+    isLoading: loadingTasks,
+    refetch: refetchTasks,
+  } = useGetAdditionalTasksQuery({
+    limit: TASK_PAGE_SIZE,
+    searchTerm: search.trim() || undefined,
+    sort: "-created_at",
+  });
+
   const refetchAll = () => {
     void refetchServices();
     void refetchPlans();
+    void refetchTasks();
   };
+
+  /** Additional tasks only reference their plan by id, so names are borrowed from the plan list. */
+  const plansById = useMemo(() => {
+    const map = new Map<string, any>();
+    for (const plan of (plansRes?.plans ?? []) as any[]) {
+      if (plan?.id) map.set(String(plan.id), plan);
+    }
+    return map;
+  }, [plansRes]);
 
   const items: UnifiedServiceRequest[] = useMemo(() => {
     const list: UnifiedServiceRequest[] = [];
@@ -66,29 +88,27 @@ export default function ExtraServicesPage() {
       });
     }
 
-    // 2. Pending additional tasks from cleaning plans
-    for (const plan of (plansRes?.plans ?? []) as any[]) {
-      const planClientId = (plan as any).client_id || (plan as any).client?.id;
+    // 2. Additional tasks, straight from /additional-task/all-additional-tasks
+    for (const task of tasksRes?.result ?? []) {
+      const plan = plansById.get(String(task.cleaning_plan_id));
+      const planClientId = plan?.client_id || plan?.client?.id;
       if (clientId && planClientId !== clientId) continue;
 
-      for (const task of plan.pending_additional_tasks ?? []) {
-        list.push({
-          id: task.id,
-          taskId: task.id,
-          planId: plan.id,
-          title: task.name,
-          description: task.description || "",
-          status: task.status || "pending",
-          preferred_date: task.fixed_date || (plan as any).date,
-          date_submitted: task.requested_at ? task.requested_at.slice(0, 10) : undefined,
-          client_name: (plan as any).client_name || (plan as any).client?.name,
-          location_id: (plan as any).location_id || (plan as any).location?.id,
-          location_name: (plan as any).location_name || (plan as any).location?.name,
-          rejection_reason: task.rejection_reason,
-          rawPendingTask: task,
-          isCleaningPlanTask: true,
-        });
-      }
+      list.push({
+        id: task._id,
+        taskId: task._id,
+        planId: task.cleaning_plan_id,
+        title: task.name,
+        description: task.description || "",
+        status: additionalTaskStatus(task),
+        preferred_date: task.date_time ? task.date_time.slice(0, 10) : plan?.date,
+        date_submitted: (task.createdAt ?? task.created_at)?.slice(0, 10),
+        client_name: plan?.client_name || plan?.client?.name,
+        location_id: plan?.location_id || plan?.location?.id,
+        location_name: plan?.location_name || plan?.location?.name,
+        rawAdditionalTask: task,
+        isCleaningPlanTask: true,
+      });
     }
 
     // Filter by search & status
@@ -105,9 +125,9 @@ export default function ExtraServicesPage() {
 
       return matchesSearch && matchesStatus;
     });
-  }, [servicesRes, plansRes, search, status, clientId]);
+  }, [servicesRes, tasksRes, plansById, search, status, clientId]);
 
-  const loading = loadingServices || loadingPlans;
+  const loading = loadingServices || loadingPlans || loadingTasks;
 
   return (
     <div className="space-y-5 pb-10">
@@ -130,9 +150,9 @@ export default function ExtraServicesPage() {
           className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none focus:border-sky-500 max-w-[200px] truncate"
         >
           <option value="">All Clients</option>
-          {clientsRes?.clients?.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.company_name || c.primary_contact_name || c.id}
+          {clientsRes?.result?.map((c) => (
+            <option key={c._id} value={c._id}>
+              {c.name}
             </option>
           ))}
         </select>

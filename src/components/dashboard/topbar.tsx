@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { getLocale, localizePath, setLocale, stripLocale } from "@/lib/locale";
+import { getLocale, localizePath, LOCALE_OPTIONS, setLocale, stripLocale } from "@/lib/locale";
 import {
   MdChevronRight,
   MdClose,
@@ -19,24 +19,13 @@ import {
   MdSend,
   MdSupportAgent,
 } from "react-icons/md";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { setSignOutModalOpen, toggleMobileSidebar } from "@/store/slices/ui.slice";
+import { useAppDispatch, useAppSelector } from "@/redux/hooks";
+import { setSignOutModalOpen, toggleMobileSidebar } from "@/redux/slices/ui.slice";
 import { getFaqs, type Faq } from "@/services/actions/manager";
 import { getNotifications, markNotificationRead, type NotificationApi } from "@/services/actions/notifications";
 import { DetailSkeleton } from "@/components/shared/SkeletonLoader";
 
 const prefetchRoutes = process.env.NODE_ENV === 'production';
-
-const languages = [
-  { label: "English", code: "en" },
-  { label: "Nederlands", code: "nl" },
-  { label: "Polski", code: "pl" },
-  { label: "Українська", code: "uk" },
-  { label: "Português", code: "pt" },
-  { label: "العربية", code: "ar" },
-  { label: "Français", code: "fr" },
-  { label: "Español", code: "es" },
-];
 
 const faqs = [
   "How do I assign a shift to a cleaner?",
@@ -159,39 +148,48 @@ export default function Topbar() {
           <div ref={languageRef} className="relative hidden sm:block">
             <button
               type="button"
+              aria-haspopup="menu"
+              aria-expanded={languageOpen}
               onClick={() => {
                 setLanguageOpen((open) => !open);
                 setNotificationsOpen(false);
                 setProfileOpen(false);
               }}
-              className="flex h-8 items-center gap-1.5 rounded border border-border bg-white px-2 text-[11px] font-semibold text-muted-foreground shadow-[var(--shadow-xs)] transition-colors hover:bg-muted/60 hover:text-foreground"
+              className={`flex h-8 cursor-pointer items-center gap-1.5 rounded border border-border bg-white px-2.5 text-[11px] font-semibold shadow-[var(--shadow-xs)] transition-colors hover:bg-muted/60 hover:text-foreground ${languageOpen ? "bg-muted/60 text-foreground" : "text-muted-foreground"}`}
             >
               <MdLanguage className="text-sm" />
               <span>{currentLocale.toUpperCase()}</span>
-              <MdKeyboardArrowDown className="text-sm text-muted-foreground" />
             </button>
 
-            {languageOpen && (
-              <div className="shadow absolute right-0 top-10 w-36 overflow-hidden rounded border border-border bg-white py-1">
-                {languages.map((language) => (
-                  <button
-                    key={language.code}
-                    type="button"
-                    onClick={() => {
-                      setLocale(language.code);
-                      setLanguageOpen(false);
-                      router.refresh();
-                    }}
-                    className={`block w-full px-4 py-3 text-left text-sm transition-colors ${currentLocale === language.code
-                      ? "bg-[#e0f2fe] text-[#0ea5e9]"
-                      : "text-slate-800 hover:bg-gray-50"
-                      }`}
-                  >
-                    {language.label}
-                  </button>
-                ))}
-              </div>
-            )}
+            {/* Kept mounted so opening and closing both animate. */}
+            <div
+              role="menu"
+              aria-hidden={!languageOpen}
+              className={`shadow absolute right-0 top-10 w-36 origin-top-right overflow-hidden rounded border border-border bg-white py-1 transition-all duration-150 ease-out ${languageOpen
+                ? "visible translate-y-0 scale-100 opacity-100"
+                : "invisible -translate-y-1 scale-95 opacity-0"
+                }`}
+            >
+              {LOCALE_OPTIONS.map((language) => (
+                <button
+                  key={language.code}
+                  type="button"
+                  role="menuitem"
+                  tabIndex={languageOpen ? 0 : -1}
+                  onClick={() => {
+                    setLocale(language.code);
+                    setLanguageOpen(false);
+                    router.refresh();
+                  }}
+                  className={`block w-full cursor-pointer px-4 py-3 text-left text-sm transition-colors ${currentLocale === language.code
+                    ? "bg-[#e0f2fe] text-[#0ea5e9]"
+                    : "text-slate-800 hover:bg-gray-50"
+                    }`}
+                >
+                  {language.label}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div ref={notificationsRef} className="relative">
@@ -237,7 +235,7 @@ export default function Topbar() {
                 <div className="text-xs font-semibold leading-none text-foreground">
                   {user?.name ?? 'User'}
                 </div>
-                <div className="mt-1 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">{user?.role === 'SUPER_ADMIN' ? 'Super Admin' : 'Manager'}</div>
+                <div className="mt-1 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">{user?.role === 'ADMIN' ? 'Admin' : 'Manager'}</div>
               </div>
               <MdKeyboardArrowDown className="hidden text-sm text-muted-foreground sm:block" />
             </button>

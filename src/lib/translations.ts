@@ -23,7 +23,7 @@ export interface DashboardTranslationDict {
   };
   common: {
     search: string; allClients: string; allLocations: string; allRooms: string;
-    allWorkers: string; active: string; inactive: string; assignWorkers: string;
+    allWorkers: string; active: string; inactive: string; assignWorkers: string; manageWorkers: string;
     bulkImport: string; noDataFound: string; adjustFilters: string;
     duration: string; photos: string; tasks: string; additionalTasks: string; rooms: string; floors: string;
     required: string; previous: string; next: string; showing: string; of: string;
@@ -32,6 +32,7 @@ export interface DashboardTranslationDict {
   };
   plans: {
     title: string; addPlan: string; searchPlaceholder: string; noPlansFound: string;
+    clientCompany: string; planName: string; createPlan: string; editPlan: string;
   };
   rooms: {
     title: string; addRoom: string; searchPlaceholder: string; noRoomsFound: string;
@@ -152,7 +153,7 @@ export const translations: Record<string, DashboardTranslationDict> = {
     },
     common: {
       search: "Search", allClients: "All Clients", allLocations: "All Locations", allRooms: "All Rooms",
-      allWorkers: "All Workers", active: "Active", inactive: "Inactive", assignWorkers: "Assign workers",
+      allWorkers: "All Workers", active: "Active", inactive: "Inactive", assignWorkers: "Assign workers", manageWorkers: "Manage workers",
       bulkImport: "Bulk Import", noDataFound: "No data found", adjustFilters: "Try adjusting search or filters.",
       duration: "Duration", photos: "Photos", tasks: "Tasks", additionalTasks: "Additional Tasks", rooms: "rooms", floors: "Floors",
       required: "Required", previous: "Previous", next: "Next", showing: "Showing", of: "of",
@@ -161,7 +162,7 @@ export const translations: Record<string, DashboardTranslationDict> = {
     },
     plans: {
       title: "Cleaning Plans", addPlan: "Add Cleaning Plan", searchPlaceholder: "Search cleaning plans...",
-      noPlansFound: "No cleaning plans found",
+      noPlansFound: "No cleaning plans found", clientCompany: "Client Company", planName: "Plan Name", createPlan: "Create Plan", editPlan: "Edit Plan",
     },
     rooms: {
       title: "Rooms", addRoom: "Add Room", searchPlaceholder: "Search rooms...",
@@ -274,7 +275,7 @@ export const translations: Record<string, DashboardTranslationDict> = {
     },
     common: {
       search: "Zoeken", allClients: "Alle Klanten", allLocations: "Alle Locaties", allRooms: "Alle Kamers",
-      allWorkers: "Alle Medewerkers", active: "Actief", inactive: "Inactief", assignWorkers: "Wijs medewerkers toe",
+      allWorkers: "Alle Medewerkers", active: "Actief", inactive: "Inactief", assignWorkers: "Wijs medewerkers toe", manageWorkers: "Medewerkers beheren",
       bulkImport: "Bulk Importeren", noDataFound: "Geen gegevens gevonden", adjustFilters: "Probeer de zoekopdracht of filters aan te passen.",
       duration: "Duur", photos: "Foto's", tasks: "Taken", additionalTasks: "Extra taken", rooms: "kamers", floors: "Verdiepingen",
       required: "Vereist", previous: "Vorige", next: "Volgende", showing: "Toont", of: "van",
@@ -283,7 +284,7 @@ export const translations: Record<string, DashboardTranslationDict> = {
     },
     plans: {
       title: "Schoonmaakplannen", addPlan: "Schoonmaakplan toevoegen", searchPlaceholder: "Zoek schoonmaakplannen...",
-      noPlansFound: "Geen schoonmaakplannen gevonden",
+      noPlansFound: "Geen schoonmaakplannen gevonden", clientCompany: "Klantbedrijf", planName: "Plannaam", createPlan: "Plan aanmaken", editPlan: "Plan bewerken",
     },
     rooms: {
       title: "Kamers", addRoom: "Kamer toevoegen", searchPlaceholder: "Zoek kamers...",
@@ -396,7 +397,7 @@ export const translations: Record<string, DashboardTranslationDict> = {
     },
     common: {
       search: "Szukaj", allClients: "Wszyscy Klienci", allLocations: "Wszystkie Lokalizacje", allRooms: "Wszystkie Pokoje",
-      allWorkers: "Wszyscy Pracownicy", active: "Aktywny", inactive: "Nieaktywny", assignWorkers: "Przydziel pracowników",
+      allWorkers: "Wszyscy Pracownicy", active: "Aktywny", inactive: "Nieaktywny", assignWorkers: "Przydziel pracowników", manageWorkers: "Zarządzaj pracownikami",
       bulkImport: "Import Masowy", noDataFound: "Nie znaleziono danych", adjustFilters: "Spróbuj dostosować wyszukiwanie lub filtry.",
       duration: "Czas trwania", photos: "Zdjęcia", tasks: "Zadania", additionalTasks: "Dodatkowe zadania", rooms: "pokoje", floors: "Piętra",
       required: "Wymagane", previous: "Poprzedni", next: "Następny", showing: "Wyświetlanie", of: "z",
@@ -405,7 +406,7 @@ export const translations: Record<string, DashboardTranslationDict> = {
     },
     plans: {
       title: "Plany Sprzątania", addPlan: "Dodaj Plan Sprzątania", searchPlaceholder: "Szukaj planów sprzątania...",
-      noPlansFound: "Nie znaleziono planów sprzątania",
+      noPlansFound: "Nie znaleziono planów sprzątania", clientCompany: "Firma klienta", planName: "Nazwa planu", createPlan: "Utwórz plan", editPlan: "Edytuj plan",
     },
     rooms: {
       title: "Pokoje", addRoom: "Dodaj Pokój", searchPlaceholder: "Szukaj pokoi...",
@@ -518,7 +519,7 @@ export const translations: Record<string, DashboardTranslationDict> = {
     },
     common: {
       search: "Пошук", allClients: "Усі Клієнти", allLocations: "Усі Локації", allRooms: "Усі Кімнати",
-      allWorkers: "Усі Працівники", active: "Активний", inactive: "Неактивний", assignWorkers: "Призначити працівників",
+      allWorkers: "Усі Працівники", active: "Активний", inactive: "Неактивний", assignWorkers: "Призначити працівників", manageWorkers: "Керувати працівниками",
       bulkImport: "Масовий Імпорт", noDataFound: "Даних не знайдено", adjustFilters: "Спробуйте змінити пошуковий запит або фільтри.",
       duration: "Тривалість", photos: "Фотографії", tasks: "Завдання", additionalTasks: "Додаткові завдання", rooms: "кімнати", floors: "Поверхи",
       required: "Обов'язково", previous: "Назад", next: "Далі", showing: "Показано", of: "з",
@@ -527,7 +528,7 @@ export const translations: Record<string, DashboardTranslationDict> = {
     },
     plans: {
       title: "Плани Прибирання", addPlan: "Додати План Прибирання", searchPlaceholder: "Пошук планів прибирання...",
-      noPlansFound: "Планів прибирання не знайдено",
+      noPlansFound: "Планів прибирання не знайдено", clientCompany: "Компанія клієнта", planName: "Назва плану", createPlan: "Створити план", editPlan: "Редагувати план",
     },
     rooms: {
       title: "Кімнати", addRoom: "Додати Кімнату", searchPlaceholder: "Пошук кімнат...",
@@ -640,7 +641,7 @@ export const translations: Record<string, DashboardTranslationDict> = {
     },
     common: {
       search: "Pesquisar", allClients: "Todos os Clientes", allLocations: "Todas as Localizações", allRooms: "Todas as Divisões",
-      allWorkers: "Todos os Trabalhadores", active: "Ativo", inactive: "Inativo", assignWorkers: "Atribuir trabalhadores",
+      allWorkers: "Todos os Trabalhadores", active: "Ativo", inactive: "Inativo", assignWorkers: "Atribuir trabalhadores", manageWorkers: "Gerir trabalhadores",
       bulkImport: "Importação em Massa", noDataFound: "Nenhum dado encontrado", adjustFilters: "Tente ajustar a pesquisa ou filtros.",
       duration: "Duração", photos: "Fotos", tasks: "Tarefas", additionalTasks: "Tarefas adicionais", rooms: "divisões", floors: "Pisos",
       required: "Obrigatório", previous: "Anterior", next: "Seguinte", showing: "A mostrar", of: "de",
@@ -649,7 +650,7 @@ export const translations: Record<string, DashboardTranslationDict> = {
     },
     plans: {
       title: "Planos de Limpeza", addPlan: "Adicionar Plano de Limpeza", searchPlaceholder: "Pesquisar planos...",
-      noPlansFound: "Nenhum plano encontrado",
+      noPlansFound: "Nenhum plano encontrado", clientCompany: "Empresa cliente", planName: "Nome do plano", createPlan: "Criar plano", editPlan: "Editar plano",
     },
     rooms: {
       title: "Divisões", addRoom: "Adicionar Divisão", searchPlaceholder: "Pesquisar divisões...",
@@ -762,7 +763,7 @@ export const translations: Record<string, DashboardTranslationDict> = {
     },
     common: {
       search: "بحث", allClients: "جميع العملاء", allLocations: "جميع المواقع", allRooms: "جميع الغرف",
-      allWorkers: "جميع العمال", active: "نشط", inactive: "غير نشط", assignWorkers: "تعيين عمال",
+      allWorkers: "جميع العمال", active: "نشط", inactive: "غير نشط", assignWorkers: "تعيين عمال", manageWorkers: "إدارة العاملين",
       bulkImport: "استيراد جماعي", noDataFound: "لم يتم العثور على بيانات", adjustFilters: "جرب تعديل البحث أو الفلاتر.",
       duration: "المدة", photos: "الصور", tasks: "المهام", additionalTasks: "المهام الإضافية", rooms: "غرف", floors: "الطوابق",
       required: "مطلوب", previous: "السابق", next: "التالي", showing: "عرض", of: "من",
@@ -771,7 +772,7 @@ export const translations: Record<string, DashboardTranslationDict> = {
     },
     plans: {
       title: "خطط التنظيف", addPlan: "إضافة خطة تنظيف", searchPlaceholder: "البحث في خطط التنظيف...",
-      noPlansFound: "لم يتم العثور على خطط تنظيف",
+      noPlansFound: "لم يتم العثور على خطط تنظيف", clientCompany: "شركة العميل", planName: "اسم الخطة", createPlan: "إنشاء خطة", editPlan: "تعديل الخطة",
     },
     rooms: {
       title: "الغرف", addRoom: "إضافة غرفة", searchPlaceholder: "البحث في الغرف...",
@@ -884,7 +885,7 @@ export const translations: Record<string, DashboardTranslationDict> = {
     },
     common: {
       search: "Rechercher", allClients: "Tous les Clients", allLocations: "Tous les Emplacements", allRooms: "Toutes les Pièces",
-      allWorkers: "Tous les Employés", active: "Actif", inactive: "Inactif", assignWorkers: "Attribuer des employés",
+      allWorkers: "Tous les Employés", active: "Actif", inactive: "Inactif", assignWorkers: "Attribuer des employés", manageWorkers: "Gérer les employés",
       bulkImport: "Import en Masse", noDataFound: "Aucune donnée trouvée", adjustFilters: "Essayez de modifier la recherche ou les filtres.",
       duration: "Durée", photos: "Photos", tasks: "Tâches", additionalTasks: "Tâches supplémentaires", rooms: "pièces", floors: "Étages",
       required: "Requis", previous: "Précédent", next: "Suivant", showing: "Affichage de", of: "sur",
@@ -893,7 +894,7 @@ export const translations: Record<string, DashboardTranslationDict> = {
     },
     plans: {
       title: "Plans de Nettoyage", addPlan: "Ajouter un Plan", searchPlaceholder: "Rechercher des plans...",
-      noPlansFound: "Aucun plan de nettoyage trouvé",
+      noPlansFound: "Aucun plan de nettoyage trouvé", clientCompany: "Entreprise cliente", planName: "Nom du plan", createPlan: "Créer le plan", editPlan: "Modifier le plan",
     },
     rooms: {
       title: "Pièces", addRoom: "Ajouter une Pièce", searchPlaceholder: "Rechercher des pièces...",
@@ -1006,7 +1007,7 @@ export const translations: Record<string, DashboardTranslationDict> = {
     },
     common: {
       search: "Buscar", allClients: "Todos los Clientes", allLocations: "Todas las Ubicaciones", allRooms: "Todas las Habitaciones",
-      allWorkers: "Todos los Trabajadores", active: "Activo", inactive: "Inactivo", assignWorkers: "Asignar trabajadores",
+      allWorkers: "Todos los Trabajadores", active: "Activo", inactive: "Inactivo", assignWorkers: "Asignar trabajadores", manageWorkers: "Gestionar trabajadores",
       bulkImport: "Importación Masiva", noDataFound: "No se encontraron datos", adjustFilters: "Intente ajustar la búsqueda o filtros.",
       duration: "Duración", photos: "Fotos", tasks: "Tareas", additionalTasks: "Tareas adicionales", rooms: "habitaciones", floors: "Pisos",
       required: "Requerido", previous: "Anterior", next: "Siguiente", showing: "Mostrando", of: "de",
@@ -1015,7 +1016,7 @@ export const translations: Record<string, DashboardTranslationDict> = {
     },
     plans: {
       title: "Planes de Limpieza", addPlan: "+ Agregar Plan de Limpieza", searchPlaceholder: "Buscar planes...",
-      noPlansFound: "No se encontraron planes de limpieza",
+      noPlansFound: "No se encontraron planes de limpieza", clientCompany: "Empresa cliente", planName: "Nombre del plan", createPlan: "Crear plan", editPlan: "Editar plan",
     },
     rooms: {
       title: "Habitaciones", addRoom: "+ Agregar Habitación", searchPlaceholder: "Buscar habitaciones...",

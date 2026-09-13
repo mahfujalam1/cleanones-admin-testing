@@ -9,10 +9,30 @@ import { getCleaningPlan, type PlanDetails } from "@/services/actions/cleaningPl
 import { getExtraService, type ExtraServiceRequest, type ExtraServiceTaskDetail } from "@/services/actions/extraServices";
 import { getLocationCleaningPlans } from "@/services/actions/locations";
 import { statusColor } from "./ExtraServiceCard";
+import {
+  additionalTaskStatus,
+  useGetAdditionalTaskQuery,
+  type AdditionalTask,
+} from "@/redux/api/endpoints/additionalTasks.api";
 import { ExtraServicePlanSection } from "./ExtraServicePlanSection";
 import { ExtraServiceActionFooter } from "./ExtraServiceActionFooter";
 import { getLocale } from "@/lib/locale";
 import { getDashboardTranslation } from "@/lib/translations";
+
+/** `/additional-task` names its fields differently from the extra-service task shape. */
+function additionalTaskToDetail(task: AdditionalTask): ExtraServiceTaskDetail {
+  return {
+    id: task._id,
+    name: task.name,
+    description: task.description ?? null,
+    duration_minutes: task.duration_minutes ?? null,
+    is_photo_req: task.is_photo_required,
+    photo: (task.photo_requirements ?? []).map((photo) => ({ name: photo.title })),
+    total_photos_required: task.photo_requirements?.length,
+    is_completed: task.is_completed,
+    fixed_date: task.date_time ? task.date_time.slice(0, 10) : null,
+  };
+}
 
 export function ExtraServiceModal({ request, onClose, onDone, onError }: ExtraServiceModalProps) {
   const t = getDashboardTranslation(getLocale(usePathname()));
@@ -20,6 +40,14 @@ export function ExtraServiceModal({ request, onClose, onDone, onError }: ExtraSe
   const [loadingPlan, setLoadingPlan] = useState(false);
   const [extraDetails, setExtraDetails] = useState<ExtraServiceRequest | null>(null);
   const [resolvedPlanId, setResolvedPlanId] = useState<string | undefined>(request.planId);
+
+  // The row from the list route is only a summary. Re-read the task on its own endpoint so the
+  // modal shows the authoritative record — including an approval someone else just made.
+  const listedTask = request.rawAdditionalTask;
+  const { data: fetchedTask, isFetching: loadingTask } = useGetAdditionalTaskQuery(listedTask?._id ?? "", {
+    skip: !listedTask,
+  });
+  const task = fetchedTask ?? listedTask;
 
   useEffect(() => {
     let active = true;
@@ -63,16 +91,22 @@ export function ExtraServiceModal({ request, onClose, onDone, onError }: ExtraSe
   }, [request.id, request.planId, request.location_id, request.isCleaningPlanTask]);
 
   const rawTasks: ExtraServiceTaskDetail[] = (
-    extraDetails?.tasks?.length
-      ? extraDetails.tasks
-      : request.rawPendingTask
+    task
+      ? [additionalTaskToDetail(task)]
+      : extraDetails?.tasks?.length
+        ? extraDetails.tasks
+        : request.rawPendingTask
         ? [request.rawPendingTask as any]
         : request.rawExtraService?.tasks?.length
           ? request.rawExtraService.tasks
           : [{ name: request.title, description: request.description }]
   ) as ExtraServiceTaskDetail[];
 
-  const planDisplayName = extraDetails?.plan_name || plan?.title || resolvedPlanId;
+  const displayTitle = task?.name || extraDetails?.title || request.title;
+  const displayStatus = task ? additionalTaskStatus(task) : extraDetails?.status || request.status;
+  const displayDescription = task?.description || extraDetails?.description || request.description;
+
+  const planDisplayName = extraDetails?.plan_name || plan?.title || task?.cleaning_plan_id || resolvedPlanId;
 
   return (
     <div
@@ -91,12 +125,12 @@ export function ExtraServiceModal({ request, onClose, onDone, onError }: ExtraSe
             </span>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-base font-bold text-slate-900">{extraDetails?.title || request.title}</h2>
+                <h2 className="text-base font-bold text-slate-900">{displayTitle}</h2>
                 <span
-                  className={`rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${statusColor[(extraDetails?.status || request.status).toLowerCase()] ?? "bg-slate-50 text-slate-600"
+                  className={`rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${statusColor[displayStatus.toLowerCase()] ?? "bg-slate-50 text-slate-600"
                     }`}
                 >
-                  {(extraDetails?.status || request.status).replaceAll("_", " ")}
+                  {displayStatus.replaceAll("_", " ")}
                 </span>
               </div>
               <p className="text-xs text-slate-400 mt-0.5">
@@ -118,13 +152,16 @@ export function ExtraServiceModal({ request, onClose, onDone, onError }: ExtraSe
         </header>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-4 text-xs text-slate-700">
+        <div
+          className={`flex-1 overflow-y-auto p-6 space-y-4 text-xs text-slate-700 transition-opacity ${loadingTask ? "opacity-60" : "opacity-100"
+            }`}
+        >
           {/* Overview Details */}
           <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-2.5">
             <div>
               <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{t.extraServices.description}</h4>
               <p className="text-sm text-slate-800 leading-relaxed mt-0.5 font-medium whitespace-pre-line">
-                {extraDetails?.description || request.description || t.extraServices.noRequests}
+                {displayDescription || t.extraServices.noRequests}
               </p>
             </div>
 
@@ -143,13 +180,19 @@ export function ExtraServiceModal({ request, onClose, onDone, onError }: ExtraSe
               <div>
                 <span className="text-[10px] text-slate-400 block font-semibold">{t.extraServices.preferredDate}</span>
                 <span className="font-medium text-slate-800">
-                  {extraDetails?.preferred_date || request.preferred_date || extraDetails?.date_submitted || "—"}
+                  {(task?.date_time ? task.date_time.slice(0, 10) : "") ||
+                    extraDetails?.preferred_date ||
+                    request.preferred_date ||
+                    extraDetails?.date_submitted ||
+                    "—"}
                 </span>
               </div>
               <div>
                 <span className="text-[10px] text-slate-400 block font-semibold">{t.common.duration}</span>
                 <span className="font-medium text-slate-800">
-                  {extraDetails?.duration || (extraDetails?.duration_minutes ? `${extraDetails.duration_minutes}m` : "—")}
+                  {task?.duration_minutes
+                    ? `${task.duration_minutes}m`
+                    : extraDetails?.duration || (extraDetails?.duration_minutes ? `${extraDetails.duration_minutes}m` : "—")}
                 </span>
               </div>
             </div>
@@ -205,15 +248,20 @@ export function ExtraServiceModal({ request, onClose, onDone, onError }: ExtraSe
         <ExtraServiceActionFooter
           request={{
             ...request,
-            planId: resolvedPlanId,
-            status: extraDetails?.status || request.status,
-            taskIds: Array.from(
-              new Set([
-                ...(request.taskId ? [request.taskId] : []),
-                ...rawTasks.map((t) => t.id).filter(Boolean),
-                ...(plan?.pending_additional_tasks || []).map((pt) => pt.id).filter(Boolean),
-              ])
-            ) as string[],
+            planId: task?.cleaning_plan_id || resolvedPlanId,
+            status: displayStatus,
+            rawAdditionalTask: task,
+            // An /additional-task row stands alone: widening this to the plan's other pending
+            // tasks would approve every sibling along with the one on screen.
+            taskIds: task
+              ? [task._id]
+              : (Array.from(
+                  new Set([
+                    ...(request.taskId ? [request.taskId] : []),
+                    ...rawTasks.map((t) => t.id).filter(Boolean),
+                    ...(plan?.pending_additional_tasks || []).map((pt) => pt.id).filter(Boolean),
+                  ])
+                ) as string[]),
           }}
           onDone={onDone}
           onError={onError}

@@ -1,122 +1,141 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { usePathname, useRouter } from "next/navigation";
-import { MdAdd, MdBusinessCenter, MdClose, MdDelete, MdLocationOn, MdRestore, MdSearch, MdWarningAmber } from "react-icons/md";
-import { AddClientModal } from "@/components/clients/AddClientModal";
-import type { Client } from "@/components/clients/types";
-import { deleteClient, getDeletedClients, restoreClient } from "@/services/actions/clients";
-import { useGetClientsQuery } from "@/redux/api/dashboardApi";
-import { CardGridSkeleton } from "@/components/shared/SkeletonLoader";
+import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
+import { MdAdd, MdBusinessCenter } from "react-icons/md";
+import { ClientCard } from "@/components/clients/ClientCard";
+import { ClientForm } from "@/components/clients/ClientForm";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { BackendPagination } from "@/components/shared/BackendPagination";
-import { getLocale } from "@/lib/locale";
+import { CardGridSkeleton, EmptyState, ErrorNotice, SearchInput } from "@/components/shared/ListStates";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import {
+  useDeleteClientMutation,
+  useGetClientsQuery,
+  type Client,
+} from "@/redux/api/endpoints/clients.api";
+import { apiError } from "@/redux/api/apiError";
+import { getLocale, localizePath } from "@/lib/locale";
 import { getDashboardTranslation } from "@/lib/translations";
 
-type Mode = "active" | "deleted";
+const LIMIT = 9;
 
 export default function ClientsPage() {
-  const pathname = usePathname();
-  const locale = getLocale(pathname);
+  const locale = getLocale(usePathname());
   const t = getDashboardTranslation(locale);
-  const router = useRouter();
 
-  const [mode, setMode] = useState<Mode>("active");
   const [search, setSearch] = useState("");
+  const searchTerm = useDebouncedValue(search.trim());
   const [page, setPage] = useState(1);
-  const [error, setError] = useState("");
-  const [addOpen, setAddOpen] = useState(false);
+  const [formTarget, setFormTarget] = useState<Client | "new" | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Client | null>(null);
-  const [deleting, setDeleting] = useState(false);
-  const limit = 9;
+  const [actionError, setActionError] = useState("");
 
-  const [deletedClients, setDeletedClients] = useState<import("@/services/actions/clients").ClientSummary[]>([]);
-  const [deletedTotal, setDeletedTotal] = useState(0);
-  const [loadingDeleted, setLoadingDeleted] = useState(false);
+  // A new search starts over; staying on page 7 of the old result set shows nothing.
+  useEffect(() => setPage(1), [searchTerm]);
 
-  const { data: clientsRes, isLoading: loadingActive, refetch } = useGetClientsQuery({ search: search.trim() || undefined, page, limit });
+  const { data, isFetching, error } = useGetClientsQuery({
+    page,
+    limit: LIMIT,
+    searchTerm: searchTerm || undefined,
+  });
+  const [deleteClient, { isLoading: deleting }] = useDeleteClientMutation();
 
-  useEffect(() => {
-    if (mode === "deleted") {
-      setLoadingDeleted(true);
-      setError("");
-      void getDeletedClients(page, limit, search.trim() || undefined).then((result) => {
-        setLoadingDeleted(false);
-        if (result.success) {
-          setDeletedClients(result.data.clients ?? []);
-          setDeletedTotal(result.data.total_count ?? 0);
-        } else {
-          setError(result.error);
-        }
-      });
-    }
-  }, [mode, page, search]);
-
-  const loading = mode === "active" ? loadingActive : loadingDeleted;
-  const rawClients = mode === "active" ? (clientsRes?.clients ?? []) : deletedClients;
-  const total = mode === "active" ? (clientsRes?.total_count ?? 0) : deletedTotal;
-
-  const clients: Client[] = rawClients.map((item) => ({
-    id: item.id, name: item.company_name, industry: item.industry, status: item.status,
-    mainContactName: item.primary_contact_name, email: item.email, phone: item.phone,
-    locationsCount: item.locations_count, contractStatus: item.contract_status,
-    contractExpiryDate: "", activeTasks: 0, contacts: [], locations: [],
-  }));
-
-  const restore = async (client: Client) => {
-    setError("");
-    const result = await restoreClient(client.id);
-    if (!result.success) return setError(result.error);
-    void refetch();
-    if (mode === "deleted") {
-      void getDeletedClients(page, limit, search.trim() || undefined).then((res) => {
-        if (res.success) {
-          setDeletedClients(res.data.clients ?? []);
-          setDeletedTotal(res.data.total_count ?? 0);
-        }
-      });
-    }
-  };
+  const clients = data?.result ?? [];
+  const total = data?.meta.total ?? 0;
+  const message = actionError || (error ? apiError(error) : "");
 
   const confirmDelete = async () => {
     if (!deleteTarget) return;
-    setDeleting(true);
-    setError("");
-    const result = await deleteClient(deleteTarget.id);
-    setDeleting(false);
-    if (!result.success) return setError(result.error);
-    setDeleteTarget(null);
-    void refetch();
+    setActionError("");
+    try {
+      await deleteClient(deleteTarget._id).unwrap();
+      setDeleteTarget(null);
+    } catch (cause) {
+      setActionError(apiError(cause));
+    }
   };
 
-  return <div className="space-y-5 pb-10">
-    <div className="flex flex-wrap gap-3">
-      <label className="relative"><MdSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" /><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t.clients.searchPlaceholder} className="h-9 w-64 rounded border bg-slate-50 pl-9 pr-3 text-sm" /></label>
-      <div className="flex rounded border bg-white p-1 text-xs font-semibold">{(["active", "deleted"] as const).map((item) => <button key={item} onClick={() => setMode(item)} className={`rounded px-4 py-1.5 capitalize ${mode === item ? "bg-sky-500 text-white" : "text-slate-500"}`}>{item === "active" ? t.common.active : t.common.inactive}</button>)}</div>
-      {mode === "active" && <button onClick={() => setAddOpen(true)} className="ml-auto flex h-9 items-center gap-1 rounded bg-sky-500 px-4 text-sm font-semibold text-white"><MdAdd /> {t.clients.addClient}</button>}
-    </div>
-    {error && <p className="rounded bg-red-50 p-3 text-xs text-red-700">{error}</p>}
-    {loading ? <CardGridSkeleton cards={9} /> : <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-      {clients.map((client) => <article key={client.id} onClick={() => mode === "active" && router.push(`/clients/${client.id}`)} className={`dashboard-card p-5 ${mode === "active" ? "cursor-pointer" : ""}`}>
-        <div className="flex gap-3"><span className="flex h-10 w-10 items-center justify-center rounded bg-emerald-50 text-emerald-600"><MdBusinessCenter /></span><div className="flex-1"><h3 className="font-bold">{client.name}</h3><p className="text-xs text-slate-500">{client.industry} · {client.status}</p></div>
-          <button aria-label={mode === "deleted" ? `Restore ${client.name}` : `Delete ${client.name}`} onClick={(e) => { e.stopPropagation(); if (mode === "deleted") void restore(client); else setDeleteTarget(client); }} className={`rounded p-2 ${mode === "deleted" ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-600"}`}>{mode === "deleted" ? <MdRestore /> : <MdDelete />}</button>
-        </div><div className="mt-4 space-y-1 text-xs text-slate-500"><p>{client.mainContactName}</p><p>{client.email}</p><p>{client.phone}</p><p className="flex items-center gap-1"><MdLocationOn /> {client.locationsCount} {t.nav.locations.toLowerCase()}</p></div>
-      </article>)}
-      {clients.length === 0 && !error && <p className="col-span-full py-16 text-center text-sm text-slate-500">{t.clients.noClientsFound}</p>}
-    </div>}
-    {!error && <BackendPagination page={page} limit={limit} total={total} onPageChange={setPage} />}
-    {addOpen && <AddClientModal onClose={() => setAddOpen(false)} onAdd={() => { setAddOpen(false); void refetch(); }} />}
-    {deleteTarget && <DeleteClientModal client={deleteTarget} deleting={deleting} onCancel={() => !deleting && setDeleteTarget(null)} onConfirm={() => void confirmDelete()} />}
-  </div>;
-}
+  const addButton = (
+    <button
+      type="button"
+      onClick={() => setFormTarget("new")}
+      className="inline-flex shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-2xs transition-all hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary/20 active:scale-[0.98]"
+    >
+      <MdAdd className="text-lg" /> {t.clients.addClient}
+    </button>
+  );
 
-function DeleteClientModal({ client, deleting, onCancel, onConfirm }: { client: Client; deleting: boolean; onCancel: () => void; onConfirm: () => void }) {
-  return <div role="dialog" aria-modal="true" aria-labelledby="delete-client-title" className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4" onMouseDown={(e) => e.target === e.currentTarget && onCancel()}>
-    <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-2xl">
-      <div className="flex items-start justify-between gap-4"><span className="flex h-11 w-11 items-center justify-center rounded-full bg-red-50 text-xl text-red-600"><MdWarningAmber /></span><button aria-label="Close delete confirmation" disabled={deleting} onClick={onCancel} className="rounded p-1 text-slate-400 hover:bg-slate-100 disabled:opacity-50"><MdClose className="text-xl" /></button></div>
-      <h2 id="delete-client-title" className="mt-4 text-lg font-bold text-slate-900">Delete client?</h2>
-      <p className="mt-2 text-sm leading-6 text-slate-500">Are you sure you want to delete <strong className="text-slate-800">{client.name}</strong>? You can restore this client later from the Deleted tab.</p>
-      <div className="mt-6 flex justify-end gap-3"><button disabled={deleting} onClick={onCancel} className="rounded border px-4 py-2 text-sm font-semibold text-slate-600 disabled:opacity-50">Cancel</button><button disabled={deleting} onClick={onConfirm} className="flex min-w-24 items-center justify-center gap-2 rounded bg-red-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"><MdDelete /> {deleting ? "Deleting..." : "Delete"}</button></div>
-    </div>
-  </div>;
-}
+  return (
+    <div className="space-y-4 pb-10">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-sky-100 bg-sky-50 text-sky-600">
+            <MdBusinessCenter className="text-xl" />
+          </span>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <h1 className="truncate text-lg font-bold leading-tight text-slate-900">{t.clients.title}</h1>
+              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-bold text-slate-600">{total}</span>
+            </div>
+            <p className="truncate text-xs text-slate-500">Client accounts, their locations and contracts.</p>
+          </div>
+        </div>
+        {addButton}
+      </div>
 
+      <div className="flex flex-col gap-2.5 rounded-xl border border-slate-200 bg-white p-2.5 shadow-2xs sm:flex-row sm:items-center">
+        <SearchInput value={search} onChange={setSearch} placeholder={t.clients.searchPlaceholder} />
+      </div>
+
+      {message && <ErrorNotice message={message} />}
+
+      {isFetching ? (
+        <CardGridSkeleton />
+      ) : clients.length === 0 ? (
+        <EmptyState
+          icon={<MdBusinessCenter />}
+          title={t.clients.noClientsFound}
+          description={
+            searchTerm
+              ? t.common.adjustFilters
+              : "Add your first client to start managing their locations and rooms."
+          }
+          action={searchTerm ? undefined : addButton}
+        />
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {clients.map((client) => (
+            <ClientCard
+              key={client._id}
+              client={client}
+              href={localizePath(`/clients/${client._id}`, locale)}
+              onEdit={setFormTarget}
+              onDelete={setDeleteTarget}
+            />
+          ))}
+        </div>
+      )}
+
+      <BackendPagination page={page} limit={LIMIT} total={total} onPageChange={setPage} />
+
+      {formTarget && (
+        <ClientForm
+          client={formTarget === "new" ? undefined : formTarget}
+          onClose={() => setFormTarget(null)}
+        />
+      )}
+
+      {deleteTarget && (
+        <ConfirmDialog
+          title="Delete client?"
+          description={`${deleteTarget.name} will be deactivated and their login blocked.`}
+          confirmText="Delete"
+          loading={deleting}
+          onConfirm={() => void confirmDelete()}
+          onClose={() => !deleting && setDeleteTarget(null)}
+        />
+      )}
+    </div>
+  );
+}

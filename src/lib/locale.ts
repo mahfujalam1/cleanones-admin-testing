@@ -1,5 +1,25 @@
-export const supportedLocales = ["en", "nl", "fr", "es", "pl", "uk", "pt", "ar"] as const;
-export type SupportedLocale = (typeof supportedLocales)[number];
+/**
+ * Every language the dashboard ships, in the order the switcher lists them, each written in its
+ * own tongue. This is the single source for the locale switcher, the route prefixes accepted by
+ * `proxy.ts`, and the languages a worker can be tagged with.
+ */
+export const LOCALE_OPTIONS = [
+  { code: "en", label: "English" },
+  { code: "nl", label: "Nederlands" },
+  { code: "pl", label: "Polski" },
+  { code: "uk", label: "Українська" },
+  { code: "pt", label: "Português" },
+  { code: "ar", label: "العربية" },
+  { code: "fr", label: "Français" },
+  { code: "es", label: "Español" },
+] as const;
+
+export type SupportedLocale = (typeof LOCALE_OPTIONS)[number]["code"];
+
+export const supportedLocales = LOCALE_OPTIONS.map((option) => option.code) as readonly SupportedLocale[];
+
+/** Language names offered wherever a person's spoken languages are picked. */
+export const LANGUAGE_NAMES = LOCALE_OPTIONS.map((option) => option.label) as readonly string[];
 
 export function getLocale(pathname?: string | null): SupportedLocale {
   if (typeof window !== "undefined") {

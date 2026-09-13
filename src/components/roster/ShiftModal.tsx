@@ -1,9 +1,9 @@
 "use client";
 import React, { useEffect, useState } from 'react';
-import { MdAccessTime, MdLocationOn, MdOutlineClose, MdTag, MdPerson, MdBusinessCenter, MdEventNote, MdCamera, MdChecklist } from 'react-icons/md';
+import { MdAccessTime, MdLocationOn, MdOutlineClose, MdTag, MdPerson, MdBusinessCenter, MdEventNote, MdCamera, MdChecklist, MdDeleteOutline } from 'react-icons/md';
 import { TbDoor, TbUsers, TbClipboardList } from 'react-icons/tb';
-import { Shift } from './types';
-import { getRosterShift } from '@/services/actions/roster';
+import { Shift, planIdFromShift } from './types';
+import { deleteRosterShift, getRosterShift } from '@/services/actions/roster';
 import { getCleaningPlan, type PlanDetails } from '@/services/actions/cleaningPlans';
 import { DetailSkeleton } from '@/components/shared/SkeletonLoader';
 
@@ -25,27 +25,32 @@ type ShiftDetails = {
   status?: string;
 };
 
-/**
- * Roster shifts generated from a cleaning plan carry the plan id inside their own id
- * ("exec_plan_b5cf1d87f9_2026-09-08" comes from plan "plan_b5cf1d87f9"). The roster API
- * does not return the plan id on its own, so this is the only link available. Shifts
- * created directly on the roster ("shift_2981de3e24") have no plan behind them.
- */
-const planIdFromShift = (shiftId: string) => {
-  const match = /^exec_(plan_[A-Za-z0-9]+)_\d{4}-\d{2}-\d{2}$/.exec(shiftId);
-  return match ? match[1] : '';
-};
-
 const titleCase = (value?: string) =>
   value ? value.replaceAll('_', ' ').split(' ').map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') : '';
 
-export function ShiftModal({ shift, onClose }: ShiftModalProps) {
+export function ShiftModal({ shift, onClose, onDeleted }: ShiftModalProps) {
   const [details, setDetails] = useState<ShiftDetails | null>(null);
   const [plan, setPlan] = useState<PlanDetails | null>(null);
   const [planLoading, setPlanLoading] = useState(false);
   const [error, setError] = useState('');
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const planId = planIdFromShift(shift.id);
+
+  const handleDelete = async () => {
+    setDeleting(true);
+    setError('');
+    const result = await deleteRosterShift(shift.id);
+    setDeleting(false);
+    if (!result.success) {
+      setConfirmDelete(false);
+      setError(result.error);
+      return;
+    }
+    onDeleted?.(shift.id);
+    onClose();
+  };
 
   useEffect(() => {
     void getRosterShift(shift.id).then((result) => result.success ? setDetails(result.data) : setError(result.error));
@@ -228,7 +233,14 @@ export function ShiftModal({ shift, onClose }: ShiftModalProps) {
           )}
         </div>
 
-        <footer className="flex shrink-0 justify-end border-t px-5 py-3">
+        <footer className="flex shrink-0 flex-wrap items-center justify-end gap-2 border-t px-5 py-3">
+          <button
+            onClick={() => setConfirmDelete(true)}
+            className="mr-auto flex items-center gap-1.5 rounded border border-red-200 bg-white px-3 py-2 text-xs font-semibold text-red-600 transition-colors hover:bg-red-50 cursor-pointer"
+          >
+            <MdDeleteOutline className="text-sm" /> Delete shift
+          </button>
+
           <button
             onClick={onClose}
             className="rounded border border-gray-300 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-gray-50 cursor-pointer"
@@ -237,6 +249,33 @@ export function ShiftModal({ shift, onClose }: ShiftModalProps) {
           </button>
         </footer>
       </div>
+
+      {confirmDelete && (
+        <div className="modal-backdrop fixed inset-0 z-[80] flex items-center justify-center p-4" onMouseDown={() => !deleting && setConfirmDelete(false)}>
+          <div className="w-full max-w-sm rounded-md border border-gray-200 bg-white p-5" onMouseDown={(event) => event.stopPropagation()}>
+            <h4 className="text-sm font-bold text-slate-900">Delete this shift?</h4>
+            <p className="mt-2 text-xs leading-5 text-slate-500">
+              This shift is removed from the roster. This cannot be undone.
+            </p>
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                disabled={deleting}
+                onClick={() => setConfirmDelete(false)}
+                className="rounded border border-gray-300 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-gray-50 cursor-pointer disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                disabled={deleting}
+                onClick={() => void handleDelete()}
+                className="rounded bg-red-600 px-4 py-2 text-xs font-semibold text-white hover:bg-red-700 cursor-pointer disabled:opacity-60"
+              >
+                {deleting ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

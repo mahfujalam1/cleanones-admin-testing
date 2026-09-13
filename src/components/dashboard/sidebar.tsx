@@ -4,8 +4,8 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { getLocale, localizePath, stripLocale } from '@/lib/locale';
-import { useAppSelector, useAppDispatch } from '@/store/hooks';
-import { toggleSidebar, closeMobileSidebar, setSignOutModalOpen } from '@/store/slices/ui.slice';
+import { useAppSelector, useAppDispatch } from '@/redux/hooks';
+import { toggleSidebar, closeMobileSidebar, setSignOutModalOpen } from '@/redux/slices/ui.slice';
 import {
   MdDashboard, MdCalendarToday, MdAccessTime, MdPeople,
   MdBusinessCenter, MdLocationOn,
@@ -44,7 +44,7 @@ export default function Sidebar() {
     { name: t.nav.dashboard, href: '/', icon: MdDashboard },
     { name: t.nav.roster, href: '/roster', icon: MdCalendarToday },
     { name: t.nav.shiftMonitoring, href: '/shift-monitoring', icon: MdAccessTime },
-    { name: t.nav.workers, href: '/users', icon: MdPeople },
+    { name: t.nav.workers, href: '/workers', icon: MdPeople },
     { name: t.nav.clients, href: '/clients', icon: MdBusinessCenter },
     { name: t.nav.chat, href: '/chat', icon: MdChatBubbleOutline },
     { name: t.nav.locations, href: '/locations', icon: MdLocationOn },
@@ -62,7 +62,7 @@ export default function Sidebar() {
     // `/manager/suggested-questions` endpoint that doesn't exist in the backend at all (only
     // `/manager/faqs` does, which `/get-help/faqs` correctly uses), so every manager clicking
     // this nav item previously landed on a page whose data query 404s on load.
-    { name: t.nav.getHelp || 'Get Help', href: '/get-help/faqs', icon: MdHelpOutline },
+    { name: t.nav.getHelp || 'Get Help', href: '/get-help', icon: MdHelpOutline },
     { name: t.nav.settings, href: '/settings', icon: MdSettings },
   ];
 
@@ -71,7 +71,7 @@ export default function Sidebar() {
   const mobileSidebarOpen = useAppSelector((state) => state.ui.mobileSidebarOpen);
   const user = useAppSelector((state) => state.auth.user);
   const collapsed = !sidebarOpen;
-  const allowedRoutes = user?.role === 'SUPER_ADMIN' ? null : getStoredManagerAccess();
+  const allowedRoutes = user?.role === 'ADMIN' ? null : getStoredManagerAccess();
   const visibleMainLinks = allowedRoutes ? mainLinks.filter((link) => routeIsAllowed(link.href, allowedRoutes)) : mainLinks;
   const visibleQcLinks = allowedRoutes ? qcLinks.filter((link) => routeIsAllowed(link.href, allowedRoutes)) : qcLinks;
 
@@ -168,7 +168,7 @@ export default function Sidebar() {
             })}
           </nav>
 
-          {/* {user?.role === 'SUPER_ADMIN' && (
+          {/* {user?.role === 'ADMIN' && (
             <>
               <div className="mx-3 my-4 border-t border-sidebar-border" />
               <div className={`mb-2 px-6 text-xs font-medium uppercase tracking-wider text-sidebar-foreground/70 ${collapsed ? 'lg:hidden' : 'block'}`}>{t.nav.administration}</div>

@@ -1,49 +1,48 @@
 "use client";
 
 import React, { useState } from "react";
-import {
-  MdEdit,
-  MdDeleteOutline,
-  MdKeyboardArrowDown,
-  MdKeyboardArrowUp,
-  MdQuestionAnswer,
-  MdHelpOutline,
-} from "react-icons/md";
+import { MdEdit, MdDeleteOutline, MdKeyboardArrowDown } from "react-icons/md";
 import type { FaqItem } from "@/services/actions/faqs";
 
 interface FaqCardProps {
   item: FaqItem;
   onEdit: (item: FaqItem) => void;
   onDelete: (item: FaqItem) => void;
+  /** Open by default — used for the first row so the list never looks empty. */
+  defaultOpen?: boolean;
 }
 
-export function FaqCard({ item, onEdit, onDelete }: FaqCardProps) {
-  const [expanded, setExpanded] = useState(false);
+export function FaqCard({ item, onEdit, onDelete, defaultOpen = false }: FaqCardProps) {
+  const [open, setOpen] = useState(defaultOpen);
 
   return (
-    <div className="group rounded-2xl border border-slate-200/90 bg-white p-4 sm:p-5 shadow-xs hover:border-primary/40 hover:shadow-md transition-all">
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex items-start gap-3 flex-1 min-w-0">
-          {/* Serial Number Badge */}
-          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-sky-50 text-xs font-bold text-primary border border-sky-100">
-            #{item.serial_no}
-          </span>
+    <article className="group rounded-xl border border-slate-200 bg-white shadow-2xs transition-all hover:border-primary/40">
+      <div className="flex items-start gap-3 p-3.5">
+        {/* Serial */}
+        <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-sky-100 bg-sky-50 text-[11px] font-bold text-primary">
+          {item.serial_no}
+        </span>
 
-          <div className="flex-1 min-w-0">
-            <h3 className="text-base font-bold text-slate-900 leading-snug flex items-start gap-1.5">
-              <MdHelpOutline className="text-primary text-lg mt-0.5 shrink-0" />
-              <span>{item.question}</span>
-            </h3>
-          </div>
-        </div>
+        {/* Question — whole row toggles the answer */}
+        <button
+          type="button"
+          onClick={() => setOpen(!open)}
+          aria-expanded={open}
+          className="min-w-0 flex-1 cursor-pointer text-left"
+        >
+          <h3 className="text-sm font-bold leading-snug text-slate-900 group-hover:text-primary">{item.question}</h3>
+          {!open && (
+            <p className="mt-1 truncate text-xs text-slate-500">{item.answer}</p>
+          )}
+        </button>
 
         {/* Actions */}
-        <div className="flex items-center gap-1.5 shrink-0">
+        <div className="flex shrink-0 items-center gap-1">
           <button
             type="button"
             title="Edit FAQ"
             onClick={() => onEdit(item)}
-            className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-primary transition-colors cursor-pointer"
+            className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition-colors hover:border-primary/40 hover:bg-sky-50 hover:text-primary"
           >
             <MdEdit className="text-base" />
           </button>
@@ -51,43 +50,29 @@ export function FaqCard({ item, onEdit, onDelete }: FaqCardProps) {
             type="button"
             title="Delete FAQ"
             onClick={() => onDelete(item)}
-            className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors cursor-pointer"
+            className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-600"
           >
             <MdDeleteOutline className="text-base" />
           </button>
-        </div>
-      </div>
-
-      {/* Answer */}
-      <div className="mt-3.5 rounded-xl bg-slate-50/80 p-3.5 border border-slate-100 text-sm text-slate-700">
-        <div className="flex items-start gap-2">
-          <MdQuestionAnswer className="text-slate-400 text-base mt-0.5 shrink-0" />
-          <div className="flex-1 whitespace-pre-line leading-relaxed">
-            {expanded || item.answer.length <= 150
-              ? item.answer
-              : `${item.answer.slice(0, 150)}...`}
-          </div>
-        </div>
-
-        {item.answer.length > 150 && (
           <button
             type="button"
-            onClick={() => setExpanded(!expanded)}
-            className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline cursor-pointer"
+            aria-label={open ? "Collapse answer" : "Expand answer"}
+            onClick={() => setOpen(!open)}
+            className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
           >
-            {expanded ? (
-              <>Show less <MdKeyboardArrowUp /></>
-            ) : (
-              <>Read full answer <MdKeyboardArrowDown /></>
-            )}
+            <MdKeyboardArrowDown className={`text-lg transition-transform ${open ? "rotate-180" : ""}`} />
           </button>
-        )}
+        </div>
       </div>
 
-      <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-2.5 text-xs text-slate-400">
-        <span>Order: #{item.serial_no}</span>
-        <span>Updated: {new Date(item.updated_at || item.created_at).toLocaleDateString()}</span>
-      </div>
-    </div>
+      {open && (
+        <div className="border-t border-slate-100 px-3.5 py-3 pl-[3.75rem]">
+          <p className="whitespace-pre-line text-[13px] leading-relaxed text-slate-600">{item.answer}</p>
+          <p className="mt-2.5 text-[11px] text-slate-400">
+            Updated {new Date(item.updated_at || item.created_at).toLocaleDateString()}
+          </p>
+        </div>
+      )}
+    </article>
   );
 }

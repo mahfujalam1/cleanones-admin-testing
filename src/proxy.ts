@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import { REFRESH_COOKIE, SESSION_COOKIE } from "@/lib/auth/session";
+import { supportedLocales } from "@/lib/locale";
 
-const locales = ["en", "nl", "fr", "es", "pl", "uk", "pt", "ar"];
+
 const publicAuthRoutes = new Set([
   "/login",
   "/forgot-password",
@@ -33,7 +35,7 @@ export function proxy(request: NextRequest) {
   const segments = pathname.split("/").filter(Boolean);
   const locale = segments[0];
 
-  if (!locale || !locales.includes(locale)) {
+  if (!locale || !supportedLocales.includes(locale as (typeof supportedLocales)[number])) {
     const url = request.nextUrl.clone();
     url.pathname = `/en${pathname === "/" ? "" : pathname}`;
     return NextResponse.redirect(url);
@@ -41,9 +43,11 @@ export function proxy(request: NextRequest) {
 
   const internalPath = `/${segments.slice(1).join("/")}`.replace(/\/$/, "") || "/";
   const isAuthRoute = publicAuthRoutes.has(internalPath);
+  // The access token is memory-only, so route gating reads the two things that do survive a
+  // reload: the backend's HttpOnly refresh cookie, and our own marker cookie (which is also the
+  // one sign-out can delete, since JavaScript cannot touch an HttpOnly cookie).
   const hasSession = Boolean(
-    request.cookies.get("cleanones_manager_access_token")?.value ||
-    request.cookies.get("cleanones_manager_refresh_token")?.value
+    request.cookies.get(SESSION_COOKIE)?.value && request.cookies.get(REFRESH_COOKIE)?.value,
   );
 
   if (!hasSession && !isAuthRoute) {

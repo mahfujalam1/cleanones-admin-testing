@@ -206,11 +206,156 @@ export async function getCleaningPlans(
         plans: PlanSummary[];
     }>(`/manager/cleaning-plans?${query}`, { method: "GET" });
 }
+/**
+ * `/manager/cleaning-plans/{id}` is gone from the backend — it answers 404 — so this reads the
+ * plan from `/cleaning-plan/single-cleaning-plan/{id}` and reshapes it into `PlanDetails`.
+ *
+ * The new payload is the leaner document model: it has no shift scheduling fields
+ * (`start_time`, `end_time`, `repeat_shift`, `repeat_until`, `working_days`, `shift_notes`,
+ * `timezone`) and no per-room task breakdown. Those come back blank here, exactly as they did
+ * while the old route was 404ing, so nothing regresses — but a screen that needs them still
+ * needs an endpoint that supplies them.
+ */
 export async function getCleaningPlan(planId: string) {
-    return authenticated<PlanDetails>(
-        `/manager/cleaning-plans/${encodeURIComponent(planId)}`,
+    const res = await authenticated<SingleCleaningPlan>(
+        `/cleaning-plan/single-cleaning-plan/${encodeURIComponent(planId)}`,
         { method: "GET" },
     );
+    if (!res.success) return res;
+    return { ...res, data: toPlanDetails(res.data) };
+}
+
+/** Only the fields this adapter reads; the full shape lives in `redux/api/endpoints`. */
+type PlanRef<T> = string | T;
+type SingleCleaningPlan = {
+    _id: string;
+    title?: string;
+    description?: string;
+    note?: string;
+    client?: PlanRef<{ _id: string; name?: string; company_name?: string; email?: string; phone?: string }>;
+    location?: PlanRef<{ _id: string; name?: string }>;
+    rooms?: Array<PlanRef<{ _id: string; name?: string; room_type?: string; floor?: number }>>;
+    assigned_workers?: Array<{
+        worker?: PlanRef<{ _id: string; name?: string; position?: string; profile_photo?: string }>;
+        role?: string;
+    }>;
+    additional_tasks?: Array<PlanRef<{
+        _id: string;
+        name?: string;
+        description?: string;
+        duration_minutes?: number;
+        is_photo_required?: boolean;
+        photo_requirements?: Array<{ title: string }>;
+        date_time?: string;
+        is_approved?: boolean;
+    }>>;
+    date_time?: string;
+    end_date?: string;
+    max_estimated_duration?: number;
+    status?: string;
+    is_active?: boolean;
+    manager?: string;
+    created_at?: string;
+    updated_at?: string;
+    createdAt?: string;
+    updatedAt?: string;
+};
+
+/** A reference comes back either as a bare id or as the populated document. */
+const populated = <T extends object>(ref: PlanRef<T> | undefined | null): T | null =>
+    ref && typeof ref === "object" ? ref : null;
+const idOf = (ref: PlanRef<{ _id: string }> | undefined | null): string =>
+    typeof ref === "string" ? ref : ref?._id ?? "";
+const dayOf = (value?: string) => (value ? value.slice(0, 10) : "");
+
+function toPlanDetails(plan: SingleCleaningPlan): PlanDetails {
+    const client = populated(plan.client);
+    const location = populated(plan.location);
+    const rooms = (plan.rooms ?? []).map(populated).filter(Boolean) as Array<{
+        _id: string; name?: string; room_type?: string; floor?: number;
+    }>;
+    const workers = (plan.assigned_workers ?? [])
+        .map((entry) => ({ worker: populated(entry.worker), role: entry.role }))
+        .filter((entry) => entry.worker) as Array<{
+            worker: { _id: string; name?: string; position?: string; profile_photo?: string };
+            role?: string;
+        }>;
+    const tasks = (plan.additional_tasks ?? []).map(populated).filter(Boolean) as Array<{
+        _id: string;
+        name?: string;
+        description?: string;
+        duration_minutes?: number;
+        is_photo_required?: boolean;
+        photo_requirements?: Array<{ title: string }>;
+        date_time?: string;
+    }>;
+
+    const clientName = client?.company_name || client?.name || "";
+    const mappedTasks = tasks.map((task) => ({
+        id: task._id,
+        name: task.name ?? "",
+        description: task.description,
+        frequency_type: task.date_time ? "fixed_date" : "every_visit",
+        fixed_date: dayOf(task.date_time),
+        duration_minutes: task.duration_minutes,
+        is_photo_req: Boolean(task.is_photo_required),
+        photo: (task.photo_requirements ?? []).map((photo) => ({ name: photo.title })),
+        total_photos_required: task.photo_requirements?.length ?? 0,
+    }));
+
+    return {
+        id: plan._id,
+        title: plan.title ?? "",
+        clients_count: client ? 1 : 0,
+        client_names: clientName ? [clientName] : [],
+        client_id: idOf(plan.client),
+        company_name: clientName,
+        clients: client
+            ? [{ client_id: client._id, company_name: clientName, email: client.email, phone: client.phone }]
+            : [],
+        location_name: location?.name,
+        location_names: location?.name ? [location.name] : [],
+        locations: location ? [{ location_id: location._id, location_name: location.name, name: location.name }] : [],
+        rooms_count: plan.rooms?.length ?? 0,
+        room_names: rooms.map((room) => room.name ?? ""),
+        room_ids: (plan.rooms ?? []).map(idOf),
+        rooms: rooms.map((room) => ({
+            room_id: room._id,
+            room_name: room.name ?? "",
+            room_type: room.room_type ?? "",
+            floor: room.floor ?? 0,
+            // The document model keeps tasks on the plan, not per room.
+            duration: 0,
+            task_number: 0,
+            total_photos_required: 0,
+            tasks: [],
+        })),
+        workers_count: plan.assigned_workers?.length ?? 0,
+        worker_names: workers.map((entry) => entry.worker.name ?? ""),
+        worker_ids: (plan.assigned_workers ?? []).map((entry) => idOf(entry.worker)),
+        workers: workers.map((entry) => ({
+            worker_id: entry.worker._id,
+            name: entry.worker.name ?? "",
+            position: entry.role || entry.worker.position || "",
+            profile_photo: entry.worker.profile_photo ?? "",
+        })),
+        additional_tasks: mappedTasks,
+        total_tasks_count: mappedTasks.length,
+        total_photos_count: mappedTasks.reduce((sum, task) => sum + (task.total_photos_required ?? 0), 0),
+        date: dayOf(plan.date_time),
+        duration_minutes: plan.max_estimated_duration ?? 0,
+        status: plan.status ?? (plan.is_active === false ? "inactive" : "active"),
+        is_active: plan.is_active ?? plan.status !== "inactive",
+        created_at: plan.created_at ?? plan.createdAt ?? "",
+        updated_at: plan.updated_at ?? plan.updatedAt ?? "",
+        // Not represented in the new payload.
+        start_time: "",
+        end_time: "",
+        repeat_shift: "",
+        repeat_until: dayOf(plan.end_date),
+        working_days: [],
+        shift_notes: plan.note ?? plan.description ?? "",
+    };
 }
 export async function updateCleaningPlan(
     planId: string,
@@ -253,19 +398,26 @@ export async function getPlanWorkers(
     if (input.search) query.set("search", input.search);
     if (input.workerType && input.workerType !== "all")
         query.set("worker_type", input.workerType);
-    return authenticated<{
-        total_count: number;
-        page: number;
-        limit: number;
-        has_more: boolean;
-        plan_id: string;
-        plan_date: string;
-        plan_time_window: string;
-        workers: PlanWorkerOption[];
-    }>(
+    return authenticated<any>(
         `/manager/cleaning-plans/${encodeURIComponent(planId)}/workers-dropdown?${query}`,
         { method: "GET" },
-    );
+    ).then((res) => {
+        if (res.success && res.data?.workers) {
+            res.data.workers = res.data.workers.map((w: any) => {
+                if (w.worker) {
+                    return {
+                        ...w.worker,
+                        ...w, // In case stats are at the root
+                        worker_id: w.worker._id || w.worker.worker_id,
+                        is_available: !w.is_conflict,
+                        unavailable_reason: w.conflict_reason,
+                    };
+                }
+                return w;
+            });
+        }
+        return res;
+    });
 }
 export async function assignPlanWorkers(
     planId: string,
@@ -273,10 +425,13 @@ export async function assignPlanWorkers(
     action: "append" | "replace" = "append",
     force = false,
 ) {
-    const query = new URLSearchParams({ force: String(force) });
+    const assigned_workers = workers.map(w => ({
+        worker: w.worker_id,
+        role: w.position === "teamleader" ? "Team leader" : w.position === "co_leader" ? "Co-leader" : "Standard worker"
+    }));
     return authenticated<PlanDetails>(
-        `/manager/cleaning-plans/${encodeURIComponent(planId)}/assign-workers?${query}`,
-        { method: "POST", ...json({ workers, action }) },
+        `/manager/cleaning-plans/${encodeURIComponent(planId)}/assign-workers`,
+        { method: "PATCH", ...json({ assigned_workers, force }) },
     );
 }
 

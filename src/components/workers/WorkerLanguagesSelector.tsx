@@ -1,51 +1,43 @@
 "use client";
 
 import React from "react";
-
-export const DEFAULT_LANGUAGES = [
-  "Nederlands",
-  "Engels",
-  "Duits",
-  "Frans",
-  "Spaans",
-  "Pools",
-  "Turks",
-  "Arabisch",
-];
+import { LANGUAGE_NAMES } from "@/lib/locale";
 
 interface WorkerLanguagesSelectorProps {
   selectedLanguages: string[];
-  onToggleLanguage: (lang: string) => void;
+  onToggleLanguage: (language: string) => void;
 }
 
+/** The languages a worker can speak — the same set the dashboard itself is translated into. */
 export function WorkerLanguagesSelector({
   selectedLanguages,
   onToggleLanguage,
 }: WorkerLanguagesSelectorProps) {
   return (
-    <div>
-      <label className="text-xs font-semibold text-gray-700 mb-2 block">
-        Languages *
-      </label>
-      <div className="flex flex-wrap gap-2">
-        {DEFAULT_LANGUAGES.map((lang) => {
-          const isSelected = selectedLanguages.includes(lang);
+    <fieldset>
+      <legend className="mb-2 text-xs font-semibold text-slate-700">
+        Languages<span className="text-red-500"> *</span>
+      </legend>
+      <div className="flex flex-wrap gap-1.5">
+        {LANGUAGE_NAMES.map((language) => {
+          const active = selectedLanguages.includes(language);
           return (
             <button
+              key={language}
               type="button"
-              key={lang}
-              onClick={() => onToggleLanguage(lang)}
-              className={`text-xs font-medium px-3 py-1.5 rounded-full border transition-colors cursor-pointer ${
-                isSelected
-                  ? "bg-[#0ea5e9] text-white border-[#0ea5e9]"
-                  : "bg-white text-gray-500 border-gray-300 hover:border-gray-400"
+              aria-pressed={active}
+              onClick={() => onToggleLanguage(language)}
+              className={`cursor-pointer rounded-md border px-3 py-1.5 text-xs font-medium transition-colors ${
+                active
+                  ? "border-primary bg-primary text-white"
+                  : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
               }`}
             >
-              {lang}
+              {language}
             </button>
           );
         })}
       </div>
-    </div>
+    </fieldset>
   );
 }

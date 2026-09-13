@@ -1,4 +1,5 @@
-export type DashboardRole = "SUPER_ADMIN" | "MANAGER";
+// Single source of truth lives beside the session contract; re-exported for existing importers.
+export type { DashboardRole } from "./auth/session";
 
 export type RoutePermission = {
   name: string;
@@ -28,7 +29,7 @@ export const routePermissions: RoutePermission[] = [
   { name: "Live Operations", href: "/live-operations", section: "Operations" },
   { name: "Roster", href: "/roster", section: "Operations" },
   { name: "Shift Monitoring", href: "/shift-monitoring", section: "Operations" },
-  { name: "Workers", href: "/users", section: "Operations" },
+  { name: "Workers", href: "/workers", section: "Operations" },
   { name: "Clients", href: "/clients", section: "Operations" },
   { name: "Chat", href: "/chat", section: "Operations" },
   { name: "Locations", href: "/locations", section: "Operations" },
@@ -52,7 +53,12 @@ export function getStoredManagerAccess(): string[] {
   if (!saved) return defaultManagerAccess;
   try {
     const parsed = JSON.parse(saved);
-    const routes = Array.isArray(parsed) ? parsed.filter((value): value is string => typeof value === "string") : defaultManagerAccess;
+    const routes = Array.isArray(parsed)
+      ? parsed
+          .filter((value): value is string => typeof value === "string")
+          // The workers page moved from /users; saved access lists still name the old path.
+          .map((route) => (route === "/users" ? "/workers" : route))
+      : defaultManagerAccess;
     if (!routes.includes("/profile")) routes.push("/profile");
     if (!routes.includes("/get-help")) routes.push("/get-help");
     return routes;

@@ -70,7 +70,7 @@
   flex: 1;
   border: 0;
   background: #fff;
-  font-family: var(--font-inter), Arial, sans-serif;
+  font-family: var(--font-sans);
 }
 
 .legal-quill-editor .ql-editor {
@@ -122,7 +122,7 @@
 
 @layer base {
   html {
-    font-family: var(--font-inter), sans-serif;
+    font-family: var(--font-sans);
     font-size: 15px;
     width: 100%;
     min-height: 100%;
@@ -130,7 +130,8 @@
   }
 
   body {
-    font-family: var(--font-inter), sans-serif;
+    /* Everything inherits from here, so no component needs to name a font of its own. */
+    font-family: var(--font-sans);
     width: 100%;
     min-height: 100%;
     margin: 0;
@@ -434,3 +435,46 @@ input:disabled,
   }
 }
 
+/* ===========================
+   Google Places autocomplete dropdown
+   Rendered into <body>, so it cannot be styled from the component.
+=========================== */
+
+.pac-container {
+  z-index: 9999;
+  margin-top: 4px;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+  background: #fff;
+  padding: 4px;
+  font-family: var(--font-sans);
+}
+
+.pac-container:after { display: none; }
+
+.pac-item {
+  border: 0;
+  border-radius: 0.375rem;
+  padding: 8px 10px;
+  color: #475569;
+  font-size: 13px;
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+.pac-item:hover,
+.pac-item-selected,
+.pac-item-selected:hover {
+  background: #e0f2fe;
+  color: #0f172a;
+}
+
+.pac-item-query {
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.pac-matched { font-weight: 700; }
+.pac-icon { margin-top: 3px; }

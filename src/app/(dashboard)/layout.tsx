@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { useAppSelector } from '@/store/hooks';
+import { useAppSelector } from '@/redux/hooks';
 import { getLocale, localizePath, stripLocale } from '@/lib/locale';
 import { getFirstAllowedRoute, getStoredManagerAccess, managerIsBlocked, routeIsAllowed } from '@/lib/access-control';
 import Sidebar from '@/components/dashboard/sidebar';
@@ -41,7 +41,7 @@ export default function DashboardLayout({
       const firstAllowedRoute = getFirstAllowedRoute(getStoredManagerAccess());
       replaceRoute(firstAllowedRoute ?? '/unauthorized');
     }
-    if (user.role !== 'SUPER_ADMIN' && routePath.startsWith('/manager-access')) {
+    if (user.role !== 'ADMIN' && routePath.startsWith('/manager-access')) {
       replaceRoute('/unauthorized');
     }
   }, [initialized, isAuthenticated, user, routePath, replaceRoute]);

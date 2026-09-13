@@ -1,0 +1,267 @@
+"use client";
+
+import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { MdOutlineClose, MdArrowForward, MdLocationOn } from 'react-icons/md';
+import { TbClock, TbCalendarStats, TbHourglass, TbUserPlus, TbPencil } from 'react-icons/tb';
+import { useRouter } from 'next/navigation';
+import { WorkerInfo } from './types';
+import { getLiveWorkerDetails, getWorkerStats, type Period } from '@/services/actions/shiftMonitoring';
+import { DetailSkeleton } from '@/components/shared/SkeletonLoader';
+import { planIdFromShift } from '@/components/roster/types';
+import { CreatePlanModal } from '@/components/cleaningPlans/CreatePlanModal';
+import { WorkerAssignmentModal } from '@/components/cleaningPlans/WorkerAssignmentModal';
+
+interface EmployeeDetailsModalProps {
+  worker: WorkerInfo;
+  onClose: () => void;
+  onChanged?: () => void;
+}
+
+/**
+ * Check-in/out come back either as a short clock label ("10:39") or as a raw timestamp
+ * ("2026-09-08T10:45:06.089000"). The time portion is read straight off the string rather
+ * than parsed into a Date, so the value shown matches what the API reports elsewhere
+ * instead of being shifted into the browser's timezone.
+ */
+const formatTime = (value?: string | null) => {
+  if (!value) return '--:--';
+  const timestamp = /T(\d{2}):(\d{2})/.exec(value);
+  if (timestamp) return `${timestamp[1]}:${timestamp[2]}`;
+  return value;
+};
+
+const statusTone = (status: string) => {
+  const value = status.toLowerCase();
+  if (value.includes('late')) return 'bg-amber-50 text-amber-700 ring-amber-200';
+  if (value.includes('missing') || value.includes('no')) return 'bg-red-50 text-red-700 ring-red-200';
+  return 'bg-emerald-50 text-emerald-700 ring-emerald-200';
+};
+
+export function EmployeeDetailsModal({ worker, onClose, onChanged }: EmployeeDetailsModalProps) {
+  const router = useRouter();
+  const [activeTab, setActiveTab] = useState<'Today' | 'Weekly' | 'Monthly'>('Today');
+  const [details, setDetails] = useState<{ hours_worked: string; shifts_count: number; avg_duration: string; shift_details: { check_in: string; check_out: string; duration: string; status: string } } | null>(null);
+  const [rows, setRows] = useState<Array<{ date: string; checkIn: string; checkOut: string; scheduled: string; hours: string }>>([]);
+  const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState(false);
+  const [assigning, setAssigning] = useState(false);
+
+  // Live-status shifts generated from a cleaning plan carry the plan id, which is what makes
+  // editing and reassigning possible from here without a shift-level endpoint.
+  const planId = planIdFromShift(String(worker.shiftId));
+
+  useEffect(() => {
+    setLoading(true);
+    const period = activeTab.toLowerCase() as Period;
+    void Promise.all([
+      getLiveWorkerDetails(String(worker.id), period),
+      getWorkerStats(String(worker.id), period),
+    ]).then(([live, stats]) => {
+      setLoading(false);
+      if (live.success) setDetails(live.data);
+      if (stats.success) {
+        setRows(stats.data.shifts.map((shift) => ({
+          date: shift.date,
+          checkIn: formatTime(shift.checkin_time),
+          checkOut: formatTime(shift.checkout_time),
+          scheduled: `${shift.start_time} – ${shift.end_time}`,
+          hours: `${shift.duration_hours}h`,
+        })));
+      }
+    });
+  }, [worker.id, activeTab]);
+
+  useEffect(() => {
+    const handleEsc = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [onClose]);
+
+  if (typeof document === 'undefined') return null;
+
+  return createPortal(
+    <div
+      className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4"
+      onMouseDown={onClose}
+      role="dialog"
+      aria-modal="true"
+    >
+      <div
+        className="flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-xl border border-slate-200 bg-white animate-in fade-in zoom-in-95 duration-150"
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        {/* Header */}
+        <header className="flex shrink-0 items-start gap-3 border-b border-slate-200 px-5 py-4">
+          <img src="/avatar-placeholder.svg" alt={worker.name} className="h-11 w-11 shrink-0 rounded-full border border-slate-200 object-cover" />
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="truncate text-base font-bold text-slate-900">{worker.name}</h3>
+              <span className={`shrink-0 rounded-md px-2 py-0.5 text-[11px] font-semibold capitalize ring-1 ring-inset ${statusTone(worker.status)}`}>
+                {worker.status}
+              </span>
+            </div>
+            <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-slate-500">
+              <span>{worker.role}</span>
+              {worker.location && <span className="flex items-center gap-1"><MdLocationOn className="text-sm text-slate-400" />{worker.location}</span>}
+            </p>
+            <p className="mt-0.5 font-mono text-[10px] text-slate-400">{worker.shiftId}</p>
+          </div>
+          <button
+            onClick={onClose}
+            aria-label="Close worker details"
+            className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
+          >
+            <MdOutlineClose className="text-lg" />
+          </button>
+        </header>
+
+        {/* Period tabs */}
+        <div className="flex shrink-0 gap-1 border-b border-slate-200 px-5 pt-3">
+          {(['Today', 'Weekly', 'Monthly'] as const).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`cursor-pointer border-b-2 px-4 pb-2.5 text-xs font-semibold transition-colors ${activeTab === tab
+                ? 'border-primary text-primary'
+                : 'border-transparent text-slate-400 hover:text-slate-600'
+                }`}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
+
+        <div className="min-h-0 flex-1 overflow-y-auto p-5">
+          {loading ? <DetailSkeleton blocks={5} /> : (
+            <div className="space-y-4">
+              {/* Summary */}
+              <div className="grid grid-cols-3 gap-3">
+                <Stat icon={<TbClock />} value={details?.hours_worked ?? '0h'} label="Hours worked" />
+                <Stat icon={<TbCalendarStats />} value={String(details?.shifts_count ?? 0)} label="Shifts" />
+                <Stat icon={<TbHourglass />} value={details?.avg_duration ?? '0h'} label="Avg duration" />
+              </div>
+
+              {activeTab === 'Today' ? (
+                <section className="overflow-hidden rounded-xl border border-slate-200">
+                  <h4 className="border-b border-slate-100 bg-slate-50/60 px-4 py-2.5 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                    Shift details
+                  </h4>
+                  <dl className="divide-y divide-slate-100 text-sm">
+                    <Row label="Check-in" value={formatTime(details?.shift_details.check_in)} />
+                    <Row
+                      label="Check-out"
+                      value={details?.shift_details.check_out ? formatTime(details.shift_details.check_out) : 'Still on shift'}
+                      tone={details?.shift_details.check_out ? undefined : 'text-amber-600'}
+                    />
+                    <Row label="Duration" value={details?.shift_details.duration ?? '0h'} tone="text-primary" />
+                    <Row label="Status" value={worker.status} />
+                  </dl>
+                </section>
+              ) : (
+                <section className="overflow-hidden rounded-xl border border-slate-200">
+                  <div className="flex items-center gap-3 border-b border-slate-100 bg-slate-50/60 px-4 py-2.5 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                    <span className="w-28">Date</span>
+                    <span className="flex-1 text-center">Check-in</span>
+                    <span className="flex-1 text-center">Check-out</span>
+                    <span className="w-16 text-right">Hours</span>
+                  </div>
+                  <div className="divide-y divide-slate-100 text-sm">
+                    {rows.length === 0 ? (
+                      <p className="py-10 text-center text-xs text-slate-400">No shifts in this period</p>
+                    ) : rows.map((row, index) => (
+                      <div key={`${row.date}-${index}`} className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-slate-50">
+                        <span className="w-28 min-w-0">
+                          <b className="block truncate text-xs font-semibold text-slate-700">{row.date}</b>
+                          <small className="block truncate text-[10px] text-slate-400">{row.scheduled}</small>
+                        </span>
+                        <span className="flex-1 text-center text-xs text-slate-500">{row.checkIn}</span>
+                        <span className="flex-1 text-center text-xs text-slate-500">{row.checkOut}</span>
+                        <span className="w-16 text-right text-xs font-bold text-slate-900">{row.hours}</span>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Actions */}
+        <footer className="flex shrink-0 flex-wrap items-center gap-2 border-t border-slate-200 px-5 py-3">
+          <button
+            onClick={() => router.push(`/shift-monitoring/history/${worker.id}`)}
+            className="flex cursor-pointer items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+          >
+            View activity history <MdArrowForward className="text-sm" />
+          </button>
+
+          <div className="ml-auto flex flex-wrap items-center gap-2">
+            {planId && (
+              <>
+                <button
+                  onClick={() => setAssigning(true)}
+                  className="flex cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+                >
+                  <TbUserPlus className="text-sm" /> Assign workers
+                </button>
+                <button
+                  onClick={() => setEditing(true)}
+                  className="flex cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-[#0284c7]"
+                >
+                  <TbPencil className="text-sm" /> Edit shift
+                </button>
+              </>
+            )}
+            <button
+              onClick={onClose}
+              className="cursor-pointer rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+            >
+              Close
+            </button>
+          </div>
+        </footer>
+      </div>
+
+      {editing && planId && (
+        <CreatePlanModal
+          key={planId}
+          planId={planId}
+          onClose={() => setEditing(false)}
+          onAdd={() => { setEditing(false); onChanged?.(); }}
+        />
+      )}
+
+      {assigning && planId && (
+        <WorkerAssignmentModal
+          planId={planId}
+          planTitle={worker.name}
+          onClose={() => setAssigning(false)}
+          onAssigned={() => { setAssigning(false); onChanged?.(); }}
+        />
+      )}
+    </div>,
+    document.body,
+  );
+}
+
+function Stat({ icon, value, label }: { icon: React.ReactNode; value: string; label: string }) {
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white p-3 text-center">
+      <span className="mx-auto flex w-fit text-base text-primary">{icon}</span>
+      <p className="mt-1 text-lg font-bold leading-tight text-slate-900">{value}</p>
+      <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
+    </div>
+  );
+}
+
+function Row({ label, value, tone }: { label: string; value: string; tone?: string }) {
+  return (
+    <div className="flex items-center justify-between px-4 py-3">
+      <dt className="text-xs text-slate-500">{label}</dt>
+      <dd className={`text-xs font-semibold ${tone ?? 'text-slate-900'}`}>{value}</dd>
+    </div>
+  );
+}

@@ -45,7 +45,7 @@ export function resolveNotificationRoute(item: NotificationApi): string {
 
   // Signups are split across two screens depending on who signed up.
   if (item.notification_type === "approval_request") {
-    return item.data?.client_id ? "/clients" : "/users";
+    return item.data?.client_id ? "/clients" : "/workers";
   }
 
   const section = item.data?.route?.replace(/^\/manager\//, "").split("/")[0];

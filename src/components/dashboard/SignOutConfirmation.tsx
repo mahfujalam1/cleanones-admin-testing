@@ -1,31 +1,28 @@
 "use client";
 
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { getLocale, localizePath } from "@/lib/locale";
 import { AlertDialog } from "@base-ui/react/alert-dialog";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { logout } from "@/store/slices/auth.slice";
-import { setSignOutModalOpen } from "@/store/slices/ui.slice";
-import { logoutUser } from "@/services/actions/auth";
+import { useAppDispatch, useAppSelector } from "@/redux/hooks";
+import { logout } from "@/redux/slices/auth.slice";
+import { setSignOutModalOpen } from "@/redux/slices/ui.slice";
+import { clearLocalSession } from "@/redux/api/endpoints/auth.api";
+import { baseApi } from "@/redux/api/baseApi";
 import { getDashboardTranslation } from "@/lib/translations";
 
 export function SignOutConfirmation() {
-  const router = useRouter();
   const locale = getLocale(usePathname());
   const t = getDashboardTranslation(locale);
   const dispatch = useAppDispatch();
   const open = useAppSelector((state) => state.ui.signOutModalOpen);
 
   const close = () => dispatch(setSignOutModalOpen(false));
-  const confirm = async () => {
+  const confirm = () => {
     dispatch(setSignOutModalOpen(false));
-    localStorage.removeItem("cleanones-dashboard-user");
+    clearLocalSession();
     dispatch(logout());
-    try {
-      await logoutUser();
-    } catch {
-      // Ignore API error on logout
-    }
+    // Drop every cached response so the next account never sees the previous one's data.
+    dispatch(baseApi.util.resetApiState());
     window.location.href = localizePath("/login", locale);
   };
 

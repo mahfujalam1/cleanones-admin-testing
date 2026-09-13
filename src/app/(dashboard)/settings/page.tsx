@@ -11,9 +11,12 @@ import {
 } from "react-icons/md";
 import { TbEye, TbEyeOff } from "react-icons/tb";
 import { getCompanyProfile, getManagerProfile, updateCompanyProfile, updateManagerProfile } from "@/services/actions/manager";
-import { changePassword } from "@/services/actions/auth";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { setUser } from "@/store/slices/auth.slice";
+import { useChangePasswordMutation } from "@/redux/api/endpoints/auth.api";
+import { apiError } from "@/redux/api/apiError";
+import { MIN_PASSWORD_LENGTH } from "@/lib/auth/password";
+import { useAppDispatch, useAppSelector } from "@/redux/hooks";
+import { toDashboardRole } from "@/lib/auth/session";
+import { setUser } from "@/redux/slices/auth.slice";
 import { DetailSkeleton } from "@/components/shared/SkeletonLoader";
 import { getLocale } from "@/lib/locale";
 import { getDashboardTranslation } from "@/lib/translations";
@@ -37,7 +40,7 @@ export default function SettingsPage() {
   const [showOld, setShowOld] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [changePassword, { isLoading: passwordLoading }] = useChangePasswordMutation();
   const [passwordMessage, setPasswordMessage] = useState("");
   const [passwordError, setPasswordError] = useState("");
 
@@ -67,7 +70,7 @@ export default function SettingsPage() {
           id: result.data.id,
           name: result.data.full_name || result.data.name || "User",
           email: result.data.email,
-          role: (result.data.role?.toUpperCase() === "SUPER_ADMIN" ? "SUPER_ADMIN" : "MANAGER") as any,
+          role: toDashboardRole(result.data.role) ?? "MANAGER",
           profilePhoto: result.data.profile_photo,
         };
         dispatch(setUser(next));
@@ -155,8 +158,8 @@ export default function SettingsPage() {
     setProfileMessage("Profile updated successfully");
   };
 
-  const handlePasswordChange = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handlePasswordChange = async (event: React.FormEvent) => {
+    event.preventDefault();
     setPasswordMessage("");
     setPasswordError("");
 
@@ -168,24 +171,24 @@ export default function SettingsPage() {
       setPasswordError("New password and confirmation do not match.");
       return;
     }
-    if (newPassword.length < 6) {
-      setPasswordError("New password must be at least 6 characters long.");
+    if (newPassword.length < MIN_PASSWORD_LENGTH) {
+      setPasswordError(`New password must be at least ${MIN_PASSWORD_LENGTH} characters long.`);
       return;
     }
 
-    setPasswordLoading(true);
-    const result = await changePassword({ old_password: oldPassword, new_password: newPassword });
-    setPasswordLoading(false);
-
-    if (!result.success) {
-      setPasswordError(result.error);
-      return;
+    try {
+      const message = await changePassword({
+        oldPassword,
+        newPassword,
+        confirmNewPassword: confirmPassword,
+      }).unwrap();
+      setPasswordMessage(message || "Password updated successfully");
+      setOldPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (cause) {
+      setPasswordError(apiError(cause));
     }
-
-    setPasswordMessage(typeof result.data === "string" ? result.data : "Password updated successfully");
-    setOldPassword("");
-    setNewPassword("");
-    setConfirmPassword("");
   };
 
   const companyFields = [

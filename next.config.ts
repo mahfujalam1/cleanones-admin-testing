@@ -1,5 +1,6 @@
 import type { NextConfig } from "next";
 import withPWAInit from "@ducanh2912/next-pwa";
+import { API_PREFIX } from "./src/utils/baseUrl";
 
 const withPWA = withPWAInit({
   dest: "public",
@@ -29,7 +30,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/api/proxy/:path*",
-        destination: `${backendUrl}/:path*`,
+        destination: `${backendUrl}${API_PREFIX}/:path*`,
       },
     ];
   },

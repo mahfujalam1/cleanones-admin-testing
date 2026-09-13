@@ -19,6 +19,7 @@ const uniqueBy = <T,>(items: T[], getKey: (item: T) => string) => {
     return true;
   });
 };
+
 export default function DashboardPage() {
   const pathname = usePathname();
   const locale = getLocale(pathname);
@@ -39,18 +40,42 @@ export default function DashboardPage() {
   const shifts: InProgressShift[] = shiftsRes?.shifts ?? [];
 
   if (loadingOverview && !overview) return <div className="space-y-5"><DetailSkeleton blocks={2} /><CardGridSkeleton cards={4} /><DetailSkeleton blocks={7} /></div>;
-  if (!overview) return <p className="rounded bg-red-50 p-4 text-sm text-red-700">{t.common.noDataFound}</p>;
+  const safeOverview: DashboardOverview = overview || {
+    greeting: t.dashboard.goodMorning,
+    subtitle_date: new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }),
+    attention_banner: {
+      people_need_attention_count: 0,
+      badge_text: t.dashboard.allOnTime,
+      banner_subtitle: t.dashboard.noWorkersRequireAttention,
+      call_pills: [],
+    },
+    summary_cards: {
+      active_shifts_count: 0,
+      workers_on_site_count: 0,
+      late_no_show_count: 0,
+      reviews_pending_count: 0,
+    },
+    live_operations_by_client: [],
+    open_escalations_banner: {
+      open_escalations_count: 0,
+      subtitle: t.dashboard.allEscalationsResolved,
+      action_url: "/escalations",
+    }
+  };
 
-  const attentionPills = uniqueBy(overview.attention_banner.call_pills, (item) => item.worker_id);
-  const liveGroups = uniqueBy(overview.live_operations_by_client, (group) => `${group.client_id}-${group.location_id}`).map((group) => ({
+  const attentionPills = uniqueBy(safeOverview.attention_banner.call_pills, (item) => item.worker_id);
+  const liveGroups = uniqueBy(safeOverview.live_operations_by_client, (group) => `${group.client_id}-${group.location_id}`).map((group) => ({
     ...group,
     workers: uniqueBy(group.workers, (worker) => worker.worker_id),
   }));
+  // Only workers who need attention belong here. The old "progress under 80%" rule matched
+  // almost everyone mid-shift, so a site with 200 people on shift filled this whole section;
+  // the complete schedule is what Roster is for.
   const fallingBehind = uniqueBy(shifts, (item) => `${item.shift_id}-${item.worker_id}`).filter((item) => {
-    const progress = Number.parseFloat(item.progress_percentage) || item.progress;
-    return progress > 0 && progress < 80;
+    const status = normalizeStatus(item.checkin_status || "");
+    return status.includes("late") || status.includes("show") || status.includes("missing");
   });
-  const cards = overview.summary_cards;
+  const cards = safeOverview.summary_cards;
 
   const translateGreeting = (greeting: string) => {
     if (!greeting) return "";
@@ -70,28 +95,28 @@ export default function DashboardPage() {
       <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[.18em] text-sky-600">{t.dashboard.overview}</p>
-          <h1 className="mt-1 text-2xl font-bold text-slate-950">{translateGreeting(overview.greeting)}</h1>
-          <p className="mt-1 text-sm text-slate-500">{overview.subtitle_date}</p>
+          <h1 className="mt-1 text-2xl font-bold text-slate-950">{translateGreeting(safeOverview.greeting)}</h1>
+          <p className="mt-1 text-sm text-slate-500">{safeOverview.subtitle_date}</p>
         </div>
       </header>
 
       {/* Red Attention Banner */}
-      <section className={`rounded-xl border p-4 ${overview.attention_banner.people_need_attention_count > 0 ? "border-red-200 bg-red-50/70" : "border-slate-200 bg-white"}`}>
+      <section className={`rounded-xl border p-4 ${safeOverview.attention_banner.people_need_attention_count > 0 ? "border-red-200 bg-red-50/70" : "border-slate-200 bg-white"}`}>
         <div className="flex flex-wrap items-center gap-4">
-          <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-white ${overview.attention_banner.people_need_attention_count > 0 ? "bg-red-500 shadow-xs" : "bg-emerald-500"}`}>
-            {overview.attention_banner.people_need_attention_count > 0 ? <MdWarningAmber className="text-2xl" /> : <MdCheckCircle className="text-2xl" />}
+          <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-white ${safeOverview.attention_banner.people_need_attention_count > 0 ? "bg-red-500 shadow-xs" : "bg-emerald-500"}`}>
+            {safeOverview.attention_banner.people_need_attention_count > 0 ? <MdWarningAmber className="text-2xl" /> : <MdCheckCircle className="text-2xl" />}
           </span>
           <div className="flex-1 min-w-48">
             <div className="flex flex-wrap items-center gap-2">
-              <h2 className={`font-bold ${overview.attention_banner.people_need_attention_count > 0 ? "text-red-950" : "text-slate-900"}`}>
-                {overview.attention_banner.people_need_attention_count} {t.dashboard.peopleNeedAttention}
+              <h2 className={`font-bold ${safeOverview.attention_banner.people_need_attention_count > 0 ? "text-red-950" : "text-slate-900"}`}>
+                {safeOverview.attention_banner.people_need_attention_count} {t.dashboard.peopleNeedAttention}
               </h2>
-              <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold ${overview.attention_banner.people_need_attention_count > 0 ? "bg-red-100 text-red-700" : "bg-emerald-100 text-emerald-700"}`}>
-                {overview.attention_banner.people_need_attention_count > 0 ? overview.attention_banner.badge_text : t.dashboard.allOnTime}
+              <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold ${safeOverview.attention_banner.people_need_attention_count > 0 ? "bg-red-100 text-red-700" : "bg-emerald-100 text-emerald-700"}`}>
+                {safeOverview.attention_banner.people_need_attention_count > 0 ? safeOverview.attention_banner.badge_text : t.dashboard.allOnTime}
               </span>
             </div>
-            <p className={`text-xs sm:text-sm mt-0.5 ${overview.attention_banner.people_need_attention_count > 0 ? "text-red-700" : "text-slate-500"}`}>
-              {overview.attention_banner.people_need_attention_count > 0 ? overview.attention_banner.banner_subtitle : t.dashboard.noWorkersRequireAttention}
+            <p className={`text-xs sm:text-sm mt-0.5 ${safeOverview.attention_banner.people_need_attention_count > 0 ? "text-red-700" : "text-slate-500"}`}>
+              {safeOverview.attention_banner.people_need_attention_count > 0 ? safeOverview.attention_banner.banner_subtitle : t.dashboard.noWorkersRequireAttention}
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -237,8 +262,8 @@ export default function DashboardPage() {
       <Link href="/escalations" className="dashboard-card flex items-center gap-4 p-5 hover:border-amber-300 transition-colors">
         <MdWarningAmber className="text-2xl text-amber-500" />
         <div>
-          <p className="font-bold text-slate-900">{overview.open_escalations_banner.open_escalations_count} {t.dashboard.openEscalations}</p>
-          <p className="text-xs text-slate-500">{overview.open_escalations_banner.subtitle || t.dashboard.allEscalationsResolved}</p>
+          <p className="font-bold text-slate-900">{safeOverview.open_escalations_banner.open_escalations_count} {t.dashboard.openEscalations}</p>
+          <p className="text-xs text-slate-500">{safeOverview.open_escalations_banner.subtitle || t.dashboard.allEscalationsResolved}</p>
         </div>
         <MdArrowForward className="ml-auto text-slate-400" />
       </Link>

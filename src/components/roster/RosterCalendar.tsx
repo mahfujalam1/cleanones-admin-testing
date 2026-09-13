@@ -8,7 +8,12 @@ import { MonthView } from './MonthView';
 import dynamic from 'next/dynamic';
 
 const ShiftModal = dynamic(() => import('./ShiftModal').then((mod) => mod.ShiftModal), { ssr: false });
-import { Shift, ShiftTheme } from './types';
+import { Shift, ShiftTheme, planIdFromShift } from './types';
+import { PlanDetailSidebar } from '@/components/cleaningPlans/PlanDetailsSidebar';
+import { CreatePlanModal } from '@/components/cleaningPlans/CreatePlanModal';
+import { WorkerAssignmentModal } from '@/components/cleaningPlans/WorkerAssignmentModal';
+import { deleteCleaningPlan } from '@/services/actions/cleaningPlans';
+import type { CleaningPlan } from '@/components/cleaningPlans/types';
 import { type RosterShift } from '@/services/actions/roster';
 import { ContentSkeleton } from '@/components/shared/SkeletonLoader';
 import { useGetDailyRosterQuery, useGetWeeklyRosterQuery, useGetMonthlyRosterQuery } from '@/redux/api/rosterApi';
@@ -25,7 +30,37 @@ export function RosterCalendar() {
   const [view, setView] = useState<'Day' | 'Week' | 'Month'>('Day');
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
+  const [editingPlanId, setEditingPlanId] = useState<string | null>(null);
+  const [assigningPlan, setAssigningPlan] = useState<CleaningPlan | null>(null);
   const [error, setError] = useState('');
+
+  // A shift generated from a cleaning plan opens that plan's own modals, so the roster offers
+  // exactly what the Cleaning Plans page does — view, edit, assign, delete — minus creating one.
+  const selectedPlanId = selectedShift ? planIdFromShift(selectedShift.id) : '';
+  const selectedPlan: CleaningPlan | null = selectedShift && selectedPlanId
+    ? {
+      id: selectedPlanId,
+      name: selectedShift.workerName,
+      client: '',
+      location: selectedShift.location,
+      dateSchedule: `${selectedShift.date} · ${selectedShift.startTime} - ${selectedShift.endTime}`,
+      rooms: [],
+      duration: 0,
+      photos: 0,
+      tasks: 0,
+      aiValid: false,
+      checklistTasks: [],
+      photoRequirements: [],
+    }
+    : null;
+
+  const handlePlanDelete = async (planId: string) => {
+    const result = await deleteCleaningPlan(planId);
+    if (!result.success) return setError(result.error);
+    setError('');
+    setSelectedShift(null);
+    refetchCurrent();
+  };
 
   const dateStr = formatYYYYMMDD(currentDate);
 
@@ -215,8 +250,43 @@ export function RosterCalendar() {
         </>}
       </div>
 
-      {/* Shift Detail Modal */}
-      {selectedShift && (
+      {/* Plan-backed shift: the Cleaning Plans modals, reused as-is */}
+      {selectedPlan && (
+        <PlanDetailSidebar
+          plan={selectedPlan}
+          onClose={() => setSelectedShift(null)}
+          onDelete={(planId) => { void handlePlanDelete(planId); }}
+          onEdit={() => {
+            setEditingPlanId(selectedPlan.id);
+            setSelectedShift(null);
+          }}
+          onAssign={() => {
+            setAssigningPlan(selectedPlan);
+            setSelectedShift(null);
+          }}
+        />
+      )}
+
+      {editingPlanId && (
+        <CreatePlanModal
+          key={editingPlanId}
+          planId={editingPlanId}
+          onClose={() => setEditingPlanId(null)}
+          onAdd={() => { setEditingPlanId(null); refetchCurrent(); }}
+        />
+      )}
+
+      {assigningPlan && (
+        <WorkerAssignmentModal
+          planId={assigningPlan.id}
+          planTitle={assigningPlan.name}
+          onClose={() => setAssigningPlan(null)}
+          onAssigned={() => { setAssigningPlan(null); refetchCurrent(); }}
+        />
+      )}
+
+      {/* Shifts created straight on the roster have no plan behind them */}
+      {selectedShift && !selectedPlanId && (
         <ShiftModal shift={selectedShift} onClose={() => setSelectedShift(null)} onDeleted={() => refetchCurrent()} />
       )}
 

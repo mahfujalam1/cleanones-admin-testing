@@ -1,3 +1,16 @@
+/**
+ * Roster shifts generated from a cleaning plan carry the plan id inside their own id
+ * ("exec_plan_b5cf1d87f9_2026-09-08" comes from plan "plan_b5cf1d87f9"). The roster API
+ * does not return the plan id on its own, so this is the only link available. Shifts
+ * created directly on the roster ("shift_2981de3e24") have no plan behind them.
+ */
+export const planIdFromShift = (shiftId: string) => {
+  const generated = /^exec_(plan_[A-Za-z0-9]+)_\d{4}-\d{2}-\d{2}$/.exec(shiftId);
+  if (generated) return generated[1];
+  // Some roster rows carry the plan id verbatim rather than wrapped in an exec_ id.
+  return /^plan_[A-Za-z0-9]+$/.test(shiftId) ? shiftId : '';
+};
+
 export type ShiftTheme = 'blue' | 'pink' | 'orange' | 'purple' | 'green' | 'teal' | 'gray';
 
 export interface Shift {

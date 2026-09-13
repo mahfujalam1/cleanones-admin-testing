@@ -10,12 +10,11 @@ import {
   MdSearch,
   MdSend,
 } from "react-icons/md";
-import { getCurrentUser } from "@/services/actions/auth";
 import { DetailSkeleton } from "@/components/shared/SkeletonLoader";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { setUser } from "@/store/slices/auth.slice";
+import { useAppDispatch, useAppSelector } from "@/redux/hooks";
+import { setUser } from "@/redux/slices/auth.slice";
 import { getManagerProfile } from "@/services/actions/manager";
-import type { DashboardRole } from "@/lib/access-control";
+import { toDashboardRole, type DashboardRole } from "@/lib/auth/session";
 import {
   createConversation,
   deleteConversation,
@@ -146,7 +145,8 @@ export default function ChatPage() {
   const [typingName, setTypingName] = useState("");
   const [showCreate, setShowCreate] = useState(false);
 
-  // Sync actual user identity from JWT, /auth/me, and /manager/me on mount
+  // Sync actual user identity from the JWT and /manager/me on mount.
+  // TODO: replace with the new backend's profile endpoint when this page is migrated.
   useEffect(() => {
     // 1. Decode synchronously from JWT cookie
     const jwtUser = getJwtUser();
@@ -173,28 +173,7 @@ export default function ChatPage() {
       }
     } catch { }
 
-    // 3. Fetch /auth/me (primary auth user profile)
-    void getCurrentUser().then((res) => {
-      if (res.success && res.data) {
-        const uId = res.data.id || res.data._id || res.data.user_id;
-        const uName = res.data.full_name || res.data.name;
-        if (uId) {
-          setCurrentUserId((prev) => prev || uId);
-          setKnownMySenderIds((prev) => new Set([...prev, uId]));
-          try { localStorage.setItem("cleanones-chat-my-id", uId); } catch { }
-        }
-        if (uName) {
-          setCurrentUserName((prev) => prev || uName);
-          setKnownMySenderNames((prev) => new Set([...prev, uName.trim().toLowerCase()]));
-          try { localStorage.setItem("cleanones-chat-my-name", uName); } catch { }
-        }
-        if (res.data.email) {
-          setKnownMySenderNames((prev) => new Set([...prev, res.data.email.trim().toLowerCase()]));
-        }
-      }
-    });
-
-    // 4. Fetch /manager/me (manager profile)
+    // 3. Fetch /manager/me (manager profile)
     void getManagerProfile().then((res) => {
       if (res.success && res.data) {
         const mId = res.data.id || (res.data as any)._id;
@@ -214,8 +193,7 @@ export default function ChatPage() {
           setKnownMySenderNames((prev) => new Set([...prev, mName.trim().toLowerCase()]));
           try { localStorage.setItem("cleanones-chat-my-name", mName); } catch { }
         }
-        const rawRole = (res.data.role || "MANAGER").toUpperCase().replaceAll("-", "_");
-        const role: DashboardRole = (rawRole === "ADMIN" || rawRole === "SUPERADMIN" ? "SUPER_ADMIN" : rawRole) as DashboardRole;
+        const role: DashboardRole = toDashboardRole(res.data.role) ?? "MANAGER";
         const syncedUser = {
           id: mId || res.data.id,
           name: mName || res.data.full_name || "Manager",

@@ -7,15 +7,18 @@ import {
   useUpdateFaqMutation,
   useDeleteFaqMutation,
 } from "@/redux/api/faqsApi";
-import type { FaqItem } from "@/services/actions/faqs";
 import type { FaqModalState, FaqDeleteModalState } from "@/components/faqs/types";
 import { FaqHeader } from "@/components/faqs/FaqHeader";
 import { FaqCard } from "@/components/faqs/FaqCard";
 import { FaqFormModal } from "@/components/faqs/FaqFormModal";
 import { FaqDeleteModal } from "@/components/faqs/FaqDeleteModal";
-import { MdSearch, MdLiveHelp, MdAdd } from "react-icons/md";
+import { MdSearch, MdLiveHelp, MdAdd, MdClose } from "react-icons/md";
+import { usePathname } from "next/navigation";
+import { getLocale } from "@/lib/locale";
+import { getHelpTranslation } from "@/lib/translations";
 
 export default function FaqsManagementPage() {
+  const t = getHelpTranslation(getLocale(usePathname()));
   const [search, setSearch] = useState("");
   const [formModal, setFormModal] = useState<FaqModalState>({ isOpen: false, mode: "create" });
   const [deleteModal, setDeleteModal] = useState<FaqDeleteModalState>({ isOpen: false });
@@ -73,67 +76,82 @@ export default function FaqsManagementPage() {
   };
 
   return (
-    <div className="space-y-6 pb-12">
+    <div className="space-y-4 pb-12">
       <FaqHeader
         total={faqs.length}
         onAddClick={() => setFormModal({ isOpen: true, mode: "create" })}
       />
 
-      {/* Search Input Bar */}
-      <div className="flex items-center gap-3 rounded-2xl border border-slate-200/80 bg-white p-2.5 shadow-xs">
-        <div className="relative flex-1">
-          <MdSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-lg text-slate-400" />
+      {/* Search bar */}
+      <div className="rounded-xl border border-slate-200 bg-white p-2.5 shadow-2xs">
+        <div className="relative">
+          <MdSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-lg text-slate-400" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search FAQs by question, answer, or serial number..."
-            className="w-full rounded-xl bg-slate-50/70 py-2.5 pl-10 pr-4 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+            placeholder={t.searchFaq}
+            className="w-full rounded-lg bg-slate-50 py-2.5 pl-10 pr-9 text-sm text-slate-900 placeholder:text-slate-400 transition-all focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20"
           />
+          {search && (
+            <button
+              type="button"
+              aria-label={t.clear}
+              onClick={() => setSearch("")}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 cursor-pointer rounded p-0.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+            >
+              <MdClose />
+            </button>
+          )}
         </div>
         {search && (
-          <button
-            type="button"
-            onClick={() => setSearch("")}
-            className="rounded-lg px-2.5 py-1 text-xs font-semibold text-slate-500 hover:bg-slate-100 transition-colors"
-          >
-            Clear
-          </button>
+          <p className="mt-2.5 border-t border-slate-100 pt-2.5 text-xs font-medium text-slate-500">
+            {filteredFaqs.length} {filteredFaqs.length === 1 ? "result" : "results"}
+          </p>
         )}
       </div>
 
       {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-3">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-44 rounded-2xl bg-slate-100/70 animate-pulse border border-slate-200" />
+            <div key={i} className="h-16 animate-pulse rounded-xl border border-slate-200 bg-slate-100/70" />
           ))}
         </div>
       ) : filteredFaqs.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white py-16 px-4 text-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 mb-3">
+        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 bg-white px-4 py-16 text-center">
+          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
             <MdLiveHelp className="text-3xl" />
           </div>
-          <h3 className="text-base font-bold text-slate-900">No FAQs found</h3>
-          <p className="mt-1 text-xs text-slate-500 max-w-sm">
-            {search
-              ? "No questions matched your search query. Try another keyword."
-              : "Start by creating frequently asked questions for your organization."}
+          <h3 className="text-base font-bold text-slate-900">{t.noFaqs}</h3>
+          <p className="mt-1 max-w-sm text-xs leading-relaxed text-slate-500">
+            {search ? t.noFaqMatch : t.createFaqHint}
           </p>
-          <button
-            type="button"
-            onClick={() => setFormModal({ isOpen: true, mode: "create" })}
-            className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-primary px-3.5 py-2 text-xs font-semibold text-white hover:bg-primary/90 transition-colors"
-          >
-            <MdAdd className="text-base" />
-            <span>Add First FAQ</span>
-          </button>
+          {search ? (
+            <button
+              type="button"
+              onClick={() => setSearch("")}
+              className="mt-4 inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-slate-200 px-3.5 py-2 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-50"
+            >
+              {t.clear}
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setFormModal({ isOpen: true, mode: "create" })}
+              className="mt-4 inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-xs font-semibold text-white shadow-2xs transition-colors hover:bg-primary/90"
+            >
+              <MdAdd className="text-base" />
+              <span>{t.addFirstFaq}</span>
+            </button>
+          )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {filteredFaqs.map((faq) => (
+        <div className="space-y-3">
+          {filteredFaqs.map((faq, index) => (
             <FaqCard
               key={faq._id}
               item={faq}
+              defaultOpen={index === 0 && filteredFaqs.length === 1}
               onEdit={(item) => setFormModal({ isOpen: true, mode: "edit", faq: item })}
               onDelete={(item) => setDeleteModal({ isOpen: true, faq: item })}
             />
