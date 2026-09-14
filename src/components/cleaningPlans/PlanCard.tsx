@@ -55,8 +55,7 @@ export function PlanCard({
   onDelete?: (plan: CleaningPlan) => void;
   onAssign?: (plan: CleaningPlan) => void;
 }) {
-  // The list response sends the client as a bare id, so the name comes from the dropdown's cache
-  // rather than another request.
+
   const { data: clientPage } = useGetClientsQuery(CLIENT_LOOKUP_ARGS);
   const populatedClient = refDoc<Client>(plan.client);
   const client =
@@ -78,11 +77,10 @@ export function PlanCard({
             onSelect(plan);
           }
         }}
-        className={`flex h-full flex-col overflow-hidden rounded-xl bg-white ring-1 ring-slate-200/70 transition-all duration-200 ${
-          onSelect
+        className={`flex h-full flex-col overflow-hidden rounded-xl bg-white ring-1 ring-slate-200/70 transition-all duration-200 ${onSelect
             ? "cursor-pointer hover:-translate-y-0.5 hover:ring-slate-300 hover:shadow-[0_12px_28px_-18px_rgba(15,23,42,0.45)]"
             : ""
-        }`}
+          }`}
       >
         <div className="flex-1 p-4">
           <div className="flex items-start gap-3">
@@ -99,9 +97,8 @@ export function PlanCard({
                   {plan.title}
                 </h3>
                 <span
-                  className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
-                    active ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500"
-                  }`}
+                  className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium ${active ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500"
+                    }`}
                 >
                   {active ? "Active" : "Inactive"}
                 </span>

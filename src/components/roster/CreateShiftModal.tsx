@@ -5,6 +5,7 @@ import { assignRosterShift, createRosterDraft, getRosterClients, getRosterLocati
 import { usePathname } from 'next/navigation';
 import { getLocale } from '@/lib/locale';
 import { getPlaceholderTranslation } from '@/lib/translations';
+import { useModalJump } from '@/hooks/useModalJump';
 
 interface Worker {
   id: string;
@@ -166,10 +167,18 @@ export function CreateShiftModal({ onClose, onSave }: CreateShiftModalProps) {
   };
 
   const canProceedToStep2 = location.length > 0;
+  const { triggerJump, jumpClassName } = useModalJump();
 
   return (
-    <div className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="flex max-h-[90vh] w-full max-w-[640px] flex-col overflow-hidden rounded-md border border-gray-200 bg-white animate-in fade-in zoom-in-95 duration-150">
+    <div
+      className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4"
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget && !saving) {
+          triggerJump();
+        }
+      }}
+    >
+      <div className={`flex max-h-[90vh] w-full max-w-[640px] flex-col overflow-hidden rounded-md border border-gray-200 bg-white animate-in fade-in zoom-in-95 duration-150 ${jumpClassName}`}>
         {/* Header */}
         <div className="bg-[#1a2332] text-white px-6 py-4 flex items-start justify-between flex-shrink-0">
           <div>

@@ -6,13 +6,15 @@ import { useGetWorkerQuery, workerName, type Worker, type WorkingDay } from "@/r
 import { apiError } from "@/redux/api/apiError";
 import { ErrorNotice } from "@/components/shared/ListStates";
 import { WorkerAvatar } from "./WorkerAvatar";
+import { InvoicesTab } from "./InvoicesTab";
+import { PerformanceTab } from "./PerformanceTab";
+import { AttendanceTab } from "./AttendanceTab";
+import { useModalJump } from "@/hooks/useModalJump";
 
 const TABS = [
   "General",
   "Performance",
-  "Shifts",
   "Attendance",
-  "Documents",
   "Invoices",
   "Availability",
 ] as const;
@@ -27,20 +29,6 @@ const WEEK: Array<{ key: WorkingDay; short: string }> = [
   { key: "saturday", short: "Sat" },
   { key: "sunday", short: "Sun" },
 ];
-
-const formatDate = (value?: string) => {
-  if (!value) return undefined;
-  const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? value : parsed.toLocaleDateString();
-};
-
-const formatDateTime = (value?: string) => {
-  if (!value) return undefined;
-  const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? value : parsed.toLocaleString();
-};
-
-const yesNo = (value?: boolean) => (value === undefined ? undefined : value ? "Yes" : "No");
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -87,7 +75,7 @@ function GeneralTab({ worker, onEdit }: { worker: Worker; onEdit?: () => void })
           onClick={onEdit}
           className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-50"
         >
-          <MdEdit className="text-sm" /> Edit worker details
+          <MdEdit className="text-sm" /> Edit Worker Details
         </button>
       )}
 
@@ -103,12 +91,10 @@ function GeneralTab({ worker, onEdit }: { worker: Worker; onEdit?: () => void })
           }
         />
         <Row label="Phone" value={worker.phone} />
-        <Row label="Address" value={worker.address} />
       </Section>
 
       <Section title="Work">
         <Row label="Worker type" value={worker.worker_type} />
-        <Row label="Position" value={worker.position} />
         <Row label="Base location" value={worker.base_location} />
         <Row
           label="Hourly rate"
@@ -118,19 +104,6 @@ function GeneralTab({ worker, onEdit }: { worker: Worker; onEdit?: () => void })
           label="Languages"
           value={worker.languages?.length ? worker.languages.join(", ") : undefined}
         />
-      </Section>
-
-      <Section title="Personal">
-        <Row label="Nationality" value={worker.nationality} />
-        <Row label="Date of birth" value={formatDate(worker.dob)} />
-        <Row label="National ID" value={worker.national_id} />
-      </Section>
-
-      <Section title="Account">
-        <Row label="Profile completed" value={yesNo(worker.is_profile_completed)} />
-        <Row label="Terms accepted" value={yesNo(worker.isagree_condition)} />
-        <Row label="Created" value={formatDateTime(worker.created_at)} />
-        <Row label="Last updated" value={formatDateTime(worker.updated_at)} />
       </Section>
     </div>
   );
@@ -239,6 +212,7 @@ export function WorkerDetailModal({
 }) {
   const [tab, setTab] = useState<Tab>("General");
   const { data: worker, isLoading, error } = useGetWorkerQuery(workerId);
+  const { triggerJump, jumpClassName } = useModalJump();
 
   useEffect(() => {
     const close = (event: KeyboardEvent) => event.key === "Escape" && onClose();
@@ -249,13 +223,17 @@ export function WorkerDetailModal({
   return (
     <div
       className="modal-backdrop fixed inset-0 z-[70] flex items-center justify-center p-4 animate-in fade-in duration-200"
-      onMouseDown={(event) => event.target === event.currentTarget && onClose()}
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) {
+          triggerJump();
+        }
+      }}
     >
       <div
         role="dialog"
         aria-modal="true"
         aria-label="Worker details"
-        className="flex max-h-[85vh] w-full max-w-3xl flex-col rounded-lg bg-white shadow-2xl animate-in fade-in zoom-in-95 duration-200"
+        className={`flex max-h-[85vh] w-full max-w-3xl flex-col rounded-lg bg-white shadow-2xl animate-in fade-in zoom-in-95 duration-200 ${jumpClassName}`}
       >
         <header className="flex items-start justify-between gap-4 border-b border-slate-100 px-6 pb-4 pt-5">
           <div className="flex min-w-0 items-center gap-3">
@@ -272,7 +250,7 @@ export function WorkerDetailModal({
               )}
             </div>
             <p className="mt-0.5 truncate text-xs text-slate-500">
-              {worker?.position || worker?.email || "Details"}
+              {worker?.email || worker?.worker_type || "Details"}
             </p>
             </div>
           </div>
@@ -320,11 +298,9 @@ export function WorkerDetailModal({
               {tab === "General" && (
                 <GeneralTab worker={worker} onEdit={onEdit && (() => onEdit(worker))} />
               )}
-              {tab === "Performance" && <AwaitingApi what="performance data" />}
-              {tab === "Shifts" && <AwaitingApi what="shifts" />}
-              {tab === "Attendance" && <AwaitingApi what="attendance records" />}
-              {tab === "Documents" && <DocumentsTab worker={worker} />}
-              {tab === "Invoices" && <AwaitingApi what="invoices" />}
+              {tab === "Performance" && <PerformanceTab worker={worker} />}
+              {tab === "Attendance" && <AttendanceTab worker={worker} />}
+              {tab === "Invoices" && <InvoicesTab worker={worker} />}
               {tab === "Availability" && <AvailabilityTab worker={worker} />}
             </>
           ) : null}

@@ -7,6 +7,7 @@ import { TbClock, TbCalendarStats, TbBuildingSkyscraper, TbUsers, TbUserCheck, T
 import { useRouter } from 'next/navigation';
 import { useGetLiveStatusQuery } from '@/redux/api/shiftMonitoringApi';
 import type { Period } from '@/services/actions/shiftMonitoring';
+import { useModalJump } from '@/hooks/useModalJump';
 
 export interface LocationItem {
   location_id: string;
@@ -40,6 +41,8 @@ export function LocationDetailsModal({ location, period, onClose }: LocationDeta
     search: location.location_name,
   });
 
+  const { triggerJump, jumpClassName } = useModalJump();
+
   const liveShifts = (liveRes?.items ?? []).filter(
     (item) => item.location_id === location.location_id || item.location_name.toLowerCase() === location.location_name.toLowerCase()
   );
@@ -62,12 +65,16 @@ export function LocationDetailsModal({ location, period, onClose }: LocationDeta
   return createPortal(
     <div
       className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6"
-      onMouseDown={onClose}
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) {
+          triggerJump();
+        }
+      }}
       role="dialog"
       aria-modal="true"
     >
       <div
-        className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-2xl animate-in fade-in zoom-in-95 duration-150"
+        className={`flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-2xl animate-in fade-in zoom-in-95 duration-150 ${jumpClassName}`}
         onMouseDown={(e) => e.stopPropagation()}
       >
         {/* Header */}

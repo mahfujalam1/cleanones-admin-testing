@@ -1,78 +1,72 @@
 "use client";
 
-import React, { useState } from "react";
-import { MdEdit, MdDeleteOutline, MdKeyboardArrowDown } from "react-icons/md";
+import React from "react";
+import { FiHelpCircle, FiEdit2, FiTrash2, FiMessageSquare } from "react-icons/fi";
 import type { FaqItem } from "@/services/actions/faqs";
 
 interface FaqCardProps {
   item: FaqItem;
+  serialNo?: number;
   onEdit: (item: FaqItem) => void;
   onDelete: (item: FaqItem) => void;
-  /** Open by default — used for the first row so the list never looks empty. */
-  defaultOpen?: boolean;
 }
 
-export function FaqCard({ item, onEdit, onDelete, defaultOpen = false }: FaqCardProps) {
-  const [open, setOpen] = useState(defaultOpen);
+export function FaqCard({ item, serialNo, onEdit, onDelete }: FaqCardProps) {
+  const serial = serialNo ?? item.serial_no ?? 1;
+  const rawDate = item.updated_at || item.created_at;
+  const parsedDate = rawDate ? new Date(rawDate) : null;
+  const formattedDate =
+    parsedDate && !Number.isNaN(parsedDate.getTime())
+      ? parsedDate.toLocaleDateString("en-US")
+      : new Date().toLocaleDateString("en-US");
 
   return (
-    <article className="group rounded-xl border border-slate-200 bg-white shadow-2xs transition-all hover:border-primary/40">
-      <div className="flex items-start gap-3 p-3.5">
-        {/* Serial */}
-        <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-sky-100 bg-sky-50 text-[11px] font-bold text-primary">
-          {item.serial_no}
-        </span>
+    <article className="flex flex-col justify-between rounded-xl border border-slate-200/90 bg-white p-4 sm:p-5 shadow-2xs transition-all hover:border-slate-300 hover:shadow-xs">
+      <div>
+        {/* Top row: badge + icon + question on left, edit & delete buttons on right */}
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <span className="shrink-0 rounded bg-sky-50 px-2 py-0.5 text-xs font-bold text-sky-600">
+              #{serial}
+            </span>
+            <FiHelpCircle className="h-4 w-4 shrink-0 text-sky-500" />
+            <h3 className="font-bold text-slate-900 text-sm sm:text-[15px] leading-snug">
+              {item.question}
+            </h3>
+          </div>
 
-        {/* Question — whole row toggles the answer */}
-        <button
-          type="button"
-          onClick={() => setOpen(!open)}
-          aria-expanded={open}
-          className="min-w-0 flex-1 cursor-pointer text-left"
-        >
-          <h3 className="text-sm font-bold leading-snug text-slate-900 group-hover:text-primary">{item.question}</h3>
-          {!open && (
-            <p className="mt-1 truncate text-xs text-slate-500">{item.answer}</p>
-          )}
-        </button>
+          <div className="flex shrink-0 items-center gap-1.5">
+            <button
+              type="button"
+              title="Edit FAQ"
+              onClick={() => onEdit(item)}
+              className="flex h-7 w-7 cursor-pointer items-center justify-center rounded border border-slate-200 text-slate-500 transition-colors hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700"
+            >
+              <FiEdit2 className="text-xs" />
+            </button>
+            <button
+              type="button"
+              title="Delete FAQ"
+              onClick={() => onDelete(item)}
+              className="flex h-7 w-7 cursor-pointer items-center justify-center rounded border border-slate-200 text-slate-500 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-600"
+            >
+              <FiTrash2 className="text-xs" />
+            </button>
+          </div>
+        </div>
 
-        {/* Actions */}
-        <div className="flex shrink-0 items-center gap-1">
-          <button
-            type="button"
-            title="Edit FAQ"
-            onClick={() => onEdit(item)}
-            className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition-colors hover:border-primary/40 hover:bg-sky-50 hover:text-primary"
-          >
-            <MdEdit className="text-base" />
-          </button>
-          <button
-            type="button"
-            title="Delete FAQ"
-            onClick={() => onDelete(item)}
-            className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-600"
-          >
-            <MdDeleteOutline className="text-base" />
-          </button>
-          <button
-            type="button"
-            aria-label={open ? "Collapse answer" : "Expand answer"}
-            onClick={() => setOpen(!open)}
-            className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
-          >
-            <MdKeyboardArrowDown className={`text-lg transition-transform ${open ? "rotate-180" : ""}`} />
-          </button>
+        {/* Answer box */}
+        <div className="my-3.5 flex items-start gap-2.5 rounded-lg border border-slate-100 bg-slate-50/90 p-3 sm:p-3.5 text-xs sm:text-[13px] leading-relaxed text-slate-600">
+          <FiMessageSquare className="h-3.5 w-3.5 shrink-0 text-slate-400 mt-0.5" />
+          <p className="whitespace-pre-line font-normal">{item.answer}</p>
         </div>
       </div>
 
-      {open && (
-        <div className="border-t border-slate-100 px-3.5 py-3 pl-[3.75rem]">
-          <p className="whitespace-pre-line text-[13px] leading-relaxed text-slate-600">{item.answer}</p>
-          <p className="mt-2.5 text-[11px] text-slate-400">
-            Updated {new Date(item.updated_at || item.created_at).toLocaleDateString()}
-          </p>
-        </div>
-      )}
+      {/* Footer row */}
+      <div className="flex items-center justify-between text-[11px] font-medium text-slate-400 pt-1">
+        <span>Order: #{serial}</span>
+        <span>Updated: {formattedDate}</span>
+      </div>
     </article>
   );
 }

@@ -76,6 +76,13 @@ function CleaningPlansView() {
   const total = data?.meta.total ?? 0;
   const message = actionError || (error ? apiError(error) : "");
 
+  // Auto-fallback: if current page has no data and we are past page 1, redirect to previous page
+  useEffect(() => {
+    if (!isFetching && data && plans.length === 0 && page > 1) {
+      setPage((prev) => Math.max(1, prev - 1));
+    }
+  }, [isFetching, data, plans.length, page]);
+
   const [deletePlan, { isLoading: deleting }] = useDeleteCleaningPlanMutation();
 
   const confirmDelete = async () => {
@@ -147,7 +154,7 @@ function CleaningPlansView() {
           </p>
         </div>
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {plans.map((plan) => (
             <PlanCard
               key={plan._id}
@@ -161,7 +168,13 @@ function CleaningPlansView() {
         </div>
       )}
 
-      <BackendPagination page={page} limit={LIMIT} total={total} onPageChange={setPage} />
+      <BackendPagination
+        page={page}
+        limit={LIMIT}
+        total={total}
+        itemCount={plans.length}
+        onPageChange={setPage}
+      />
 
       {viewTarget && (
         <PlanDetailModal

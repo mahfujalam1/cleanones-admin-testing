@@ -22,6 +22,7 @@ import { usePathname } from "next/navigation";
 import { getLocale } from "@/lib/locale";
 import { getDashboardTranslation } from "@/lib/translations";
 import { getPlaceholderTranslation } from "@/lib/translations";
+import { useModalJump } from "@/hooks/useModalJump";
 
 const controlClass =
   "h-10 w-full rounded-md border border-gray-300 bg-white px-3 text-sm text-gray-800 outline-none transition placeholder:text-gray-400 focus:border-sky-500 focus:ring-2 focus:ring-sky-100";
@@ -94,6 +95,7 @@ export function CreatePlanModal({
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(isEdit);
+  const { triggerJump, jumpClassName } = useModalJump();
 
   const hydrating = useRef(isEdit);
   const firstClient = useRef(true);
@@ -275,13 +277,17 @@ export function CreatePlanModal({
 
   return (
     <div
-      onClick={onClose}
+      onClick={(e) => {
+        if (e.target === e.currentTarget && !saving) {
+          triggerJump();
+        }
+      }}
       className="modal-backdrop fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-200"
     >
       <form
         onSubmit={submit}
         onClick={(e) => e.stopPropagation()}
-        className="flex max-h-[92vh] w-full max-w-3xl flex-col rounded-xl bg-white shadow-2xl overflow-hidden border border-slate-200 animate-in zoom-in-95 duration-200"
+        className={`flex max-h-[92vh] w-full max-w-3xl flex-col rounded-xl bg-white shadow-2xl overflow-hidden border border-slate-200 animate-in zoom-in-95 duration-200 ${jumpClassName}`}
       >
         {/* Header */}
         <header className="flex items-center gap-3 border-b border-slate-200 p-5 bg-white shrink-0">

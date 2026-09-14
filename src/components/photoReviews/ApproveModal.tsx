@@ -6,6 +6,7 @@ import { ApproveFormData, PhotoReview } from "./types";
 import { usePathname } from "next/navigation";
 import { getLocale } from "@/lib/locale";
 import { getPlaceholderTranslation } from "@/lib/translations";
+import { useModalJump } from "@/hooks/useModalJump";
 
 interface ApproveModalProps {
     review: PhotoReview | null;
@@ -21,6 +22,7 @@ export function ApproveModal({ review, open, onClose, onConfirm }: ApproveModalP
         saveAsTrainingData: true,
     });
     const dialogRef = useRef<HTMLDivElement>(null);
+    const { triggerJump, jumpClassName } = useModalJump();
 
     const handleClose = useCallback(() => {
         setForm({ managerComment: "", saveAsTrainingData: true });
@@ -38,7 +40,9 @@ export function ApproveModal({ review, open, onClose, onConfirm }: ApproveModalP
     if (!open) return null;
 
     const handleBackdrop = (e: React.MouseEvent) => {
-        if (e.target === dialogRef.current) handleClose();
+        if (e.target === dialogRef.current) {
+            triggerJump();
+        }
     };
 
     const handleSubmit = () => {
@@ -55,7 +59,7 @@ export function ApproveModal({ review, open, onClose, onConfirm }: ApproveModalP
             aria-modal="true"
             aria-labelledby="approve-modal-title"
         >
-            <div className="bg-white rounded-md w-full max-w-md shadow">
+            <div className={`bg-white rounded-md w-full max-w-md shadow ${jumpClassName}`}>
                 {/* Header */}
                 <div className="flex items-start justify-between p-6 pb-0">
                     <div>

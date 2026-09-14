@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { loadGoogleMapsPlaces } from "@/lib/googleMapsLoader";
 
-export type PlaceSelection = { address: string; latitude: number; longitude: number };
+export type PlaceSelection = { address: string; latitude: number; longitude: number; name?: string };
 
 interface Props {
   value: string;
@@ -60,17 +60,39 @@ export function AddressAutocompleteInput({
       .then(() => {
         if (cancelled || !inputRef.current || autocompleteRef.current || !window.google) return;
         const autocomplete = new window.google.maps.places.Autocomplete(inputRef.current, {
-          fields: ["formatted_address", "geometry"],
+          fields: ["formatted_address", "geometry", "name"],
         });
         autocomplete.addListener("place_changed", () => {
           const place = autocomplete.getPlace();
           const lat = place.geometry?.location?.lat();
           const lng = place.geometry?.location?.lng();
           if (typeof lat === "number" && typeof lng === "number") {
-            const address = place.formatted_address ?? inputRef.current?.value ?? "";
+            const rawAddress = place.formatted_address ?? inputRef.current?.value ?? "";
+            const placeName = place.name?.trim();
+
+            let address = rawAddress;
+            if (placeName && rawAddress) {
+              const lowerAddress = rawAddress.toLowerCase();
+              const lowerName = placeName.toLowerCase();
+              if (!lowerAddress.includes(lowerName)) {
+                address = `${placeName}, ${rawAddress}`;
+              }
+            } else if (placeName && !rawAddress) {
+              address = placeName;
+            }
+
             pickedAddressRef.current = address;
+            if (inputRef.current) {
+              inputRef.current.value = address;
+            }
             handlers.current.onChange(address);
-            handlers.current.onPlaceSelect({ address, latitude: lat, longitude: lng });
+            handlers.current.onPlaceSelect({ address, latitude: lat, longitude: lng, name: placeName });
+
+            window.setTimeout(() => {
+              if (inputRef.current && pickedAddressRef.current === address) {
+                inputRef.current.value = address;
+              }
+            }, 0);
           }
         });
         autocompleteRef.current = autocomplete;

@@ -9,6 +9,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { WorkerInfo } from './types';
 import { getWorkerAttendanceStats, type Period } from '@/services/actions/shiftMonitoring';
 import { DetailSkeleton } from '@/components/shared/SkeletonLoader';
+import { useModalJump } from '@/hooks/useModalJump';
 
 interface AttendanceStatsModalProps {
   worker: WorkerInfo;
@@ -29,6 +30,7 @@ export function AttendanceStatsModal({ worker, onClose, period = 'monthly' }: At
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const { triggerJump, jumpClassName } = useModalJump();
 
   useEffect(() => {
     let active = true;
@@ -71,12 +73,16 @@ export function AttendanceStatsModal({ worker, onClose, period = 'monthly' }: At
   return createPortal(
     <div
       className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6"
-      onMouseDown={onClose}
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) {
+          triggerJump();
+        }
+      }}
       role="dialog"
       aria-modal="true"
     >
       <div
-        className="flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-2xl animate-in fade-in zoom-in-95 duration-150"
+        className={`flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-2xl animate-in fade-in zoom-in-95 duration-150 ${jumpClassName}`}
         onMouseDown={(e) => e.stopPropagation()}
       >
         {/* Header */}

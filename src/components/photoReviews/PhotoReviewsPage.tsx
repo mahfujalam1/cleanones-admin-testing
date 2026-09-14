@@ -13,6 +13,7 @@ import { ApproveFormData, PhotoReview, REJECT_REASONS, RejectFormData, ReviewSta
 import { AIScoreBar } from "./Aiscorebar";
 import { approvePhotoReview, getPhotoReview, getPhotoReviews, rejectPhotoReview, type PhotoReviewApi } from "@/services/actions/photoReviews";
 import { TableSkeleton } from "@/components/shared/SkeletonLoader";
+import { BackendPagination } from "@/components/shared/BackendPagination";
 import { imgUrl } from "@/utils/baseUrl";
 
 // ── Constants ────────────────────────────────────────────────────────────────
@@ -342,43 +343,15 @@ export function PhotoReviewsPage() {
                 </div>
 
                 {/* Pagination */}
-                {totalPages > 1 && (
-                    <div className="flex flex-col sm:flex-row items-center justify-between gap-2 px-4 py-3 border-t border-slate-200 text-xs text-slate-500 bg-slate-50/50">
-                        <p>
-                            Showing {(page - 1) * PAGE_SIZE + 1}–
-                            {Math.min(page * PAGE_SIZE, filtered.length)} of {filtered.length} reviews
-                        </p>
-                        <div className="flex items-center gap-1">
-                            <button
-                                disabled={page === 1}
-                                onClick={() => setPage((p) => p - 1)}
-                                className="w-7 h-7 flex items-center justify-center rounded border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
-                                aria-label="Previous page"
-                            >
-                                <ChevronLeft className="w-3.5 h-3.5" />
-                            </button>
-                            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-                                <button
-                                    key={p}
-                                    onClick={() => setPage(p)}
-                                    className={`w-7 h-7 flex items-center justify-center rounded text-xs font-semibold transition-colors cursor-pointer ${
-                                        p === page
-                                            ? "bg-[#0ea5e9] text-white shadow-sm"
-                                            : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
-                                    }`}
-                                >
-                                    {p}
-                                </button>
-                            ))}
-                            <button
-                                disabled={page === totalPages}
-                                onClick={() => setPage((p) => p + 1)}
-                                className="w-7 h-7 flex items-center justify-center rounded border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
-                                aria-label="Next page"
-                            >
-                                <ChevronRight className="w-3.5 h-3.5" />
-                            </button>
-                        </div>
+                {filtered.length > PAGE_SIZE && (
+                    <div className="px-4 py-3 border-t border-slate-200 bg-slate-50/50">
+                        <BackendPagination
+                            page={page}
+                            limit={PAGE_SIZE}
+                            total={filtered.length}
+                            onPageChange={setPage}
+                            itemLabel="reviews"
+                        />
                     </div>
                 )}
             </div>

@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 import { getLocale } from "@/lib/locale";
 import { getHelpTranslation } from "@/lib/translations";
 import { getPlaceholderTranslation } from "@/lib/translations";
+import { useModalJump } from "@/hooks/useModalJump";
 
 interface QuestionFormModalProps {
   isOpen: boolean;
@@ -30,6 +31,7 @@ export function QuestionFormModal({
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState("");
   const [error, setError] = useState("");
+  const { triggerJump, jumpClassName } = useModalJump();
 
   useEffect(() => {
     if (isOpen) {
@@ -61,8 +63,15 @@ export function QuestionFormModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs">
-      <div className="w-full max-w-lg rounded-2xl bg-white p-5 sm:p-6 shadow-xl border border-slate-100">
+    <div
+      onClick={(e) => {
+        if (e.target === e.currentTarget && !isLoading) {
+          triggerJump();
+        }
+      }}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs"
+    >
+      <div className={`w-full max-w-lg rounded-2xl bg-white p-5 sm:p-6 shadow-xl border border-slate-100 ${jumpClassName}`}>
         <div className="flex items-center justify-between border-b border-slate-100 pb-3">
           <h2 className="text-lg font-bold text-slate-900">
             {mode === "create" ? t.addQuestion : t.editQuestion}

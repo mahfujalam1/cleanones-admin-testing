@@ -1,39 +1,31 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   MdChevronRight,
+  MdClose,
   MdDescription,
+  MdLiveHelp,
   MdSecurity,
   MdVpnKey,
 } from "react-icons/md";
 import { TbEye, TbEyeOff } from "react-icons/tb";
-import { getCompanyProfile, getManagerProfile, updateCompanyProfile, updateManagerProfile } from "@/services/actions/manager";
 import { useChangePasswordMutation } from "@/redux/api/endpoints/auth.api";
 import { apiError } from "@/redux/api/apiError";
 import { MIN_PASSWORD_LENGTH } from "@/lib/auth/password";
-import { useAppDispatch, useAppSelector } from "@/redux/hooks";
-import { toDashboardRole } from "@/lib/auth/session";
-import { setUser } from "@/redux/slices/auth.slice";
-import { DetailSkeleton } from "@/components/shared/SkeletonLoader";
-import { getLocale } from "@/lib/locale";
+import { getLocale, localizePath } from "@/lib/locale";
 import { getDashboardTranslation } from "@/lib/translations";
+import { useModalJump } from "@/hooks/useModalJump";
 
 export default function SettingsPage() {
   const pathname = usePathname();
   const locale = getLocale(pathname);
   const t = getDashboardTranslation(locale);
 
-  const dispatch = useAppDispatch();
-  const user = useAppSelector((state) => state.auth.user);
-  const [company, setCompany] = useState({ company_name: "", email: "", phone: "", address: "", website: "" });
-  const [profileMessage, setProfileMessage] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [loading, setLoading] = useState(true);
-
   // Change Password state
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -44,118 +36,32 @@ export default function SettingsPage() {
   const [passwordMessage, setPasswordMessage] = useState("");
   const [passwordError, setPasswordError] = useState("");
 
-  useEffect(() => {
-    let isMounted = true;
+  const { triggerJump, jumpClassName } = useModalJump();
 
-    try {
-      const cached = localStorage.getItem("cleanones_company_profile_cache");
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        setCompany((prev) => ({ ...prev, ...parsed }));
+  const resetPasswordForm = () => {
+    setOldPassword("");
+    setNewPassword("");
+    setConfirmPassword("");
+    setPasswordError("");
+    setPasswordMessage("");
+    setShowOld(false);
+    setShowNew(false);
+    setShowConfirm(false);
+  };
+
+  const closePasswordModal = () => {
+    setIsPasswordModalOpen(false);
+    resetPasswordForm();
+  };
+
+  const handleOverlayClick = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget) {
+      if (oldPassword.trim() || newPassword.trim() || confirmPassword.trim()) {
+        triggerJump();
+      } else {
+        closePasswordModal();
       }
-    } catch {}
-
-    void getManagerProfile().then((result) => {
-      if (!isMounted) return;
-      if (result.success && result.data) {
-        const data = {
-          company_name: result.data.full_name || result.data.name || "",
-          email: result.data.email || "",
-          phone: result.data.phone || "",
-          address: result.data.address || "",
-          website: result.data.website || "",
-        };
-        setCompany((prev) => ({ ...prev, ...data }));
-        const next = {
-          id: result.data.id,
-          name: result.data.full_name || result.data.name || "User",
-          email: result.data.email,
-          role: toDashboardRole(result.data.role) ?? "MANAGER",
-          profilePhoto: result.data.profile_photo,
-        };
-        dispatch(setUser(next));
-        try {
-          localStorage.setItem("cleanones-dashboard-user", JSON.stringify(next));
-          localStorage.setItem("cleanones_company_profile_cache", JSON.stringify(data));
-        } catch {}
-      }
-      setLoading(false);
-    });
-
-    void getCompanyProfile().then((result) => {
-      if (!isMounted) return;
-      if (result.success && result.data) {
-        setCompany((prev) => ({
-          company_name: result.data.company_name || prev.company_name,
-          email: result.data.email || prev.email,
-          phone: result.data.phone || prev.phone,
-          address: result.data.address || prev.address,
-          website: result.data.website || prev.website,
-        }));
-      }
-    });
-
-    return () => {
-      isMounted = false;
-    };
-  }, [dispatch]);
-
-  const saveProfile = async () => {
-    if (!company.company_name.trim() || !company.email.trim()) {
-      return setProfileMessage("Name and email are required");
     }
-    setSaving(true);
-    setProfileMessage("");
-
-    // Primary: Call PATCH /manager/me (Update My Admin Profile)
-    const result = await updateManagerProfile({
-      full_name: company.company_name,
-      phone: company.phone,
-      address: company.address,
-      website: company.website,
-      is_active: true,
-    });
-
-    // Also sync company profile if endpoint is active
-    void updateCompanyProfile(company);
-
-    setSaving(false);
-
-    if (!result.success) {
-      try {
-        localStorage.setItem("cleanones_company_profile_cache", JSON.stringify(company));
-      } catch {}
-      setProfileMessage(result.error || "Profile saved locally");
-      return;
-    }
-
-    const updatedData = {
-      company_name: result.data.full_name || result.data.name || company.company_name,
-      email: result.data.email || company.email,
-      phone: result.data.phone || company.phone,
-      address: result.data.address || company.address,
-      website: result.data.website || company.website,
-    };
-
-    setCompany(updatedData);
-
-    if (user) {
-      const updatedUser = {
-        ...user,
-        name: result.data.full_name || result.data.name || user.name,
-        email: result.data.email || user.email,
-        profilePhoto: result.data.profile_photo || user.profilePhoto,
-      };
-      dispatch(setUser(updatedUser));
-      try {
-        localStorage.setItem("cleanones-dashboard-user", JSON.stringify(updatedUser));
-      } catch {}
-    }
-
-    try {
-      localStorage.setItem("cleanones_company_profile_cache", JSON.stringify(updatedData));
-    } catch {}
-    setProfileMessage("Profile updated successfully");
   };
 
   const handlePasswordChange = async (event: React.FormEvent) => {
@@ -186,73 +92,97 @@ export default function SettingsPage() {
       setOldPassword("");
       setNewPassword("");
       setConfirmPassword("");
+      setTimeout(() => {
+        closePasswordModal();
+      }, 1500);
     } catch (cause) {
       setPasswordError(apiError(cause));
     }
   };
 
-  const companyFields = [
-    { key: "company_name", label: t.settings.companyName, type: "text" },
-    { key: "email", label: t.settings.companyEmail, type: "email" },
-    { key: "phone", label: t.settings.phoneNumber, type: "text" },
-    { key: "address", label: t.settings.address, type: "text" },
-    { key: "website", label: t.settings.website, type: "text" },
-  ] as const;
-
   return (
     <div className="space-y-6 pb-10">
-      <div className="grid grid-cols-1 items-start gap-5 xl:grid-cols-2">
-        <section className="flex min-w-0 flex-col">
-          <h2 className="mb-3 flex h-7 items-center text-lg font-bold leading-none text-slate-950">
-            {t.settings.companyProfile}
-          </h2>
-          <div className="dashboard-card p-5">
-            {loading ? (
-              <DetailSkeleton blocks={5} />
-            ) : (
-              <div className="space-y-4">
-                {companyFields.map(({ key, label, type }) => (
-                  <label key={key} className="block">
-                    <span className="mb-2 block text-xs font-medium text-slate-500">
-                      {label}
-                    </span>
-                    <input
-                      type={type}
-                      value={company[key]}
-                      onChange={(event) => setCompany((current) => ({ ...current, [key]: event.target.value }))}
-                      className="h-10 w-full rounded border border-gray-200 bg-white px-4 text-sm text-slate-800 shadow-sm outline-none transition-colors focus:border-[#0ea5e9] focus:ring-1 focus:ring-[#0ea5e9] hover:border-gray-300"
-                    />
-                  </label>
-                ))}
+      {/* Account & Security Section */}
+      <section>
+        <h2 className="mb-3 flex h-7 items-center text-lg font-bold leading-none text-slate-950">
+          Account & Security
+        </h2>
+        <div className="dashboard-card overflow-hidden">
+          <SettingsRow
+            icon={<MdVpnKey />}
+            iconClassName="bg-[#e0f2fe] text-[#0ea5e9]"
+            title={t.settings.changePassword}
+            subtitle="Update your password to keep your account secure"
+            onClick={() => {
+              resetPasswordForm();
+              setIsPasswordModalOpen(true);
+            }}
+          />
+        </div>
+      </section>
+
+      {/* Legal Section */}
+      <section>
+        <h2 className="mb-3 flex h-7 items-center text-lg font-bold leading-none text-slate-950">
+          {t.settings.legal}
+        </h2>
+        <div className="dashboard-card overflow-hidden">
+          <SettingsRow
+            href="/settings/legal/privacy-policy"
+            icon={<MdSecurity />}
+            iconClassName="bg-[#e0f2fe] text-[#0ea5e9]"
+            title={t.settings.privacyPolicy}
+            subtitle={t.settings.privacyPolicySubtitle}
+          />
+          <SettingsRow
+            href="/settings/legal/terms-and-conditions"
+            icon={<MdDescription />}
+            iconClassName="bg-[#ede9fe] text-[#8b5cf6]"
+            title={t.settings.termsAndConditions}
+            subtitle={t.settings.termsAndConditionsSubtitle}
+          />
+          <SettingsRow
+            href="/settings/faqs"
+            icon={<MdLiveHelp />}
+            iconClassName="bg-[#fef3c7] text-[#d97706]"
+            title="Frequently Asked Questions (FAQs)"
+            subtitle="Manage automated questions and answers for help"
+          />
+        </div>
+      </section>
+
+      {/* Change Password Modal */}
+      {isPasswordModalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4 animate-in fade-in"
+          onClick={handleOverlayClick}
+        >
+          <div
+            className={`w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl border border-slate-100 animate-in zoom-in-95 ${jumpClassName}`}
+          >
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2.5">
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-sky-50 text-sky-600 text-lg">
+                  <MdVpnKey />
+                </span>
+                <div>
+                  <h3 className="text-base font-bold text-slate-950">{t.settings.changePassword}</h3>
+                  <p className="text-xs text-slate-500">Update your account credentials</p>
+                </div>
               </div>
-            )}
+              <button
+                type="button"
+                onClick={closePasswordModal}
+                className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors cursor-pointer"
+                aria-label="Close modal"
+              >
+                <MdClose className="text-xl" />
+              </button>
+            </div>
 
-            {profileMessage && (
-              <p className={`mt-3 text-xs font-medium ${profileMessage.includes("successfully") ? "text-emerald-600" : "text-red-600"}`}>
-                {profileMessage}
-              </p>
-            )}
-
-            <button
-              type="button"
-              onClick={saveProfile}
-              disabled={saving}
-              className="mt-4 h-10 rounded bg-[#0ea5e9] px-5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-[#0284c7] cursor-pointer"
-            >
-              {saving ? t.settings.saving : t.settings.saveChanges}
-            </button>
-          </div>
-        </section>
-
-        <section className="flex min-w-0 flex-col">
-          <h2 className="mb-3 flex h-7 items-center gap-2 text-lg font-bold leading-none text-slate-950">
-            <MdVpnKey className="text-xl" />
-            {t.settings.changePassword}
-          </h2>
-          <form onSubmit={handlePasswordChange} className="dashboard-card p-5">
-            <div className="space-y-4">
+            <form onSubmit={handlePasswordChange} className="mt-4 space-y-4">
               <label className="block">
-                <span className="mb-2 block text-xs font-medium text-slate-500">
+                <span className="mb-1.5 block text-xs font-medium text-slate-700">
                   {t.settings.currentPassword}
                 </span>
                 <div className="relative">
@@ -261,7 +191,7 @@ export default function SettingsPage() {
                     value={oldPassword}
                     onChange={(e) => setOldPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="h-10 w-full rounded border border-gray-200 bg-gray-100 px-4 pr-10 text-sm text-slate-800 shadow-sm outline-none transition-colors focus:border-[#0ea5e9] focus:bg-white focus:ring-1 focus:ring-[#0ea5e9]"
+                    className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50/50 px-3.5 pr-10 text-sm text-slate-800 outline-none transition-all focus:border-sky-500 focus:bg-white focus:ring-1 focus:ring-sky-500"
                     required
                   />
                   <button
@@ -275,7 +205,7 @@ export default function SettingsPage() {
               </label>
 
               <label className="block">
-                <span className="mb-2 block text-xs font-medium text-slate-500">
+                <span className="mb-1.5 block text-xs font-medium text-slate-700">
                   {t.settings.newPassword}
                 </span>
                 <div className="relative">
@@ -284,7 +214,7 @@ export default function SettingsPage() {
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="h-10 w-full rounded border border-gray-200 bg-gray-100 px-4 pr-10 text-sm text-slate-800 shadow-sm outline-none transition-colors focus:border-[#0ea5e9] focus:bg-white focus:ring-1 focus:ring-[#0ea5e9]"
+                    className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50/50 px-3.5 pr-10 text-sm text-slate-800 outline-none transition-all focus:border-sky-500 focus:bg-white focus:ring-1 focus:ring-sky-500"
                     required
                   />
                   <button
@@ -298,7 +228,7 @@ export default function SettingsPage() {
               </label>
 
               <label className="block">
-                <span className="mb-2 block text-xs font-medium text-slate-500">
+                <span className="mb-1.5 block text-xs font-medium text-slate-700">
                   {t.settings.confirmPassword}
                 </span>
                 <div className="relative">
@@ -307,7 +237,7 @@ export default function SettingsPage() {
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="h-10 w-full rounded border border-gray-200 bg-gray-100 px-4 pr-10 text-sm text-slate-800 shadow-sm outline-none transition-colors focus:border-[#0ea5e9] focus:bg-white focus:ring-1 focus:ring-[#0ea5e9]"
+                    className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50/50 px-3.5 pr-10 text-sm text-slate-800 outline-none transition-all focus:border-sky-500 focus:bg-white focus:ring-1 focus:ring-sky-500"
                     required
                   />
                   <button
@@ -319,63 +249,62 @@ export default function SettingsPage() {
                   </button>
                 </div>
               </label>
-            </div>
 
-            {passwordError && <p className="mt-3 text-xs font-medium text-red-600">{passwordError}</p>}
-            {passwordMessage && <p className="mt-3 text-xs font-medium text-emerald-600">{passwordMessage}</p>}
+              {passwordError && (
+                <div className="rounded-lg border border-red-200 bg-red-50 p-2.5 text-xs font-medium text-red-700">
+                  {passwordError}
+                </div>
+              )}
+              {passwordMessage && (
+                <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-2.5 text-xs font-medium text-emerald-700">
+                  {passwordMessage}
+                </div>
+              )}
 
-            <button
-              type="submit"
-              disabled={passwordLoading}
-              className="mt-4 h-10 rounded bg-[#0ea5e9] px-5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-[#0284c7] disabled:opacity-60 cursor-pointer"
-            >
-              {passwordLoading ? t.settings.updating : t.settings.updatePassword}
-            </button>
-          </form>
-        </section>
-      </div>
-
-      <section>
-        <h2 className="mb-3 flex h-7 items-center text-lg font-bold leading-none text-slate-950">{t.settings.legal}</h2>
-        <div className="dashboard-card overflow-hidden">
-          <LegalRow
-            href="/settings/legal/privacy-policy"
-            icon={<MdSecurity />}
-            iconClassName="bg-[#e0f2fe] text-[#0ea5e9]"
-            title={t.settings.privacyPolicy}
-            subtitle={t.settings.privacyPolicySubtitle}
-          />
-          <LegalRow
-            href="/settings/legal/terms-and-conditions"
-            icon={<MdDescription />}
-            iconClassName="bg-[#ede9fe] text-[#8b5cf6]"
-            title={t.settings.termsAndConditions}
-            subtitle={t.settings.termsAndConditionsSubtitle}
-          />
+              <div className="flex items-center justify-end gap-2.5 pt-2">
+                <button
+                  type="button"
+                  onClick={closePasswordModal}
+                  className="h-10 rounded-lg border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={passwordLoading}
+                  className="h-10 rounded-lg bg-sky-500 px-5 text-xs font-bold text-white shadow-xs transition-colors hover:bg-sky-600 disabled:opacity-60 cursor-pointer"
+                >
+                  {passwordLoading ? t.settings.updating : t.settings.updatePassword}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
-      </section>
+      )}
     </div>
   );
 }
 
-function LegalRow({
+function SettingsRow({
   href,
+  onClick,
   icon,
   iconClassName,
   title,
   subtitle,
 }: {
-  href: string;
+  href?: string;
+  onClick?: () => void;
   icon: React.ReactNode;
   iconClassName: string;
   title: string;
   subtitle: string;
 }) {
-  return (
-    <Link
-      href={href}
-      className="flex w-full items-center justify-between border-b border-gray-100 px-5 py-4 text-left last:border-b-0 transition-colors hover:bg-gray-50"
-    >
+  const pathname = usePathname();
+  const locale = getLocale(pathname);
+
+  const content = (
+    <>
       <div className="flex items-center gap-3">
         <span
           className={`flex h-10 w-10 items-center justify-center rounded-full text-xl ${iconClassName}`}
@@ -388,6 +317,27 @@ function LegalRow({
         </span>
       </div>
       <MdChevronRight className="text-xl text-slate-400" />
-    </Link>
+    </>
+  );
+
+  if (href) {
+    return (
+      <Link
+        href={localizePath(href, locale)}
+        className="flex w-full items-center justify-between border-b border-gray-100 px-5 py-4 text-left last:border-b-0 transition-colors hover:bg-gray-50"
+      >
+        {content}
+      </Link>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex w-full items-center justify-between border-b border-gray-100 px-5 py-4 text-left last:border-b-0 transition-colors hover:bg-gray-50 cursor-pointer"
+    >
+      {content}
+    </button>
   );
 }

@@ -30,12 +30,12 @@ export function WorkersTable({
     <div className="dashboard-card overflow-hidden rounded-lg border border-slate-200 bg-white">
       <div className="w-full overflow-x-auto">
         <div className="min-w-[820px]">
-          <div className="grid grid-cols-[2fr_1fr_1fr_0.8fr_0.9fr_1.1fr] gap-2 border-b border-gray-100 px-6 py-3 text-[10px] font-bold uppercase tracking-wider text-gray-400">
+          <div className="grid grid-cols-[2fr_1fr_1fr_1fr_1.1fr_1fr] gap-2 border-b border-gray-100 px-6 py-3 text-[10px] font-bold uppercase tracking-wider text-gray-400">
             <div>{t.managerAccess.name}</div>
             <div>{t.managerAccess.role}</div>
             <div>Hourly Rate</div>
             <div>{t.common.duration}</div>
-            <div>{t.common.status}</div>
+            <div>Total Earning</div>
             <div className="text-right">Actions</div>
           </div>
 
@@ -43,7 +43,7 @@ export function WorkersTable({
             {workers.map((worker) => (
               <div
                 key={worker._id}
-                className="group grid grid-cols-[2fr_1fr_1fr_0.8fr_0.9fr_1.1fr] items-center gap-2 px-6 py-4 transition-colors hover:bg-gray-50/60"
+                className="group grid grid-cols-[2fr_1fr_1fr_1fr_1.1fr_1fr] items-center gap-2 px-6 py-4 transition-colors hover:bg-gray-50/60"
               >
                 <div className="flex min-w-0 items-center gap-3">
                   <WorkerAvatar name={workerName(worker)} src={worker.profile_photo} />
@@ -72,12 +72,34 @@ export function WorkersTable({
                   )}
                 </div>
 
-                {/* Hours worked and status have no field on the worker API yet. */}
-                <div className="text-sm font-semibold text-gray-900">
-                  <Unavailable />
+                <div className="text-sm text-gray-700">
+                  {(() => {
+                    const hours = worker.total_completed_work_hours ?? worker.worked_hours;
+                    if (typeof hours === "number") {
+                      return (
+                        <>
+                          <span className="font-semibold text-gray-900">{hours}</span>
+                          <span className="text-xs text-gray-400"> {hours === 1 ? "hr" : "hrs"}</span>
+                        </>
+                      );
+                    }
+                    if (typeof hours === "string" && hours.trim()) {
+                      return (
+                        <span className="font-semibold text-gray-900">
+                          {hours.endsWith("h") || hours.endsWith("hrs") ? hours : `${hours} hrs`}
+                        </span>
+                      );
+                    }
+                    return <Unavailable />;
+                  })()}
                 </div>
-                <div className="text-xs font-semibold">
-                  <Unavailable />
+
+                <div className="text-sm text-gray-700">
+                  {typeof worker.total_earning === "number" ? (
+                    <span className="font-semibold text-gray-900">&euro;{worker.total_earning.toFixed(2)}</span>
+                  ) : (
+                    <Unavailable />
+                  )}
                 </div>
 
                 <div className="flex items-center justify-end gap-1">
@@ -91,7 +113,7 @@ export function WorkersTable({
                   </button>
                   <button
                     onClick={() => onEditWorker(worker)}
-                    title="Edit worker"
+                    title="Edit Worker"
                     aria-label={`Edit ${workerName(worker)}`}
                     className="cursor-pointer rounded p-1 text-gray-400 transition-colors hover:bg-sky-50 hover:text-[#0ea5e9]"
                   >
@@ -99,7 +121,7 @@ export function WorkersTable({
                   </button>
                   <button
                     onClick={() => onDeleteWorker(worker)}
-                    title="Delete worker"
+                    title="Delete Worker"
                     aria-label={`Delete ${workerName(worker)}`}
                     className="cursor-pointer rounded p-1 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600"
                   >

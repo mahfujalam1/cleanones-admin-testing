@@ -4,15 +4,16 @@ import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { MdDescription, MdOutlineClose } from 'react-icons/md';
 import type { WorkerDocumentFile } from '@/services/actions/workers';
+import { useModalJump } from '@/hooks/useModalJump';
 
-/** Records created before real uploads existed hold placeholder text ("/uploads/string")
- *  rather than a fetchable file, so only absolute URLs are treated as viewable. */
 export const isViewable = (url?: string | null) => Boolean(url && /^https?:\/\//i.test(url));
 export const fileLabel = (url: string) => decodeURIComponent(url.split('/').pop() || url);
 const isImage = (url: string) => /\.(png|jpe?g|gif|webp|bmp|svg)(\?|$)/i.test(url);
 const isPdf = (url: string) => /\.pdf(\?|$)/i.test(url);
 
 export function DocumentPreviewModal({ file, onClose }: { file: WorkerDocumentFile; onClose: () => void }) {
+  const { triggerJump, jumpClassName } = useModalJump();
+
   useEffect(() => {
     const handleEsc = (event: KeyboardEvent) => { if (event.key === 'Escape') onClose(); };
     window.addEventListener('keydown', handleEsc);
@@ -22,14 +23,17 @@ export function DocumentPreviewModal({ file, onClose }: { file: WorkerDocumentFi
   if (typeof document === 'undefined') return null;
 
   return createPortal(
-    // Portals still bubble through the React tree, so events are stopped here to keep the
-    // dialog underneath this preview (worker sidebar or edit modal) from closing too.
     <div
       onMouseDown={(event) => event.stopPropagation()}
-      onClick={(event) => { event.stopPropagation(); onClose(); }}
+      onClick={(event) => {
+        event.stopPropagation();
+        if (event.target === event.currentTarget) {
+          triggerJump();
+        }
+      }}
       className="modal-backdrop fixed inset-0 z-[95] flex items-center justify-center p-4"
     >
-      <div onClick={(event) => event.stopPropagation()} className="flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-md bg-white shadow-xl">
+      <div onClick={(event) => event.stopPropagation()} className={`flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-md bg-white shadow-xl ${jumpClassName}`}>
         <header className="flex items-center gap-3 border-b border-gray-200 px-5 py-4">
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded bg-[#e0f2fe] text-[#0ea5e9]">
             <MdDescription className="text-lg" />

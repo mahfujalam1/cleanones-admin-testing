@@ -4,7 +4,6 @@ import { useId, useState } from "react";
 import { MdMyLocation } from "react-icons/md";
 import { FormModal } from "@/components/shared/FormModal";
 import {
-  CheckboxField,
   CONTROL_CLASS,
   FieldLabel,
   SelectField,
@@ -59,19 +58,31 @@ export function LocationForm({
   const [locationType, setLocationType] = useState<LocationType | "">(location?.type ?? "");
   const [description, setDescription] = useState(location?.description ?? "");
   const [pin, setPin] = useState<Pin | null>(() => fromGeoPoint(location?.location));
-  const [isActive, setIsActive] = useState(location?.is_active ?? true);
   const [error, setError] = useState("");
 
   const [createLocation, { isLoading: creating }] = useCreateLocationMutation();
   const [updateLocation, { isLoading: updating }] = useUpdateLocationMutation();
 
   const submit = async () => {
+    if (!name.trim()) {
+      setError("Location Name is required.");
+      return;
+    }
+    if (!locationType) {
+      setError("Location Type is required.");
+      return;
+    }
+    if (!address.trim()) {
+      setError("Address is required.");
+      return;
+    }
+
     const body = {
       name: name.trim(),
       address: address.trim(),
-      type: locationType || undefined,
+      type: locationType,
       description: description.trim() || undefined,
-      is_active: isActive,
+      is_active: location?.is_active ?? true,
       location: toGeoPoint(pin),
     };
 
@@ -94,9 +105,9 @@ export function LocationForm({
 
   return (
     <FormModal
-      title={isEdit ? "Edit location" : "Add location"}
+      title={isEdit ? "Edit Location" : "Add Location"}
       subtitle={isEdit ? location.name : undefined}
-      submitLabel={isEdit ? "Save changes" : "Add location"}
+      submitLabel={isEdit ? "Save Changes" : "Add Location"}
       saving={creating || updating}
       error={error}
       onClose={onClose}
@@ -114,13 +125,17 @@ export function LocationForm({
       )}
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <TextField label="Location name" value={name} onChange={setName} required />
+        <TextField label="Location Name" value={name} onChange={setName} required />
         <SelectField
           label="Type"
           value={locationType}
           options={LOCATION_TYPES}
-          onChange={setLocationType}
+          onChange={(val) => {
+            setLocationType(val);
+            setError("");
+          }}
           placeholder="Select type"
+          required
         />
       </div>
 
@@ -131,9 +146,12 @@ export function LocationForm({
           onChange={setAddress}
           // Picking a suggestion supplies the address and its GPS pin together, so there is
           // nothing for the user to copy across by hand.
-          onPlaceSelect={({ address: picked, latitude, longitude }) => {
+          onPlaceSelect={({ address: picked, latitude, longitude, name: placeName }) => {
             setAddress(picked);
             setPin({ latitude, longitude });
+            if (!name.trim() && placeName) {
+              setName(placeName);
+            }
             setError("");
           }}
           // Typing over a chosen address makes the stored pin wrong, so it is dropped.
@@ -162,8 +180,6 @@ export function LocationForm({
         placeholder="Anything the cleaning team should know about this location"
         rows={3}
       />
-
-      <CheckboxField label="Active" checked={isActive} onChange={setIsActive} />
     </FormModal>
   );
 }

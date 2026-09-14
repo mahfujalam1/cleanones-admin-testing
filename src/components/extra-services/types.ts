@@ -13,6 +13,7 @@ export type UnifiedServiceRequest = {
   priority?: string;
   preferred_date?: string;
   date_submitted?: string;
+  client_id?: string;
   client_name?: string;
   location_id?: string;
   location_name?: string;

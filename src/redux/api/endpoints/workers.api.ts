@@ -81,6 +81,11 @@ export type Worker = {
   /** NOT ON THE API yet; the avatar uses it the moment the worker model carries one. */
   profile_photo?: string;
   isDeleted?: boolean;
+  worked_hours?: number;
+  total_completed_work_hours?: number | string;
+  total_earning?: number;
+  total_paid?: number;
+  pending_amount?: number;
   created_at?: string;
   updated_at?: string;
 };

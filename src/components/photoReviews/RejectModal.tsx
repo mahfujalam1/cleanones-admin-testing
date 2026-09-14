@@ -6,6 +6,7 @@ import { PhotoReview, REJECT_REASONS, RejectFormData, RejectReason } from "./typ
 import { usePathname } from "next/navigation";
 import { getLocale } from "@/lib/locale";
 import { getPlaceholderTranslation } from "@/lib/translations";
+import { useModalJump } from "@/hooks/useModalJump";
 
 interface RejectModalProps {
     review: PhotoReview | null;
@@ -22,6 +23,7 @@ export function RejectModal({ review, open, onClose, onConfirm }: RejectModalPro
         saveAsTrainingData: true,
     });
     const dialogRef = useRef<HTMLDivElement>(null);
+    const { triggerJump, jumpClassName } = useModalJump();
 
     const handleClose = useCallback(() => {
         setForm({ reason: "", managerComment: "", saveAsTrainingData: true });
@@ -39,7 +41,9 @@ export function RejectModal({ review, open, onClose, onConfirm }: RejectModalPro
     if (!open) return null;
 
     const handleBackdrop = (e: React.MouseEvent) => {
-        if (e.target === dialogRef.current) handleClose();
+        if (e.target === dialogRef.current) {
+            triggerJump();
+        }
     };
 
     const isValid = form.reason !== "" && form.managerComment.trim() !== "";
@@ -59,7 +63,7 @@ export function RejectModal({ review, open, onClose, onConfirm }: RejectModalPro
             aria-modal="true"
             aria-labelledby="reject-modal-title"
         >
-            <div className="bg-white rounded-md w-full max-w-md shadow">
+            <div className={`bg-white rounded-md w-full max-w-md shadow ${jumpClassName}`}>
                 {/* Header */}
                 <div className="flex items-start justify-between p-6 pb-0">
                     <div>

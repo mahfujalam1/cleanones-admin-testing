@@ -1,20 +1,30 @@
 import { baseApi } from "./baseApi";
-import type { QualityControlReport, ReportTimeframe } from "@/services/actions/reports";
+import type { ShiftReportData, ReportPeriod } from "@/services/actions/reports";
 
 export const reportsApi = baseApi.injectEndpoints({
   overrideExisting: true,
   endpoints: (builder) => ({
-    getQualityControlReport: builder.query<QualityControlReport, ReportTimeframe>({
-      query: (timeframe) => `/manager/reports/quality-control?timeframe=${timeframe}`,
-      providesTags: (_res, _err, timeframe) => [{ type: "reports" as never, id: timeframe }],
+    getShiftReport: builder.query<ShiftReportData, ReportPeriod | void>({
+      query: (period) => `/shift/report?period=${period || "month"}`,
+      providesTags: (_res, _err, period) => [
+        { type: "reports" as never, id: period || "month" },
+      ],
     }),
-    exportQualityControlPdf: builder.query<string, ReportTimeframe>({
-      query: (timeframe) => `/manager/reports/quality-control/pdf?timeframe=${timeframe}`,
+    getQualityControlReport: builder.query<ShiftReportData, ReportPeriod | void>({
+      query: (period) => `/shift/report?period=${period || "month"}`,
+      providesTags: (_res, _err, period) => [
+        { type: "reports" as never, id: period || "month" },
+      ],
+    }),
+    exportQualityControlPdf: builder.query<string, ReportPeriod>({
+      query: (timeframe) =>
+        `/manager/reports/quality-control/pdf?timeframe=${timeframe}`,
     }),
   }),
 });
 
 export const {
+  useGetShiftReportQuery,
   useGetQualityControlReportQuery,
   useExportQualityControlPdfQuery,
 } = reportsApi;

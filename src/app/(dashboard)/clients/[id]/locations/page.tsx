@@ -49,6 +49,13 @@ export default function ClientLocationsPage({ params }: { params: Promise<{ id: 
   const total = data?.meta.total ?? 0;
   const message = actionError || (error ? apiError(error) : "");
 
+  // Auto-fallback: if current page has no data and we are past page 1, redirect to previous page
+  useEffect(() => {
+    if (!isFetching && data && locations.length === 0 && page > 1) {
+      setPage((prev) => Math.max(1, prev - 1));
+    }
+  }, [isFetching, data, locations.length, page]);
+
   const confirmDelete = async () => {
     if (!deleteTarget) return;
     setActionError("");
@@ -111,16 +118,22 @@ export default function ClientLocationsPage({ params }: { params: Promise<{ id: 
         </div>
       )}
 
-      <BackendPagination page={page} limit={LIMIT} total={total} onPageChange={setPage} />
+      <BackendPagination
+        page={page}
+        limit={LIMIT}
+        total={total}
+        itemCount={locations.length}
+        onPageChange={setPage}
+      />
 
       {creating && <LocationForm clientId={id} onClose={() => setCreating(false)} />}
       {editTarget && <LocationForm location={editTarget} onClose={() => setEditTarget(null)} />}
 
       {deleteTarget && (
         <ConfirmDialog
-          title="Deactivate location?"
-          description={`${deleteTarget.name} will be marked inactive. Its rooms and tasks are left untouched.`}
-          confirmText="Deactivate"
+          title="Delete location?"
+          description={`Are you sure you want to delete ${deleteTarget.name}? This action cannot be undone.`}
+          confirmText="Delete"
           loading={deleting}
           onConfirm={() => void confirmDelete()}
           onClose={() => !deleting && setDeleteTarget(null)}

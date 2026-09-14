@@ -8,13 +8,11 @@ import { WorkerLanguagesSelector } from "./WorkerLanguagesSelector";
 import { apiError } from "@/redux/api/apiError";
 import { MIN_PASSWORD_LENGTH } from "@/lib/auth/password";
 import {
-  WORKER_STATUSES,
   WORKER_TYPES,
   WORKING_DAYS,
   useCreateWorkerMutation,
   useUpdateWorkerMutation,
   type Worker,
-  type WorkerStatus,
   type WorkerType,
   type WorkingDay,
   workerName,
@@ -43,8 +41,8 @@ function WeeklyAvailability({
   return (
     <fieldset>
       <div className="mb-2 flex items-baseline justify-between gap-3">
-        <legend className="text-xs font-semibold text-slate-700">Weekly availability</legend>
-        <span className="text-[11px] text-slate-400">Select working days for employee</span>
+        <legend className="text-xs font-semibold text-slate-700">Weekly Availability</legend>
+        <span className="text-[11px] text-slate-400">Select Working Days for Employee</span>
       </div>
       <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-7">
         {WORKING_DAYS.map((day) => {
@@ -79,7 +77,6 @@ export function WorkerForm({ worker, onClose }: { worker?: Worker; onClose: () =
   const [email, setEmail] = useState(worker?.email ?? "");
   const [phone, setPhone] = useState(worker?.phone ?? "");
   const [hourlyRate, setHourlyRate] = useState(worker?.hourly_rate?.toString() ?? "25");
-  const [status, setStatus] = useState<WorkerStatus>(worker?.status ?? "Active");
   const [baseLocation, setBaseLocation] = useState(worker?.base_location ?? "");
   const [languages, setLanguages] = useState<string[]>(worker?.languages ?? []);
   const [workingDays, setWorkingDays] = useState<WorkingDay[]>(worker?.working_days ?? []);
@@ -106,6 +103,11 @@ export function WorkerForm({ worker, onClose }: { worker?: Worker; onClose: () =
   const [updateWorker, { isLoading: updating }] = useUpdateWorkerMutation();
 
   const submit = async () => {
+    if (!baseLocation.trim()) {
+      setError("Base Location is required.");
+      return;
+    }
+
     if (languages.length === 0) {
       setError("Pick at least one language.");
       return;
@@ -116,27 +118,16 @@ export function WorkerForm({ worker, onClose }: { worker?: Worker; onClose: () =
       email: email.trim(),
       phone: phone.trim(),
       worker_type: workerType,
-      base_location: baseLocation || undefined,
+      base_location: baseLocation.trim(),
       hourly_rate: hourlyRate.trim() ? Number(hourlyRate) : undefined,
       languages,
       // Stripped for freelancers by `withWorkingDays` in the endpoint.
       working_days: workingDays.length ? workingDays : undefined,
-      // Parked with the "More details" block above.
-      // address: address.trim() || undefined,
-      // nationality: nationality.trim() || undefined,
-      // // A date field gives `YYYY-MM-DD`; the API stores a full timestamp.
-      // dob: dob ? new Date(dob).toISOString() : undefined,
-      // national_id: nationalId.trim() || undefined,
-      // id_card_front: idCardFront.trim() || undefined,
-      // id_card_back: idCardBack.trim() || undefined,
-      // employee_contract_pdf: contractPdf.trim() || undefined,
-      // isagree_condition: agreed,
     };
 
     try {
       if (isEdit) {
-        // `status` only travels on update — there is nothing to set on a worker being created.
-        await updateWorker({ id: worker._id, body: { ...shared, status } }).unwrap();
+        await updateWorker({ id: worker._id, body: shared }).unwrap();
       } else {
         if (password.length < MIN_PASSWORD_LENGTH) {
           setError(`Password must be at least ${MIN_PASSWORD_LENGTH} characters.`);
@@ -156,41 +147,38 @@ export function WorkerForm({ worker, onClose }: { worker?: Worker; onClose: () =
 
   return (
     <FormModal
-      title={isEdit ? "Edit worker" : "Add worker"}
+      title={isEdit ? "Edit Worker" : "Add Worker"}
       subtitle={isEdit ? workerName(worker) : "Workers"}
-      submitLabel={isEdit ? "Save changes" : "Add worker"}
+      submitLabel={isEdit ? "Save Changes" : "Add Worker"}
       saving={creating || updating}
       error={error}
       onClose={onClose}
       onSubmit={() => void submit()}
     >
       <div className="grid gap-4 sm:grid-cols-2">
-        <TextField label="Name" value={name} onChange={setName} required />
+        <TextField label="Name" placeholder="Enter Name" value={name} onChange={setName} required />
         <SelectField label="Role" value={workerType} options={WORKER_TYPES} onChange={setWorkerType} required />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <TextField label="Email" type="email" value={email} onChange={setEmail} required />
-        <TextField label="Phone number" type="tel" value={phone} onChange={setPhone} required />
+        <TextField label="Email" placeholder="Enter Email" type="email" value={email} onChange={setEmail} required />
+        <TextField label="Phone Number" placeholder="Enter Phone Number" type="tel" value={phone} onChange={setPhone} required />
       </div>
 
-      <div className={`grid gap-4 ${isEdit ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}>
+      <div className="grid gap-4 sm:grid-cols-2">
         <TextField
-          label="Hourly rate (€/hr)"
+          label="Hourly Rate (€/hr)"
+          placeholder="25"
           type="number"
           min={0}
           value={hourlyRate}
           onChange={setHourlyRate}
           required
         />
-        {isEdit && (
-          <SelectField label="Status" value={status} options={WORKER_STATUSES} onChange={setStatus} />
-        )}
         <div>
-          {/* `base_location` is free text on the API, so this searches real places rather than
-              limiting the choice to locations we happen to have on file. */}
-          <FieldLabel htmlFor={locationId} label="Location" />
-          <PlaceSearchSelect value={baseLocation} onValueChange={setBaseLocation} placeholder="Search…" />
+          {/* Base Location is required */}
+          <FieldLabel htmlFor={locationId} label="Base Location" required />
+          <PlaceSearchSelect value={baseLocation} onValueChange={setBaseLocation} placeholder="Search Base Location…" />
         </div>
       </div>
 
@@ -212,9 +200,10 @@ export function WorkerForm({ worker, onClose }: { worker?: Worker; onClose: () =
 
       {!isEdit && (
         <div className="grid gap-4 border-t border-slate-100 pt-4 sm:grid-cols-2">
-          <TextField label="Password" type="password" value={password} onChange={setPassword} required />
+          <TextField label="Password" placeholder="Enter Password" type="password" value={password} onChange={setPassword} required />
           <TextField
-            label="Confirm password"
+            label="Confirm Password"
+            placeholder="Enter Confirm Password"
             type="password"
             value={confirmPassword}
             onChange={setConfirmPassword}

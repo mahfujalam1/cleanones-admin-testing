@@ -1,42 +1,66 @@
 import { baseApi } from "./baseApi";
-import type { EscalationApi } from "@/services/actions/escalations";
+import { tagTypes } from "../tagTypes";
+
+export type IssueReport = {
+  _id: string;
+  worker?: string | { _id: string; name?: string; full_name?: string; email?: string; phone?: string; profile_picture?: string };
+  issueType: string;
+  severity: "Low" | "Medium" | "High" | "Emergency" | string;
+  location?: string | { _id: string; name?: string; address?: string };
+  description: string;
+  status: "PENDING" | "IN_PROGRESS" | "RESOLVED" | string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type EscalationApi = IssueReport;
 
 export const escalationsApi = baseApi.injectEndpoints({
   overrideExisting: true,
   endpoints: (builder) => ({
-    getEscalations: builder.query<
-      { total_count: number; page: number; limit: number; has_more: boolean; open_count: number; in_progress_count: number; resolved_count: number; escalations: EscalationApi[] },
-      { page?: number; limit?: number; status?: string; search?: string } | void
-    >({
-      query: (input) => {
-        const q = new URLSearchParams({
-          page: String(input?.page ?? 1),
-          limit: String(input?.limit ?? 100),
-        });
-        if (input?.status) q.set("status_filter", input.status);
-        if (input?.search) q.set("search", input.search);
-        return `/manager/escalations?${q.toString()}`;
+    getEscalations: builder.query<IssueReport[], void>({
+      query: () => "/issue-report/all-issue-reports",
+      transformResponse: (response: { success: boolean; data: IssueReport[] } | IssueReport[]) => {
+        if (Array.isArray(response)) return response;
+        return response?.data ?? [];
       },
-      providesTags: ["escalations" as never],
+      providesTags: (result) => [
+        { type: tagTypes.escalations, id: "LIST" },
+        ...(result ?? []).map((item) => ({ type: tagTypes.escalations, id: item._id })),
+      ],
     }),
-    getEscalation: builder.query<EscalationApi, string>({
-      query: (id) => `/manager/escalations/${encodeURIComponent(id)}`,
-      providesTags: (_res, _err, id) => [{ type: "escalations" as never, id }],
-    }),
-    updateEscalationStatus: builder.mutation<string, { id: string; status: string; notes: string }>({
-      query: ({ id, status, notes }) => ({
-        url: `/manager/escalations/${encodeURIComponent(id)}/status`,
+
+    updateIssueReport: builder.mutation<
+      IssueReport,
+      {
+        id: string;
+        status?: "PENDING" | "IN_PROGRESS" | "RESOLVED" | string;
+        issueType?: string;
+        severity?: string;
+        location?: string;
+        description?: string;
+      }
+    >({
+      query: ({ id, ...body }) => ({
+        url: `/issue-report/update-issue-report/${encodeURIComponent(id)}`,
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: { status, notes },
+        body,
       }),
-      invalidatesTags: ["escalations" as never],
+      invalidatesTags: [{ type: tagTypes.escalations, id: "LIST" }],
+    }),
+
+    deleteIssueReport: builder.mutation<IssueReport, string>({
+      query: (id) => ({
+        url: `/issue-report/delete-issue-report/${encodeURIComponent(id)}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: [{ type: tagTypes.escalations, id: "LIST" }],
     }),
   }),
 });
 
 export const {
   useGetEscalationsQuery,
-  useGetEscalationQuery,
-  useUpdateEscalationStatusMutation,
+  useUpdateIssueReportMutation,
+  useDeleteIssueReportMutation,
 } = escalationsApi;

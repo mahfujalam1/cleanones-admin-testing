@@ -45,6 +45,13 @@ export default function ClientsPage() {
   const total = data?.meta.total ?? 0;
   const message = actionError || (error ? apiError(error) : "");
 
+  // Auto-fallback: if current page has no data and we are past page 1, redirect to previous page
+  useEffect(() => {
+    if (!isFetching && data && clients.length === 0 && page > 1) {
+      setPage((prev) => Math.max(1, prev - 1));
+    }
+  }, [isFetching, data, clients.length, page]);
+
   const confirmDelete = async () => {
     if (!deleteTarget) return;
     setActionError("");
@@ -117,7 +124,13 @@ export default function ClientsPage() {
         </div>
       )}
 
-      <BackendPagination page={page} limit={LIMIT} total={total} onPageChange={setPage} />
+      <BackendPagination
+        page={page}
+        limit={LIMIT}
+        total={total}
+        itemCount={clients.length}
+        onPageChange={setPage}
+      />
 
       {formTarget && (
         <ClientForm

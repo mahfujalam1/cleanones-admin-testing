@@ -7,6 +7,7 @@ import { updateWorkerStatus } from '@/services/actions/workers';
 import { usePathname } from 'next/navigation';
 import { getLocale } from '@/lib/locale';
 import { getPlaceholderTranslation } from '@/lib/translations';
+import { useModalJump } from '@/hooks/useModalJump';
 
 const STATUS_OPTIONS = [
   { value: 'active', label: 'Active', hint: 'Worker can be scheduled and log in as usual.' },
@@ -23,12 +24,12 @@ export function WorkerStatusModal({ worker, onClose, onUpdated }: { worker: Work
   const p = getPlaceholderTranslation(getLocale(usePathname()));
   const [status, setStatus] = useState(currentStatus(worker));
   const [reason, setReason] = useState('');
-  const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const { triggerJump, jumpClassName } = useModalJump();
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
-    // A suspension or ban is a record someone will need to justify later, so require a note.
     if (status !== 'active' && !reason.trim()) {
       setError('Give a reason for suspending or banning this worker.');
       return;
@@ -42,17 +43,27 @@ export function WorkerStatusModal({ worker, onClose, onUpdated }: { worker: Work
         return;
       }
       onUpdated();
+      onClose();
+    } catch {
+      setError('Could not update worker status.');
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <div onClick={onClose} className="modal-backdrop fixed inset-0 z-[80] flex items-center justify-center p-4">
+    <div
+      onClick={(e) => {
+        if (e.target === e.currentTarget && !saving) {
+          triggerJump();
+        }
+      }}
+      className="modal-backdrop fixed inset-0 z-[80] flex items-center justify-center p-4"
+    >
       <form
         onSubmit={submit}
         onClick={(event) => event.stopPropagation()}
-        className="w-full max-w-md rounded-md bg-white shadow-xl"
+        className={`w-full max-w-md rounded-md bg-white shadow-xl ${jumpClassName}`}
       >
         <header className="flex items-start gap-3 border-b border-gray-200 px-5 py-4">
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-amber-200 bg-amber-50 text-amber-600">

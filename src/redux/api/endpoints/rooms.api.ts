@@ -1,4 +1,5 @@
 import { baseApi } from "../baseApi";
+import { catalogApi } from "./catalog.api";
 import { listQuery, type ListParams, type Paginated, type Ref } from "../types";
 import { tagTypes } from "../../tagTypes";
 import type { Location } from "./locations.api";
@@ -35,6 +36,19 @@ export const PLAN_TYPES = CLEANING_TYPES;
 export type PlanType = CleaningType;
 export const CLEANING_PLAN = CLEANING_TYPES;
 
+export type RoomTask = {
+  _id: string;
+  room?: string;
+  name: string;
+  frequency_type?: string;
+  is_photo_required?: boolean;
+  photo_requirements?: Array<{ title?: string; photo_url?: string; is_uploaded?: boolean }>;
+  duration_minutes?: number;
+  days_of_week?: string[];
+  days_of_month?: number[];
+  is_active?: boolean;
+};
+
 export type Room = {
   _id: string;
   location: Ref<Location>;
@@ -44,6 +58,7 @@ export type Room = {
   /** Accepted by the API but not collected by the form. */
   floor?: number;
   is_active: boolean;
+  tasks?: RoomTask[];
   /**
    * Task count the listing aggregation attaches. The API is inconsistent about the plural
    * elsewhere, so read it through `roomTaskCount()` rather than either field directly.
@@ -92,12 +107,36 @@ export const roomsApi = baseApi.injectEndpoints({
 
     createRoom: builder.mutation<Room, CreateRoomInput>({
       query: (body) => ({ url: "/room/create-room", method: "POST", body }),
-      invalidatesTags: (_result, _error, { location }) => [
-        { type: tagTypes.rooms, id: "CATALOG" },
-        { type: tagTypes.rooms, id: `LOCATION-${location}` },
-        // The location's room count changes with it.
-        { type: tagTypes.locations, id: location },
-      ],
+      async onQueryStarted({ location }, { dispatch, queryFulfilled }) {
+        try {
+          const { data: newRoom } = await queryFulfilled;
+          dispatch(
+            catalogApi.util.updateQueryData(
+              "getRoomCatalog",
+              { clientId: undefined, locationId: undefined },
+              (draft) => {
+                if (Array.isArray(draft)) {
+                  draft.unshift(newRoom);
+                }
+              }
+            )
+          );
+          if (location) {
+            dispatch(
+              catalogApi.util.updateQueryData(
+                "getRoomCatalog",
+                { clientId: undefined, locationId: location },
+                (draft) => {
+                  if (Array.isArray(draft)) {
+                    draft.unshift(newRoom);
+                  }
+                }
+              )
+            );
+          }
+        } catch {}
+      },
+      invalidatesTags: [],
     }),
 
     updateRoom: builder.mutation<Room, { id: string; locationId: string; body: UpdateRoomInput }>({

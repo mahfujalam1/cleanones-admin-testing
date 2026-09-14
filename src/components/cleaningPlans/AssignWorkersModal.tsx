@@ -15,6 +15,7 @@ import {
   useGetEligibleWorkersQuery,
   type CleaningPlan,
 } from "@/redux/api/endpoints/cleaningPlans.api";
+import { useModalJump } from "@/hooks/useModalJump";
 
 /** Roles a worker can hold on a plan. Default is Team leader for the primary assignment. */
 const ROLES = ["Team leader", "Cleaner", "Supervisor"] as const;
@@ -156,17 +157,22 @@ export function AssignWorkersModal({ plan, onClose }: { plan: CleaningPlan; onCl
     const id = worker._id || (worker as any).id || (worker as any).worker_id;
     return is_conflict && picked.has(id);
   });
+  const { triggerJump, jumpClassName } = useModalJump();
 
   return (
     <div
       className="modal-backdrop fixed inset-0 z-[80] flex items-center justify-center p-4 animate-in fade-in duration-200"
-      onMouseDown={(event) => event.target === event.currentTarget && !saving && onClose()}
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget && !saving) {
+          triggerJump();
+        }
+      }}
     >
       <div
         role="dialog"
         aria-modal="true"
         aria-label="Assign workers"
-        className="flex max-h-[88vh] w-full max-w-3xl flex-col rounded-xl bg-white shadow-2xl animate-in fade-in zoom-in-95 duration-200"
+        className={`flex max-h-[88vh] w-full max-w-3xl flex-col rounded-xl bg-white shadow-2xl animate-in fade-in zoom-in-95 duration-200 ${jumpClassName}`}
       >
         <header className="flex items-start justify-between gap-4 px-5 pb-3 pt-5">
           <div className="min-w-0">
@@ -297,12 +303,14 @@ export function AssignWorkersModal({ plan, onClose }: { plan: CleaningPlan; onCl
                         <Button
                           type="button"
                           size="sm"
-                          variant={isForced ? "secondary" : "outline"}
+                          variant="secondary"
                           onClick={() => toggleForce(workerId)}
+                          // `secondary` already draws the outline as a ring, so the state colour
+                          // overrides that ring rather than adding a border on top of it.
                           className={`h-8 text-xs font-medium cursor-pointer ${
                             isForced
-                              ? "border-amber-400 bg-amber-100 text-amber-800 hover:bg-amber-200"
-                              : "border-red-300 bg-white text-red-600 hover:bg-red-50 hover:text-red-700"
+                              ? "bg-amber-100 text-amber-800 ring-amber-400 hover:bg-amber-200 hover:ring-amber-500"
+                              : "bg-white text-red-600 ring-red-300 hover:bg-red-50 hover:text-red-700 hover:ring-red-400"
                           }`}
                         >
                           {isForced ? "Forced (undo)" : "Force assign"}

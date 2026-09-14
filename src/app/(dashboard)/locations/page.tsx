@@ -22,7 +22,7 @@ import { refId } from "@/redux/api/types";
 import { apiError } from "@/redux/api/apiError";
 import { getLocale, localizePath } from "@/lib/locale";
 
-const LIMIT = 9;
+const LIMIT = 16;
 
 function LocationsView() {
   const router = useRouter();
@@ -38,12 +38,6 @@ function LocationsView() {
   const [actionError, setActionError] = useState("");
 
   useEffect(() => setPage(1), [searchTerm, clientId]);
-
-  /**
-   * Two endpoints, one list. Choosing a client switches to that client's own route — the only one
-   * that reports `total_room`. Both page and search on the server, so nothing is filtered in the
-   * browser and the count under the title is the real total.
-   */
   const args = { page, limit: LIMIT, searchTerm: searchTerm || undefined };
   const scoped = useGetClientLocationsQuery({ clientId, ...args }, { skip: !clientId });
   const all = useGetLocationsQuery(args, { skip: Boolean(clientId) });
@@ -56,6 +50,13 @@ function LocationsView() {
   const total = data?.meta.total ?? 0;
   const message = actionError || (error ? apiError(error) : "");
   const selectedClient = clientPage?.result.find((client) => client._id === clientId);
+
+  // Auto-fallback: if current page has no data and we are past page 1, redirect to previous page
+  useEffect(() => {
+    if (!isFetching && data && locations.length === 0 && page > 1) {
+      setPage((prev) => Math.max(1, prev - 1));
+    }
+  }, [isFetching, data, locations.length, page]);
 
   const chooseClient = (value: string) =>
     router.replace(localizePath(value ? `/locations?client=${value}` : "/locations", locale));
@@ -133,7 +134,7 @@ function LocationsView() {
           )}
         </div>
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {locations.map((location) => (
             <LocationCard
               key={location._id}
@@ -153,7 +154,13 @@ function LocationsView() {
         </div>
       )}
 
-      <BackendPagination page={page} limit={LIMIT} total={total} onPageChange={setPage} />
+      <BackendPagination
+        page={page}
+        limit={LIMIT}
+        total={total}
+        itemCount={locations.length}
+        onPageChange={setPage}
+      />
 
       {/* The client is chosen inside the form, so adding never takes two dialogs. When the page
           is already scoped to a client, that choice is made for the user. */}
@@ -163,9 +170,9 @@ function LocationsView() {
 
       {deleteTarget && (
         <ConfirmDialog
-          title="Deactivate location?"
-          description={`${deleteTarget.name} will be marked inactive. Its rooms and tasks are left untouched.`}
-          confirmText="Deactivate"
+          title="Delete location?"
+          description={`Are you sure you want to delete ${deleteTarget.name}? This action cannot be undone.`}
+          confirmText="Delete"
           loading={deleting}
           onConfirm={() => void confirmDelete()}
           onClose={() => !deleting && setDeleteTarget(null)}

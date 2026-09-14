@@ -24,6 +24,7 @@ import {
 import { usePathname } from 'next/navigation';
 import { getLocale } from '@/lib/locale';
 import { getPlaceholderTranslation } from '@/lib/translations';
+import { useModalJump } from '@/hooks/useModalJump';
 
 interface PendingApprovalsModalProps {
   onClose: () => void;
@@ -195,9 +196,18 @@ export function PendingApprovalsModal({ onClose, onSuccess }: PendingApprovalsMo
       .toUpperCase();
   };
 
+  const { triggerJump, jumpClassName } = useModalJump();
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="flex max-h-[90vh] w-full max-w-4xl flex-col rounded-xl bg-white shadow-2xl overflow-hidden border border-slate-200">
+    <div
+      onClick={(e) => {
+        if (e.target === e.currentTarget && !submitting) {
+          triggerJump();
+        }
+      }}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm animate-in fade-in duration-200"
+    >
+      <div className={`flex max-h-[90vh] w-full max-w-4xl flex-col rounded-xl bg-white shadow-2xl overflow-hidden border border-slate-200 ${jumpClassName}`}>
 
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/50 px-6 py-4">

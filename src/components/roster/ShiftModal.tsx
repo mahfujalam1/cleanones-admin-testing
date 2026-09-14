@@ -6,6 +6,7 @@ import { Shift, planIdFromShift } from './types';
 import { deleteRosterShift, getRosterShift } from '@/services/actions/roster';
 import { getCleaningPlan, type PlanDetails } from '@/services/actions/cleaningPlans';
 import { DetailSkeleton } from '@/components/shared/SkeletonLoader';
+import { useModalJump } from '@/hooks/useModalJump';
 
 interface ShiftModalProps {
   shift: Shift;
@@ -29,14 +30,14 @@ const titleCase = (value?: string) =>
   value ? value.replaceAll('_', ' ').split(' ').map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') : '';
 
 export function ShiftModal({ shift, onClose, onDeleted }: ShiftModalProps) {
+  const planId = planIdFromShift(shift.id);
   const [details, setDetails] = useState<ShiftDetails | null>(null);
   const [plan, setPlan] = useState<PlanDetails | null>(null);
   const [planLoading, setPlanLoading] = useState(false);
   const [error, setError] = useState('');
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
-
-  const planId = planIdFromShift(shift.id);
+  const { triggerJump, jumpClassName } = useModalJump();
 
   const handleDelete = async () => {
     setDeleting(true);
@@ -78,9 +79,16 @@ export function ShiftModal({ shift, onClose, onDeleted }: ShiftModalProps) {
   };
 
   return (
-    <div className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4" onMouseDown={onClose}>
+    <div
+      className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4"
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget && !deleting) {
+          triggerJump();
+        }
+      }}
+    >
       <div
-        className="flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-md border border-gray-200 bg-white animate-in fade-in zoom-in-95 duration-150"
+        className={`flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-md border border-gray-200 bg-white animate-in fade-in zoom-in-95 duration-150 ${jumpClassName}`}
         onMouseDown={(event) => event.stopPropagation()}
       >
         <div className={`h-1 w-full shrink-0 ${getAccentColor(shift.theme)}`} />

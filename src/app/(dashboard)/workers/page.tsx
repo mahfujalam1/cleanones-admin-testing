@@ -27,12 +27,12 @@ import { getDashboardTranslation } from "@/lib/translations";
 const LIMIT = 10;
 
 const SORT_LABELS: Array<{ value: WorkerSort; label: string }> = [
-  { value: "-created_at", label: "Newest first" },
-  { value: "created_at", label: "Oldest first" },
+  { value: "-created_at", label: "Newest First" },
+  { value: "created_at", label: "Oldest First" },
   { value: "email", label: "Email A–Z" },
   { value: "-email", label: "Email Z–A" },
-  { value: "hourly_rate", label: "Rate low to high" },
-  { value: "-hourly_rate", label: "Rate high to low" },
+  { value: "hourly_rate", label: "Rate Low To High" },
+  { value: "-hourly_rate", label: "Rate High To Low" },
 ];
 
 export default function WorkersPage() {
@@ -64,6 +64,13 @@ export default function WorkersPage() {
   const workers = data?.result ?? [];
   const total = data?.meta.total ?? 0;
   const message = actionError || (error ? apiError(error) : "");
+
+  // Auto-fallback: if current page has no data and we are past page 1, redirect to previous page
+  useEffect(() => {
+    if (!isFetching && data && workers.length === 0 && page > 1) {
+      setPage((prev) => Math.max(1, prev - 1));
+    }
+  }, [isFetching, data, workers.length, page]);
 
   const confirmDelete = async () => {
     if (!deleteTarget) return;
@@ -145,7 +152,13 @@ export default function WorkersPage() {
         />
       )}
 
-      <BackendPagination page={page} limit={LIMIT} total={total} onPageChange={setPage} />
+      <BackendPagination
+        page={page}
+        limit={LIMIT}
+        total={total}
+        itemCount={workers.length}
+        onPageChange={setPage}
+      />
 
       {formTarget && (
         <WorkerForm

@@ -15,7 +15,7 @@ export default function ShiftMonitoringLayout({ children }: { children: React.Re
 
   const tabs = [
     { 
-      name: t.shiftMonitoring.title, 
+      name: 'Live Shifts', 
       path: '/shift-monitoring',
       icon: <span className="text-lg">⚡</span>,
       exact: true

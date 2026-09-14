@@ -1,74 +1,68 @@
 import { baseApi } from "./baseApi";
+import { tagTypes } from "../tagTypes";
 import type {
-  SuggestedQuestion,
-  SuggestedQuestionsResponse,
-  CreateSuggestedQuestionDto,
-  UpdateSuggestedQuestionDto,
-  GetSuggestedQuestionsQuery,
+  QuestionSuggestion,
+  CreateQuestionSuggestionDto,
+  UpdateQuestionSuggestionDto,
 } from "@/services/actions/suggestedQuestions";
-
-/** Responses come wrapped as { success, message, data }; older routes return the payload directly. */
-function unwrap<T>(response: unknown): T {
-  if (response && typeof response === "object" && "data" in response) {
-    return (response as { data: T }).data;
-  }
-  return response as T;
-}
 
 export const suggestedQuestionsApi = baseApi.injectEndpoints({
   overrideExisting: true,
   endpoints: (builder) => ({
-    getSuggestedQuestions: builder.query<SuggestedQuestionsResponse, GetSuggestedQuestionsQuery | void>({
-      query: (params) => {
-        const queryParams = new URLSearchParams({
-          page: String(params?.page ?? 1),
-          limit: String(Math.min(params?.limit ?? 50, 200)),
-        });
-        return { url: `/suggested-questions?${queryParams.toString()}`, cache: "no-store" as RequestCache };
-      },
-      transformResponse: (response: unknown) => unwrap<SuggestedQuestionsResponse>(response),
-      providesTags: ["suggestedQuestions" as never],
+    getQuestionSuggestions: builder.query<QuestionSuggestion[], void>({
+      query: () => ({
+        url: "/question-suggestion/all-question-suggestions",
+        cache: "no-store" as RequestCache,
+      }),
+      transformResponse: (response: unknown) =>
+        Array.isArray(response) ? (response as QuestionSuggestion[]) : [],
+      providesTags: [tagTypes.suggestedQuestions],
     }),
 
-    createSuggestedQuestion: builder.mutation<SuggestedQuestion, CreateSuggestedQuestionDto>({
+    createQuestionSuggestion: builder.mutation<QuestionSuggestion, CreateQuestionSuggestionDto>({
       query: (body) => ({
-        url: "/suggested-questions",
+        url: "/question-suggestion/create-question-suggestion",
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body,
+        body: {
+          question: body.question,
+          answer: body.answer,
+        },
       }),
-      transformResponse: (response: unknown) => unwrap<SuggestedQuestion>(response),
-      invalidatesTags: ["suggestedQuestions" as never],
+      invalidatesTags: [tagTypes.suggestedQuestions],
     }),
 
-    updateSuggestedQuestion: builder.mutation<
-      SuggestedQuestion,
-      { id: string; body: UpdateSuggestedQuestionDto }
+    updateQuestionSuggestion: builder.mutation<
+      QuestionSuggestion,
+      { id: string; body: UpdateQuestionSuggestionDto }
     >({
       query: ({ id, body }) => ({
-        url: `/suggested-questions/${encodeURIComponent(id)}`,
+        url: `/question-suggestion/update-question-suggestion/${encodeURIComponent(id)}`,
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body,
       }),
-      transformResponse: (response: unknown) => unwrap<SuggestedQuestion>(response),
-      invalidatesTags: ["suggestedQuestions" as never],
+      invalidatesTags: [tagTypes.suggestedQuestions],
     }),
 
-    deleteSuggestedQuestion: builder.mutation<{ message: string }, string>({
+    deleteQuestionSuggestion: builder.mutation<QuestionSuggestion, string>({
       query: (id) => ({
-        url: `/suggested-questions/${encodeURIComponent(id)}`,
+        url: `/question-suggestion/delete-question-suggestion/${encodeURIComponent(id)}`,
         method: "DELETE",
       }),
-      transformResponse: (response: unknown) => unwrap<{ message: string }>(response),
-      invalidatesTags: ["suggestedQuestions" as never],
+      invalidatesTags: [tagTypes.suggestedQuestions],
     }),
   }),
 });
 
 export const {
-  useGetSuggestedQuestionsQuery,
-  useCreateSuggestedQuestionMutation,
-  useUpdateSuggestedQuestionMutation,
-  useDeleteSuggestedQuestionMutation,
+  useGetQuestionSuggestionsQuery,
+  useCreateQuestionSuggestionMutation,
+  useUpdateQuestionSuggestionMutation,
+  useDeleteQuestionSuggestionMutation,
+  // Backward compatibility aliases
+  useGetQuestionSuggestionsQuery: useGetSuggestedQuestionsQuery,
+  useCreateQuestionSuggestionMutation: useCreateSuggestedQuestionMutation,
+  useUpdateQuestionSuggestionMutation: useUpdateSuggestedQuestionMutation,
+  useDeleteQuestionSuggestionMutation: useDeleteSuggestedQuestionMutation,
 } = suggestedQuestionsApi;

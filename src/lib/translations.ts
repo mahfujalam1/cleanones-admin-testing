@@ -110,7 +110,7 @@ export interface DashboardTranslationDict {
   roster: {
     title: string; addShift: string; searchPlaceholder: string; worker: string;
     location: string; room: string; startDate: string; startTime: string; endTime: string; endDate: string;
-    date: string; createShift: string; weekView: string; dayView: string; noShifts: string;
+    date: string; createShift: string; weekView: string; dayView: string; monthView: string; noShifts: string;
   };
   managerAccess: {
     title: string; addManager: string; name: string; email: string; role: string;
@@ -250,7 +250,7 @@ export const translations: Record<string, DashboardTranslationDict> = {
     roster: {
       title: "Shift Roster", addShift: "Create Shift", searchPlaceholder: "Search roster...",
       worker: "Worker", location: "Location", room: "Room", startDate: "Start Date", startTime: "Start Time", endTime: "End Time", endDate: "End Date",
-      date: "Date", createShift: "Create Shift", weekView: "Week View", dayView: "Day View", noShifts: "No shifts scheduled",
+      date: "Date", createShift: "Create Shift", weekView: "Week View", dayView: "Day View", monthView: "Month View", noShifts: "No shifts scheduled",
     },
     managerAccess: {
       title: "Manager Access Control", addManager: "Add Manager", name: "Name", email: "Email",
@@ -372,7 +372,7 @@ export const translations: Record<string, DashboardTranslationDict> = {
     roster: {
       title: "Dienstroster", addShift: "Dienst Maken", searchPlaceholder: "Zoek in rooster...",
       worker: "Medewerker", location: "Locatie", room: "Kamer", startDate: "Startdatum", startTime: "Starttijd", endTime: "Eindtijd", endDate: "Einddatum",
-      date: "Datum", createShift: "Dienst Maken", weekView: "Weekweergave", dayView: "Dagweergave", noShifts: "Geen diensten gepland",
+      date: "Datum", createShift: "Dienst Maken", weekView: "Weekweergave", dayView: "Dagweergave", monthView: "Maandweergave", noShifts: "Geen diensten gepland",
     },
     managerAccess: {
       title: "Manager Toegangsbeheer", addManager: "Manager Toevoegen", name: "Naam", email: "E-mail",
@@ -494,7 +494,7 @@ export const translations: Record<string, DashboardTranslationDict> = {
     roster: {
       title: "Grafik Zmian", addShift: "Utwórz Zmianę", searchPlaceholder: "Szukaj w grafiku...",
       worker: "Pracownik", location: "Lokalizacja", room: "Pokój", startDate: "Data rozpoczęcia", startTime: "Czas Rozpoczęcia", endTime: "Czas Zakończenia", endDate: "Data zakończenia",
-      date: "Data", createShift: "Utwórz Zmianę", weekView: "Widok Tygodnia", dayView: "Widok Dnia", noShifts: "Brak zaplanowanych zmian",
+      date: "Data", createShift: "Utwórz Zmianę", weekView: "Widok Tygodnia", dayView: "Widok Dnia", monthView: "Widok Miesiąca", noShifts: "Brak zaplanowanych zmian",
     },
     managerAccess: {
       title: "Kontrola Dostępów Menedżerów", addManager: "Dodaj Menedżera", name: "Imię i nazwisko", email: "E-mail",
@@ -616,7 +616,7 @@ export const translations: Record<string, DashboardTranslationDict> = {
     roster: {
       title: "Графік Змін", addShift: "Створити Зміну", searchPlaceholder: "Пошук у графіку...",
       worker: "Працівник", location: "Локація", room: "Кімната", startDate: "Дата початку", startTime: "Час Початку", endTime: "Час Завершення", endDate: "Дата завершення",
-      date: "Дата", createShift: "Створити Зміну", weekView: "Тижневий Вигляд", dayView: "Денний Вигляд", noShifts: "Запланованих змін немає",
+      date: "Дата", createShift: "Створити Зміну", weekView: "Тижневий Вигляд", dayView: "Денний Вигляд", monthView: "Місячний Вигляд", noShifts: "Запланованих змін немає",
     },
     managerAccess: {
       title: "Контроль Доступу Менеджерів", addManager: "Додати Менеджера", name: "Ім'я", email: "Email",
@@ -738,7 +738,7 @@ export const translations: Record<string, DashboardTranslationDict> = {
     roster: {
       title: "Escala de Turnos", addShift: "Criar Turno", searchPlaceholder: "Pesquisar na escala...",
       worker: "Trabalhador", location: "Localização", room: "Divisão", startDate: "Data de início", startTime: "Hora de Início", endTime: "Hora de Fim", endDate: "Data de fim",
-      date: "Data", createShift: "Criar Turno", weekView: "Vista de Semana", dayView: "Vista de Dia", noShifts: "Nenhum turno agendado",
+      date: "Data", createShift: "Criar Turno", weekView: "Vista de Semana", dayView: "Vista de Dia", monthView: "Vista de Mês", noShifts: "Nenhum turno agendado",
     },
     managerAccess: {
       title: "Controlo de Acesso de Gestores", addManager: "Adicionar Gestor", name: "Nome", email: "Email",
@@ -860,7 +860,7 @@ export const translations: Record<string, DashboardTranslationDict> = {
     roster: {
       title: "جدول الورديات", addShift: "إنشاء وردية", searchPlaceholder: "البحث في جدول الورديات...",
       worker: "العامل", location: "الموقع", room: "الغرفة", startDate: "تاريخ البدء", startTime: "وقت البدء", endTime: "وقت الانتهاء", endDate: "تاريخ الانتهاء",
-      date: "التاريخ", createShift: "إنشاء وردية", weekView: "عرض الأسبوع", dayView: "عرض اليوم", noShifts: "لا توجد ورديات مجدولة",
+      date: "التاريخ", createShift: "إنشاء وردية", weekView: "عرض الأسبوع", dayView: "عرض اليوم", monthView: "عرض الشهر", noShifts: "لا توجد ورديات مجدولة",
     },
     managerAccess: {
       title: "صلاحيات المدراء", addManager: "إضافة مدير", name: "الاسم", email: "البريد الإلكتروني",
@@ -982,7 +982,7 @@ export const translations: Record<string, DashboardTranslationDict> = {
     roster: {
       title: "Planning des Shifts", addShift: "Créer un Shift", searchPlaceholder: "Rechercher dans le planning...",
       worker: "Employé", location: "Emplacement", room: "Pièce", startDate: "Date de début", startTime: "Heure de Début", endTime: "Heure de Fin", endDate: "Date de fin",
-      date: "Date", createShift: "Créer un Shift", weekView: "Vue Semaine", dayView: "Vue Jour", noShifts: "Aucun shift planifié",
+      date: "Date", createShift: "Créer un Shift", weekView: "Vue Semaine", dayView: "Vue Jour", monthView: "Vue Mois", noShifts: "Aucun shift planifié",
     },
     managerAccess: {
       title: "Contrôle d'Accès Managers", addManager: "Ajouter un Manager", name: "Nom", email: "Email",
@@ -1104,7 +1104,7 @@ export const translations: Record<string, DashboardTranslationDict> = {
     roster: {
       title: "Turnos Programados", addShift: "Crear Turno", searchPlaceholder: "Buscar en turnos...",
       worker: "Trabajador", location: "Ubicación", room: "Habitación", startDate: "Fecha de inicio", startTime: "Hora de Inicio", endTime: "Hora de Fin", endDate: "Fecha de fin",
-      date: "Fecha", createShift: "Crear Turno", weekView: "Vista Semanal", dayView: "Vista Diaria", noShifts: "Sin turnos programados",
+      date: "Fecha", createShift: "Crear Turno", weekView: "Vista Semanal", dayView: "Vista Diaria", monthView: "Vista Mensual", noShifts: "Sin turnos programados",
     },
     managerAccess: {
       title: "Control de Acceso de Gerentes", addManager: "Agregar Gerente", name: "Nombre", email: "Email",

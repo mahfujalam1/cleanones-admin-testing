@@ -1,10 +1,11 @@
 "use client";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { MdAccessTime, MdAdd, MdArrowForward, MdBusiness, MdCall, MdCalendarToday, MdCheckCircle, MdClose, MdLocationOn, MdPeople, MdUploadFile, MdWarningAmber } from "react-icons/md";
+import { MdAccessTime, MdAdd, MdArrowForward, MdBusiness, MdCall, MdCalendarToday, MdCheckCircle, MdChevronRight, MdClose, MdLocationOn, MdPeople, MdReportProblem, MdUploadFile, MdWarningAmber } from "react-icons/md";
 import { CardGridSkeleton, DetailSkeleton } from "@/components/shared/SkeletonLoader";
 import { useGetDashboardOverviewQuery, useGetInProgressShiftsQuery } from "@/redux/api/dashboardApi";
+import { useGetTodayLiveShiftMetaQuery, useGetTodayLiveShiftsQuery } from "@/redux/api/shiftsApi";
 import type { DashboardOverview, InProgressShift } from "@/services/actions/dashboard";
 import { getLocale } from "@/lib/locale";
 import { getDashboardTranslation } from "@/lib/translations";
@@ -20,12 +21,38 @@ const uniqueBy = <T,>(items: T[], getKey: (item: T) => string) => {
   });
 };
 
+function getInitials(name: string): string {
+  if (!name) return "W";
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+function formatTimeToHHMM(value?: string): string {
+  if (!value) return "---";
+  if (value.includes("T")) {
+    const timePart = value.split("T")[1];
+    if (timePart && timePart.length >= 5) {
+      return timePart.slice(0, 5);
+    }
+  }
+  const match = value.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i);
+  if (match) {
+    let hour = Number(match[1]);
+    if (match[3]?.toUpperCase() === "PM" && hour < 12) hour += 12;
+    if (match[3]?.toUpperCase() === "AM" && hour === 12) hour = 0;
+    return `${String(hour).padStart(2, "0")}:${match[2]}`;
+  }
+  return value.slice(0, 5);
+}
+
 export default function DashboardPage() {
   const pathname = usePathname();
   const locale = getLocale(pathname);
   const t = getDashboardTranslation(locale);
 
   const [filter, setFilter] = useState("");
+  const [liveTab, setLiveTab] = useState<"all" | "on_time" | "late" | "missing">("all");
   const [actionsOpen, setActionsOpen] = useState(false);
   const [selectedLateWorker, setSelectedLateWorker] = useState<{
     worker_name: string;
@@ -36,10 +63,12 @@ export default function DashboardPage() {
 
   const { data: overview, isLoading: loadingOverview } = useGetDashboardOverviewQuery(filter || undefined);
   const { data: shiftsRes } = useGetInProgressShiftsQuery();
+  const { data: todayLiveMeta } = useGetTodayLiveShiftMetaQuery();
+  const { data: todayShiftsRes } = useGetTodayLiveShiftsQuery({ limit: 100 });
 
   const shifts: InProgressShift[] = shiftsRes?.shifts ?? [];
+  const todayLiveShifts = todayShiftsRes?.result ?? [];
 
-  if (loadingOverview && !overview) return <div className="space-y-5"><DetailSkeleton blocks={2} /><CardGridSkeleton cards={4} /><DetailSkeleton blocks={7} /></div>;
   const safeOverview: DashboardOverview = overview || {
     greeting: t.dashboard.goodMorning,
     subtitle_date: new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }),
@@ -77,6 +106,101 @@ export default function DashboardPage() {
   });
   const cards = safeOverview.summary_cards;
 
+  const liveOperationsRows = useMemo(() => {
+    if (todayLiveShifts.length > 0) {
+      const rows: Array<{
+        id: string;
+        worker_name: string;
+        initials: string;
+        profile_picture?: string;
+        location_name: string;
+        check_in_time: string;
+        progress: number;
+        status: "on_time" | "late" | "missing";
+      }> = [];
+
+      for (const shift of todayLiveShifts) {
+        const locationName =
+          shift.location?.name ||
+          shift.location?.location ||
+          (typeof shift.location === "string" ? shift.location : "") ||
+          shift.client?.name ||
+          "CleanOnes Location";
+        const progress = Math.min(100, Math.max(0, shift.overall_progress_percent ?? (shift.status === "completed" ? 100 : 0)));
+
+        if (shift.assigned_workers && shift.assigned_workers.length > 0) {
+          for (const w of shift.assigned_workers) {
+            const rawStatus = (w.attendance_status || w.status || shift.status || "").toLowerCase();
+            let status: "on_time" | "late" | "missing" = "on_time";
+            if (rawStatus.includes("late")) {
+              status = "late";
+            } else if (rawStatus.includes("missing") || rawStatus.includes("no_show") || rawStatus.includes("show")) {
+              status = "missing";
+            } else if (progress === 0 && shift.status !== "upcoming") {
+              status = "missing";
+            }
+
+            const checkIn = w.check_in_time || w.checkin_time
+              ? formatTimeToHHMM(w.check_in_time || w.checkin_time)
+              : shift.status === "in_progress" || shift.status === "completed"
+              ? formatTimeToHHMM(shift.date_time || shift.date)
+              : "---";
+
+            rows.push({
+              id: `${shift._id}-${w.worker_id}`,
+              worker_name: w.name,
+              initials: getInitials(w.name),
+              profile_picture: w.profile_picture || w.profile_photo,
+              location_name: locationName,
+              check_in_time: checkIn,
+              progress,
+              status,
+            });
+          }
+        } else {
+          const planTitle = typeof shift.cleaning_plan === "object" ? shift.cleaning_plan?.title : "Shift";
+          rows.push({
+            id: shift._id,
+            worker_name: planTitle || "Unassigned Shift",
+            initials: getInitials(planTitle || "US"),
+            location_name: locationName,
+            check_in_time: shift.date_time ? formatTimeToHHMM(shift.date_time) : "---",
+            progress,
+            status: shift.status === "late" ? "late" : "on_time",
+          });
+        }
+      }
+      return rows;
+    }
+
+    return shifts.map((item) => {
+      const st = normalizeStatus(item.checkin_status || "");
+      let status: "on_time" | "late" | "missing" = "on_time";
+      if (st.includes("late")) status = "late";
+      else if (st.includes("missing") || st.includes("show")) status = "missing";
+
+      const progress = Math.min(100, Math.max(0, Number.parseFloat(item.progress_percentage) || item.progress || 0));
+
+      return {
+        id: `${item.shift_id}-${item.worker_id}`,
+        worker_name: item.worker_name,
+        initials: getInitials(item.worker_name),
+        profile_picture: item.worker_profile_picture,
+        location_name: item.location_name,
+        check_in_time: item.worker_checkin_time ? formatTimeToHHMM(item.worker_checkin_time) : "---",
+        progress,
+        status,
+      };
+    });
+  }, [todayLiveShifts, shifts]);
+
+  const filteredLiveRows = useMemo(() => {
+    if (liveTab === "all") return liveOperationsRows;
+    return liveOperationsRows.filter((r) => r.status === liveTab);
+  }, [liveOperationsRows, liveTab]);
+
+  const displayLiveRows = filteredLiveRows.slice(0, 6);
+
   const translateGreeting = (greeting: string) => {
     if (!greeting) return "";
     let str = greeting;
@@ -89,6 +213,16 @@ export default function DashboardPage() {
     }
     return str;
   };
+
+  if (loadingOverview && !overview) {
+    return (
+      <div className="space-y-5">
+        <DetailSkeleton blocks={2} />
+        <CardGridSkeleton cards={4} />
+        <DetailSkeleton blocks={7} />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 pb-10">
@@ -173,10 +307,6 @@ export default function DashboardPage() {
                       <p className="text-xs text-slate-500 truncate">{item.location_name} · {item.shift_start_time}–{item.shift_end_time}</p>
                     </div>
                     <span className="text-xs font-bold text-sky-600 shrink-0">{item.progress_percentage || `${progress}%`}</span>
-                    {/* No Call button here: the "falling behind" list (getInProgressShifts) carries
-                        no phone number field at all, unlike the Attention banner below (which uses
-                        call_pills[].phone_number) — a tel: link built from the worker's name
-                        instead of a phone number would just fail to dial. */}
                   </div>
                   <div className="mt-2.5 h-1.5 rounded-full bg-slate-100 overflow-hidden">
                     <div className="h-full rounded-full bg-sky-500 transition-all" style={{ width: `${Math.min(progress, 100)}%` }} />
@@ -188,73 +318,169 @@ export default function DashboardPage() {
         )}
       </section>
 
-      {/* 4 Summary Cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Metric icon={<MdAccessTime />} value={cards.active_shifts_count} label={t.dashboard.activeShifts} tone="bg-sky-50 text-sky-600" />
-        <Metric icon={<MdPeople />} value={cards.workers_on_site_count} label={t.dashboard.workersOnSite} tone="bg-violet-50 text-violet-600" />
-        <Metric icon={<MdWarningAmber />} value={cards.late_no_show_count} label={t.dashboard.lateNoShow} tone="bg-red-50 text-red-600" />
-        <Metric icon={<MdCheckCircle />} value={cards.reviews_pending_count} label={t.dashboard.reviewsPending} tone="bg-amber-50 text-amber-600" />
+      {/* Summary Cards from /shift/today-live-shift-meta */}
+      <div className="grid gap-3.5 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
+        <Metric
+          icon={<MdCalendarToday />}
+          value={todayLiveMeta?.today_total_shift ?? todayLiveMeta?.total_shift ?? cards.active_shifts_count}
+          label="Total Shifts"
+          tone="bg-blue-50 text-blue-600"
+        />
+        <Metric
+          icon={<MdAccessTime />}
+          value={todayLiveMeta?.today_total_in_progress_shift ?? todayLiveMeta?.in_progress ?? cards.active_shifts_count}
+          label="In Progress"
+          tone="bg-sky-50 text-sky-600"
+        />
+        <Metric
+          icon={<MdCheckCircle />}
+          value={todayLiveMeta?.today_total_completed_shift ?? todayLiveMeta?.completed_shift ?? 0}
+          label="Completed"
+          tone="bg-emerald-50 text-emerald-600"
+        />
+        <Metric
+          icon={<MdAccessTime />}
+          value={todayLiveMeta?.today_total_pending_shift ?? todayLiveMeta?.pending ?? 0}
+          label="Pending Shifts"
+          tone="bg-indigo-50 text-indigo-600"
+        />
+        <Metric
+          icon={<MdWarningAmber />}
+          value={todayLiveMeta?.today_total_worker_late ?? cards.late_no_show_count}
+          label="Late Workers"
+          tone="bg-red-50 text-red-600"
+        />
+        <Metric
+          icon={<MdReportProblem />}
+          value={todayLiveMeta?.total_issue_report ?? cards.reviews_pending_count}
+          label="Issue Reports"
+          tone="bg-amber-50 text-amber-600"
+        />
       </div>
 
-      {/* Live Operations by Client */}
+      {/* Live Operations Widget */}
       <section className="dashboard-card overflow-hidden">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b p-5">
-          <div>
-            <h2 className="font-bold text-slate-900">{t.dashboard.liveOperationsByClient}</h2>
-            <p className="text-xs text-slate-500">{t.dashboard.locationsFirst}</p>
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 p-4 sm:p-5">
+          <div className="flex items-center gap-2">
+            <span className="h-2.5 w-2.5 rounded-full bg-sky-500 shrink-0" />
+            <h2 className="text-base font-bold text-slate-900">Live Operations</h2>
           </div>
-          <div className="flex rounded-lg bg-slate-100 p-1">
-            {/* "no_show" removed — the backend's worker status_filter for this endpoint
-                (getAdminDashboardOverview) never produces that value (only late/on_time/
-                completed/scheduled), so this tab always returned an empty result. */}
-            {[["", t.dashboard.all], ["on_time", t.dashboard.onTime], ["late", t.dashboard.late]].map(([value, text]) => (
-              <button key={text} onClick={() => setFilter(value)} className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-all ${filter === value ? "bg-white text-sky-600 shadow-2xs" : "text-slate-500 hover:text-slate-700"}`}>
-                {text}
-              </button>
-            ))}
+          <div className="flex items-center gap-2 sm:gap-4">
+            <div className="flex max-w-full overflow-x-auto rounded border border-gray-200 bg-gray-50 p-0.5 text-xs font-medium">
+              {(['all', 'on_time', 'late', 'missing'] as const).map((tab) => {
+                const active = liveTab === tab;
+                const label = tab === 'all' ? 'All' : tab === 'on_time' ? 'On Time' : tab === 'late' ? 'Late' : 'Missing';
+                return (
+                  <button
+                    key={tab}
+                    type="button"
+                    onClick={() => setLiveTab(tab)}
+                    className={`h-7 rounded px-3 transition-colors cursor-pointer ${
+                      active
+                        ? 'border border-gray-200 bg-white text-primary font-semibold shadow-2xs'
+                        : 'border border-transparent text-gray-500 hover:text-gray-800'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+            <Link
+              href="/shift-monitoring"
+              className="text-xs font-semibold text-sky-600 hover:text-sky-700 hover:underline inline-flex items-center gap-0.5 ml-1"
+            >
+              View all &gt;
+            </Link>
           </div>
         </div>
+
         <div className="divide-y divide-slate-100">
-          {liveGroups.map((group) => (
-            <div key={`${group.client_id}-${group.location_id}`} className="p-5">
-              <div className="mb-3 flex items-center gap-3">
-                <span className="rounded-lg bg-sky-50 p-2 text-sky-600">
-                  <MdLocationOn className="text-base" />
-                </span>
-                <div>
-                  <b className="block text-sm text-slate-900">{group.client_company_name}</b>
-                  <span className="text-xs text-slate-500">{group.location_name}</span>
-                </div>
-                <span className="ml-auto text-xs text-slate-400">{group.roster_count_text}</span>
-                <Link href={`/live-operations?clientId=${encodeURIComponent(group.client_id)}&locationId=${encodeURIComponent(group.location_id)}`} className="text-xs font-semibold text-sky-600 hover:underline">
-                  {t.topbar.viewAll}
-                </Link>
-              </div>
-              <div className="space-y-1.5">
-                {group.workers.slice(0, 4).map((worker) => (
-                  <div key={worker.worker_id} className="flex items-center gap-3 rounded-lg border border-slate-100 bg-slate-50/50 p-3 hover:bg-slate-50 transition-colors">
-                    <img src={worker.profile_picture || "/avatar-placeholder.svg"} alt={worker.name} className="h-9 w-9 rounded-full object-cover" />
-                    <span className="flex-1 min-w-0">
-                      <b className="block text-sm truncate text-slate-900">{worker.name}</b>
-                      <small className="text-slate-500 truncate block">{worker.shift_time_range}{worker.delay_reason ? ` · ${worker.delay_reason}` : ""}</small>
-                    </span>
-                    <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${normalizeStatus(worker.status).includes("late") ? "bg-amber-100 text-amber-800" : normalizeStatus(worker.status).includes("show") || normalizeStatus(worker.status).includes("missing") ? "bg-red-100 text-red-800" : "bg-emerald-100 text-emerald-800"}`}>
-                      {worker.status_badge_label}
-                    </span>
-                    {worker.can_call && (
-                      <a href={`tel:${worker.phone_number}`} className="flex h-8 items-center gap-1 rounded-md bg-emerald-600 px-3 text-xs font-semibold text-white hover:bg-emerald-700 transition-colors shadow-2xs">
-                        <MdCall />Call
-                      </a>
-                    )}
-                    <Link href="/shift-monitoring">
-                      <MdArrowForward className="text-slate-400 hover:text-slate-700 text-base" />
-                    </Link>
+          {displayLiveRows.map((row) => (
+            <Link
+              key={row.id}
+              href="/shift-monitoring"
+              className="flex items-center justify-between gap-3 p-3.5 sm:px-5 hover:bg-slate-50/70 transition-colors"
+            >
+              {/* Left: Avatar + Name + Location */}
+              <div className="flex items-center gap-3 min-w-0 flex-1">
+                {row.profile_picture ? (
+                  <img
+                    src={row.profile_picture}
+                    alt={row.worker_name}
+                    className="h-10 w-10 rounded-full object-cover shrink-0 border border-slate-100"
+                  />
+                ) : (
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sky-500 text-xs font-bold text-white shadow-2xs">
+                    {row.initials}
                   </div>
-                ))}
+                )}
+                <div className="min-w-0">
+                  <b className="block text-sm font-semibold truncate text-slate-900">{row.worker_name}</b>
+                  <span className="flex items-center gap-1 text-xs text-slate-400 truncate">
+                    <MdLocationOn className="text-xs shrink-0" />
+                    {row.location_name}
+                  </span>
+                </div>
               </div>
-            </div>
+
+              {/* Right side: Check-In, Progress, Status, Chevron */}
+              <div className="flex items-center gap-4 sm:gap-6 shrink-0">
+                {/* Check-In */}
+                <div className="text-right min-w-[50px] hidden xs:block sm:block">
+                  <span className="block text-[10px] text-slate-400 font-medium">Check-In</span>
+                  <span className="block text-xs font-bold text-slate-800 mt-0.5">{row.check_in_time}</span>
+                </div>
+
+                {/* Progress */}
+                <div className="w-24 sm:w-28 text-right">
+                  <div className="flex items-center justify-end gap-1.5 text-xs font-bold text-slate-800">
+                    <span className="text-[10px] text-slate-400 font-normal">Progress</span>
+                    <span>{row.progress}%</span>
+                  </div>
+                  <div className="mt-1 h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all ${
+                        row.status === 'late'
+                          ? 'bg-amber-500'
+                          : row.status === 'missing'
+                          ? 'bg-red-400'
+                          : 'bg-emerald-500'
+                      }`}
+                      style={{ width: `${Math.min(100, Math.max(row.progress, 0))}%` }}
+                    />
+                  </div>
+                </div>
+
+                {/* Status Badge */}
+                <div className="min-w-[75px] flex items-center justify-start gap-1 text-xs font-semibold">
+                  {row.status === 'late' ? (
+                    <span className="flex items-center gap-1.5 text-amber-600">
+                      <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+                      Late
+                    </span>
+                  ) : row.status === 'missing' ? (
+                    <span className="flex items-center gap-1.5 text-red-500">
+                      <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
+                      Missing
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1.5 text-emerald-600">
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                      On Time
+                    </span>
+                  )}
+                </div>
+
+                {/* Arrow */}
+                <MdChevronRight className="text-slate-300 text-lg hover:text-slate-600" />
+              </div>
+            </Link>
           ))}
-          {liveGroups.length === 0 && <p className="py-16 text-center text-sm text-slate-500">{t.common.noDataFound}</p>}
+
+          {displayLiveRows.length === 0 && (
+            <p className="py-12 text-center text-xs text-slate-400">No shifts found</p>
+          )}
         </div>
       </section>
 

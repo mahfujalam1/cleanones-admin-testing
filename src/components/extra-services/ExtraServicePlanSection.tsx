@@ -42,9 +42,10 @@ export function ExtraServicePlanSection({ plan, loading, planId }: ExtraServiceP
   }
 
   if (!plan) {
+    const displayId = typeof planId === "object" && planId ? (planId as any).title || (planId as any)._id : planId;
     return (
       <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-center text-xs text-slate-400">
-        {planId ? `${t.plans.title} (${planId})` : t.plans.noPlansFound}
+        {displayId ? `${t.plans.title} (${displayId})` : t.plans.noPlansFound}
       </div>
     );
   }

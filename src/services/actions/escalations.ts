@@ -1,6 +1,24 @@
 import { authenticated } from "./auth";
+import type { IssueReport } from "@/redux/api/escalationsApi";
 
-export type EscalationApi = { escalation_id: string; shift_id: string; title: string; subtitle: string; description: string; severity: string; reporter: { worker_id: string; name: string; profile_picture: string }; assigned_to: { admin_id: string; name: string } | null; status: string; status_label?: string; photo_url: string; created_at: string; notes?: string };
-export async function getEscalations(input: { page?: number; limit?: number; status?: string; search?: string } = {}) { const q = new URLSearchParams({ page: String(input.page ?? 1), limit: String(input.limit ?? 100) }); if (input.status) q.set("status_filter", input.status); if (input.search) q.set("search", input.search); return authenticated<{ total_count: number; page: number; limit: number; has_more: boolean; open_count: number; in_progress_count: number; resolved_count: number; escalations: EscalationApi[] }>(`/manager/escalations?${q}`, { method: "GET" }); }
-export async function getEscalation(id: string) { return authenticated<EscalationApi>(`/manager/escalations/${encodeURIComponent(id)}`, { method: "GET" }); }
-export async function updateEscalationStatus(id: string, status: string, notes: string) { return authenticated<string>(`/manager/escalations/${encodeURIComponent(id)}/status`, { method: "PATCH", body: JSON.stringify({ status, notes }) }); }
+export type { IssueReport, EscalationApi } from "@/redux/api/escalationsApi";
+
+export async function getEscalations() {
+  return authenticated<IssueReport[]>("/issue-report/all-issue-reports", { method: "GET" });
+}
+
+export async function updateIssueReport(
+  id: string,
+  body: { status?: string; issueType?: string; severity?: string; location?: string; description?: string }
+) {
+  return authenticated<IssueReport>(`/issue-report/update-issue-report/${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function deleteIssueReport(id: string) {
+  return authenticated<IssueReport>(`/issue-report/delete-issue-report/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+  });
+}

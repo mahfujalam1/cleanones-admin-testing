@@ -2,6 +2,7 @@
 
 import React, { useEffect } from "react";
 import { MdOutlineClose } from "react-icons/md";
+import { useModalJump } from "@/hooks/useModalJump";
 
 type FormModalProps = {
   title: string;
@@ -25,6 +26,8 @@ export function FormModal({
   onSubmit,
   children,
 }: FormModalProps) {
+  const { triggerJump, jumpClassName } = useModalJump();
+
   useEffect(() => {
     const close = (event: KeyboardEvent) => {
       if (event.key === "Escape" && !saving) onClose();
@@ -36,7 +39,11 @@ export function FormModal({
   return (
     <div
       className="modal-backdrop fixed inset-0 z-[70] flex items-center justify-center p-4 animate-in fade-in duration-200"
-      onMouseDown={(event) => event.target === event.currentTarget && !saving && onClose()}
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget && !saving) {
+          triggerJump();
+        }
+      }}
     >
       <form
         role="dialog"
@@ -46,7 +53,7 @@ export function FormModal({
           event.preventDefault();
           onSubmit();
         }}
-        className="flex max-h-[90vh] w-full max-w-2xl flex-col rounded-lg bg-white shadow-2xl animate-in fade-in zoom-in-95 duration-200"
+        className={`flex max-h-[90vh] w-full max-w-2xl flex-col rounded-lg bg-white shadow-2xl animate-in fade-in zoom-in-95 duration-200 ${jumpClassName}`}
       >
         <div className="flex items-start justify-between gap-4 px-6 pb-2 pt-6">
           <div className="min-w-0">

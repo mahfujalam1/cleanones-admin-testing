@@ -14,9 +14,10 @@ import { CreatePlanModal } from '@/components/cleaningPlans/CreatePlanModal';
 import { WorkerAssignmentModal } from '@/components/cleaningPlans/WorkerAssignmentModal';
 import { deleteCleaningPlan } from '@/services/actions/cleaningPlans';
 import type { CleaningPlan } from '@/components/cleaningPlans/types';
-import { type RosterShift } from '@/services/actions/roster';
 import { ContentSkeleton } from '@/components/shared/SkeletonLoader';
-import { useGetDailyRosterQuery, useGetWeeklyRosterQuery, useGetMonthlyRosterQuery } from '@/redux/api/rosterApi';
+import { BackendPagination } from '@/components/shared/BackendPagination';
+import { useGetShiftRosterQuery, type ShiftRosterParams } from '@/redux/api/rosterApi';
+import { apiError } from '@/redux/api/apiError';
 
 import { usePathname } from 'next/navigation';
 import { getLocale } from '@/lib/locale';
@@ -29,6 +30,7 @@ export function RosterCalendar() {
 
   const [view, setView] = useState<'Day' | 'Week' | 'Month'>('Day');
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [page, setPage] = useState(1);
   const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
   const [editingPlanId, setEditingPlanId] = useState<string | null>(null);
   const [assigningPlan, setAssigningPlan] = useState<CleaningPlan | null>(null);
@@ -36,7 +38,7 @@ export function RosterCalendar() {
 
   // A shift generated from a cleaning plan opens that plan's own modals, so the roster offers
   // exactly what the Cleaning Plans page does — view, edit, assign, delete — minus creating one.
-  const selectedPlanId = selectedShift ? planIdFromShift(selectedShift.id) : '';
+  const selectedPlanId = selectedShift ? (selectedShift.planId || planIdFromShift(selectedShift.id)) : '';
   const selectedPlan: CleaningPlan | null = selectedShift && selectedPlanId
     ? {
       id: selectedPlanId,
@@ -59,89 +61,92 @@ export function RosterCalendar() {
     if (!result.success) return setError(result.error);
     setError('');
     setSelectedShift(null);
-    refetchCurrent();
+    void refetchCurrent();
   };
 
-  const dateStr = formatYYYYMMDD(currentDate);
+  const rosterParams: ShiftRosterParams = useMemo(() => {
+    const apiView = view === 'Day' ? 'day' : view === 'Week' ? 'week' : 'month';
+    if (apiView === 'month') {
+      return {
+        view: 'month',
+        year: currentDate.getFullYear(),
+        month: currentDate.getMonth() + 1,
+        page,
+        limit: 20,
+      };
+    }
+    return {
+      view: apiView,
+      day: formatYYYYMMDD(currentDate),
+      page,
+      limit: 20,
+    };
+  }, [view, currentDate, page]);
 
-  const startOfWeek = new Date(currentDate);
-  startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
-  const weekStartStr = formatYYYYMMDD(startOfWeek);
+  const {
+    data: rosterRes,
+    isLoading: loading,
+    error: rosterError,
+    refetch: refetchCurrent,
+  } = useGetShiftRosterQuery(rosterParams);
 
-  const monthParam = { month: currentDate.getMonth() + 1, year: currentDate.getFullYear() };
-
-  const { data: dailyRes, isLoading: dailyLoading, refetch: refetchDaily } = useGetDailyRosterQuery(dateStr, { skip: view !== 'Day' });
-  const { data: weeklyRes, isLoading: weeklyLoading, refetch: refetchWeekly } = useGetWeeklyRosterQuery(weekStartStr, { skip: view !== 'Week' });
-  const { data: monthlyRes, isLoading: monthlyLoading, refetch: refetchMonthly } = useGetMonthlyRosterQuery(monthParam, { skip: view !== 'Month' });
-
-  const loading = view === 'Day' ? dailyLoading : view === 'Week' ? weeklyLoading : monthlyLoading;
-
-  const refetchCurrent = () => {
-    if (view === 'Day') void refetchDaily();
-    else if (view === 'Week') void refetchWeekly();
-    else void refetchMonthly();
-  };
+  const displayError = error || (rosterError ? apiError(rosterError) : '');
 
   const { stats, teamMembers, shifts } = useMemo(() => {
-    if (view === 'Day' && dailyRes) {
-      return {
-        stats: {
-          totalShifts: dailyRes.banner?.total_scheduled_shifts ?? 0,
-          totalHours: dailyRes.banner?.total_scheduled_hours ?? 0,
-          totalMembers: dailyRes.total_team_members ?? 0,
-        },
-        teamMembers: (dailyRes.team_members || []).map((m) => m.worker_name),
-        shifts: flatten(
-          (dailyRes.team_members || []).flatMap((member) =>
-            (member.shifts || []).map((shift) => ({ member: member.worker_name, date: dateStr, shift }))
-          )
-        ),
-      };
+    if (!rosterRes) {
+      return { stats: { totalShifts: 0, totalHours: 0, totalMembers: 0 }, teamMembers: [], shifts: [] };
     }
-    if (view === 'Week' && weeklyRes) {
-      return {
-        stats: {
-          totalShifts: weeklyRes.banner?.total_scheduled_shifts ?? 0,
-          totalHours: weeklyRes.banner?.total_scheduled_hours ?? 0,
-          totalMembers: weeklyRes.total_team_members ?? 0,
-        },
-        teamMembers: (weeklyRes.team_members || []).map((m) => m.worker_name),
-        shifts: flatten(
-          (weeklyRes.team_members || []).flatMap((member) =>
-            (member.daily_schedule || []).flatMap((day) =>
-              (day.shifts || []).map((shift) => ({
-                member: member.worker_name,
-                date: normalizeDate(day.full_date || day.date_str || ''),
-                shift,
-              }))
-            )
-          )
-        ),
-      };
+
+    const workers = rosterRes.workers || [];
+    const members = workers.map((w) => w.name);
+
+    let calculatedHours = 0;
+    const allShifts: Shift[] = [];
+    const themes: ShiftTheme[] = ['blue', 'pink', 'orange', 'purple', 'green', 'teal'];
+    let themeIdx = 0;
+
+    let shiftCounter = 0;
+    for (const worker of workers) {
+      if (typeof worker.total_hours_in_range === 'number') {
+        calculatedHours += worker.total_hours_in_range;
+      }
+      if (!worker.shifts_by_date) continue;
+      for (const [rawDate, occurrences] of Object.entries(worker.shifts_by_date)) {
+        const cleanDate = rawDate.includes('T') ? rawDate.split('T')[0] : rawDate;
+        for (const occ of occurrences || []) {
+          shiftCounter += 1;
+          const shiftId =
+            occ.shift_id ||
+            `virtual-${occ.plan_id || worker.worker_id || 'w'}-${cleanDate}-${occ.start_time || '00'}-${shiftCounter}`;
+          allShifts.push({
+            id: shiftId,
+            workerName: worker.name,
+            location: occ.location_name || 'Location',
+            date: cleanDate,
+            startTime: formatTimeToHHMM(occ.start_time),
+            endTime: formatTimeToHHMM(occ.end_time),
+            theme: themes[themeIdx++ % themes.length],
+            planId: occ.plan_id,
+            status: occ.status,
+            isVirtual: occ.is_virtual,
+          });
+        }
+      }
     }
-    if (view === 'Month' && monthlyRes) {
-      return {
-        stats: {
-          totalShifts: monthlyRes.banner?.total_scheduled_shifts ?? 0,
-          totalHours: 0,
-          totalMembers: monthlyRes.banner?.total_team_members ?? (monthlyRes.team_members || []).length,
-        },
-        teamMembers: (monthlyRes.team_members || []).map((m) => m.worker_name),
-        shifts: flatten(
-          (monthlyRes.team_members || []).flatMap((member) =>
-            (member.daily_summaries || []).flatMap((day) =>
-              (day.shifts || []).map((shift) => ({
-                member: member.worker_name,
-                date: normalizeDate(day.full_date || ''),
-                shift,
-              }))
-            )
-          )
-        ),
-      };
-    }
-    return { stats: { totalShifts: 0, totalHours: 0, totalMembers: 0 }, teamMembers: [], shifts: [] };
-  }, [view, dailyRes, weeklyRes, monthlyRes, dateStr]);
+
+    const totalShiftsCount = rosterRes.meta?.total_shifts ?? allShifts.length;
+    const totalMembersCount = rosterRes.meta?.total ?? members.length;
+
+    return {
+      stats: {
+        totalShifts: totalShiftsCount,
+        totalHours: Math.round(calculatedHours * 10) / 10,
+        totalMembers: totalMembersCount,
+      },
+      teamMembers: members,
+      shifts: allShifts,
+    };
+  }, [rosterRes]);
 
   const handlePrev = () => {
     const newDate = new Date(currentDate);
@@ -149,6 +154,7 @@ export function RosterCalendar() {
     if (view === 'Month') newDate.setMonth(newDate.getMonth() - 1);
     if (view === 'Day') newDate.setDate(newDate.getDate() - 1);
     setCurrentDate(newDate);
+    setPage(1);
   };
 
   const handleNext = () => {
@@ -157,10 +163,12 @@ export function RosterCalendar() {
     if (view === 'Month') newDate.setMonth(newDate.getMonth() + 1);
     if (view === 'Day') newDate.setDate(newDate.getDate() + 1);
     setCurrentDate(newDate);
+    setPage(1);
   };
 
   const handleToday = () => {
     setCurrentDate(new Date());
+    setPage(1);
   };
 
 
@@ -210,7 +218,7 @@ export function RosterCalendar() {
         </div>
       </div>
 
-      <div className="flex flex-col gap-3 rounded border border-gray-200 bg-white p-3 lg:flex-row lg:items-center lg:justify-between">
+      <div className="sticky top-0 z-30 flex flex-col gap-3 rounded border border-gray-200 bg-white p-3 shadow-xs lg:flex-row lg:items-center lg:justify-between">
         <div className="flex w-full flex-wrap items-center gap-2 lg:w-auto">
           <button onClick={handleToday} className="h-8 rounded border border-gray-300 bg-white px-3 text-xs font-semibold text-slate-700 transition-colors hover:bg-gray-50">
             {t.dashboard.onTime}
@@ -231,10 +239,13 @@ export function RosterCalendar() {
             {(['Day', 'Week', 'Month'] as const).map(v => (
               <button
                 key={v}
-                onClick={() => setView(v)}
+                onClick={() => {
+                  setView(v);
+                  setPage(1);
+                }}
                 className={`h-7 rounded px-3 transition-colors ${view === v ? 'border border-gray-200 bg-white text-primary' : 'border border-transparent text-gray-500 hover:text-gray-800'}`}
               >
-                {v === 'Day' ? t.roster.dayView : v === 'Week' ? t.roster.weekView : t.roster.date}
+                {v === 'Day' ? t.roster.dayView : v === 'Week' ? t.roster.weekView : t.roster.monthView}
               </button>
             ))}
           </div>
@@ -242,12 +253,23 @@ export function RosterCalendar() {
       </div>
 
       <div className="min-h-[600px] flex-1">
-        {error && <p className="mb-3 rounded border border-red-200 bg-red-50 p-3 text-xs text-red-700">{error}</p>}
+        {displayError && <p className="mb-3 rounded border border-red-200 bg-red-50 p-3 text-xs text-red-700">{displayError}</p>}
         {loading ? <ContentSkeleton /> : <>
           {view === 'Day' && <DayView currentDate={currentDate} shifts={shifts} teamMembers={teamMembers} onShiftClick={setSelectedShift} />}
           {view === 'Week' && <WeekView currentDate={currentDate} shifts={shifts} teamMembers={teamMembers} onShiftClick={setSelectedShift} />}
           {view === 'Month' && <MonthView currentDate={currentDate} shifts={shifts} teamMembers={teamMembers} onShiftClick={setSelectedShift} />}
         </>}
+      </div>
+
+      <div className="mt-4">
+        <BackendPagination
+          page={page}
+          limit={20}
+          total={rosterRes?.meta?.total ?? 0}
+          onPageChange={setPage}
+          itemLabel="workers"
+          itemCount={teamMembers.length}
+        />
       </div>
 
       {/* Plan-backed shift: the Cleaning Plans modals, reused as-is */}
@@ -294,7 +316,27 @@ export function RosterCalendar() {
   );
 }
 
-function formatYYYYMMDD(d: Date): string { const year = d.getFullYear(); const month = String(d.getMonth() + 1).padStart(2, '0'); const day = String(d.getDate()).padStart(2, '0'); return `${year}-${month}-${day}`; }
-function to24Hour(value: string) { const match = value.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i); if (!match) return value; let hour = Number(match[1]); if (match[3]?.toUpperCase() === 'PM' && hour < 12) hour += 12; if (match[3]?.toUpperCase() === 'AM' && hour === 12) hour = 0; return `${String(hour).padStart(2, '0')}:${match[2]}`; }
-function normalizeDate(value: string) { const parsed = new Date(value); return Number.isNaN(parsed.getTime()) ? value : parsed.toISOString().split('T')[0]; }
-function flatten(items: Array<{ member: string; date: string; shift: RosterShift }>): Shift[] { const themes: ShiftTheme[] = ['blue', 'pink', 'orange', 'purple', 'green', 'teal']; return items.map((item, index) => ({ id: item.shift.shift_id, workerName: item.member, location: item.shift.location_name, date: item.date, startTime: to24Hour(item.shift.start_time), endTime: to24Hour(item.shift.end_time), theme: themes[index % themes.length] })); }
+function formatYYYYMMDD(d: Date): string {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function formatTimeToHHMM(value?: string): string {
+  if (!value) return "08:00";
+  if (value.includes("T")) {
+    const timePart = value.split("T")[1];
+    if (timePart && timePart.length >= 5) {
+      return timePart.slice(0, 5);
+    }
+  }
+  const match = value.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i);
+  if (match) {
+    let hour = Number(match[1]);
+    if (match[3]?.toUpperCase() === "PM" && hour < 12) hour += 12;
+    if (match[3]?.toUpperCase() === "AM" && hour === 12) hour = 0;
+    return `${String(hour).padStart(2, "0")}:${match[2]}`;
+  }
+  return value.slice(0, 5);
+}

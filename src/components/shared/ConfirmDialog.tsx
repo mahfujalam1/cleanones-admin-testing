@@ -2,6 +2,7 @@
 
 import React from "react";
 import { MdOutlineWarningAmber, MdClose } from "react-icons/md";
+import { useModalJump } from "@/hooks/useModalJump";
 
 interface ConfirmDialogProps {
   title: string;
@@ -24,16 +25,20 @@ export function ConfirmDialog({
   onConfirm,
   onClose,
 }: ConfirmDialogProps) {
+  const { triggerJump, jumpClassName } = useModalJump();
+
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/45 p-4 animate-in fade-in duration-150"
-      onClick={() => {
-        if (!loading) onClose();
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/45 p-4 animate-in fade-in duration-150 backdrop-blur-xs"
+      onClick={(e) => {
+        if (e.target === e.currentTarget && !loading) {
+          triggerJump();
+        }
       }}
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md rounded-lg border border-slate-100 bg-white p-6 shadow-2xl animate-in zoom-in-95 duration-150"
+        className={`w-full max-w-md rounded-lg border border-slate-100 bg-white p-6 shadow-2xl animate-in zoom-in-95 duration-150 ${jumpClassName}`}
       >
         {/* Header */}
         <div className="flex items-start justify-between gap-3">

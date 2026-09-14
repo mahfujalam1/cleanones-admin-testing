@@ -1,37 +1,68 @@
 "use client";
-import { useState } from "react";
+
+import React, { useEffect, useMemo, useState } from "react";
 import { MdAccessTime, MdChevronRight, MdClose, MdLocationOn, MdSearch } from "react-icons/md";
-import { TbActivity, TbAlertTriangle, TbCircleCheck, TbUserOff } from "react-icons/tb";
+import { TbActivity, TbClock, TbCalendarStats, TbCircleCheck } from "react-icons/tb";
 import { type LiveWorker } from "@/services/actions/shiftMonitoring";
 import { useGetLiveStatusQuery } from "@/redux/api/shiftMonitoringApi";
+import {
+  useGetShiftsQuery,
+  useGetTodayLiveShiftMetaQuery,
+  useGetTodayLiveShiftsQuery,
+} from "@/redux/api/shiftsApi";
 import { EmployeeDetailsModal } from "@/components/shift-monitoring/EmployeeDetailsModal";
 import type { WorkerInfo } from "@/components/shift-monitoring/types";
+import { BackendPagination } from "@/components/shared/BackendPagination";
 import { usePathname } from "next/navigation";
 import { getLocale } from "@/lib/locale";
 import { getDashboardTranslation } from "@/lib/translations";
 
-const mapWorker = (item: LiveWorker): WorkerInfo => ({
-  id: item.worker_id,
-  initials: "",
-  name: item.worker_name,
-  role: item.worker_type.toLowerCase() === "freelancer" ? "Freelancer" : "Employee",
-  shiftId: item.shift_id,
-  location: item.location_name,
-  checkIn: item.checkin_time,
-  status: item.status.toLowerCase() === "late" ? "Late" : item.status.toLowerCase() === "missing" ? "Missing" : "On Time",
-  color: "bg-sky-500",
-  statusColor: "text-sky-500",
-  hoursWorked: item.hours_worked_numeric,
-  totalShifts: 0,
-  lateDays: 0,
-  avgDuration: "0h",
-});
+const formatShiftTime = (dateTimeStr?: string) => {
+  if (!dateTimeStr) return "--:--";
+  try {
+    const d = new Date(dateTimeStr);
+    if (isNaN(d.getTime())) return dateTimeStr;
+    return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  } catch {
+    return dateTimeStr;
+  }
+};
 
-const statusTone = (status: string) => {
-  const value = status.toLowerCase();
-  if (value.includes("late")) return { chip: "bg-amber-50 text-amber-700 ring-amber-200", dot: "bg-amber-500" };
-  if (value.includes("missing")) return { chip: "bg-red-50 text-red-700 ring-red-200", dot: "bg-red-500" };
-  return { chip: "bg-emerald-50 text-emerald-700 ring-emerald-200", dot: "bg-emerald-500" };
+const getStatusTone = (st: string) => {
+  const s = (st || "").toLowerCase();
+  if (s.includes("progress") || s === "in_progress" || s === "inprogress" || s.includes("late")) {
+    return { chip: "bg-amber-50 text-amber-700 ring-amber-200", dot: "bg-amber-500", label: "Inprogress" };
+  }
+  if (s.includes("upcoming") || s === "pending" || s === "scheduled" || s === "draft") {
+    return { chip: "bg-blue-50 text-blue-700 ring-blue-200", dot: "bg-blue-500", label: "Upcoming" };
+  }
+  if (s.includes("complete") || s === "completed") {
+    return { chip: "bg-emerald-50 text-emerald-700 ring-emerald-200", dot: "bg-emerald-500", label: "Complete" };
+  }
+  if (s.includes("cancel") || s.includes("missing")) {
+    return { chip: "bg-red-50 text-red-700 ring-red-200", dot: "bg-red-500", label: "Cancelled" };
+  }
+  return { chip: "bg-slate-100 text-slate-700 ring-slate-200", dot: "bg-slate-500", label: st || "Active" };
+};
+
+type UnifiedLiveShift = {
+  id: string;
+  shift_id?: string;
+  worker_name?: string;
+  worker_type?: string;
+  worker_id?: string;
+  profile_picture?: string;
+  client_name?: string;
+  location_name?: string;
+  plan_title?: string;
+  start_time: string;
+  duration_text?: string;
+  status: string;
+  progress: number;
+  total_room?: number;
+  completed_room?: number;
+  total_task?: number;
+  rawItem?: any;
 };
 
 export default function LiveStatusPage() {
@@ -40,172 +71,460 @@ export default function LiveStatusPage() {
   const t = getDashboardTranslation(locale);
 
   const [selected, setSelected] = useState<WorkerInfo | null>(null);
-  const [status, setStatus] = useState("");
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"" | "inprogress" | "upcoming" | "complete">("");
+  const [page, setPage] = useState(1);
+  const LIMIT = 10;
 
-  const { data: statusRes, isFetching: loading, refetch } = useGetLiveStatusQuery({
-    status: status || undefined,
-    search: search.trim() || undefined,
+  useEffect(() => {
+    setPage(1);
+  }, [search, statusFilter]);
+
+  const filterTabs = [
+    { value: "", label: "All" },
+    { value: "inprogress", label: "Inprogress" },
+    { value: "upcoming", label: "Upcoming" },
+    { value: "complete", label: "Complete" },
+  ];
+
+  // 1. Fetch Today's Live Shift Metadata
+  const { data: todayMeta, isFetching: loadingMeta, refetch: refetchMeta } = useGetTodayLiveShiftMetaQuery();
+
+  // 2. Fetch Today's Live Shifts List
+  const statusParam =
+    statusFilter === "inprogress"
+      ? "in_progress"
+      : statusFilter === "upcoming"
+      ? "upcoming"
+      : statusFilter === "complete"
+      ? "completed"
+      : undefined;
+
+  const {
+    data: todayShiftsRes,
+    isFetching: loadingTodayShifts,
+    refetch: refetchTodayShifts,
+  } = useGetTodayLiveShiftsQuery({
+    status: statusParam,
+    limit: 100,
   });
 
-  const items = statusRes?.items ?? [];
-  const counts = {
-    total: statusRes?.total_shifts_count ?? 0,
-    ontime: statusRes?.ontime_count ?? 0,
-    late: statusRes?.late_count ?? 0,
-    missing: statusRes?.missing_count ?? 0,
+  // 3. Existing live status fallback query
+  const {
+    data: statusRes,
+    isFetching: loadingStatus,
+    refetch: refetchStatus,
+  } = useGetLiveStatusQuery({
+    search: search.trim() || undefined,
+  });
+  const { data: shiftsRes } = useGetShiftsQuery({ limit: 200 });
+
+  const rawLiveItems = statusRes?.items ?? [];
+  const rawAllShifts = shiftsRes?.shifts ?? [];
+  const todayShifts = todayShiftsRes?.result ?? [];
+
+  // Refetch all endpoints
+  const refetchAll = () => {
+    void refetchMeta();
+    void refetchTodayShifts();
+    void refetchStatus();
   };
 
-  const statusOptions = [
-    { value: "", label: t.shiftMonitoring.allStatuses },
-    { value: "ontime", label: t.shiftMonitoring.onTime },
-    { value: "late", label: t.shiftMonitoring.late },
-    { value: "missing", label: t.shiftMonitoring.missing },
-  ];
+  // KPI Counters: prioritize /shift/today-live-shift-meta
+  const counts = useMemo(() => {
+    if (todayMeta) {
+      return {
+        total: todayMeta.total_shift ?? 0,
+        inprogress: todayMeta.in_progress ?? 0,
+        upcoming: todayMeta.pending ?? 0,
+        complete: todayMeta.completed_shift ?? 0,
+      };
+    }
+
+    const res = statusRes as any;
+    const total =
+      res?.total_shifts_count ??
+      shiftsRes?.total_count ??
+      (rawLiveItems.length > 0 ? rawLiveItems.length : rawAllShifts.length);
+
+    const inprogress =
+      res?.inprogress_count ??
+      res?.in_progress_count ??
+      (rawAllShifts.length > 0
+        ? rawAllShifts.filter((s) => {
+            const st = (s.status || "").toLowerCase();
+            return st === "in_progress" || st === "inprogress" || st === "active";
+          }).length
+        : rawLiveItems.filter((i) => {
+            const st = (i.status || "").toLowerCase();
+            return (
+              st.includes("progress") ||
+              st.includes("ontime") ||
+              st.includes("late") ||
+              (i.progress_percentage > 0 && i.progress_percentage < 100)
+            );
+          }).length);
+
+    const upcoming =
+      res?.upcoming_count ??
+      (rawAllShifts.length > 0
+        ? rawAllShifts.filter((s) => {
+            const st = (s.status || "").toLowerCase();
+            return st === "upcoming" || st === "scheduled" || st === "pending" || st === "draft";
+          }).length
+        : rawLiveItems.filter((i) => {
+            const st = (i.status || "").toLowerCase();
+            return st.includes("upcoming") || st.includes("scheduled") || (!i.checkin_time && !i.checkout_time);
+          }).length);
+
+    const complete =
+      res?.completed_count ??
+      res?.complete_count ??
+      (rawAllShifts.length > 0
+        ? rawAllShifts.filter((s) => {
+            const st = (s.status || "").toLowerCase();
+            return st === "completed" || st === "complete";
+          }).length
+        : rawLiveItems.filter((i) => {
+            const st = (i.status || "").toLowerCase();
+            return st.includes("complete") || Boolean(i.checkout_time) || i.progress_percentage === 100;
+          }).length);
+
+    return { total, inprogress, upcoming, complete };
+  }, [todayMeta, statusRes, shiftsRes, rawLiveItems, rawAllShifts]);
+
+  // Unified items for display
+  const unifiedItems: UnifiedLiveShift[] = useMemo(() => {
+    // If today's live shifts API returned data, use it
+    if (todayShifts.length > 0) {
+      return todayShifts.map((s) => ({
+        id: s._id,
+        shift_id: s._id,
+        client_name: s.client?.name,
+        location_name: s.location?.name,
+        plan_title: typeof s.cleaning_plan === "object" ? s.cleaning_plan?.title : undefined,
+        start_time: formatShiftTime(s.date_time || s.date),
+        duration_text: s.duration_minutes ? `${s.duration_minutes}m` : undefined,
+        status: s.status,
+        progress: Math.min(100, Math.max(0, s.overall_progress_percent ?? 0)),
+        total_room: s.total_room,
+        completed_room: s.completed_room,
+        total_task: s.total_task,
+        rawItem: s,
+      }));
+    }
+
+    // Fallback to live-status items if today-live-shifts returned 0
+    return rawLiveItems.map((i) => ({
+      id: `${i.worker_id}-${i.shift_id}`,
+      shift_id: i.shift_id,
+      worker_name: i.worker_name,
+      worker_type: i.worker_type,
+      worker_id: i.worker_id,
+      profile_picture: i.profile_picture || i.profile_photo,
+      client_name: i.client_name,
+      location_name: i.location_name,
+      plan_title: i.shift_name,
+      start_time: i.shift_start_time ? `${i.shift_start_time}${i.shift_end_time ? `–${i.shift_end_time}` : ""}` : "--:--",
+      duration_text: i.hours_worked_display,
+      status: i.status,
+      progress: Math.min(100, Math.max(0, i.progress_percentage ?? 0)),
+      rawItem: i,
+    }));
+  }, [todayShifts, rawLiveItems]);
+
+  // Client-side search and status filter
+  const filteredItems = useMemo(() => {
+    return unifiedItems.filter((item) => {
+      if (statusFilter === "inprogress") {
+        const s = (item.status || "").toLowerCase();
+        const matches =
+          s.includes("progress") ||
+          s.includes("ontime") ||
+          s.includes("on_time") ||
+          s.includes("late") ||
+          (item.progress > 0 && item.progress < 100);
+        if (!matches) return false;
+      } else if (statusFilter === "upcoming") {
+        const s = (item.status || "").toLowerCase();
+        const matches =
+          s.includes("upcoming") ||
+          s.includes("scheduled") ||
+          s.includes("pending") ||
+          s === "draft";
+        if (!matches) return false;
+      } else if (statusFilter === "complete") {
+        const s = (item.status || "").toLowerCase();
+        const matches = s.includes("complete") || item.progress === 100;
+        if (!matches) return false;
+      }
+
+      if (search.trim()) {
+        const q = search.trim().toLowerCase();
+        const matchesSearch =
+          item.worker_name?.toLowerCase().includes(q) ||
+          item.location_name?.toLowerCase().includes(q) ||
+          item.plan_title?.toLowerCase().includes(q) ||
+          item.client_name?.toLowerCase().includes(q);
+        if (!matchesSearch) return false;
+      }
+
+      return true;
+    });
+  }, [unifiedItems, statusFilter, search]);
+
+  const pagedItems = useMemo(() => {
+    return filteredItems.slice((page - 1) * LIMIT, page * LIMIT);
+  }, [filteredItems, page]);
+
+  const loading = loadingTodayShifts && loadingStatus;
 
   return (
     <div className="space-y-4 pb-10">
-      {/* Header */}
+      {/* Header with Today's Live Shifts mention */}
       <div className="flex min-w-0 items-center gap-2.5">
         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-sky-100 bg-sky-50 text-sky-600">
           <TbActivity className="h-4.5 w-4.5" />
         </span>
         <div className="min-w-0">
-          <h1 className="truncate text-lg font-bold leading-tight text-slate-900">{t.shiftMonitoring.title}</h1>
-          <p className="truncate text-xs text-slate-500">Live check-in status for every shift running right now.</p>
+          <div className="flex items-center gap-2">
+            <h1 className="truncate text-lg font-bold leading-tight text-slate-900">Today's Live Shifts</h1>
+            <span className="rounded-full bg-sky-50 px-2.5 py-0.5 text-[10px] font-bold text-sky-700 border border-sky-200/60 uppercase tracking-wide">
+              Live Today
+            </span>
+          </div>
+          <p className="truncate text-xs text-slate-500">Live check-in status for every shift running today.</p>
         </div>
       </div>
 
-      {/* Stats */}
+      {/* Stats Cards from /shift/today-live-shift-meta */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatCard icon={<TbActivity />} value={counts.total} label={t.shiftMonitoring.shiftsCount} tone="bg-slate-100 text-slate-600" />
-        <StatCard icon={<TbCircleCheck />} value={counts.ontime} label={t.shiftMonitoring.onTimeCount} tone="bg-emerald-50 text-emerald-600" accent="text-emerald-700" />
-        <StatCard icon={<TbAlertTriangle />} value={counts.late} label={t.shiftMonitoring.lateCount} tone="bg-amber-50 text-amber-600" accent="text-amber-700" />
-        <StatCard icon={<TbUserOff />} value={counts.missing} label={t.shiftMonitoring.missingCount} tone="bg-red-50 text-red-600" accent="text-red-700" />
+        <StatCard
+          icon={<TbActivity />}
+          value={counts.total}
+          label="Total Shift"
+          tone="bg-slate-100 text-slate-700"
+        />
+        <StatCard
+          icon={<TbClock />}
+          value={counts.inprogress}
+          label="Inprogress"
+          tone="bg-amber-50 text-amber-600"
+          accent="text-amber-700"
+        />
+        <StatCard
+          icon={<TbCalendarStats />}
+          value={counts.upcoming}
+          label="Upcoming"
+          tone="bg-blue-50 text-blue-600"
+          accent="text-blue-700"
+        />
+        <StatCard
+          icon={<TbCircleCheck />}
+          value={counts.complete}
+          label="Complete"
+          tone="bg-emerald-50 text-emerald-600"
+          accent="text-emerald-700"
+        />
       </div>
 
       {/* Toolbar */}
-      <div className="flex flex-col gap-2.5 rounded-xl border border-slate-200 bg-white p-2.5 shadow-2xs sm:flex-row sm:items-center">
+      <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center">
         <div className="relative min-w-0 flex-1">
-          <MdSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-lg text-slate-400" />
+          <MdSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-lg text-slate-400" />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder={t.shiftMonitoring.searchPlaceholder}
-            className="w-full rounded-lg bg-slate-50 py-2.5 pl-10 pr-9 text-sm text-slate-900 placeholder:text-slate-400 transition-all focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20"
+            placeholder={t.shiftMonitoring.searchPlaceholder || "Search worker or location..."}
+            className="h-11 w-full rounded-xl border border-slate-200/80 bg-white pl-10 pr-9 text-sm text-slate-800 placeholder:text-slate-400 shadow-2xs outline-none transition-all focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
           />
           {search && (
             <button
               type="button"
               aria-label="Clear search"
               onClick={() => setSearch("")}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 cursor-pointer rounded p-0.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+              className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer rounded p-0.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
             >
               <MdClose />
             </button>
           )}
         </div>
 
-        <div className="flex max-w-full shrink-0 overflow-x-auto rounded-lg bg-slate-100 p-1 text-xs font-medium">
-          {statusOptions.map((option) => (
-            <button
-              key={option.value || "all"}
-              onClick={() => setStatus(option.value)}
-              className={`shrink-0 cursor-pointer whitespace-nowrap rounded-md px-3.5 py-1.5 transition-all ${status === option.value ? "bg-white font-semibold text-primary shadow-2xs" : "text-slate-600 hover:text-slate-900"
+        <div className="flex max-w-full shrink-0 overflow-x-auto rounded-xl border border-slate-200/80 bg-slate-100/90 p-1 text-xs font-semibold">
+          {filterTabs.map((tab) => {
+            const active = statusFilter === tab.value;
+            return (
+              <button
+                key={tab.value || "all"}
+                type="button"
+                onClick={() => setStatusFilter(tab.value as any)}
+                className={`shrink-0 cursor-pointer whitespace-nowrap rounded-lg px-3.5 py-2 transition-all ${
+                  active
+                    ? "bg-white text-sky-600 shadow-xs font-bold"
+                    : "text-slate-600 hover:text-slate-900"
                 }`}
-            >
-              {option.label}
-            </button>
-          ))}
+              >
+                {tab.label}
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      {/* List */}
+      {/* Shifts List */}
       {loading ? (
         <div className="space-y-3">
           {[1, 2, 3, 4, 5].map((row) => (
             <div key={row} className="h-20 animate-pulse rounded-xl border border-slate-200 bg-slate-100/70" />
           ))}
         </div>
-      ) : items.length === 0 ? (
+      ) : filteredItems.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 bg-white px-4 py-16 text-center">
           <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-sky-50 text-sky-600">
             <TbActivity className="text-3xl" />
           </div>
           <h3 className="text-base font-bold text-slate-900">{t.shiftMonitoring.noLiveShifts}</h3>
           <p className="mt-1 max-w-sm text-xs leading-relaxed text-slate-500">
-            {search || status ? t.common.adjustFilters : "Nothing is running at the moment."}
+            {search || statusFilter ? t.common.adjustFilters : "Nothing is running at the moment."}
           </p>
         </div>
       ) : (
         <div className="space-y-3">
-          {items.map((item) => {
-            const worker = mapWorker(item);
-            const tone = statusTone(worker.status);
-            const progress = Math.min(100, Math.max(0, item.progress_percentage ?? 0));
+          {pagedItems.map((item) => {
+            const tone = getStatusTone(item.status);
+
             return (
-              <button
-                key={`${item.worker_id}-${item.shift_id}`}
-                onClick={() => setSelected(worker)}
-                className="group w-full cursor-pointer rounded-xl border border-slate-200 bg-white p-4 text-left transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+              <div
+                key={item.id}
+                onClick={() => {
+                  if (item.worker_id) {
+                    setSelected({
+                      id: item.worker_id,
+                      initials: "",
+                      name: item.worker_name || item.client_name || "Worker",
+                      role: item.worker_type?.toLowerCase() === "freelancer" ? "Freelancer" : "Employee",
+                      shiftId: item.shift_id || "",
+                      location: item.location_name || "",
+                      checkIn: item.start_time || "",
+                      status: item.status?.toLowerCase() === "late" ? "Late" : "On Time",
+                      color: "bg-sky-500",
+                      statusColor: "text-sky-500",
+                      hoursWorked: 0,
+                      totalShifts: 0,
+                      lateDays: 0,
+                      avgDuration: "0h",
+                    });
+                  }
+                }}
+                className={`group w-full rounded-xl border border-slate-200 bg-white p-4 text-left transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-sm ${
+                  item.worker_id ? "cursor-pointer" : ""
+                }`}
               >
                 <div className="flex items-start gap-3">
-                  <img
-                    src={item.profile_picture || item.profile_photo || "/avatar-placeholder.svg"}
-                    alt={item.worker_name}
-                    className="h-10 w-10 shrink-0 rounded-full border border-slate-200 object-cover"
-                  />
+                  {item.profile_picture ? (
+                    <img
+                      src={item.profile_picture}
+                      alt={item.worker_name || "Worker"}
+                      className="h-10 w-10 shrink-0 rounded-full border border-slate-200 object-cover"
+                    />
+                  ) : (
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sky-50 text-sky-600 font-bold border border-sky-100">
+                      <TbActivity className="text-lg" />
+                    </span>
+                  )}
 
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <b className="truncate text-sm font-bold text-slate-900 transition-colors group-hover:text-primary">{item.worker_name}</b>
-                      <span className={`inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-semibold capitalize ring-1 ring-inset ${tone.chip}`}>
+                      <b className="truncate text-sm font-bold text-slate-900 transition-colors group-hover:text-primary">
+                        {item.worker_name || item.client_name || item.location_name || "Live Shift"}
+                      </b>
+                      <span
+                        className={`inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-semibold capitalize ring-1 ring-inset ${tone.chip}`}
+                      >
                         <span className={`h-1.5 w-1.5 rounded-full ${tone.dot}`} />
-                        {worker.status}
+                        {tone.label}
                       </span>
-                      <span className="shrink-0 rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-semibold capitalize text-slate-600">
-                        {item.worker_type}
-                      </span>
+                      {item.worker_type && (
+                        <span className="shrink-0 rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-semibold capitalize text-slate-600">
+                          {item.worker_type}
+                        </span>
+                      )}
+                      {item.plan_title && (
+                        <span className="shrink-0 rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
+                          {item.plan_title}
+                        </span>
+                      )}
                     </div>
 
                     <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500">
-                      <span className="flex min-w-0 items-center gap-1">
-                        <MdLocationOn className="shrink-0 text-sm text-slate-400" />
-                        <span className="truncate">{item.location_name}</span>
-                      </span>
+                      {item.client_name && (
+                        <span className="font-medium text-slate-700">{item.client_name}</span>
+                      )}
+                      {item.location_name && (
+                        <span className="flex min-w-0 items-center gap-1">
+                          <MdLocationOn className="shrink-0 text-sm text-slate-400" />
+                          <span className="truncate">{item.location_name}</span>
+                        </span>
+                      )}
                       <span className="flex items-center gap-1">
                         <MdAccessTime className="shrink-0 text-sm text-slate-400" />
-                        {item.shift_start_time}–{item.shift_end_time}
+                        <span>{item.start_time}</span>
+                        {item.duration_text ? <span className="text-slate-400">({item.duration_text})</span> : null}
                       </span>
+                      {item.total_room !== undefined && item.total_room > 0 && (
+                        <span className="text-slate-500">
+                          🚪 {item.completed_room ?? 0}/{item.total_room} rooms
+                        </span>
+                      )}
+                      {item.total_task !== undefined && item.total_task > 0 && (
+                        <span className="text-slate-500">
+                          📋 {item.total_task} tasks
+                        </span>
+                      )}
                     </div>
                   </div>
 
                   <div className="hidden shrink-0 text-right sm:block">
-                    <p className="text-sm font-bold text-slate-900">{item.hours_worked_display}</p>
-                    <p className="text-[10px] uppercase tracking-wide text-slate-400">worked</p>
+                    <p className="text-sm font-bold text-slate-900">{item.progress}%</p>
+                    <p className="text-[10px] uppercase tracking-wide text-slate-400">progress</p>
                   </div>
 
-                  <MdChevronRight className="mt-2 shrink-0 text-lg text-slate-300 transition-all group-hover:translate-x-0.5 group-hover:text-primary" />
+                  {item.worker_id && (
+                    <MdChevronRight className="mt-2 shrink-0 text-lg text-slate-300 transition-all group-hover:translate-x-0.5 group-hover:text-primary" />
+                  )}
                 </div>
 
-                {/* Progress */}
+                {/* Progress bar */}
                 <div className="mt-3 flex items-center gap-2">
                   <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-100">
-                    <div className="h-full rounded-full bg-primary transition-[width]" style={{ width: `${progress}%` }} />
+                    <div
+                      className="h-full rounded-full bg-primary transition-[width]"
+                      style={{ width: `${item.progress}%` }}
+                    />
                   </div>
-                  <span className="shrink-0 text-[11px] font-semibold tabular-nums text-slate-500">{progress}%</span>
+                  <span className="shrink-0 text-[11px] font-semibold tabular-nums text-slate-500">
+                    {item.progress}%
+                  </span>
                 </div>
-              </button>
+              </div>
             );
           })}
         </div>
       )}
 
+      <BackendPagination
+        page={page}
+        limit={LIMIT}
+        total={filteredItems.length}
+        onPageChange={setPage}
+        itemLabel="shifts"
+      />
+
       {selected && (
         <EmployeeDetailsModal
           worker={selected}
           onClose={() => setSelected(null)}
-          onChanged={() => { void refetch(); }}
+          onChanged={refetchAll}
         />
       )}
     </div>

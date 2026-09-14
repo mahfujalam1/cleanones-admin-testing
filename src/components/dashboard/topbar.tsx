@@ -22,7 +22,13 @@ import {
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import { setSignOutModalOpen, toggleMobileSidebar } from "@/redux/slices/ui.slice";
 import { getFaqs, type Faq } from "@/services/actions/manager";
-import { getNotifications, markNotificationRead, type NotificationApi } from "@/services/actions/notifications";
+import { useModalJump } from "@/hooks/useModalJump";
+import {
+  useGetNotificationsQuery,
+  useSeeNotificationsMutation,
+  type NotificationItem,
+} from "@/redux/api/endpoints/notifications.api";
+import { resolveNotificationRoute } from "@/lib/notification-routes";
 import { DetailSkeleton } from "@/components/shared/SkeletonLoader";
 
 const prefetchRoutes = process.env.NODE_ENV === 'production';
@@ -58,9 +64,19 @@ export default function Topbar() {
     window.addEventListener("cleanones_locale_changed", handleLocaleChange);
     return () => window.removeEventListener("cleanones_locale_changed", handleLocaleChange);
   }, [pathname, router]);
-  const [notificationPreview, setNotificationPreview] = useState<NotificationApi[]>([]);
-  const [notificationsLoading, setNotificationsLoading] = useState(true);
-  const [unreadCount, setUnreadCount] = useState(0);
+  const {
+    data: notifData,
+    isLoading: notificationsLoading,
+    refetch: refetchNotifs,
+  } = useGetNotificationsQuery({
+    page: 1,
+    limit: 5,
+    sort: "-createdAt",
+  });
+  const [seeNotificationsMutation] = useSeeNotificationsMutation();
+
+  const notificationPreview: NotificationItem[] = notifData?.result ?? [];
+  const unreadCount = notifData?.meta?.unreadCount ?? notificationPreview.filter((item) => !item.isRead).length;
   const languageRef = useRef<HTMLDivElement>(null);
   const notificationsRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
@@ -199,14 +215,7 @@ export default function Topbar() {
                 const nextOpen = !notificationsOpen;
                 setNotificationsOpen(nextOpen);
                 if (nextOpen) {
-                  setNotificationsLoading(true);
-                  void getNotifications(1, 5).then((result) => {
-                    setNotificationsLoading(false);
-                    if (result.success) {
-                      setNotificationPreview(result.data.notifications);
-                      setUnreadCount(result.data.unread_count);
-                    }
-                  });
+                  void refetchNotifs();
                 }
                 setLanguageOpen(false);
                 setProfileOpen(false);
@@ -217,7 +226,26 @@ export default function Topbar() {
               {unreadCount > 0 && <span className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-primary" />}
             </button>
 
-            {notificationsOpen && <NotificationsPopover locale={currentLocale} items={notificationPreview} loading={notificationsLoading} onRead={async (item) => { if (item.is_read) return; const result = await markNotificationRead(item.id); if (result.success) { setNotificationPreview((current) => current.map((entry) => entry.id === item.id ? { ...entry, is_read: true } : entry)); setUnreadCount((count) => Math.max(0, count - 1)); } }} />}
+            {notificationsOpen && (
+              <NotificationsPopover
+                locale={currentLocale}
+                items={notificationPreview}
+                loading={notificationsLoading}
+                onItemClick={(item) => {
+                  setNotificationsOpen(false);
+                  const target = resolveNotificationRoute(item);
+                  if (target) {
+                    router.push(localizePath(target, currentLocale));
+                  }
+                }}
+                onMarkAllRead={async () => {
+                  try {
+                    await seeNotificationsMutation().unwrap();
+                    void refetchNotifs();
+                  } catch {}
+                }}
+              />
+            )}
           </div>
 
           <div ref={profileRef} className="relative">
@@ -261,11 +289,60 @@ export default function Topbar() {
   );
 }
 
-function NotificationsPopover({ locale, items, loading, onRead }: { locale: string; items: NotificationApi[]; loading: boolean; onRead: (item: NotificationApi) => Promise<void> }) {
+function formatNotificationTime(dateStr?: string): string {
+  if (!dateStr) return "";
+  try {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffSec = Math.floor(diffMs / 1000);
+    const diffMin = Math.floor(diffSec / 60);
+    const diffHour = Math.floor(diffMin / 60);
+    const diffDay = Math.floor(diffHour / 24);
+
+    if (diffMin < 1) return "Just now";
+    if (diffMin < 60) return `${diffMin}m ago`;
+    if (diffHour < 24) return `${diffHour}h ago`;
+    if (diffDay < 7) return `${diffDay}d ago`;
+
+    return date.toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+      year: date.getFullYear() !== now.getFullYear() ? "numeric" : undefined,
+    });
+  } catch {
+    return "";
+  }
+}
+
+function NotificationsPopover({
+  locale,
+  items,
+  loading,
+  onItemClick,
+  onMarkAllRead,
+}: {
+  locale: string;
+  items: NotificationItem[];
+  loading: boolean;
+  onItemClick: (item: NotificationItem) => void;
+  onMarkAllRead: () => Promise<void>;
+}) {
   return (
-    <div className="shadow absolute -right-12 top-11 w-[300px] max-w-[calc(100vw-2rem)] overflow-hidden rounded border border-gray-200 bg-white sm:right-0 sm:w-[360px]">
-      <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
-        <h2 className="text-sm font-bold text-slate-950">Notifications</h2>
+    <div className="shadow-lg absolute -right-12 top-11 w-[320px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border border-gray-200 bg-white sm:right-0 sm:w-[380px] z-50">
+      <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3 bg-gray-50/70">
+        <div className="flex items-center gap-2">
+          <h2 className="text-sm font-bold text-slate-900">Notifications</h2>
+          {items.some((it) => !it.isRead) && (
+            <button
+              type="button"
+              onClick={() => void onMarkAllRead()}
+              className="text-[11px] font-medium text-sky-600 hover:text-sky-700 hover:underline"
+            >
+              Mark all as read
+            </button>
+          )}
+        </div>
         <Link
           prefetch={prefetchRoutes}
           href={localizePath("/notifications", locale)}
@@ -274,23 +351,41 @@ function NotificationsPopover({ locale, items, loading, onRead }: { locale: stri
           View all
         </Link>
       </div>
-      <div>
-        {loading ? <div className="p-3"><DetailSkeleton blocks={3} /></div> : items.map((item) => (
+      <div className="max-h-[380px] overflow-y-auto divide-y divide-gray-100">
+        {loading ? (
+          <div className="p-3">
+            <DetailSkeleton blocks={3} />
+          </div>
+        ) : items.map((item) => (
           <button
             type="button"
-            onClick={() => void onRead(item)}
-            key={item.id}
-            className="flex gap-3 border-b border-gray-100 px-4 py-3 last:border-b-0"
+            onClick={() => onItemClick(item)}
+            key={item._id}
+            className={`w-full flex items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-slate-50 ${
+              !item.isRead ? "bg-sky-50/40" : ""
+            }`}
           >
-            <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${item.is_read ? "bg-slate-300" : "bg-sky-500"}`} />
-            <div className="text-left">
-              <p className="text-sm font-semibold leading-snug text-slate-800">{item.title}</p>
-              <p className="mt-0.5 line-clamp-2 text-xs text-slate-500">{item.message}</p>
-              <p className="mt-1 text-xs text-slate-400">{item.time_ago}</p>
+            <span
+              className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${
+                item.isRead ? "bg-slate-300" : "bg-sky-500 ring-2 ring-sky-200"
+              }`}
+            />
+            <div className="min-w-0 flex-1">
+              <p className={`text-sm leading-snug truncate ${item.isRead ? "font-medium text-slate-700" : "font-semibold text-slate-950"}`}>
+                {item.title || "Notification"}
+              </p>
+              <p className="mt-0.5 line-clamp-2 text-xs text-slate-500">
+                {item.message}
+              </p>
+              <p className="mt-1 text-[11px] text-slate-400">
+                {formatNotificationTime(item.createdAt)}
+              </p>
             </div>
           </button>
         ))}
-        {!loading && items.length === 0 && <p className="p-5 text-center text-xs text-slate-400">No notifications</p>}
+        {!loading && items.length === 0 && (
+          <p className="p-6 text-center text-xs text-slate-400">No notifications found</p>
+        )}
       </div>
     </div>
   );
@@ -339,19 +434,27 @@ function HelpCenterModal({ onClose }: { onClose: () => void }) {
   const [chatOpen, setChatOpen] = useState(false);
   const [apiFaqs, setApiFaqs] = useState<Faq[]>([]);
   const [openFaq, setOpenFaq] = useState<string | null>(null);
+  const { triggerJump, jumpClassName } = useModalJump();
 
   useEffect(() => { void getFaqs().then((result) => { if (result.success) setApiFaqs([...result.data].sort((a, b) => a.serial_no - b.serial_no)); }); }, []);
 
   return (
-    <div className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div
+      className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          triggerJump();
+        }
+      }}
+    >
       <button
         type="button"
         aria-label="Close help center"
         className="absolute inset-0 cursor-default"
-        onClick={onClose}
+        onClick={triggerJump}
       />
 
-      <section className="shadow relative z-10 flex max-h-[86vh] w-full max-w-[560px] flex-col overflow-hidden rounded-md bg-white">
+      <section className={`shadow relative z-10 flex max-h-[86vh] w-full max-w-[560px] flex-col overflow-hidden rounded-md bg-white ${jumpClassName}`}>
         <div className="flex items-start justify-between border-b border-gray-200 px-5 py-4">
           <div className="flex items-center gap-3">
             <span className="flex h-10 w-10 items-center justify-center rounded bg-[#e0f2fe] text-[#0ea5e9]">

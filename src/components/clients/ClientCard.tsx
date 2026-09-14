@@ -44,48 +44,48 @@ export function ClientCard({
   return (
     // `group` sits on the wrapper so the action buttons, which live outside the link, still
     // react to hovering the card.
-    <div className="group relative">
+    <div className="group relative h-full">
       <Link
         href={href}
-        className="flex flex-col rounded-xl border border-slate-200 bg-white p-4 shadow-2xs transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+        className="flex h-full flex-col justify-between rounded-xl border border-slate-200 bg-white p-4 shadow-2xs transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
       >
-        <div className="flex items-start gap-3">
-          <span
-            aria-hidden
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-sky-100 bg-sky-50 text-sm font-bold tracking-wide text-sky-600"
-          >
-            {initials(clientLabel(client))}
-          </span>
+        <div className="flex-1">
+          <div className="flex items-start gap-3">
+            <span
+              aria-hidden
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-sky-100 bg-sky-50 text-sm font-bold tracking-wide text-sky-600"
+            >
+              {initials(clientLabel(client))}
+            </span>
 
-          <div className="min-w-0 flex-1 pr-16">
-            <h3 className="truncate text-[15px] font-bold leading-tight text-slate-900 transition-colors group-hover:text-primary">
-              {clientLabel(client)}
-            </h3>
-            {client.company_name && (
+            <div className="min-w-0 flex-1 pr-16">
+              <h3 className="truncate text-[15px] font-bold leading-tight text-slate-900 transition-colors group-hover:text-primary">
+                {clientLabel(client)}
+              </h3>
               <p className="mt-1 flex items-center gap-1.5 truncate text-xs text-slate-500">
                 <MdBadge className="shrink-0 text-sm text-slate-400" />
-                {client.company_name}
+                <span className="truncate">{client.company_name || "Individual"}</span>
               </p>
-            )}
+            </div>
           </div>
-        </div>
 
-        <dl className="mt-4 space-y-2 text-xs text-slate-500">
-          <div className="flex items-center gap-2">
-            <MdMailOutline className="shrink-0 text-sm text-slate-400" />
-            <dd className="truncate">{client.email || "—"}</dd>
-          </div>
-          <div className="flex items-center gap-2">
-            <MdPhone className="shrink-0 text-sm text-slate-400" />
-            <dd className="truncate">{client.phone || "—"}</dd>
-          </div>
-          {expiry && (
+          <dl className="mt-4 space-y-2 text-xs text-slate-500">
+            <div className="flex items-center gap-2">
+              <MdMailOutline className="shrink-0 text-sm text-slate-400" />
+              <dd className="truncate">{client.email || "—"}</dd>
+            </div>
+            <div className="flex items-center gap-2">
+              <MdPhone className="shrink-0 text-sm text-slate-400" />
+              <dd className="truncate">{client.phone || "—"}</dd>
+            </div>
             <div className="flex items-center gap-2">
               <MdEventAvailable className="shrink-0 text-sm text-slate-400" />
-              <dd className="truncate">Licence expires {expiry}</dd>
+              <dd className="truncate">
+                {expiry ? `Licence expires ${expiry}` : "No licence expiry"}
+              </dd>
             </div>
-          )}
-        </dl>
+          </dl>
+        </div>
 
         <div className="mt-4 flex items-center justify-between gap-2 border-t border-slate-100 pt-3">
           {client.contract_status ? (

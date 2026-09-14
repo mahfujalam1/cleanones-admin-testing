@@ -72,7 +72,7 @@ export function ExtraServiceCard({ item, onClick }: ExtraServiceCardProps) {
           </div>
           {item.planId && (
             <span className="font-mono text-[10px] bg-slate-50 px-1.5 py-0.5 rounded border border-slate-200 text-slate-600">
-              Plan: {item.planId.slice(-8)}
+              Plan: {typeof item.planId === "string" ? item.planId.slice(-8) : (item.planId as any)?._id?.slice(-8) || "Plan"}
             </span>
           )}
         </div>

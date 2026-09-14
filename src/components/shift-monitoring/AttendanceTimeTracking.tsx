@@ -1,15 +1,42 @@
 "use client";
 
-import React, { useState, useMemo } from 'react';
-import { MdSearch, MdClose, MdFilterList } from 'react-icons/md';
-import { TbClock, TbCalendarStats, TbAlertTriangle, TbChartBar, TbCheck } from 'react-icons/tb';
+import React, { useState, useMemo, useEffect } from 'react';
+import { MdSearch, MdClose, MdFilterList, MdChevronRight } from 'react-icons/md';
+import { TbClock, TbCalendarStats, TbAlertTriangle, TbChartBar, TbCheck, TbCircleCheck, TbUsers } from 'react-icons/tb';
 import { WorkerInfo } from './types';
 import { type AttendanceWorker, type Period } from '@/services/actions/shiftMonitoring';
 import { useGetAttendanceTrackingQuery } from '@/redux/api/shiftMonitoringApi';
+import { useGetShiftAttendanceSummaryQuery } from '@/redux/api/shiftsApi';
+import { useGetWorkerListQuery, workerName } from '@/redux/api/endpoints/workers.api';
+import { BackendPagination } from '@/components/shared/BackendPagination';
+import { Select } from '@/components/ui/select';
 import { TableSkeleton } from '@/components/shared/SkeletonLoader';
 
 export type TimeRange = 'Today' | 'Weekly' | 'Monthly';
 type SortOption = 'hours' | 'shifts' | 'late' | 'name';
+
+function formatDateRange(start?: string, end?: string): string {
+  if (!start) return '';
+  try {
+    const s = new Date(start);
+    const e = end ? new Date(end) : s;
+    if (isNaN(s.getTime())) return '';
+
+    const options: Intl.DateTimeFormatOptions = {
+      month: 'short',
+      day: 'numeric',
+      year: s.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined,
+    };
+
+    if (s.toDateString() === e.toDateString()) {
+      return s.toLocaleDateString(undefined, { ...options, weekday: 'short' });
+    }
+
+    return `${s.toLocaleDateString(undefined, options)} – ${e.toLocaleDateString(undefined, options)}`;
+  } catch {
+    return '';
+  }
+}
 
 interface Props {
   onWorkerSelect: (worker: WorkerInfo) => void;
@@ -20,18 +47,19 @@ interface Props {
 
 const mapAttendanceWorker = (item: AttendanceWorker): WorkerInfo => ({
   id: item.worker_id,
-  initials: '',
+  initials: item.worker_name ? item.worker_name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase() : 'W',
   name: item.worker_name,
-  role: item.worker_type.toLowerCase() === 'freelancer' ? 'Freelancer' : 'Employee',
+  role: item.worker_type?.toLowerCase() === 'freelancer' ? 'Freelancer' : 'Employee',
   shiftId: '',
   location: '',
   checkIn: '',
   status: item.late_days > 0 ? 'Late' : 'On Time',
   color: 'bg-sky-500',
   statusColor: 'text-sky-500',
-  hoursWorked: item.hours_worked_numeric,
-  totalShifts: item.total_shifts,
-  lateDays: item.late_days,
+  profilePicture: item.profile_picture || '/avatar-placeholder.svg',
+  hoursWorked: item.hours_worked_numeric || 0,
+  totalShifts: item.total_shifts || 0,
+  lateDays: item.late_days || 0,
   avgDuration: '0h',
 });
 
@@ -39,17 +67,70 @@ export function AttendanceTimeTracking({ onWorkerSelect, selectedWorkerId, timeR
   const [roleFilter, setRoleFilter] = useState<'All' | 'Employee' | 'Freelancer'>('All');
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('hours');
+  const [page, setPage] = useState(1);
+  const LIMIT = 10;
 
   const period = timeRange.toLowerCase() as Period;
-  const { data: attRes, isLoading: loading, error } = useGetAttendanceTrackingQuery({
+
+  // 1. Integrated real Swagger API: /shift/attendance-summary
+  const {
+    data: attendanceSummary,
+    isLoading: loadingSummary,
+    refetch: refetchSummary,
+  } = useGetShiftAttendanceSummaryQuery({ period: period as 'today' | 'weekly' | 'monthly' });
+
+  // 2. Existing attendance-tracking endpoint
+  const {
+    data: attRes,
+    isLoading: loadingAtt,
+    error,
+    refetch: refetchAtt,
+  } = useGetAttendanceTrackingQuery({
     period,
     workerType: roleFilter === 'All' ? undefined : roleFilter.toLowerCase(),
     search: search.trim() || undefined,
   });
 
-  const rawWorkers = useMemo(() => attRes?.workers ?? [], [attRes?.workers]);
+  // 3. System worker directory fallback
+  const { data: workerListRes, isLoading: loadingWorkerList } = useGetWorkerListQuery({ page: 1, limit: 100 });
+  const loading = (loadingAtt || loadingSummary) && (!workerListRes?.result || workerListRes.result.length === 0);
+
+  const rawWorkers = useMemo(() => {
+    if (attRes?.workers && attRes.workers.length > 0) {
+      return attRes.workers;
+    }
+    // Fallback to active workers list if attendance-tracking endpoint is empty
+    if (workerListRes?.result && workerListRes.result.length > 0) {
+      return workerListRes.result.map((w) => ({
+        worker_id: String(w._id),
+        worker_name: workerName(w),
+        profile_picture: w.profile_photo || '',
+        worker_type: w.worker_type || 'Employee',
+        hours_worked: `${w.hourly_rate || 0}h`,
+        hours_worked_numeric: 0,
+        total_shifts: 0,
+        late_days: 0,
+      }));
+    }
+    return [];
+  }, [attRes?.workers, workerListRes?.result]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [search, roleFilter, sortBy, timeRange]);
+
   const workers: WorkerInfo[] = useMemo(() => {
-    const list = rawWorkers.map(mapAttendanceWorker);
+    let list = rawWorkers.map(mapAttendanceWorker);
+
+    if (roleFilter !== 'All') {
+      list = list.filter((w) => w.role.toLowerCase() === roleFilter.toLowerCase());
+    }
+
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      list = list.filter((w) => w.name.toLowerCase().includes(q) || String(w.id).toLowerCase().includes(q));
+    }
+
     return list.sort((a, b) => {
       if (sortBy === 'hours') return b.hoursWorked - a.hoursWorked;
       if (sortBy === 'shifts') return b.totalShifts - a.totalShifts;
@@ -57,7 +138,7 @@ export function AttendanceTimeTracking({ onWorkerSelect, selectedWorkerId, timeR
       if (sortBy === 'name') return a.name.localeCompare(b.name);
       return 0;
     });
-  }, [rawWorkers, sortBy]);
+  }, [rawWorkers, roleFilter, search, sortBy]);
 
   // Aggregate Metrics for Top KPI Banner
   const summaryStats = useMemo(() => {
@@ -83,16 +164,36 @@ export function AttendanceTimeTracking({ onWorkerSelect, selectedWorkerId, timeR
     };
   }, [workers]);
 
+  const sortOptions = [
+    { value: 'hours', label: 'Hours Worked (High to Low)' },
+    { value: 'shifts', label: 'Total Shifts (High to Low)' },
+    { value: 'late', label: 'Late Days (High to Low)' },
+    { value: 'name', label: 'Worker Name (A-Z)' },
+  ];
+
+  const dateRange = formatDateRange(attendanceSummary?.start_date, attendanceSummary?.end_date);
+
+  const pagedWorkers = useMemo(() => {
+    return workers.slice((page - 1) * LIMIT, page * LIMIT);
+  }, [workers, page]);
+
   return (
-    <div className="space-y-5 animate-in fade-in duration-300">
+    <div className="space-y-4 animate-in fade-in duration-300">
       {/* Header Banner */}
-      <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-sky-100 bg-sky-50 text-sky-600">
-            <TbClock className="h-5 w-5" />
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-2.5">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-sky-100 bg-sky-50 text-sky-600">
+            <TbClock className="h-4.5 w-4.5" />
           </span>
-          <div>
-            <h1 className="text-base font-medium text-slate-900 tracking-tight">Worker Attendance & Time Tracking</h1>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <h1 className="text-lg font-bold text-slate-900 tracking-tight">Worker Attendance Summary</h1>
+              {dateRange && (
+                <span className="rounded-full bg-sky-50 px-2 py-0.5 text-[10px] font-semibold text-sky-700 border border-sky-200">
+                  {dateRange}
+                </span>
+              )}
+            </div>
             <p className="text-xs text-slate-500">
               Overview of employee hours, completed shifts, and attendance punctuality.
             </p>
@@ -100,14 +201,14 @@ export function AttendanceTimeTracking({ onWorkerSelect, selectedWorkerId, timeR
         </div>
 
         {/* Time Period Selector */}
-        <div className="flex items-center rounded-xl border border-slate-200 bg-white p-1 shadow-2xs">
+        <div className="flex items-center rounded-xl border border-slate-200/80 bg-slate-100/90 p-1 text-xs font-semibold shadow-2xs">
           {(['Today', 'Weekly', 'Monthly'] as const).map((tr) => (
             <button
               key={tr}
               onClick={() => onTimeRangeChange(tr)}
-              className={`cursor-pointer rounded-lg px-3.5 py-1.5 text-xs font-medium transition-all ${
+              className={`cursor-pointer rounded-lg px-3.5 py-1.5 transition-all ${
                 timeRange === tr
-                  ? 'bg-primary text-white shadow-xs'
+                  ? 'bg-primary text-white shadow-xs font-semibold'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
               }`}
             >
@@ -117,58 +218,72 @@ export function AttendanceTimeTracking({ onWorkerSelect, selectedWorkerId, timeR
         </div>
       </div>
 
-      {/* Top 4 KPI Summary Cards */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <div className="flex items-center gap-3.5 rounded-xl border border-slate-200 bg-white p-4 shadow-2xs">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
-            <TbUsersIcon className="text-xl" />
+      {/* Top 3 KPI Summary Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        {/* Card 1: Total Hours */}
+        <div className="flex items-center gap-3.5 rounded-xl border border-slate-200 bg-white p-3.5 shadow-2xs">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-50 text-amber-600 border border-amber-100/80">
+            <TbClock className="text-lg" />
           </span>
-          <div className="min-w-0">
-            <p className="truncate text-[11px] font-medium uppercase tracking-wider text-slate-400">Total Tracked</p>
-            <div className="flex items-baseline gap-2">
-              <p className="text-xl font-medium text-slate-900">{summaryStats.totalWorkers}</p>
-              <span className="text-[10px] text-slate-400 font-normal">
-                ({summaryStats.employeeCount} emp, {summaryStats.freelancerCount} free)
-              </span>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-[11px] font-semibold uppercase tracking-wider text-slate-400">Total Hours</p>
+            <div className="flex items-baseline gap-2 mt-0.5">
+              <p className="text-lg font-bold text-amber-700">
+                {attendanceSummary?.total_hours !== undefined ? `${attendanceSummary.total_hours}h` : `${summaryStats.totalHours}h`}
+              </p>
+              <span className="truncate text-[11px] text-slate-400 font-normal">Logged time</span>
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-3.5 rounded-xl border border-slate-200 bg-white p-4 shadow-2xs">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
-            <TbClock className="text-xl" />
+        {/* Card 2: Completed Shifts */}
+        <div className="flex items-center gap-3.5 rounded-xl border border-slate-200 bg-white p-3.5 shadow-2xs">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600 border border-blue-100/80">
+            <TbCalendarStats className="text-lg" />
           </span>
-          <div className="min-w-0">
-            <p className="truncate text-[11px] font-medium uppercase tracking-wider text-slate-400">Total Hours</p>
-            <p className="text-xl font-medium text-slate-900">{summaryStats.totalHours}h</p>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-[11px] font-semibold uppercase tracking-wider text-slate-400">Completed Shifts</p>
+            <div className="flex items-baseline gap-2 mt-0.5">
+              <p className="text-lg font-bold text-blue-700">
+                {attendanceSummary?.completed_shifts !== undefined ? attendanceSummary.completed_shifts : summaryStats.totalShifts}
+              </p>
+              <span className="truncate text-[11px] text-slate-400 font-normal">All shifts</span>
+            </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-3.5 rounded-xl border border-slate-200 bg-white p-4 shadow-2xs">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
-            <TbCalendarStats className="text-xl" />
-          </span>
-          <div className="min-w-0">
-            <p className="truncate text-[11px] font-medium uppercase tracking-wider text-slate-400">Completed Shifts</p>
-            <p className="text-xl font-medium text-slate-900">{summaryStats.totalShifts}</p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3.5 rounded-xl border border-slate-200 bg-white p-4 shadow-2xs">
+        {/* Card 3: Punctuality */}
+        <div className="flex items-center gap-3.5 rounded-xl border border-slate-200 bg-white p-3.5 shadow-2xs">
           <span
-            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
-              summaryStats.totalLate > 0 ? 'bg-amber-50 text-amber-600' : 'bg-slate-100 text-slate-600'
+            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border ${
+              (attendanceSummary?.late_check_ins ?? summaryStats.totalLate) > 0
+                ? 'bg-amber-50 text-amber-600 border-amber-100/80'
+                : 'bg-emerald-50 text-emerald-600 border-emerald-100/80'
             }`}
           >
-            {summaryStats.totalLate > 0 ? <TbAlertTriangle className="text-xl" /> : <TbCheck className="text-xl" />}
+            {(attendanceSummary?.late_check_ins ?? summaryStats.totalLate) > 0 ? (
+              <TbAlertTriangle className="text-lg" />
+            ) : (
+              <TbCircleCheck className="text-lg" />
+            )}
           </span>
-          <div className="min-w-0">
-            <p className="truncate text-[11px] font-medium uppercase tracking-wider text-slate-400">Punctuality</p>
-            <div className="flex items-baseline gap-2">
-              <p className={`text-xl font-medium ${summaryStats.totalLate > 0 ? 'text-amber-600' : 'text-slate-900'}`}>
-                {summaryStats.punctualityRate}%
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-[11px] font-semibold uppercase tracking-wider text-slate-400">Punctuality</p>
+            <div className="flex items-baseline gap-2 mt-0.5">
+              <p
+                className={`text-lg font-bold ${
+                  (attendanceSummary?.late_check_ins ?? summaryStats.totalLate) > 0
+                    ? 'text-amber-700'
+                    : 'text-emerald-700'
+                }`}
+              >
+                {attendanceSummary?.punctuality_percentage !== undefined
+                  ? `${attendanceSummary.punctuality_percentage}%`
+                  : `${summaryStats.punctualityRate}%`}
               </p>
-              <span className="text-[10px] text-slate-400 font-normal">({summaryStats.totalLate} late)</span>
+              <span className="truncate text-[11px] text-slate-400 font-normal">
+                ({attendanceSummary?.late_check_ins ?? summaryStats.totalLate} late)
+              </span>
             </div>
           </div>
         </div>
@@ -177,20 +292,20 @@ export function AttendanceTimeTracking({ onWorkerSelect, selectedWorkerId, timeR
       {/* Filter and Search Toolbar */}
       <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-3 shadow-2xs sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-1 flex-wrap items-center gap-3">
-          {/* Search */}
+          {/* Search Input */}
           <div className="relative min-w-[240px] flex-1 sm:max-w-xs">
-            <MdSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-lg text-slate-400" />
+            <MdSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-lg text-slate-400" />
             <input
               type="text"
               placeholder="Search by worker name..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full rounded-lg bg-slate-50 py-2 pl-9 pr-8 text-xs text-slate-900 placeholder:text-slate-400 transition-all focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20"
+              className="h-10 w-full rounded-xl border border-slate-200/80 bg-slate-50/50 pl-10 pr-9 text-xs font-medium text-slate-900 placeholder:text-slate-400 outline-none transition-all focus:bg-white focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
             />
             {search && (
               <button
                 onClick={() => setSearch('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 cursor-pointer text-slate-400 hover:text-slate-600"
+                className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-slate-400 hover:text-slate-600"
               >
                 <MdClose />
               </button>
@@ -198,14 +313,14 @@ export function AttendanceTimeTracking({ onWorkerSelect, selectedWorkerId, timeR
           </div>
 
           {/* Role Filter Pills */}
-          <div className="flex items-center rounded-lg bg-slate-100 p-1 text-xs">
+          <div className="flex items-center rounded-xl border border-slate-200/80 bg-slate-100/90 p-1 text-xs font-semibold">
             {(['All', 'Employee', 'Freelancer'] as const).map((r) => (
               <button
                 key={r}
                 onClick={() => setRoleFilter(r)}
-                className={`cursor-pointer rounded-md px-3 py-1 font-medium transition-all ${
+                className={`cursor-pointer rounded-lg px-3 py-1.5 transition-all ${
                   roleFilter === r
-                    ? 'bg-white text-primary shadow-2xs'
+                    ? 'bg-white text-primary shadow-2xs font-semibold'
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
@@ -215,37 +330,47 @@ export function AttendanceTimeTracking({ onWorkerSelect, selectedWorkerId, timeR
           </div>
         </div>
 
-        {/* Sort Options */}
+        {/* Sort Dropdown */}
         <div className="flex items-center gap-2">
-          <span className="text-xs text-slate-400 font-medium flex items-center gap-1">
-            <MdFilterList className="text-sm" /> Sort:
+          <span className="text-xs font-medium text-slate-500 flex items-center gap-1 shrink-0">
+            <MdFilterList className="text-base text-slate-400" /> Sort:
           </span>
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as SortOption)}
-            className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-slate-700 cursor-pointer focus:outline-none focus:bg-white focus:ring-1 focus:ring-primary"
-          >
-            <option value="hours">Hours Worked (High to Low)</option>
-            <option value="shifts">Total Shifts (High to Low)</option>
-            <option value="late">Late Days (High to Low)</option>
-            <option value="name">Worker Name (A-Z)</option>
-          </select>
+          <div className="w-60">
+            <Select
+              value={sortBy}
+              onValueChange={(val) => setSortBy(val as SortOption)}
+              options={sortOptions}
+              className="h-10 text-xs rounded-xl border-slate-200/80 bg-slate-50/50 hover:bg-white focus:bg-white font-medium"
+            />
+          </div>
         </div>
       </div>
 
-      {/* Error message */}
-      {error && (
-        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-xs text-red-700">
-          Failed to load attendance records. Please refresh or try again later.
+      {/* Sync / Error Notice */}
+      {error && !attendanceSummary && (
+        <div className="flex items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50/70 px-4 py-2.5 text-xs text-amber-800">
+          <div className="flex items-center gap-2">
+            <TbAlertTriangle className="text-base text-amber-600 shrink-0" />
+            <span>Could not sync real-time attendance server records. Showing directory data if available.</span>
+          </div>
+          <button
+            onClick={() => {
+              void refetchSummary();
+              void refetchAtt();
+            }}
+            className="cursor-pointer rounded-lg border border-amber-300 bg-white px-3 py-1 text-xs font-semibold text-amber-900 shadow-2xs hover:bg-amber-100/50 transition-colors"
+          >
+            Retry
+          </button>
         </div>
       )}
 
       {/* Table Card */}
-      <div className="dashboard-card overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xs">
+      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xs">
         <div className="overflow-x-auto w-full">
-          <table className="w-full text-left border-collapse min-w-[700px]">
+          <table className="w-full text-left border-collapse min-w-[720px]">
             <thead>
-              <tr className="border-b border-slate-200/80 bg-slate-50/80 text-[11px] font-medium text-slate-500 uppercase tracking-wider">
+              <tr className="border-b border-slate-200/80 bg-slate-50/80 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
                 <th className="px-6 py-3.5">Employee / Worker</th>
                 <th className="px-6 py-3.5">Type</th>
                 <th className="px-6 py-3.5">Hours Worked</th>
@@ -267,7 +392,7 @@ export function AttendanceTimeTracking({ onWorkerSelect, selectedWorkerId, timeR
                     <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 text-slate-400">
                       <TbClock className="text-2xl" />
                     </div>
-                    <p className="text-sm font-medium text-slate-800">No attendance records found</p>
+                    <p className="text-sm font-semibold text-slate-800">No attendance records found</p>
                     <p className="mt-1 text-xs text-slate-400">
                       {search || roleFilter !== 'All'
                         ? 'Try adjusting your search terms or filters.'
@@ -279,7 +404,7 @@ export function AttendanceTimeTracking({ onWorkerSelect, selectedWorkerId, timeR
                           setSearch('');
                           setRoleFilter('All');
                         }}
-                        className="mt-3 cursor-pointer rounded-lg bg-sky-50 px-3.5 py-1.5 text-xs font-medium text-sky-600 hover:bg-sky-100"
+                        className="mt-3 cursor-pointer rounded-lg bg-sky-50 px-3.5 py-1.5 text-xs font-semibold text-sky-600 hover:bg-sky-100 transition-colors"
                       >
                         Reset filters
                       </button>
@@ -287,7 +412,7 @@ export function AttendanceTimeTracking({ onWorkerSelect, selectedWorkerId, timeR
                   </td>
                 </tr>
               ) : (
-                workers.map((worker) => {
+                pagedWorkers.map((worker) => {
                   const hourProgress = Math.min(100, Math.round((worker.hoursWorked / summaryStats.maxHours) * 100));
                   const isSelected = selectedWorkerId === worker.id;
 
@@ -300,26 +425,26 @@ export function AttendanceTimeTracking({ onWorkerSelect, selectedWorkerId, timeR
                       }`}
                     >
                       {/* Worker Info */}
-                      <td className="px-6 py-4">
+                      <td className="px-6 py-3.5">
                         <div className="flex items-center gap-3">
                           <img
-                            src="/avatar-placeholder.svg"
+                            src={worker.profilePicture || '/avatar-placeholder.svg'}
                             alt={worker.name}
                             className="h-9 w-9 rounded-full border border-slate-200 object-cover group-hover:border-primary/50 transition-colors"
                           />
                           <div>
-                            <div className="font-medium text-slate-900 group-hover:text-primary transition-colors">
+                            <div className="font-semibold text-slate-900 group-hover:text-primary transition-colors text-sm">
                               {worker.name}
                             </div>
-                            <div className="font-mono text-[10px] text-slate-400">ID: #{worker.id}</div>
+                            <div className="font-mono text-[11px] text-slate-400">ID: #{worker.id}</div>
                           </div>
                         </div>
                       </td>
 
                       {/* Role Pill */}
-                      <td className="px-6 py-4">
+                      <td className="px-6 py-3.5">
                         <span
-                          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-medium ${
+                          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${
                             worker.role === 'Employee'
                               ? 'bg-sky-50 text-sky-700 ring-1 ring-inset ring-sky-200'
                               : 'bg-purple-50 text-purple-700 ring-1 ring-inset ring-purple-200'
@@ -330,55 +455,56 @@ export function AttendanceTimeTracking({ onWorkerSelect, selectedWorkerId, timeR
                       </td>
 
                       {/* Hours Worked with Progress Indicator */}
-                      <td className="px-6 py-4">
+                      <td className="px-6 py-3.5">
                         <div className="w-36">
                           <div className="flex items-center justify-between text-xs">
-                            <span className="font-medium text-slate-900">{worker.hoursWorked}h</span>
-                            <span className="text-[10px] text-slate-400">{timeRange.toLowerCase()}</span>
+                            <span className="font-bold text-slate-900">{worker.hoursWorked}h</span>
+                            <span className="text-[10px] text-slate-400 capitalize">{timeRange.toLowerCase()}</span>
                           </div>
                           <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
                             <div
                               className="h-full rounded-full bg-sky-500 transition-all duration-300"
-                              style={{ width: `${Math.max(5, hourProgress)}%` }}
+                              style={{ width: `${Math.max(6, hourProgress)}%` }}
                             />
                           </div>
                         </div>
                       </td>
 
                       {/* Total Shifts */}
-                      <td className="px-6 py-4">
-                        <span className="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-normal text-slate-700">
-                          <TbCalendarStats className="text-slate-400 text-sm" />
-                          {worker.totalShifts} shifts
+                      <td className="px-6 py-3.5">
+                        <span className="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">
+                          <TbCalendarStats className="text-slate-500 text-sm" />
+                          {worker.totalShifts} shift{worker.totalShifts === 1 ? '' : 's'}
                         </span>
                       </td>
 
                       {/* Late Days & Punctuality */}
-                      <td className="px-6 py-4">
+                      <td className="px-6 py-3.5">
                         {worker.lateDays > 0 ? (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-0.5 text-[11px] font-medium text-amber-700 ring-1 ring-inset ring-amber-200">
+                          <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-0.5 text-[11px] font-semibold text-amber-700 ring-1 ring-inset ring-amber-200">
                             <TbAlertTriangle className="text-xs" />
                             {worker.lateDays} Late Day{worker.lateDays > 1 ? 's' : ''}
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-medium text-emerald-700 ring-1 ring-inset ring-emerald-200">
-                            <TbCheck className="text-xs" />
+                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-200">
+                            <TbCircleCheck className="text-xs" />
                             Punctual (0 Late)
                           </span>
                         )}
                       </td>
 
-                      {/* Action */}
-                      <td className="px-6 py-4 text-right">
+                      {/* Action Button */}
+                      <td className="px-6 py-3.5 text-right">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             onWorkerSelect(worker);
                           }}
-                          className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition-all hover:bg-slate-50 hover:border-slate-300"
+                          className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition-all hover:bg-slate-50 hover:border-slate-300 hover:text-primary shadow-2xs"
                         >
                           <TbChartBar className="text-sm text-slate-400" />
                           View Stats & Trends
+                          <MdChevronRight className="text-sm text-slate-400" />
                         </button>
                       </td>
                     </tr>
@@ -388,18 +514,20 @@ export function AttendanceTimeTracking({ onWorkerSelect, selectedWorkerId, timeR
             </tbody>
           </table>
         </div>
+
+        {/* Pagination */}
+        {workers.length > LIMIT && (
+          <div className="border-t border-slate-100 px-4 py-3 bg-slate-50/30">
+            <BackendPagination
+              page={page}
+              limit={LIMIT}
+              total={workers.length}
+              onPageChange={setPage}
+              itemLabel="workers"
+            />
+          </div>
+        )}
       </div>
     </div>
-  );
-}
-
-function TbUsersIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M9 7m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0" />
-      <path d="M3 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />
-      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-      <path d="M21 21v-2a4 4 0 0 0 -3 -3.85" />
-    </svg>
   );
 }

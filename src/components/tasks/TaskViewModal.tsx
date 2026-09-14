@@ -3,6 +3,7 @@
 import React, { useEffect } from "react";
 import { MdOutlineClose, MdChecklist, MdSchedule, MdPhotoCamera } from "react-icons/md";
 import type { Task, WeekDay } from "@/redux/api/endpoints/tasks.api";
+import { useModalJump } from "@/hooks/useModalJump";
 
 const DAY_LABELS: Record<WeekDay, string> = {
   mon: "Mon",
@@ -18,16 +19,17 @@ const capitalise = (value: string) => value[0].toUpperCase() + value.slice(1);
 
 function scheduleLabel(task: Task): string {
   const frequency = capitalise(task.frequency_type);
-  if (task.frequency_type === "weekly" && task.days_of_week?.length) {
-    return `${frequency} · ${task.days_of_week.map((day) => DAY_LABELS[day]).join(", ")}`;
-  }
-  if (task.frequency_type === "monthly" && task.days_of_month?.length) {
-    return `${frequency} · ${[...task.days_of_month].sort((a, b) => a - b).join(", ")}`;
+  if (task.frequency_type === "daily") return "Every day";
+  if (task.frequency_type === "weekly") {
+    const days = (task.days_of_week ?? []).map((d) => DAY_LABELS[d]).join(", ");
+    return days ? `Weekly on ${days}` : "Weekly";
   }
   return frequency;
 }
 
 export function TaskViewModal({ task, onClose }: { task: Task; onClose: () => void }) {
+  const { triggerJump, jumpClassName } = useModalJump();
+
   useEffect(() => {
     const close = (event: KeyboardEvent) => {
       if (event.key === "Escape") onClose();
@@ -39,13 +41,17 @@ export function TaskViewModal({ task, onClose }: { task: Task; onClose: () => vo
   return (
     <div
       className="modal-backdrop fixed inset-0 z-[70] flex items-center justify-center p-4 animate-in fade-in duration-200"
-      onMouseDown={(event) => event.target === event.currentTarget && onClose()}
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) {
+          triggerJump();
+        }
+      }}
     >
       <div
         role="dialog"
         aria-modal="true"
         aria-label={`View task: ${task.name}`}
-        className="flex max-h-[90vh] w-full max-w-[520px] flex-col rounded-xl bg-white shadow-2xl animate-in fade-in zoom-in-95 duration-200"
+        className={`flex max-h-[90vh] w-full max-w-[520px] flex-col rounded-xl bg-white shadow-2xl animate-in fade-in zoom-in-95 duration-200 ${jumpClassName}`}
       >
         <div className="flex items-start justify-between gap-4 px-6 pb-2 pt-6">
           <div className="min-w-0">

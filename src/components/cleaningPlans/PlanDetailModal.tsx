@@ -17,7 +17,7 @@ import { ErrorNotice } from "@/components/shared/ListStates";
 import { Button } from "@/components/ui/button";
 import { apiError } from "@/redux/api/apiError";
 import { refDoc, refId } from "@/redux/api/types";
-import { clientLabel, type Client } from "@/redux/api/endpoints/clients.api";
+import { clientLabel, CLIENT_LOOKUP_ARGS, useGetClientsQuery, type Client } from "@/redux/api/endpoints/clients.api";
 import type { Location } from "@/redux/api/endpoints/locations.api";
 import type { Room } from "@/redux/api/endpoints/rooms.api";
 import type { AdditionalTask } from "@/redux/api/endpoints/additionalTasks.api";
@@ -29,6 +29,7 @@ import {
   useGetEligibleWorkersQuery,
   type CleaningPlan,
 } from "@/redux/api/endpoints/cleaningPlans.api";
+import { useModalJump } from "@/hooks/useModalJump";
 
 const formatDateTime = (value?: string) => {
   if (!value) return null;
@@ -97,15 +98,34 @@ function initials(name: string) {
 }
 
 function PlanBody({ plan, onAssign }: { plan: CleaningPlan; onAssign?: (plan: CleaningPlan) => void }) {
-  const client = refDoc<Client>(plan.client);
-  const location = refDoc<Location>(plan.location);
+  const { data: clientPage } = useGetClientsQuery(CLIENT_LOOKUP_ARGS);
+  const populatedClient = refDoc<Client>(plan.client);
+  const client =
+    populatedClient ?? clientPage?.result.find((candidate) => candidate._id === refId(plan.client));
+  const clientDisplay = client ? clientLabel(client) : refId(plan.client);
+
+  const rawLocation = plan.location;
+  const location = refDoc<Location>(rawLocation);
+  const locationName =
+    location?.name ||
+    (typeof rawLocation === "object" && rawLocation ? (rawLocation as { name?: string }).name : "") ||
+    refId(rawLocation);
+
   const counts = planCounts(plan);
   const rooms = (plan.rooms ?? []).map((room) => refDoc<Room>(room)).filter(Boolean) as Room[];
   const tasks = (plan.additional_tasks ?? [])
     .map((task) => refDoc<AdditionalTask>(task))
     .filter(Boolean) as AdditionalTask[];
-  // No photo count comes back on the plan, so it is summed from what the tasks ask for.
-  const photos = tasks.reduce((total, task) => total + (task.photo_requirements?.length ?? 0), 0);
+
+  const allRoomTasks = rooms.flatMap((r) => r.tasks ?? []);
+  const roomPhotos = rooms.reduce(
+    (sum, r) => sum + (r.tasks ?? []).reduce((tsum, t) => tsum + (t.photo_requirements?.length ?? 0), 0),
+    0
+  );
+  const additionalPhotos = tasks.reduce((total, task) => total + (task.photo_requirements?.length ?? 0), 0);
+  const totalPhotos = roomPhotos + additionalPhotos;
+  const totalTasksDisplay =
+    allRoomTasks.length > 0 ? allRoomTasks.length + (tasks.length || counts.tasks) : (tasks.length || counts.tasks);
 
   return (
     <div className="space-y-4">
@@ -115,9 +135,9 @@ function PlanBody({ plan, onAssign }: { plan: CleaningPlan; onAssign?: (plan: Cl
           value={plan.max_estimated_duration ? `${plan.max_estimated_duration}m` : "—"}
           label="Duration"
         />
-        <Tile icon={<MdOutlineMeetingRoom />} value={counts.rooms} label="Rooms" />
-        <Tile icon={<MdOutlineAssignment />} value={counts.tasks} label="Tasks" />
-        <Tile icon={<MdOutlinePhotoCamera />} value={photos} label="Photos" />
+        <Tile icon={<MdOutlineMeetingRoom />} value={rooms.length || counts.rooms} label="Rooms" />
+        <Tile icon={<MdOutlineAssignment />} value={totalTasksDisplay} label="Tasks" />
+        <Tile icon={<MdOutlinePhotoCamera />} value={totalPhotos} label="Photos" />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
@@ -125,10 +145,10 @@ function PlanBody({ plan, onAssign }: { plan: CleaningPlan; onAssign?: (plan: Cl
           <Panel title="Client & location">
             <div className="grid gap-4 sm:grid-cols-2">
               <Detail icon={<MdOutlineBusinessCenter />} label="Client">
-                {client ? clientLabel(client) : refId(plan.client)}
+                {clientDisplay}
               </Detail>
               <Detail icon={<MdOutlinePlace />} label="Location">
-                {location?.name || refId(plan.location)}
+                {locationName}
               </Detail>
               <Detail icon={<MdOutlineSchedule />} label="Starts">
                 {formatDateTime(plan.date_time)}
@@ -152,16 +172,62 @@ function PlanBody({ plan, onAssign }: { plan: CleaningPlan; onAssign?: (plan: Cl
             {rooms.length === 0 ? (
               <p className="text-xs text-slate-400">No rooms on this plan.</p>
             ) : (
-              <ul className="divide-y divide-slate-100">
+              <ul className="space-y-3">
                 {rooms.map((room) => (
-                  <li key={room._id} className="flex items-center gap-3 py-2.5 first:pt-0 last:pb-0">
-                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-50 text-base text-slate-400 ring-1 ring-slate-200/70">
-                      <MdOutlineMeetingRoom />
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium text-slate-800">{room.name}</p>
-                      <p className="truncate text-xs text-slate-400">{room.room_type}</p>
+                  <li
+                    key={room._id}
+                    className="rounded-xl border border-slate-200/80 bg-slate-50/50 p-3 space-y-2.5 transition-colors hover:border-slate-300"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-sky-50 text-base text-sky-600 ring-1 ring-sky-100">
+                          <MdOutlineMeetingRoom />
+                        </span>
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold text-slate-900">{room.name}</p>
+                          <div className="flex flex-wrap items-center gap-1.5 text-xs text-slate-500">
+                            <span>{room.room_type}</span>
+                            {room.cleaning_type && <span>· {room.cleaning_type}</span>}
+                            {typeof room.floor === "number" && <span>· Floor {room.floor}</span>}
+                          </div>
+                        </div>
+                      </div>
+
+                      {room.tasks && room.tasks.length > 0 && (
+                        <span className="shrink-0 rounded-full bg-sky-50 px-2.5 py-0.5 text-[11px] font-semibold text-sky-700 border border-sky-100">
+                          {room.tasks.length} {room.tasks.length === 1 ? "task" : "tasks"}
+                        </span>
+                      )}
                     </div>
+
+                    {/* Room tasks list if populated */}
+                    {room.tasks && room.tasks.length > 0 && (
+                      <div className="mt-2 space-y-1.5 border-t border-slate-200/60 pt-2">
+                        {room.tasks.map((task, taskIdx) => (
+                          <div
+                            key={task._id || taskIdx}
+                            className="flex items-center justify-between gap-2 rounded-lg bg-white px-2.5 py-1.5 text-xs text-slate-700 ring-1 ring-slate-200/60"
+                          >
+                            <span className="truncate font-medium">{task.name}</span>
+                            <div className="flex shrink-0 items-center gap-2 text-[10px] text-slate-500">
+                              {task.frequency_type && (
+                                <span className="rounded bg-slate-100 px-1.5 py-0.5 capitalize">
+                                  {task.frequency_type}
+                                </span>
+                              )}
+                              {typeof task.duration_minutes === "number" && task.duration_minutes > 0 && (
+                                <span>{task.duration_minutes}m</span>
+                              )}
+                              {task.is_photo_required && (
+                                <span className="flex items-center gap-0.5 text-amber-600 font-medium">
+                                  <MdOutlinePhotoCamera /> Photo
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -283,17 +349,22 @@ export function PlanDetailModal({
 }) {
   const { data: plan, isLoading, error } = useGetCleaningPlanQuery(planId);
   const active = plan?.is_active ?? plan?.status === "active";
+  const { triggerJump, jumpClassName } = useModalJump();
 
   return (
     <div
       className="modal-backdrop fixed inset-0 z-[70] flex items-center justify-center p-4 animate-in fade-in duration-200"
-      onMouseDown={(event) => event.target === event.currentTarget && onClose()}
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) {
+          triggerJump();
+        }
+      }}
     >
       <div
         role="dialog"
         aria-modal="true"
         aria-label="Cleaning plan"
-        className="flex max-h-[88vh] w-full max-w-4xl flex-col rounded-xl bg-slate-50 shadow-2xl animate-in fade-in zoom-in-95 duration-200"
+        className={`flex max-h-[88vh] w-full max-w-4xl flex-col rounded-xl bg-slate-50 shadow-2xl animate-in fade-in zoom-in-95 duration-200 ${jumpClassName}`}
       >
         <header className="flex items-start justify-between gap-4 border-b border-slate-200 bg-white px-5 py-4">
           <div className="flex min-w-0 items-start gap-3">

@@ -1,12 +1,10 @@
+import type { NotificationItem } from "@/redux/api/endpoints/notifications.api";
 import type { NotificationApi } from "@/services/actions/notifications";
 
-// Dashboard sections a notification can legitimately land on. The backend's `data.route`
-// points at manager/mobile paths (e.g. "/manager/escalations/esc_x"), which do not exist
-// here, so it is only used to recover the section name.
 const dashboardSections = new Set([
   "roster",
   "shift-monitoring",
-  "users",
+  "workers",
   "clients",
   "chat",
   "locations",
@@ -33,21 +31,42 @@ const routeByType: Record<string, string> = {
   shift_completed: "/shift-monitoring",
 };
 
-/**
- * Returns the dashboard path a notification should open, or "" when the notification has
- * no page to go to (a support ticket, for instance, has no screen in this dashboard yet).
- */
-export function resolveNotificationRoute(item: NotificationApi): string {
-  if (item.route_type === "chat") return "/chat";
+const routeByEntity: Record<string, string> = {
+  chat: "/chat",
+  escalation: "/escalations",
+  photo_review: "/photo-reviews",
+  photo: "/photo-reviews",
+  shift: "/shift-monitoring",
+  cleaning_plan: "/cleaning-plans",
+  plan: "/cleaning-plans",
+  extra_service: "/extra-services",
+  worker: "/workers",
+  client: "/clients",
+  invoice: "/workers",
+};
 
-  const byType = routeByType[item.notification_type];
-  if (byType) return byType;
-
-  // Signups are split across two screens depending on who signed up.
-  if (item.notification_type === "approval_request") {
-    return item.data?.client_id ? "/clients" : "/workers";
+export function resolveNotificationRoute(item: NotificationItem | NotificationApi): string {
+  // If entity is provided in data
+  const entity = (item as NotificationItem).data?.entity?.toLowerCase();
+  if (entity && routeByEntity[entity]) {
+    return routeByEntity[entity];
   }
 
-  const section = item.data?.route?.replace(/^\/manager\//, "").split("/")[0];
-  return section && dashboardSections.has(section) ? `/${section}` : "";
+  // Check type or notification_type
+  const type = ((item as NotificationItem).type || (item as NotificationApi).notification_type || "").toLowerCase();
+  if (routeByType[type]) {
+    return routeByType[type];
+  }
+
+  if (type === "approval_request") {
+    return (item as any).data?.client_id ? "/clients" : "/workers";
+  }
+
+  const route = (item as any).data?.route;
+  if (typeof route === "string") {
+    const section = route.replace(/^\/manager\//, "").split("/")[0];
+    if (section && dashboardSections.has(section)) return `/${section}`;
+  }
+
+  return "";
 }

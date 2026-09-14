@@ -430,7 +430,7 @@ export async function assignPlanWorkers(
         role: w.position === "teamleader" ? "Team leader" : w.position === "co_leader" ? "Co-leader" : "Standard worker"
     }));
     return authenticated<PlanDetails>(
-        `/manager/cleaning-plans/${encodeURIComponent(planId)}/assign-workers`,
+        `/cleaning-plan/${encodeURIComponent(planId)}/assign-workers`,
         { method: "PATCH", ...json({ assigned_workers, force }) },
     );
 }

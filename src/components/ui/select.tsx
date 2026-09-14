@@ -12,6 +12,7 @@ export function Select({
   placeholder = "Select an option",
   disabled = false,
   required = false,
+  className,
 }: {
   value: string;
   onValueChange: (value: string) => void;
@@ -19,6 +20,7 @@ export function Select({
   placeholder?: string;
   disabled?: boolean;
   required?: boolean;
+  className?: string;
 }) {
   return (
     <BaseSelect.Root
@@ -28,7 +30,7 @@ export function Select({
       disabled={disabled}
       required={required}
     >
-      <BaseSelect.Trigger className="flex h-10 w-full cursor-pointer items-center justify-between gap-2 rounded-lg border border-slate-300 bg-white px-3 text-left text-sm font-medium text-slate-900 outline-none transition-colors hover:border-slate-400 focus:border-primary focus:ring-1 focus:ring-primary disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400">
+      <BaseSelect.Trigger className={`flex h-10 w-full cursor-pointer items-center justify-between gap-2 rounded-lg border border-slate-300 bg-white px-3 text-left text-sm font-medium text-slate-900 outline-none transition-colors hover:border-slate-400 focus:border-primary focus:ring-1 focus:ring-primary disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400 ${className ?? ""}`}>
         <BaseSelect.Value placeholder={placeholder} className="truncate data-[placeholder]:text-slate-400" />
         <BaseSelect.Icon>
           <ChevronDown className="h-4 w-4 shrink-0 text-slate-400" />

@@ -21,6 +21,9 @@ export interface Shift {
   startTime: string; // HH:MM (24-hour)
   endTime: string; // HH:MM (24-hour)
   theme: ShiftTheme;
+  planId?: string;
+  status?: string;
+  isVirtual?: boolean;
 }
 
 export const getThemeClasses = (theme: ShiftTheme) => {

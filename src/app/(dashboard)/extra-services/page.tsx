@@ -1,25 +1,43 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { MdSearch } from "react-icons/md";
 import { CardGridSkeleton } from "@/components/shared/SkeletonLoader";
+import { BackendPagination } from "@/components/shared/BackendPagination";
 import { useGetExtraServicesQuery, useGetCleaningPlansQuery } from "@/redux/api/dashboardApi";
 // Clients now come from the new backend; the rest of this page is still on the old one.
-import { CLIENT_LOOKUP_ARGS, useGetClientsQuery } from "@/redux/api/endpoints/clients.api";
+import { CLIENT_LOOKUP_ARGS, clientLabel, useGetClientsQuery } from "@/redux/api/endpoints/clients.api";
 import { additionalTaskStatus, useGetAdditionalTasksQuery } from "@/redux/api/endpoints/additionalTasks.api";
 import { ExtraServiceCard } from "@/components/extra-services/ExtraServiceCard";
 import { ExtraServiceModal } from "@/components/extra-services/ExtraServiceModal";
 import type { UnifiedServiceRequest } from "@/components/extra-services/types";
+import { Select } from "@/components/ui/select";
 
 /** The whole list is pulled in one page; this screen filters in the browser. */
 const TASK_PAGE_SIZE = 100;
+const LIMIT = 12;
+
+const STATUS_OPTIONS = [
+  { value: "", label: "All Statuses" },
+  { value: "pending", label: "Pending" },
+  { value: "under_review", label: "Under Review" },
+  { value: "approved", label: "Approved" },
+  { value: "in_progress", label: "In Progress" },
+  { value: "completed", label: "Completed" },
+  { value: "rejected", label: "Rejected" },
+];
 
 export default function ExtraServicesPage() {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
   const [clientId, setClientId] = useState("");
+  const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<UnifiedServiceRequest | null>(null);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    setPage(1);
+  }, [search, status, clientId]);
 
   const { data: clientsRes } = useGetClientsQuery(CLIENT_LOOKUP_ARGS);
 
@@ -69,17 +87,24 @@ export default function ExtraServicesPage() {
 
     // 1. Extra Services requests
     for (const item of servicesRes?.requests ?? []) {
+      const planIdStr = (item as any).plan_id
+        ? String((item as any).plan_id?._id || (item as any).plan_id)
+        : (item as any).cleaning_plan_id
+        ? String((item as any).cleaning_plan_id?._id || (item as any).cleaning_plan_id)
+        : undefined;
+
       list.push({
         id: item.id,
-        planId: (item as any).plan_id || (item as any).cleaning_plan_id,
+        planId: planIdStr,
         title: item.title,
         description: item.description,
         status: item.status || "under_review",
         priority: item.priority,
         preferred_date: item.preferred_date,
         date_submitted: item.date_submitted,
+        client_id: item.client_id ? String(item.client_id) : item.client?.id ? String(item.client.id) : undefined,
         client_name: item.client_name || item.client?.name,
-        location_id: item.location_id || item.location?.id,
+        location_id: item.location_id ? String(item.location_id) : item.location?.id ? String(item.location.id) : undefined,
         location_name: item.location_name || item.location?.name,
         room_name: item.room_name || item.room?.name,
         rejection_reason: item.rejection_reason,
@@ -90,22 +115,26 @@ export default function ExtraServicesPage() {
 
     // 2. Additional tasks, straight from /additional-task/all-additional-tasks
     for (const task of tasksRes?.result ?? []) {
-      const plan = plansById.get(String(task.cleaning_plan_id));
-      const planClientId = plan?.client_id || plan?.client?.id;
+      const planObj = typeof task.cleaning_plan_id === "object" && task.cleaning_plan_id ? (task.cleaning_plan_id as any) : null;
+      const planIdStr = String(planObj?._id || task.cleaning_plan_id || "");
+      const plan = plansById.get(planIdStr) || planObj;
+      const planClientId = plan?.client_id || (typeof plan?.client === "object" ? plan.client?._id || plan.client?.id : plan?.client);
+      const planClientName = plan?.client_name || (typeof plan?.client === "object" ? plan.client?.name || plan.client?.company_name : plan?.client);
       if (clientId && planClientId !== clientId) continue;
 
       list.push({
         id: task._id,
         taskId: task._id,
-        planId: task.cleaning_plan_id,
+        planId: planIdStr,
         title: task.name,
         description: task.description || "",
         status: additionalTaskStatus(task),
         preferred_date: task.date_time ? task.date_time.slice(0, 10) : plan?.date,
         date_submitted: (task.createdAt ?? task.created_at)?.slice(0, 10),
-        client_name: plan?.client_name || plan?.client?.name,
-        location_id: plan?.location_id || plan?.location?.id,
-        location_name: plan?.location_name || plan?.location?.name,
+        client_id: planClientId ? String(planClientId) : undefined,
+        client_name: typeof planClientName === "string" ? planClientName : undefined,
+        location_id: plan?.location_id ? String(plan.location_id) : (typeof plan?.location === "object" ? String(plan.location?._id || plan.location?.id || "") : undefined),
+        location_name: plan?.location_name || (typeof plan?.location === "object" ? plan.location?.name : undefined),
         rawAdditionalTask: task,
         isCleaningPlanTask: true,
       });
@@ -127,12 +156,16 @@ export default function ExtraServicesPage() {
     });
   }, [servicesRes, tasksRes, plansById, search, status, clientId]);
 
+  const pagedItems = useMemo(() => {
+    return items.slice((page - 1) * LIMIT, page * LIMIT);
+  }, [items, page]);
+
   const loading = loadingServices || loadingPlans || loadingTasks;
 
   return (
     <div className="space-y-5 pb-10">
       {/* Top Search & Filter Bar */}
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap items-center gap-3">
         <div className="relative min-w-[240px] flex-1">
           <MdSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg" />
           <input
@@ -144,33 +177,30 @@ export default function ExtraServicesPage() {
         </div>
 
         {/* Client filter dropdown */}
-        <select
-          value={clientId}
-          onChange={(e) => setClientId(e.target.value)}
-          className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none focus:border-sky-500 max-w-[200px] truncate"
-        >
-          <option value="">All Clients</option>
-          {clientsRes?.result?.map((c) => (
-            <option key={c._id} value={c._id}>
-              {c.name}
-            </option>
-          ))}
-        </select>
+        <div className="w-full sm:w-52">
+          <Select
+            value={clientId}
+            onValueChange={setClientId}
+            placeholder="All Clients"
+            options={[
+              { value: "", label: "All Clients" },
+              ...(clientsRes?.result ?? []).map((c) => ({
+                value: c._id,
+                label: clientLabel(c),
+              })),
+            ]}
+          />
+        </div>
 
         {/* Status filter dropdown */}
-        <select
-          value={status}
-          onChange={(e) => setStatus(e.target.value)}
-          className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none focus:border-sky-500"
-        >
-          <option value="">All Statuses</option>
-          <option value="pending">Pending</option>
-          <option value="under_review">Under Review</option>
-          <option value="approved">Approved</option>
-          <option value="in_progress">In Progress</option>
-          <option value="completed">Completed</option>
-          <option value="rejected">Rejected</option>
-        </select>
+        <div className="w-full sm:w-44">
+          <Select
+            value={status}
+            onValueChange={setStatus}
+            placeholder="All Statuses"
+            options={STATUS_OPTIONS}
+          />
+        </div>
       </div>
 
       {error && (
@@ -184,7 +214,7 @@ export default function ExtraServicesPage() {
         <CardGridSkeleton cards={6} />
       ) : (
         <div className="grid gap-3.5 md:grid-cols-2 xl:grid-cols-3">
-          {items.map((item) => (
+          {pagedItems.map((item) => (
             <ExtraServiceCard
               key={`${item.planId || "es"}-${item.id}`}
               item={item}
@@ -202,6 +232,14 @@ export default function ExtraServicesPage() {
           )}
         </div>
       )}
+
+      <BackendPagination
+        page={page}
+        limit={LIMIT}
+        total={items.length}
+        onPageChange={setPage}
+        itemLabel="requests"
+      />
 
       {/* Cleaning Plan Modal View */}
       {selected && (

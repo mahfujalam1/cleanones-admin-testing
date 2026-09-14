@@ -11,6 +11,7 @@ import { DetailSkeleton } from '@/components/shared/SkeletonLoader';
 import { planIdFromShift } from '@/components/roster/types';
 import { CreatePlanModal } from '@/components/cleaningPlans/CreatePlanModal';
 import { WorkerAssignmentModal } from '@/components/cleaningPlans/WorkerAssignmentModal';
+import { useModalJump } from '@/hooks/useModalJump';
 
 interface EmployeeDetailsModalProps {
   worker: WorkerInfo;
@@ -46,6 +47,7 @@ export function EmployeeDetailsModal({ worker, onClose, onChanged }: EmployeeDet
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [assigning, setAssigning] = useState(false);
+  const { triggerJump, jumpClassName } = useModalJump();
 
   // Live-status shifts generated from a cleaning plan carry the plan id, which is what makes
   // editing and reassigning possible from here without a shift-level endpoint.
@@ -85,12 +87,16 @@ export function EmployeeDetailsModal({ worker, onClose, onChanged }: EmployeeDet
   return createPortal(
     <div
       className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4"
-      onMouseDown={onClose}
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) {
+          triggerJump();
+        }
+      }}
       role="dialog"
       aria-modal="true"
     >
       <div
-        className="flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-xl border border-slate-200 bg-white animate-in fade-in zoom-in-95 duration-150"
+        className={`flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-xl border border-slate-200 bg-white animate-in fade-in zoom-in-95 duration-150 ${jumpClassName}`}
         onMouseDown={(event) => event.stopPropagation()}
       >
         {/* Header */}

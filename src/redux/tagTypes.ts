@@ -20,6 +20,7 @@ export enum tagTypes {
   workers = "workers",
   suggestedQuestions = "suggestedQuestions",
   faqs = "faqs",
+  invoices = "invoices",
 }
 
 export const tagTypeList = Object.values(tagTypes);
