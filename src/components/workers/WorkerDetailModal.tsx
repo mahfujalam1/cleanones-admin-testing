@@ -233,7 +233,9 @@ export function WorkerDetailModal({
         role="dialog"
         aria-modal="true"
         aria-label="Worker details"
-        className={`flex max-h-[85vh] w-full max-w-3xl flex-col rounded-lg bg-white shadow-2xl animate-in fade-in zoom-in-95 duration-200 ${jumpClassName}`}
+        // Fixed box: the tabs hold very different amounts of content, and sizing to it made
+        // the modal jump on every switch. The body scrolls inside instead.
+        className={`flex h-[85vh] w-full max-w-3xl flex-col rounded-lg bg-white shadow-2xl animate-in fade-in zoom-in-95 duration-200 ${jumpClassName}`}
       >
         <header className="flex items-start justify-between gap-4 border-b border-slate-100 px-6 pb-4 pt-5">
           <div className="flex min-w-0 items-center gap-3">

@@ -8,7 +8,7 @@ import { useGetDashboardOverviewQuery, useGetInProgressShiftsQuery } from "@/red
 import { useGetTodayLiveShiftMetaQuery, useGetTodayLiveShiftsQuery } from "@/redux/api/shiftsApi";
 import type { DashboardOverview, InProgressShift } from "@/services/actions/dashboard";
 import { getLocale } from "@/lib/locale";
-import { getDashboardTranslation } from "@/lib/translations";
+import { getDashboardTranslation, getUiTranslation } from "@/lib/translations";
 
 const normalizeStatus = (value: string) => value.toLowerCase().replaceAll(" ", "_");
 const uniqueBy = <T,>(items: T[], getKey: (item: T) => string) => {
@@ -50,9 +50,12 @@ export default function DashboardPage() {
   const pathname = usePathname();
   const locale = getLocale(pathname);
   const t = getDashboardTranslation(locale);
+  const ui = getUiTranslation(locale);
 
   const [filter, setFilter] = useState("");
-  const [liveTab, setLiveTab] = useState<"all" | "on_time" | "late" | "missing">("all");
+  const [liveTab, setLiveTab] = useState<
+    "all" | "upcoming" | "in_progress" | "completed" | "cancelled"
+  >("all");
   const [actionsOpen, setActionsOpen] = useState(false);
   const [selectedLateWorker, setSelectedLateWorker] = useState<{
     worker_name: string;
@@ -64,10 +67,18 @@ export default function DashboardPage() {
   const { data: overview, isLoading: loadingOverview } = useGetDashboardOverviewQuery(filter || undefined);
   const { data: shiftsRes } = useGetInProgressShiftsQuery();
   const { data: todayLiveMeta } = useGetTodayLiveShiftMetaQuery();
-  const { data: todayShiftsRes } = useGetTodayLiveShiftsQuery({ limit: 100 });
+  // The Live Operations tabs are sent to the API as `status`, so each tab is its own request
+  // rather than a slice of one cached list.
+  const { data: todayShiftsRes, isFetching: fetchingLiveShifts } = useGetTodayLiveShiftsQuery({
+    limit: 100,
+    page: 1,
+    sort: "-date_time",
+    status: liveTab === "all" ? undefined : liveTab,
+  });
 
   const shifts: InProgressShift[] = shiftsRes?.shifts ?? [];
-  const todayLiveShifts = todayShiftsRes?.result ?? [];
+  // `?? []` would be a fresh array each render and re-run every memo that depends on it.
+  const todayLiveShifts = useMemo(() => todayShiftsRes?.result ?? [], [todayShiftsRes]);
 
   const safeOverview: DashboardOverview = overview || {
     greeting: t.dashboard.goodMorning,
@@ -105,6 +116,21 @@ export default function DashboardPage() {
     return status.includes("late") || status.includes("show") || status.includes("missing");
   });
   const cards = safeOverview.summary_cards;
+
+  /**
+   * The banner used to trust `people_need_attention_count` alone, while the Late Workers card
+   * reads the live-shift meta. The two endpoints disagree, so a late worker could be counted
+   * on the card and still show "All on time" above it. The banner now takes the highest of
+   * every signal available: the overview count, the live late/no-show total, the pills the
+   * overview itself returned, and the in-progress shifts flagged late or missing.
+   */
+  const lateWorkerCount = todayLiveMeta?.today_total_worker_late ?? cards.late_no_show_count ?? 0;
+  const needAttentionCount = Math.max(
+    safeOverview.attention_banner.people_need_attention_count ?? 0,
+    lateWorkerCount,
+    attentionPills.length,
+    fallingBehind.length,
+  );
 
   const liveOperationsRows = useMemo(() => {
     if (todayLiveShifts.length > 0) {
@@ -194,12 +220,9 @@ export default function DashboardPage() {
     });
   }, [todayLiveShifts, shifts]);
 
-  const filteredLiveRows = useMemo(() => {
-    if (liveTab === "all") return liveOperationsRows;
-    return liveOperationsRows.filter((r) => r.status === liveTab);
-  }, [liveOperationsRows, liveTab]);
-
-  const displayLiveRows = filteredLiveRows.slice(0, 6);
+  // The tabs are shift lifecycle statuses and the row badge is check-in punctuality, so there
+  // is nothing to re-filter here — the request itself is already scoped by `status`.
+  const displayLiveRows = liveOperationsRows.slice(0, 6);
 
   const translateGreeting = (greeting: string) => {
     if (!greeting) return "";
@@ -235,22 +258,22 @@ export default function DashboardPage() {
       </header>
 
       {/* Red Attention Banner */}
-      <section className={`rounded-xl border p-4 ${safeOverview.attention_banner.people_need_attention_count > 0 ? "border-red-200 bg-red-50/70" : "border-slate-200 bg-white"}`}>
+      <section className={`rounded-xl border p-4 ${needAttentionCount > 0 ? "border-red-200 bg-red-50/70" : "border-slate-200 bg-white"}`}>
         <div className="flex flex-wrap items-center gap-4">
-          <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-white ${safeOverview.attention_banner.people_need_attention_count > 0 ? "bg-red-500 shadow-xs" : "bg-emerald-500"}`}>
-            {safeOverview.attention_banner.people_need_attention_count > 0 ? <MdWarningAmber className="text-2xl" /> : <MdCheckCircle className="text-2xl" />}
+          <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-white ${needAttentionCount > 0 ? "bg-red-500 shadow-xs" : "bg-emerald-500"}`}>
+            {needAttentionCount > 0 ? <MdWarningAmber className="text-2xl" /> : <MdCheckCircle className="text-2xl" />}
           </span>
           <div className="flex-1 min-w-48">
             <div className="flex flex-wrap items-center gap-2">
-              <h2 className={`font-bold ${safeOverview.attention_banner.people_need_attention_count > 0 ? "text-red-950" : "text-slate-900"}`}>
-                {safeOverview.attention_banner.people_need_attention_count} {t.dashboard.peopleNeedAttention}
+              <h2 className={`font-bold ${needAttentionCount > 0 ? "text-red-950" : "text-slate-900"}`}>
+                {needAttentionCount} {t.dashboard.peopleNeedAttention}
               </h2>
-              <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold ${safeOverview.attention_banner.people_need_attention_count > 0 ? "bg-red-100 text-red-700" : "bg-emerald-100 text-emerald-700"}`}>
-                {safeOverview.attention_banner.people_need_attention_count > 0 ? safeOverview.attention_banner.badge_text : t.dashboard.allOnTime}
+              <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold ${needAttentionCount > 0 ? "bg-red-100 text-red-700" : "bg-emerald-100 text-emerald-700"}`}>
+                {needAttentionCount > 0 ? safeOverview.attention_banner.badge_text : t.dashboard.allOnTime}
               </span>
             </div>
-            <p className={`text-xs sm:text-sm mt-0.5 ${safeOverview.attention_banner.people_need_attention_count > 0 ? "text-red-700" : "text-slate-500"}`}>
-              {safeOverview.attention_banner.people_need_attention_count > 0 ? safeOverview.attention_banner.banner_subtitle : t.dashboard.noWorkersRequireAttention}
+            <p className={`text-xs sm:text-sm mt-0.5 ${needAttentionCount > 0 ? "text-red-700" : "text-slate-500"}`}>
+              {needAttentionCount > 0 ? safeOverview.attention_banner.banner_subtitle : t.dashboard.noWorkersRequireAttention}
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -271,6 +294,11 @@ export default function DashboardPage() {
                   <MdCall className="text-sm" />
                 </button>
               ))
+            ) : needAttentionCount > 0 ? (
+              // No pills came back, but something is late — never claim the schedule is clean.
+              <span className="text-xs font-medium text-red-700 bg-red-50 border border-red-200/80 rounded-lg px-3 py-1.5">
+                {lateWorkerCount || needAttentionCount} {ui.lateWorkers}
+              </span>
             ) : (
               <span className="text-xs text-emerald-700 font-medium bg-emerald-50 border border-emerald-200/80 rounded-lg px-3 py-1.5">
                 {t.dashboard.allShiftsOnSchedule}
@@ -323,37 +351,37 @@ export default function DashboardPage() {
         <Metric
           icon={<MdCalendarToday />}
           value={todayLiveMeta?.today_total_shift ?? todayLiveMeta?.total_shift ?? cards.active_shifts_count}
-          label="Total Shifts"
+          label={ui.totalShifts}
           tone="bg-blue-50 text-blue-600"
         />
         <Metric
           icon={<MdAccessTime />}
           value={todayLiveMeta?.today_total_in_progress_shift ?? todayLiveMeta?.in_progress ?? cards.active_shifts_count}
-          label="In Progress"
+          label={ui.inProgress}
           tone="bg-sky-50 text-sky-600"
         />
         <Metric
           icon={<MdCheckCircle />}
           value={todayLiveMeta?.today_total_completed_shift ?? todayLiveMeta?.completed_shift ?? 0}
-          label="Completed"
+          label={ui.completed}
           tone="bg-emerald-50 text-emerald-600"
         />
         <Metric
           icon={<MdAccessTime />}
           value={todayLiveMeta?.today_total_pending_shift ?? todayLiveMeta?.pending ?? 0}
-          label="Pending Shifts"
+          label={ui.pendingShifts}
           tone="bg-indigo-50 text-indigo-600"
         />
         <Metric
           icon={<MdWarningAmber />}
           value={todayLiveMeta?.today_total_worker_late ?? cards.late_no_show_count}
-          label="Late Workers"
+          label={ui.lateWorkers}
           tone="bg-red-50 text-red-600"
         />
         <Metric
           icon={<MdReportProblem />}
           value={todayLiveMeta?.total_issue_report ?? cards.reviews_pending_count}
-          label="Issue Reports"
+          label={ui.issueReports}
           tone="bg-amber-50 text-amber-600"
         />
       </div>
@@ -363,19 +391,29 @@ export default function DashboardPage() {
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 p-4 sm:p-5">
           <div className="flex items-center gap-2">
             <span className="h-2.5 w-2.5 rounded-full bg-sky-500 shrink-0" />
-            <h2 className="text-base font-bold text-slate-900">Live Operations</h2>
+            <h2 className="text-base font-bold text-slate-900">{ui.liveOperations}</h2>
           </div>
           <div className="flex items-center gap-2 sm:gap-4">
             <div className="flex max-w-full overflow-x-auto rounded border border-gray-200 bg-gray-50 p-0.5 text-xs font-medium">
-              {(['all', 'on_time', 'late', 'missing'] as const).map((tab) => {
+              {(['all', 'upcoming', 'in_progress', 'completed', 'cancelled'] as const).map((tab) => {
                 const active = liveTab === tab;
-                const label = tab === 'all' ? 'All' : tab === 'on_time' ? 'On Time' : tab === 'late' ? 'Late' : 'Missing';
+                const label =
+                  tab === 'all'
+                    ? t.dashboard.all
+                    : tab === 'in_progress'
+                    ? ui.inProgress
+                    : tab === 'upcoming'
+                    ? ui.upcoming
+                    : tab === 'completed'
+                    ? ui.completed
+                    : ui.cancelled;
                 return (
                   <button
                     key={tab}
                     type="button"
                     onClick={() => setLiveTab(tab)}
-                    className={`h-7 rounded px-3 transition-colors cursor-pointer ${
+                    disabled={fetchingLiveShifts}
+                    className={`h-7 rounded px-3 transition-colors cursor-pointer disabled:cursor-wait ${
                       active
                         ? 'border border-gray-200 bg-white text-primary font-semibold shadow-2xs'
                         : 'border border-transparent text-gray-500 hover:text-gray-800'
@@ -428,14 +466,14 @@ export default function DashboardPage() {
               <div className="flex items-center gap-4 sm:gap-6 shrink-0">
                 {/* Check-In */}
                 <div className="text-right min-w-[50px] hidden xs:block sm:block">
-                  <span className="block text-[10px] text-slate-400 font-medium">Check-In</span>
+                  <span className="block text-[10px] text-slate-400 font-medium">{ui.checkIn}</span>
                   <span className="block text-xs font-bold text-slate-800 mt-0.5">{row.check_in_time}</span>
                 </div>
 
                 {/* Progress */}
                 <div className="w-24 sm:w-28 text-right">
                   <div className="flex items-center justify-end gap-1.5 text-xs font-bold text-slate-800">
-                    <span className="text-[10px] text-slate-400 font-normal">Progress</span>
+                    <span className="text-[10px] text-slate-400 font-normal">{ui.progress}</span>
                     <span>{row.progress}%</span>
                   </div>
                   <div className="mt-1 h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
@@ -462,12 +500,12 @@ export default function DashboardPage() {
                   ) : row.status === 'missing' ? (
                     <span className="flex items-center gap-1.5 text-red-500">
                       <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
-                      Missing
+                      {ui.missing}
                     </span>
                   ) : (
                     <span className="flex items-center gap-1.5 text-emerald-600">
                       <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                      On Time
+                      {ui.onTime}
                     </span>
                   )}
                 </div>
@@ -479,7 +517,7 @@ export default function DashboardPage() {
           ))}
 
           {displayLiveRows.length === 0 && (
-            <p className="py-12 text-center text-xs text-slate-400">No shifts found</p>
+            <p className="py-12 text-center text-xs text-slate-400">{ui.noShiftsFound}</p>
           )}
         </div>
       </section>

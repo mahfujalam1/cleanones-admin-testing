@@ -271,8 +271,8 @@ function GeneralTab({ worker, details, loading, error, onEdit }: { worker: Worke
             <Row label="Signed up" value={formatBool(details.is_signup)} />
             <Row label="Temp password changed" value={formatBool(details.temp_password_changed)} />
             <Row label="Last login" value={formatDateTime(details.last_login_at)} />
-            <Row label="Created" value={formatDateTime(details.created_at)} />
-            <Row label="Last updated" value={formatDateTime(details.updated_at)} />
+            <Row label="Created" value={formatDateTime(details.createdAt)} />
+            <Row label="Last updated" value={formatDateTime(details.updatedAt)} />
           </Section>
         </>
       ) : null}

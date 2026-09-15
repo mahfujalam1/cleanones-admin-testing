@@ -147,7 +147,7 @@ export function ChatSidebar({
             const online = isChatOnline(chat);
             const name = chat.display_name || chat.name || "Chat";
             const lastMsgText = chat.last_message?.text || "No messages yet";
-            const time = formatMessageTime(chat.last_message_at || chat.created_at);
+            const time = formatMessageTime(chat.last_message_at || chat.createdAt);
 
             return (
               <button

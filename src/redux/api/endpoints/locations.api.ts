@@ -26,8 +26,8 @@ export type Location = {
   location?: GeoPoint;
   /** Only the `client-locations` listing carries this. */
   total_room?: number;
-  created_at?: string;
-  updated_at?: string;
+  createdAt?: string;
+  updatedAt?: string;
 };
 
 export type CreateLocationInput = {

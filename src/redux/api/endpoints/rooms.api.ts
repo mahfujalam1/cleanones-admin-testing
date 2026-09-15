@@ -65,8 +65,8 @@ export type Room = {
    */
   total_task?: number;
   total_tasks?: number;
-  created_at?: string;
-  updated_at?: string;
+  createdAt?: string;
+  updatedAt?: string;
 };
 
 export type CreateRoomInput = {
@@ -136,7 +136,15 @@ export const roomsApi = baseApi.injectEndpoints({
           }
         } catch {}
       },
-      invalidatesTags: [],
+      // The optimistic patch above only reaches the room catalog. Without these tags the
+      // location's own room list (and its count) stayed stale until a full page reload.
+      invalidatesTags: (_result, _error, { location }) => [
+        { type: tagTypes.rooms, id: `LOCATION-${location}` },
+        // The catalog falls back to this tag whenever it is not scoped to one location,
+        // which is what the client-scoped "all locations" room list uses.
+        { type: tagTypes.rooms, id: "LIST" },
+        { type: tagTypes.locations, id: location },
+      ],
     }),
 
     updateRoom: builder.mutation<Room, { id: string; locationId: string; body: UpdateRoomInput }>({

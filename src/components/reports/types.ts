@@ -1,4 +1,4 @@
-export type ReportRange = "Week" | "Month" | "Quarter" | "Year";
+export type ReportRange = "Week" | "Month" | "Year";
 
 export interface QualityDataPoint {
   name: string;

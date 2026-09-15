@@ -124,7 +124,7 @@ export function InvoicesTab({ worker }: { worker: Worker }) {
           </div>
           <div className="divide-y divide-slate-50">
             {invoices.map((invoice) => {
-              const invoiceDate = invoice.created_at || invoice.createdAt;
+              const invoiceDate = invoice.createdAt;
               const dateFormatted = invoiceDate
                 ? new Date(invoiceDate).toLocaleDateString()
                 : "--";

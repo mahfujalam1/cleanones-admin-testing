@@ -2,6 +2,9 @@ import { baseApi } from "../baseApi";
 import { tagTypes } from "../../tagTypes";
 
 /** A photo the worker must supply when finishing the task. */
+/** The two decisions `/approve-additional-task` accepts. */
+export type AdditionalTaskDecision = "Approved" | "Rejected";
+
 export type PhotoRequirement = {
   title: string;
   photo_url?: string;
@@ -18,12 +21,10 @@ export type AdditionalTask = {
   photo_requirements?: PhotoRequirement[];
   date_time?: string;
   is_completed?: boolean;
-  is_approved?: boolean;
+  status?: AdditionalTaskDecision | "Pending";
+  reject_reason?: string | null;
   createdAt?: string;
   updatedAt?: string;
-  /** The documented payload is snake_case; both spellings are read defensively. */
-  created_at?: string;
-  updated_at?: string;
 };
 
 /**
@@ -40,7 +41,7 @@ export type CreateAdditionalTaskInput = {
   date_time?: string;
 };
 
-/** Fields the partial-update route accepts. `is_approved` is ignored by the server. */
+/** Fields the partial-update route accepts. The decision is not one of them. */
 export type UpdateAdditionalTaskInput = {
   name?: string;
   description?: string;
@@ -52,14 +53,17 @@ export type UpdateAdditionalTaskInput = {
 };
 
 /**
- * An additional task carries booleans rather than a status string. `is_approved` only turns
- * true once a manager approves, so anything else is still awaiting a decision.
+ * A finished task reads as completed whatever the decision was; otherwise the server's own
+ * `status` is lower-cased for the UI, defaulting to pending while no decision has been made.
  */
-export function additionalTaskStatus(task: Pick<AdditionalTask, "is_completed" | "is_approved">): string {
+export function additionalTaskStatus(task: Pick<AdditionalTask, "is_completed" | "status">): string {
   if (task.is_completed) return "completed";
-  if (task.is_approved) return "approved";
-  return "pending";
+  return (task.status ?? "Pending").toLowerCase();
 }
+
+/** True only once a manager has approved; used for the approved/pending badges. */
+export const additionalTaskApproved = (task: Pick<AdditionalTask, "status">) =>
+  task.status === "Approved";
 
 /** `data.meta` from any paginated list route. */
 export type AdditionalTaskMeta = {
@@ -84,7 +88,7 @@ export type AdditionalTasksQuery = {
   searchTerm?: string;
   /** Single field; prefix with `-` for descending order. */
   sort?: string;
-  is_approved?: boolean;
+  status?: AdditionalTaskDecision | "Pending";
   is_completed?: boolean;
   is_photo_required?: boolean;
 };
@@ -109,12 +113,13 @@ export const additionalTasksApi = baseApi.injectEndpoints({
     getAdditionalTasks: builder.query<AdditionalTaskListResponse, AdditionalTasksQuery | void>({
       query: (args) => {
         const params = new URLSearchParams();
-        const { planId, page, limit, searchTerm, sort, ...flags } = args ?? {};
+        const { planId, page, limit, searchTerm, sort, status, ...flags } = args ?? {};
         if (planId) params.set("planId", planId);
+        if (status) params.set("status", status);
         params.set("page", String(page ?? 1));
         params.set("limit", String(limit ?? 10));
         if (searchTerm?.trim()) params.set("searchTerm", searchTerm.trim());
-        params.set("sort", sort ?? "created_at");
+        params.set("sort", sort ?? "createdAt");
         for (const [key, value] of Object.entries(flags)) {
           if (typeof value === "boolean") params.set(key, String(value));
         }
@@ -138,7 +143,7 @@ export const additionalTasksApi = baseApi.injectEndpoints({
 
     /**
      * PATCH /additional-task/update-additional-task/{id} — partial update.
-     * `is_approved` is stripped server-side even if sent, so approval stays on the
+     * The decision is stripped server-side even if sent, so approval stays on the
      * approve endpoint; this is only used to correct fields such as the duration.
      */
     updateAdditionalTask: builder.mutation<AdditionalTask, { id: string } & UpdateAdditionalTaskInput>({
@@ -155,13 +160,20 @@ export const additionalTasksApi = baseApi.injectEndpoints({
       ],
     }),
 
-    /** Approve with `is_approved: true`, reject with `false`. Manager only. */
-    approveAdditionalTask: builder.mutation<AdditionalTask, { id: string; is_approved: boolean }>({
-      query: ({ id, is_approved }) => ({
+    /**
+     * PATCH /additional-task/approve-additional-task/{id} — manager only.
+     * `reject_reason` is required when rejecting and cleared by the server when approving,
+     * so it is only put on the wire for a rejection.
+     */
+    approveAdditionalTask: builder.mutation<
+      AdditionalTask,
+      { id: string; status: AdditionalTaskDecision; reject_reason?: string }
+    >({
+      query: ({ id, status, reject_reason }) => ({
         url: `/additional-task/approve-additional-task/${encodeURIComponent(id)}`,
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: { is_approved },
+        body: status === "Rejected" ? { status, reject_reason } : { status },
       }),
       invalidatesTags: (_result, _error, { id }) => [
         { type: tagTypes.tasks, id },

@@ -32,23 +32,3 @@ export async function getShiftReport(
 export const getQualityControlReport = (timeframe: ReportPeriod) =>
   getShiftReport(timeframe);
 
-export async function exportQualityControlPdf(
-  timeframe: ReportPeriod
-): Promise<ActionResult<string>> {
-  const result = await authenticated<string>(
-    `/manager/reports/quality-control/pdf?timeframe=${timeframe}`,
-    { method: "GET" }
-  );
-  if (!result.success) return result;
-  const base = (
-    process.env.API_BASE_URL ??
-    process.env.NEXT_PUBLIC_API_BASE_URL ??
-    ""
-  ).replace(/\/$/, "");
-  return {
-    success: true,
-    data: result.data.startsWith("http")
-      ? result.data
-      : `${base}${result.data.startsWith("/") ? "" : "/"}${result.data}`,
-  };
-}

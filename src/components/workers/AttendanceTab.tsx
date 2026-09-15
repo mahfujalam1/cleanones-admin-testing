@@ -11,7 +11,7 @@ import {
   TbCheck,
 } from "react-icons/tb";
 import { useGetShiftAttendanceSummaryQuery } from "@/redux/api/shiftsApi";
-import { useGetLiveWorkerDetailsQuery } from "@/redux/api/shiftMonitoringApi";
+import { apiError } from "@/redux/api/apiError";
 import { workerName, type Worker } from "@/redux/api/endpoints/workers.api";
 
 interface AttendanceTabProps {
@@ -46,27 +46,20 @@ function formatDateRange(start?: string, end?: string): string {
 export function AttendanceTab({ worker }: AttendanceTabProps) {
   const [period, setPeriod] = useState<Period>("today");
 
-  // 1. Fetch Attendance Summary across all workers for the selected period
+  // 1. Attendance summary scoped to this worker for the selected period.
   const {
     data: summary,
     isLoading: loadingSummary,
     isFetching: fetchingSummary,
+    error: summaryError,
     refetch: refetchSummary,
-  } = useGetShiftAttendanceSummaryQuery({ period });
-
-  // 2. Fetch specific live details / attendance for this worker if available
-  const {
-    data: workerDetails,
-    isLoading: loadingWorkerDetails,
-    refetch: refetchWorkerDetails,
-  } = useGetLiveWorkerDetailsQuery(
-    { id: worker._id, period },
+  } = useGetShiftAttendanceSummaryQuery(
+    { workerId: worker._id, period },
     { skip: !worker._id }
   );
 
   const handleRefresh = () => {
     void refetchSummary();
-    void refetchWorkerDetails();
   };
 
   const totalHours = summary?.total_hours ?? 0;
@@ -96,7 +89,7 @@ export function AttendanceTab({ worker }: AttendanceTabProps) {
               )}
             </div>
             <p className="text-[10px] text-slate-500">
-              Aggregated shift attendance metrics across workers for the chosen period.
+              {workerName(worker)}&apos;s shift attendance metrics for the chosen period.
             </p>
           </div>
         </div>
@@ -135,6 +128,12 @@ export function AttendanceTab({ worker }: AttendanceTabProps) {
           </button>
         </div>
       </div>
+
+      {summaryError && !loadingSummary && (
+        <div className="rounded-xl border border-red-200 bg-red-50 px-3.5 py-2.5 text-xs font-medium text-red-700">
+          {apiError(summaryError, "Could not load this worker's attendance summary.")}
+        </div>
+      )}
 
       {/* Summary KPI Cards */}
       {loadingSummary ? (
@@ -188,17 +187,18 @@ export function AttendanceTab({ worker }: AttendanceTabProps) {
           </div>
 
           {/* Check-ins Breakdown */}
-          <div className="rounded-xl border border-slate-200/80 bg-white p-3 shadow-2xs">
-            <div className="flex items-center justify-between">
-              <p className="text-[11px] font-semibold text-slate-500">Check-ins</p>
-              <span className="text-[10px] font-bold text-slate-400">{totalCheckIns} total</span>
+          <div className="min-w-0 rounded-xl border border-slate-200/80 bg-white p-3 shadow-2xs">
+            <div className="flex items-center justify-between gap-2">
+              <p className="truncate text-[11px] font-semibold text-slate-500">Check-ins</p>
+              <span className="shrink-0 text-[10px] font-bold text-slate-400">{totalCheckIns} total</span>
             </div>
-            <div className="mt-2 flex items-center gap-2">
-              <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-700 ring-1 ring-emerald-200">
-                <TbCheck className="text-xs" /> {onTimeCount} on time
+            {/* Two badges do not fit side by side at a quarter of the grid, so they wrap. */}
+            <div className="mt-2 flex flex-wrap items-center gap-1.5">
+              <span className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-md bg-emerald-50 px-1.5 py-0.5 text-[10px] font-bold text-emerald-700 ring-1 ring-emerald-200">
+                <TbCheck className="text-[11px]" /> {onTimeCount} on time
               </span>
-              <span className="inline-flex items-center gap-1 rounded-md bg-amber-50 px-2 py-0.5 text-[11px] font-bold text-amber-700 ring-1 ring-amber-200">
-                <TbAlertTriangle className="text-xs" /> {lateCount} late
+              <span className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-md bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold text-amber-700 ring-1 ring-amber-200">
+                <TbAlertTriangle className="text-[11px]" /> {lateCount} late
               </span>
             </div>
             <p className="mt-1 text-[10px] text-slate-400">Punctuality breakdown</p>
@@ -212,17 +212,21 @@ export function AttendanceTab({ worker }: AttendanceTabProps) {
           <span className="font-semibold text-slate-700">Punctuality Share</span>
           <span className="font-bold text-sky-600">{punctuality}% on-time</span>
         </div>
-        <div className="mt-2 h-2.5 w-full overflow-hidden rounded-full bg-slate-100 flex">
-          <div
-            className="h-full bg-emerald-500 transition-all duration-500"
-            style={{ width: `${punctuality}%` }}
-            title={`On-time: ${punctuality}%`}
-          />
-          <div
-            className="h-full bg-amber-400 transition-all duration-500"
-            style={{ width: `${100 - punctuality}%` }}
-            title={`Late: ${100 - punctuality}%`}
-          />
+        <div className="mt-2 flex h-2.5 w-full overflow-hidden rounded-full bg-slate-100">
+          {totalCheckIns > 0 && (
+            <>
+              <div
+                className="h-full bg-emerald-500 transition-all duration-500"
+                style={{ width: `${punctuality}%` }}
+                title={`On-time: ${punctuality}%`}
+              />
+              <div
+                className="h-full bg-amber-400 transition-all duration-500"
+                style={{ width: `${100 - punctuality}%` }}
+                title={`Late: ${100 - punctuality}%`}
+              />
+            </>
+          )}
         </div>
         <div className="mt-2 flex items-center justify-between text-[11px] text-slate-500">
           <span className="flex items-center gap-1">
@@ -234,60 +238,10 @@ export function AttendanceTab({ worker }: AttendanceTabProps) {
             Late check-ins ({lateCount})
           </span>
         </div>
+        {totalCheckIns === 0 && (
+          <p className="mt-2 text-[10px] text-slate-400">No check-ins recorded in this period.</p>
+        )}
       </div>
-
-      {/* Worker Individual Shift & Attendance Record (if available) */}
-      {workerDetails && (
-        <div className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-2xs space-y-3">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
-            <div className="flex items-center gap-2">
-              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-sky-50 text-sky-600">
-                <TbUserCheck className="text-base" />
-              </span>
-              <div>
-                <h4 className="text-xs font-bold text-slate-900">
-                  {workerName(worker)}&apos;s Shift Record
-                </h4>
-                <p className="text-[10px] text-slate-500">
-                  {workerDetails.shift_label || "Active Schedule"}
-                </p>
-              </div>
-            </div>
-            {workerDetails.current_status && (
-              <span className="rounded-md bg-sky-50 px-2 py-0.5 text-[11px] font-semibold text-sky-700 ring-1 ring-sky-200">
-                {workerDetails.current_status}
-              </span>
-            )}
-          </div>
-
-          <div className="grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
-            <div className="rounded-lg bg-slate-50/70 p-2 border border-slate-100">
-              <span className="text-[10px] text-slate-400">Check In</span>
-              <p className="font-bold text-slate-800 mt-0.5">
-                {workerDetails.shift_details?.check_in || "--:--"}
-              </p>
-            </div>
-            <div className="rounded-lg bg-slate-50/70 p-2 border border-slate-100">
-              <span className="text-[10px] text-slate-400">Check Out</span>
-              <p className="font-bold text-slate-800 mt-0.5">
-                {workerDetails.shift_details?.check_out || "--:--"}
-              </p>
-            </div>
-            <div className="rounded-lg bg-slate-50/70 p-2 border border-slate-100">
-              <span className="text-[10px] text-slate-400">Worked</span>
-              <p className="font-bold text-slate-800 mt-0.5">
-                {workerDetails.hours_worked || `${workerDetails.hours_worked_numeric || 0}h`}
-              </p>
-            </div>
-            <div className="rounded-lg bg-slate-50/70 p-2 border border-slate-100">
-              <span className="text-[10px] text-slate-400">Shifts</span>
-              <p className="font-bold text-slate-800 mt-0.5">
-                {workerDetails.shifts_count || 0}
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

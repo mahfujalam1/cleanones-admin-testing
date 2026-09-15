@@ -13,7 +13,7 @@ interface FaqCardProps {
 
 export function FaqCard({ item, serialNo, onEdit, onDelete }: FaqCardProps) {
   const serial = serialNo ?? item.serial_no ?? 1;
-  const rawDate = item.updated_at || item.created_at;
+  const rawDate = item.updatedAt || item.createdAt;
   const parsedDate = rawDate ? new Date(rawDate) : null;
   const formattedDate =
     parsedDate && !Number.isNaN(parsedDate.getTime())

@@ -73,8 +73,8 @@ export type ExtraServiceRequest = {
   actual_finish_time?: string;
   plan_id?: string;
   plan_name?: string;
-  created_at: string;
-  updated_at: string;
+  createdAt: string;
+  updatedAt: string;
 };
 
 export type ExtraServiceTaskDetail = {
@@ -95,92 +95,3 @@ export type ExtraServiceTaskDetail = {
 
 const jsonHeader = (val: unknown) => ({ headers: { "Content-Type": "application/json" }, body: JSON.stringify(val) });
 
-export async function getExtraServices(input: { status?: string; client_id?: string; search?: string; page?: number; limit?: number } = {}) {
-  const q = new URLSearchParams({ page: String(input.page ?? 1), limit: String(input.limit ?? 100) });
-  if (input.status) q.set("status_val", input.status);
-  if (input.client_id) q.set("client_id", input.client_id);
-  if (input.search) q.set("search", input.search);
-
-  const managerRes = await authenticated<{ total_count: number; page: number; limit: number; has_more: boolean; requests: ExtraServiceRequest[] }>(
-    `/manager/extra-services?${q}`,
-    { method: "GET" }
-  );
-  if (managerRes.success) return managerRes;
-
-  return authenticated<{ total_count: number; page: number; limit: number; has_more: boolean; requests: ExtraServiceRequest[] }>(
-    `/client/extra-services?${q}`,
-    { method: "GET" }
-  );
-}
-
-export async function getExtraService(id: string) {
-  const managerRes = await authenticated<ExtraServiceRequest>(
-    `/manager/extra-services/${encodeURIComponent(id)}`,
-    { method: "GET" }
-  );
-  if (managerRes.success) return managerRes;
-
-  return authenticated<ExtraServiceRequest>(
-    `/client/extra-services/${encodeURIComponent(id)}`,
-    { method: "GET" }
-  );
-}
-
-export async function rejectExtraService(id: string, reason = "Service requested is outside operational scope.") {
-  return authenticated<ExtraServiceRequest>(`/manager/extra-services/${encodeURIComponent(id)}/reject`, {
-    method: "POST",
-    ...jsonHeader({ reason })
-  });
-}
-
-export async function approveExtraService(id: string, input: {
-  worker_ids?: string[];
-  workers?: Array<{ worker_id: string; position?: string }>;
-  action?: string;
-  required_photos?: string[];
-  estimated_hours?: number;
-  admin_notes?: string;
-}) {
-  const body = {
-    worker_ids: input.worker_ids ?? (input.workers?.map(w => w.worker_id) || []),
-    workers: input.workers ?? (input.worker_ids?.map(id => ({ worker_id: id, position: "normal" })) || []),
-    action: input.action ?? "append",
-    required_photos: input.required_photos ?? [],
-    estimated_hours: input.estimated_hours ?? 1,
-    admin_notes: input.admin_notes ?? ""
-  };
-  return authenticated<ExtraServiceRequest>(`/manager/extra-services/${encodeURIComponent(id)}/approve`, {
-    method: "POST",
-    ...jsonHeader(body)
-  });
-}
-
-export async function getExtraServiceWorkersDropdown(id: string, input: { search?: string; workerType?: string; sortBy?: string; page?: number; limit?: number } = {}) {
-  const q = new URLSearchParams({ page: String(input.page ?? 1), limit: String(input.limit ?? 50) });
-  if (input.search) q.set("search", input.search);
-  if (input.workerType) q.set("worker_type", input.workerType);
-  if (input.sortBy) q.set("sort_by", input.sortBy);
-  return authenticated<ExtraServiceWorkerDropdownResponse>(`/manager/extra-services/${encodeURIComponent(id)}/workers-dropdown?${q}`, { method: "GET" });
-}
-
-export async function assignExtraServiceWorkers(id: string, input: {
-  workers: Array<{ worker_id: string; position?: string }>;
-  action?: string;
-  estimated_hours?: number;
-  admin_notes?: string;
-}, force = true) {
-  const q = new URLSearchParams({ force: String(force) });
-  return authenticated<ExtraServiceRequest>(`/manager/extra-services/${encodeURIComponent(id)}/assign-workers`, {
-    method: "POST",
-    ...jsonHeader({
-      workers: input.workers,
-      action: input.action ?? "append",
-      estimated_hours: input.estimated_hours ?? 0,
-      admin_notes: input.admin_notes ?? ""
-    })
-  });
-}
-
-export async function completeApproveExtraService(id: string) {
-  return authenticated<ExtraServiceRequest>(`/manager/extra-services/${encodeURIComponent(id)}/complete-approve`, { method: "POST" });
-}

@@ -1,7 +1,4 @@
-export type LegalSlug = "privacy-policy" | "terms-and-conditions";
-
-/** The API addresses these documents by type, the routes address them by slug. */
-export const legalTypeForSlug = (slug: LegalSlug) => slug === "privacy-policy" ? "privacy_policy" : "terms_and_conditions";
+export type LegalSlug = "privacy-policy" | "terms-and-conditions" | "about-us";
 
 export const legalDocuments: Record<LegalSlug, { title: string; subtitle: string; updated: string; content: string }> = {
   "privacy-policy": {
@@ -60,10 +57,30 @@ CleanOnes aims to keep the platform available and reliable, but maintenance or c
 
 These terms may be updated when services, legal requirements or platform functionality change. The latest published version applies.`,
   },
+  "about-us": {
+    title: "About Us",
+    subtitle: "Who CleanOnes is and what the company does.",
+    updated: "28 July 2026",
+    content: `1. Who we are
+
+CleanOnes provides professional cleaning services and the workforce platform that coordinates them.
+
+2. What we do
+
+We plan and monitor cleaning work across client locations, schedule employees and freelancers, and keep quality control evidence for every visit.
+
+3. How we work
+
+Each location has its own cleaning plan, rooms and tasks. Work is assigned to trained staff, tracked in real time, and reviewed through photo evidence and issue reports.
+
+4. Contact
+
+General enquiries can be sent to info@cleanones.nl.`,
+  },
 };
 
 export function isLegalSlug(value: string): value is LegalSlug {
-  return value === "privacy-policy" || value === "terms-and-conditions";
+  return value === "privacy-policy" || value === "terms-and-conditions" || value === "about-us";
 }
 
 export function legalStorageKey(slug: LegalSlug) {

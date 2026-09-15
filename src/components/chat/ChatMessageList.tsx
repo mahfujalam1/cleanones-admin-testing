@@ -1,7 +1,11 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { MdAttachFile, MdDeleteOutline, MdMoreVert } from "react-icons/md";
+import { MdAttachFile, MdDeleteOutline, MdMoreVert, MdOutlineClose, MdZoomIn } from "react-icons/md";
+import { createPortal } from "react-dom";
+import { usePathname } from "next/navigation";
+import { getLocale } from "@/lib/locale";
+import { getUiTranslation } from "@/lib/translations";
 import { DetailSkeleton } from "@/components/shared/SkeletonLoader";
 import type { ChatMessage } from "@/redux/api/endpoints/chat.api";
 import { formatDateDivider, formatMessageTime } from "./chatUtils";
@@ -23,8 +27,21 @@ export function ChatMessageList({
   typingUser,
   onRequestDeleteMessage,
 }: ChatMessageListProps) {
+  const ui = getUiTranslation(getLocale(usePathname()));
   const [activeMenuMsgId, setActiveMenuMsgId] = useState<string | null>(null);
+  /** The photo currently open in the lightbox, or null when it is closed. */
+  const [preview, setPreview] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+
+  // Escape closes the preview, matching every other modal in the dashboard.
+  useEffect(() => {
+    if (!preview) return;
+    const close = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setPreview(null);
+    };
+    window.addEventListener("keydown", close);
+    return () => window.removeEventListener("keydown", close);
+  }, [preview]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -54,11 +71,11 @@ export function ChatMessageList({
                 ? "Client"
                 : "Worker";
 
-            const dateKey = new Date(message.created_at || message.createdAt || "").toDateString();
+            const dateKey = new Date(message.createdAt || "").toDateString();
             const prevDateKey =
               index > 0
                 ? new Date(
-                    messages[index - 1].created_at || messages[index - 1].createdAt || ""
+                    messages[index - 1].createdAt || ""
                   ).toDateString()
                 : null;
             const showDateDivider = index === 0 || dateKey !== prevDateKey;
@@ -68,7 +85,7 @@ export function ChatMessageList({
                 {showDateDivider && (
                   <div className="my-3 flex items-center justify-center">
                     <span className="rounded-full bg-slate-200/70 px-3 py-0.5 text-[10px] font-semibold text-slate-600 border border-slate-300/40">
-                      {formatDateDivider(message.created_at || message.createdAt)}
+                      {formatDateDivider(message.createdAt)}
                     </span>
                   </div>
                 )}
@@ -153,11 +170,23 @@ export function ChatMessageList({
                                 {message.attachments.map((att, aIdx) => (
                                   <div key={aIdx} className="overflow-hidden rounded-lg">
                                     {att.type === "image" ? (
-                                      <img
-                                        src={att.url}
-                                        alt="Attachment"
-                                        className="max-h-56 max-w-full rounded-lg object-cover"
-                                      />
+                                      <button
+                                        type="button"
+                                        onClick={() => setPreview(att.url)}
+                                        title={ui.clickToPreview}
+                                        className="group/photo relative block cursor-zoom-in overflow-hidden rounded-lg"
+                                      >
+                                        <img
+                                          src={att.url}
+                                          alt={ui.photo}
+                                          className="max-h-56 max-w-full rounded-lg object-cover transition-transform duration-200 group-hover/photo:scale-[1.02]"
+                                        />
+                                        {/* Hover hint, so it is clear the photo opens larger. */}
+                                        <span className="pointer-events-none absolute inset-0 flex items-center justify-center gap-1.5 rounded-lg bg-slate-950/45 text-xs font-semibold text-white opacity-0 transition-opacity duration-200 group-hover/photo:opacity-100">
+                                          <MdZoomIn className="text-base" />
+                                          {ui.clickToPreview}
+                                        </span>
+                                      </button>
                                     ) : (
                                       <a
                                         href={att.url}
@@ -184,7 +213,7 @@ export function ChatMessageList({
                     </div>
 
                     <span className="mt-1 px-1 text-[9px] text-slate-400">
-                      {formatMessageTime(message.created_at || message.createdAt)}
+                      {formatMessageTime(message.createdAt)}
                     </span>
                   </div>
                 </div>
@@ -206,6 +235,37 @@ export function ChatMessageList({
           </p>
         </div>
       )}
+
+      {/* Photo lightbox, portalled so the chat scroll container cannot clip it. */}
+      {preview &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label={ui.photo}
+            onClick={() => setPreview(null)}
+            className="modal-backdrop fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/80 p-4 animate-in fade-in duration-150"
+          >
+            <button
+              type="button"
+              onClick={() => setPreview(null)}
+              aria-label={ui.close}
+              className="absolute right-4 top-4 flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
+            >
+              <MdOutlineClose className="text-2xl" />
+            </button>
+
+            <img
+              src={preview}
+              alt={ui.photo}
+              // The image itself must not close the dialog, so the backdrop click is stopped here.
+              onClick={(event) => event.stopPropagation()}
+              className="max-h-[88vh] max-w-full rounded-lg object-contain shadow-2xl animate-in zoom-in-95 duration-150"
+            />
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }

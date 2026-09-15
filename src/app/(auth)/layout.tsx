@@ -1,5 +1,6 @@
 import React from 'react';
 import { MdCheck, MdLockOutline, MdOutlineAutoAwesome } from 'react-icons/md';
+import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -25,7 +26,11 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         </div>
         <div className="relative z-10 flex items-center gap-2 text-[10px] text-slate-400"><MdLockOutline /> Secure, encrypted connection · Trusted by 200+ businesses</div>
       </aside>
-      <section className="flex w-full flex-col items-center justify-center px-6 py-10 lg:w-1/2 lg:px-12">{children}</section>
+      <section className="relative flex w-full flex-col items-center justify-center px-6 py-10 lg:w-1/2 lg:px-12">
+        {/* Every signed-out page carries it, so the language can be set before signing in. */}
+        <div className="absolute right-5 top-5"><LanguageSwitcher /></div>
+        {children}
+      </section>
     </main>
   );
 }

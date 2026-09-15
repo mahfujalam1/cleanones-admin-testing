@@ -25,8 +25,6 @@ export type ChatMessage = {
   seen?: boolean;
   is_deleted?: boolean;
   deleted_at?: string | null;
-  created_at?: string;
-  updated_at?: string;
   createdAt?: string;
   updatedAt?: string;
 };
@@ -69,12 +67,12 @@ export type ChatItem = {
       profile_photo?: string | null;
       email?: string;
     };
-    created_at?: string;
+    createdAt?: string;
   } | null;
   last_message_at?: string | null;
   is_active: boolean;
-  created_at?: string;
-  updated_at?: string;
+  createdAt?: string;
+  updatedAt?: string;
 };
 
 export type ChatMembersResponse = {

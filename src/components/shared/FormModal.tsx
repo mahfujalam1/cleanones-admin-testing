@@ -2,6 +2,9 @@
 
 import React, { useEffect } from "react";
 import { MdOutlineClose } from "react-icons/md";
+import { usePathname } from "next/navigation";
+import { getLocale } from "@/lib/locale";
+import { getUiTranslation } from "@/lib/translations";
 import { useModalJump } from "@/hooks/useModalJump";
 
 type FormModalProps = {
@@ -27,6 +30,7 @@ export function FormModal({
   children,
 }: FormModalProps) {
   const { triggerJump, jumpClassName } = useModalJump();
+  const ui = getUiTranslation(getLocale(usePathname()));
 
   useEffect(() => {
     const close = (event: KeyboardEvent) => {
@@ -64,37 +68,40 @@ export function FormModal({
             type="button"
             onClick={onClose}
             disabled={saving}
-            aria-label="Close"
+            aria-label={ui.close}
             className="cursor-pointer rounded p-1 text-slate-400 transition-colors hover:text-slate-600 disabled:opacity-50"
           >
             <MdOutlineClose className="text-xl" />
           </button>
         </div>
 
-        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-6 py-5">
-          {children}
+        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-6 py-5">{children}</div>
+
+        {/* The error sits with the buttons rather than at the end of the scrollable body, so a
+            failed submit is visible without scrolling back down. */}
+        <div className="flex flex-wrap items-center justify-end gap-3 border-t border-slate-100 px-6 py-5">
           {error && (
-            <p role="alert" className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700">
+            <p
+              role="alert"
+              className="mr-auto min-w-0 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700"
+            >
               {error}
             </p>
           )}
-        </div>
-
-        <div className="flex items-center justify-end gap-3 border-t border-slate-100 px-6 py-5">
           <button
             type="button"
             onClick={onClose}
             disabled={saving}
             className="cursor-pointer rounded-lg border border-slate-300 bg-white px-5 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50 disabled:opacity-50"
           >
-            Cancel
+            {ui.cancel}
           </button>
           <button
             type="submit"
             disabled={saving}
             className="cursor-pointer rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#0284c7] disabled:opacity-60"
           >
-            {saving ? "Saving…" : submitLabel}
+            {saving ? `${ui.save}…` : submitLabel}
           </button>
         </div>
       </form>

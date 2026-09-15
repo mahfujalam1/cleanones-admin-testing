@@ -16,8 +16,8 @@ export type LocationGridItem = {
   rooms: number;
   required_hours_label: string;
   required_hours_numeric: number;
-  created_at: string;
-  updated_at: string;
+  createdAt: string;
+  updatedAt: string;
 };
 export type LocationDetails = {
   id: string;
@@ -38,8 +38,8 @@ export type LocationDetails = {
   notes: string;
   latitude: number | null;
   longitude: number | null;
-  created_at: string;
-  updated_at: string;
+  createdAt: string;
+  updatedAt: string;
 };
 export type LocationOverview = {
   location_id: string;
@@ -88,26 +88,6 @@ const body = (value: unknown) => ({
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify(value),
 });
-export async function getClientOptions(
-  page = 1,
-  limit = 100,
-  search?: string,
-  isSignup?: boolean,
-) {
-  const query = new URLSearchParams({
-    page: String(page),
-    limit: String(limit),
-  });
-  if (search) query.set("search", search);
-  if (isSignup !== undefined) query.set("is_signup", String(isSignup));
-  return authenticated<{
-    total_count: number;
-    page: number;
-    limit: number;
-    has_more: boolean;
-    clients: ClientOption[];
-  }>(`/manager/dropdowns/clients?${query}`, { method: "GET" });
-}
 export async function getLocations(
   input: {
     page?: number;
@@ -132,15 +112,6 @@ export async function getLocations(
     locations: LocationGridItem[];
   }>(`/manager/locations?${query}`, { method: "GET" });
 }
-export async function createClientLocation(
-  clientId: string,
-  input: LocationInput,
-) {
-  return authenticated<LocationDetails>(
-    `/manager/clients/${encodeURIComponent(clientId)}/locations`,
-    { method: "POST", ...body(input) },
-  );
-}
 export async function getLocation(locationId: string) {
   return authenticated<LocationDetails>(
     `/manager/locations/${encodeURIComponent(locationId)}`,
@@ -157,18 +128,6 @@ export async function deleteLocation(locationId: string) {
   return authenticated<string>(
     `/manager/locations/${encodeURIComponent(locationId)}`,
     { method: "DELETE" },
-  );
-}
-export async function getLocationOverview(locationId: string) {
-  return authenticated<LocationOverview>(
-    `/manager/locations/${encodeURIComponent(locationId)}/overview`,
-    { method: "GET" },
-  );
-}
-export async function getLocationRooms(locationId: string) {
-  return authenticated<RoomsTab>(
-    `/manager/locations/${encodeURIComponent(locationId)}/rooms-tab`,
-    { method: "GET" },
   );
 }
 export type LocationCleaningPlans = {
@@ -191,22 +150,4 @@ export async function getLocationCleaningPlans(
     `/manager/locations/${encodeURIComponent(locationId)}/cleaning-plans-tab`,
     { method: "GET" },
   );
-}
-export async function importLocations(file: File) {
-  const data = new FormData();
-  data.append("file", file);
-  return authenticated<{
-    total_rows: number;
-    imported_count: number;
-    failed_count: number;
-    errors: string[];
-  }>("/manager/locations/bulk-import", { method: "POST", body: data });
-}
-export async function getLocationImportTemplate() {
-  return authenticated<string>("/manager/locations/bulk-import/template", {
-    method: "GET",
-  });
-}
-export async function exportLocations() {
-  return authenticated<string>("/manager/locations/export", { method: "GET" });
 }

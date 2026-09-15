@@ -18,6 +18,7 @@ import { useGetClientLocationsQuery, useGetLocationsQuery } from "@/redux/api/en
 import {
   useDeleteCleaningPlanMutation,
   useGetCleaningPlanListQuery,
+  useGetCleaningPlanQuery,
   type CleaningPlan,
 } from "@/redux/api/endpoints/cleaningPlans.api";
 import { apiError } from "@/redux/api/apiError";
@@ -33,6 +34,12 @@ function CleaningPlansView() {
 
   const clientId = query.get("client") ?? "";
   const locationId = query.get("location") ?? "";
+  /**
+   * `?plan=<id>&action=edit|assign|delete` opens that plan straight away, so other screens
+   * (Shift Monitoring's quick actions, for one) can link to a specific plan action.
+   */
+  const deepLinkPlanId = query.get("plan") ?? "";
+  const deepLinkAction = query.get("action") ?? "view";
 
   const [search, setSearch] = useState("");
   const searchTerm = useDebouncedValue(search.trim());
@@ -45,6 +52,18 @@ function CleaningPlansView() {
   const [actionError, setActionError] = useState("");
 
   useEffect(() => setPage(1), [searchTerm, clientId, locationId]);
+
+  const { data: deepLinkPlan } = useGetCleaningPlanQuery(deepLinkPlanId, { skip: !deepLinkPlanId });
+
+  useEffect(() => {
+    if (!deepLinkPlan) return;
+    if (deepLinkAction === "edit") setFormTarget(deepLinkPlan);
+    else if (deepLinkAction === "assign") setAssignTarget(deepLinkPlan);
+    else if (deepLinkAction === "delete") setDeleteTarget(deepLinkPlan);
+    else setViewTarget(deepLinkPlan);
+    // Drop the params, so closing the modal does not immediately reopen it.
+    router.replace(localizePath("/cleaning-plans", locale));
+  }, [deepLinkPlan, deepLinkAction, locale, router]);
 
   /** Narrowing the client clears the location, which no longer belongs to it. */
   const applyScope = (next: { client?: string; location?: string }) => {

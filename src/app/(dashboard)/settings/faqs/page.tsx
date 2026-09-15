@@ -45,8 +45,8 @@ export default function SettingsFaqsPage() {
       serial_no: index + 1,
       question: f.question,
       answer: f.answer,
-      created_at: f.created_at ?? f.createdAt ?? "",
-      updated_at: f.updated_at ?? f.updatedAt ?? "",
+      createdAt: f.createdAt ?? "",
+      updatedAt: f.updatedAt ?? "",
     }));
   }, [faqs]);
 

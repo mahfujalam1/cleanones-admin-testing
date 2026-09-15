@@ -24,8 +24,12 @@ import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import { toDashboardRole } from "@/lib/auth/session";
 import { setUser } from "@/redux/slices/auth.slice";
 import { DetailSkeleton } from "@/components/shared/SkeletonLoader";
+import { usePathname } from "next/navigation";
+import { getLocale } from "@/lib/locale";
+import { getUiTranslation } from "@/lib/translations";
 
 export default function ProfilePage() {
+  const ui = getUiTranslation(getLocale(usePathname()));
   const dispatch = useAppDispatch();
   const authUser = useAppSelector((state) => state.auth.user);
 
@@ -242,8 +246,8 @@ export default function ProfilePage() {
               type="button"
               disabled={uploadingPhoto}
               onClick={() => photoInputRef.current?.click()}
-              title="Change profile photo"
-              aria-label="Change profile photo"
+              title={ui.changeProfilePhoto}
+              aria-label={ui.changeProfilePhoto}
               className="absolute bottom-0 right-0 flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border-2 border-white bg-primary text-white shadow-sm transition-colors hover:bg-[#0284c7] disabled:cursor-not-allowed disabled:opacity-60"
             >
               <MdPhotoCamera className="text-sm" />
@@ -267,13 +271,13 @@ export default function ProfilePage() {
               {profile?.is_verified && (
                 <span className="inline-flex items-center gap-1 rounded-md border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
                   <MdVerifiedUser className="text-xs" />
-                  Verified
+                  {ui.verified}
                 </span>
               )}
               {profile?.is_active && (
                 <span className="inline-flex items-center gap-1 rounded-md border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
                   <MdCheckCircle className="text-xs" />
-                  Active
+                  {ui.active}
                 </span>
               )}
             </div>
@@ -296,7 +300,7 @@ export default function ProfilePage() {
             onClick={() => setMessage(null)}
             className="shrink-0 cursor-pointer rounded px-2 py-1 text-xs font-semibold underline opacity-80 transition-opacity hover:opacity-100"
           >
-            Dismiss
+            {ui.dismiss}
           </button>
         </div>
       )}
@@ -307,13 +311,13 @@ export default function ProfilePage() {
         <div className="space-y-5 rounded-xl border border-slate-200 bg-white p-5 shadow-2xs md:col-span-2">
           <h2 className="flex items-center gap-2 border-b border-slate-100 pb-3 text-sm font-bold text-slate-900">
             <MdOutlinePerson className="text-lg text-primary" />
-            Personal Information
+            {ui.personalInformation}
           </h2>
 
           <div className="space-y-4">
             <label className="block">
               <span className="mb-1.5 block text-xs font-semibold text-slate-700">
-                Full Name <span className="text-red-500">*</span>
+                {ui.fullName} <span className="text-red-500">*</span>
               </span>
               <input
                 type="text"
@@ -321,46 +325,46 @@ export default function ProfilePage() {
                 value={formData.full_name}
                 onChange={(e) => setFormData((prev) => ({ ...prev, full_name: e.target.value }))}
                 className="h-11 w-full rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-800 outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/20"
-                placeholder="Enter full name"
+                placeholder={ui.enterFullName}
               />
             </label>
 
             <label className="block">
-              <span className="mb-1.5 block text-xs font-semibold text-slate-700">Email Address</span>
+              <span className="mb-1.5 block text-xs font-semibold text-slate-700">{ui.emailAddress}</span>
               <div className="relative">
                 <input
                   type="email"
                   disabled
                   value={profile?.email || authUser?.email || ""}
-                  placeholder="Enter email address"
+                  placeholder={ui.enterEmailAddress}
                   className="h-11 w-full cursor-not-allowed rounded-lg border border-slate-200 bg-slate-50 px-3.5 pl-10 text-sm text-slate-500 outline-none"
                 />
                 <MdEmail className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-base text-slate-400" />
               </div>
-              <span className="mt-1 block text-[11px] text-slate-400">Email address cannot be changed directly</span>
+              <span className="mt-1 block text-[11px] text-slate-400">{ui.emailCannotChange}</span>
             </label>
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <label className="block">
-                <span className="mb-1.5 block text-xs font-semibold text-slate-700">Phone Number</span>
+                <span className="mb-1.5 block text-xs font-semibold text-slate-700">{ui.phoneNumber}</span>
                 <div className="relative">
                   <input
                     type="text"
                     value={formData.phone}
                     onChange={(e) => setFormData((prev) => ({ ...prev, phone: e.target.value }))}
                     className="h-11 w-full rounded-lg border border-slate-200 bg-white px-3.5 pl-10 text-sm text-slate-800 outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/20"
-                    placeholder="Enter phone number"
+                    placeholder={ui.enterPhoneNumber}
                   />
                   <MdPhone className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-base text-slate-400" />
                 </div>
               </label>
 
               <div>
-                <span className="mb-1.5 block text-xs font-semibold text-slate-700">Date of Birth</span>
+                <span className="mb-1.5 block text-xs font-semibold text-slate-700">{ui.dateOfBirth}</span>
                 <DatePicker
                   value={formData.dateOfBirth}
                   onValueChange={(value) => setFormData((prev) => ({ ...prev, dateOfBirth: value }))}
-                  placeholder="Select date of birth"
+                  placeholder={ui.selectDateOfBirth}
                   // Nobody was born tomorrow.
                   max={todayIso()}
                   clearable
@@ -380,7 +384,7 @@ export default function ProfilePage() {
               {saving ? "Saving Changes..." : "Save Profile Changes"}
             </button>
             {!isDirty && !saving && (
-              <span className="ml-3 text-xs text-slate-400">No changes to save</span>
+              <span className="ml-3 text-xs text-slate-400">{ui.noChangesToSave}</span>
             )}
           </div>
         </div>
@@ -389,37 +393,37 @@ export default function ProfilePage() {
         <div className="space-y-4">
           <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-2xs">
             <h3 className="border-b border-slate-100 pb-3 text-sm font-bold text-slate-900">
-              Account Overview
+              {ui.accountOverview}
             </h3>
 
             <dl className="mt-3 divide-y divide-slate-100 text-xs">
               <div className="flex items-center justify-between gap-3 py-2.5">
                 <dt className="flex items-center gap-1.5 text-slate-400">
-                  <MdShield className="text-sm" /> Role
+                  <MdShield className="text-sm" /> {ui.role}
                 </dt>
                 <dd className="rounded-md bg-sky-50 px-2 py-0.5 text-[11px] font-semibold text-sky-700">{roleTitle}</dd>
               </div>
 
-              {(profile?.created_at || (profile as any)?.createdAt) && (
+              {profile?.createdAt && (
                 <div className="flex items-center justify-between gap-3 py-2.5">
                   <dt className="flex items-center gap-1.5 text-slate-400">
-                    <MdEvent className="text-sm" /> Account created
+                    <MdEvent className="text-sm" /> {ui.accountCreated}
                   </dt>
                   <dd className="text-right font-medium text-slate-700">
-                    {new Date(String(profile?.created_at || (profile as any)?.createdAt)).toLocaleDateString()}
+                    {new Date(String(profile.createdAt)).toLocaleDateString()}
                   </dd>
                 </div>
               )}
 
-              {(profile?.updated_at || (profile as any)?.updatedAt) && (
+              {profile?.updatedAt && (
                 <div className="flex items-center justify-between gap-3 py-2.5">
                   <dt className="flex items-center gap-1.5 text-slate-400">
-                    <MdUpdate className="text-sm" /> Last update
+                    <MdUpdate className="text-sm" /> {ui.lastUpdate}
                   </dt>
                   <dd className="text-right font-medium text-slate-700">
-                    {new Date(String(profile?.updated_at || (profile as any)?.updatedAt)).toLocaleDateString()}{" "}
+                    {new Date(String(profile.updatedAt)).toLocaleDateString()}{" "}
                     <span className="text-slate-400">
-                      {new Date(String(profile?.updated_at || (profile as any)?.updatedAt)).toLocaleTimeString([], {
+                      {new Date(String(profile.updatedAt)).toLocaleTimeString([], {
                         hour: "2-digit",
                         minute: "2-digit",
                       })}

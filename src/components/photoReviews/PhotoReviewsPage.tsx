@@ -1,463 +1,195 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
-import { Search, Eye, ChevronLeft, ChevronRight } from "lucide-react";
-import { StatusBadge } from "./StatusBadge";
-import { CleanerAvatar } from "./CleanerAvatar";
-import dynamic from "next/dynamic";
-
-const ApproveModal = dynamic(() => import("./ApproveModal").then((mod) => mod.ApproveModal), { ssr: false });
-const RejectModal = dynamic(() => import("./RejectModal").then((mod) => mod.RejectModal), { ssr: false });
-const ReviewDetail = dynamic(() => import("./ReviewDetail").then((mod) => mod.ReviewDetail), { ssr: false });
-import { ApproveFormData, PhotoReview, REJECT_REASONS, RejectFormData, ReviewStatus } from "./types";
-import { AIScoreBar } from "./Aiscorebar";
-import { approvePhotoReview, getPhotoReview, getPhotoReviews, rejectPhotoReview, type PhotoReviewApi } from "@/services/actions/photoReviews";
-import { TableSkeleton } from "@/components/shared/SkeletonLoader";
-import { BackendPagination } from "@/components/shared/BackendPagination";
-import { imgUrl } from "@/utils/baseUrl";
-
-// ── Constants ────────────────────────────────────────────────────────────────
-
-const PAGE_SIZE = 10;
-
-const FILTER_TABS: { label: string; value: ReviewStatus | "All" }[] = [
-    { label: "All", value: "All" },
-    { label: "Pending Review", value: "Pending Review" },
-    { label: "Approved", value: "Approved" },
-    { label: "Rejected", value: "Rejected" },
-];
-
-const TABLE_HEADERS = [
-    "Review ID",
-    "Cleaner",
-    "Client",
-    "Location",
-    "Room",
-    "Date Submitted",
-    "AI Score",
-    "AI Confidence",
-    "Status",
-    "Actions",
-];
-
-// ── Component ────────────────────────────────────────────────────────────────
-
+import { useMemo, useState } from "react";
+import { Search, Eye, Image as ImageIcon } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { getLocale } from "@/lib/locale";
 import { getDashboardTranslation } from "@/lib/translations";
-import { useGetPhotoReviewsQuery } from "@/redux/api/photoReviewsApi";
+import { TableSkeleton } from "@/components/shared/SkeletonLoader";
+import { BackendPagination } from "@/components/shared/BackendPagination";
+import { apiError } from "@/redux/api/apiError";
+import {
+  useGetShiftPhotoReviewsQuery,
+  type PhotoReviewTask,
+} from "@/redux/api/photoReviewsApi";
+import { PhotoReviewDetail } from "./ReviewDetail";
+
+const PAGE_SIZE = 10;
+
+const formatDate = (value: string) => {
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? "—" : parsed.toLocaleDateString();
+};
+
+/** The payload has no id, so a row is identified by what makes the instance unique. */
+export const rowKey = (task: PhotoReviewTask) =>
+  `${task.shift_date}-${task.cleaning_name}-${task.room_name}-${task.task_name}`;
 
 export function PhotoReviewsPage() {
-    const pathname = usePathname();
-    const locale = getLocale(pathname);
-    const t = getDashboardTranslation(locale);
+  const pathname = usePathname();
+  const locale = getLocale(pathname);
+  const t = getDashboardTranslation(locale);
 
-    const [activeFilter, setActiveFilter] = useState<ReviewStatus | "All">("All");
-    const [search, setSearch] = useState("");
-    const [page, setPage] = useState(1);
-    const [selectedReview, setSelectedReview] = useState<PhotoReview | null>(null);
-    const [approveReview, setApproveReview] = useState<PhotoReview | null>(null);
-    const [rejectReview, setRejectReview] = useState<PhotoReview | null>(null);
-    const [error, setError] = useState("");
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [selected, setSelected] = useState<PhotoReviewTask | null>(null);
 
-    const filterTabs: { label: string; value: ReviewStatus | "All" }[] = [
-        { label: t.dashboard.all, value: "All" },
-        { label: t.photoReviews.pending, value: "Pending Review" },
-        { label: t.photoReviews.approved, value: "Approved" },
-        { label: t.photoReviews.rejected, value: "Rejected" },
-    ];
+  // No arguments: the endpoint defaults to the last 30 days through today.
+  const { data: tasks = [], isLoading: loading, error } = useGetShiftPhotoReviewsQuery();
 
-    const tableHeaders = [
-        t.photoReviews.reviewId,
-        t.roster.worker,
-        t.extraServices.client,
-        t.extraServices.location,
-        t.extraServices.room,
-        t.roster.date,
-        t.photoReviews.score,
-        t.photoReviews.aiConfidence,
-        t.common.status,
-        t.common.actions || t.photoReviews.actions,
-    ];
-
-    const status = activeFilter === "All" ? undefined : activeFilter.toLowerCase().replaceAll(" ", "_");
-    const { data: reviewsRes, isLoading: loading, refetch } = useGetPhotoReviewsQuery({
-        search: search.trim() || undefined,
-        status,
-        page,
-        limit: PAGE_SIZE,
-    });
-
-    const rawReviews = reviewsRes?.reviews ?? [];
-    const pendingCount = reviewsRes?.pending_reviews_count ?? 0;
-    const reviews: PhotoReview[] = rawReviews.map(mapReview);
-
-    // ── Filtering & Pagination ──────────────────────────────────────────────
-
-    const filtered = useMemo(() => {
-        return reviews.filter((r) => {
-            const matchStatus = activeFilter === "All" || r.status === activeFilter;
-            const q = search.toLowerCase();
-            const matchSearch =
-                !q ||
-                r.id.toLowerCase().includes(q) ||
-                r.cleaner.name.toLowerCase().includes(q) ||
-                r.location.toLowerCase().includes(q) ||
-                r.room.toLowerCase().includes(q);
-            return matchStatus && matchSearch;
-        });
-    }, [reviews, activeFilter, search]);
-
-    const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-    const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-
-    const handleFilterChange = (value: ReviewStatus | "All") => {
-        setActiveFilter(value);
-        setPage(1);
-    };
-
-    const handleSearch = (q: string) => {
-        setSearch(q);
-        setPage(1);
-    };
-
-    // ── Actions ─────────────────────────────────────────────────────────────
-
-    const handleApproveConfirm = async (_data: ApproveFormData) => {
-        if (!approveReview) return;
-        const result = await approvePhotoReview(approveReview.id);
-        if (!result.success) {
-            setError(result.error);
-            return;
-        }
-        setApproveReview(null);
-        void refetch();
-    };
-
-    const handleRejectConfirm = async (data: RejectFormData) => {
-        if (!rejectReview) return;
-        // Send both the structured reason the manager picked and their free-text comment — the
-        // backend stores whatever string is sent verbatim as `rejection_reason` (shown to the
-        // worker), so combining them is the only way the category the manager selected actually
-        // reaches the backend instead of being discarded in favor of the comment alone.
-        const reasonLabel = REJECT_REASONS.find((r) => r.value === data.reason)?.label;
-        const combinedReason = [reasonLabel, data.managerComment].filter(Boolean).join(": ") || data.reason;
-        const result = await rejectPhotoReview(rejectReview.id, combinedReason);
-        if (!result.success) {
-            setError(result.error);
-            return;
-        }
-        setRejectReview(null);
-        void refetch();
-    };
-
-    const openReview = async (review: PhotoReview) => {
-        const result = await getPhotoReview(review.id);
-        if (!result.success) return setError(result.error);
-        setSelectedReview(mapReview(result.data));
-    };
-
-    // ── Review Detail view ───────────────────────────────────────────────────
-
-    if (selectedReview) {
-        // The list endpoint can return a lightweight review without its photo URLs.
-        // Keep the full detail response selected above and only sync fields that can
-        // change locally after an approve/reject action.
-        const listReview = reviews.find((r) => r.id === selectedReview.id);
-        const liveReview = listReview
-            ? { ...selectedReview, status: listReview.status }
-            : selectedReview;
-        return (
-            <>
-                <ReviewDetail
-                    review={liveReview}
-                    onClose={() => setSelectedReview(null)}
-                    onApprove={(r) => setApproveReview(r)}
-                    onReject={(r) => setRejectReview(r)}
-                />
-                <ApproveModal
-                    review={approveReview}
-                    open={!!approveReview}
-                    onClose={() => setApproveReview(null)}
-                    onConfirm={handleApproveConfirm}
-                />
-                <RejectModal
-                    review={rejectReview}
-                    open={!!rejectReview}
-                    onClose={() => setRejectReview(null)}
-                    onConfirm={handleRejectConfirm}
-                />
-            </>
-        );
-    }
-
-    // ── Main layout ──────────────────────────────────────────────────────────
-
-    return (
-        <div className="flex h-full min-h-0 flex-col overflow-hidden space-y-4">
-            {error && <p className="rounded border border-red-200 bg-red-50 p-3 text-xs font-medium text-red-700">{error}</p>}
-            
-            {/* Toolbar */}
-            <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
-                <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center flex-1 max-w-2xl">
-                    {/* Search */}
-                    <div className="relative flex-1">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                        <input
-                            type="text"
-                            placeholder={t.photoReviews.searchPlaceholder}
-                            value={search}
-                            onChange={(e) => handleSearch(e.target.value)}
-                            className="w-full pl-9 pr-3 py-2 text-xs bg-white border border-gray-200 rounded text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#0ea5e9] focus:border-[#0ea5e9]"
-                        />
-                    </div>
-
-                    {/* Filter tabs */}
-                    <div className="flex gap-1 rounded border border-gray-200 bg-white p-1 shrink-0">
-                        {filterTabs.map((tab) => (
-                            <button
-                                key={tab.value}
-                                onClick={() => handleFilterChange(tab.value)}
-                                className={`text-xs px-3 py-1.5 rounded font-semibold transition-colors cursor-pointer ${
-                                    activeFilter === tab.value
-                                        ? "bg-[#0ea5e9] text-white shadow-sm"
-                                        : "text-gray-600 hover:bg-gray-100"
-                                }`}
-                            >
-                                {tab.label}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-
-                {/* Pending pill */}
-                {pendingCount > 0 && (
-                    <span className="text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-full whitespace-nowrap">
-                        {pendingCount} {t.photoReviews.pending}
-                    </span>
-                )}
-            </div>
-
-            {/* Table Card */}
-            <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden flex-1 flex flex-col">
-                <div className="overflow-x-auto flex-1">
-                    <table className="w-full text-sm border-collapse min-w-[720px]">
-                        <thead>
-                            <tr className="bg-slate-50 border-b border-slate-200">
-                                {tableHeaders.map((h, i) => (
-                                    <th
-                                        key={i}
-                                        className="text-left text-[11px] font-bold uppercase tracking-wider text-slate-500 px-4 py-3 whitespace-nowrap"
-                                    >
-                                        {h}
-                                    </th>
-                                ))}
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                            {loading ? (
-                                <tr>
-                                    <td colSpan={tableHeaders.length} className="p-0">
-                                        <TableSkeleton rows={7} columns={tableHeaders.length} />
-                                    </td>
-                                </tr>
-                            ) : paginated.length === 0 ? (
-                                <tr>
-                                    <td colSpan={tableHeaders.length} className="text-center py-14 text-xs text-slate-400">
-                                        {t.photoReviews.noReviews}
-                                    </td>
-                                </tr>
-                            ) : (
-                                paginated.map((review) => (
-                                    <tr
-                                        key={review.id}
-                                        className="hover:bg-slate-50/80 transition-colors"
-                                    >
-                                        {/* REVIEW ID: Plain text */}
-                                        <td className="px-4 py-3">
-                                            <span className="text-xs font-bold text-slate-800">
-                                                {review.id}
-                                            </span>
-                                        </td>
-                                        <td className="px-4 py-3">
-                                            <CleanerAvatar
-                                                name={review.cleaner.name}
-                                                initials={review.cleaner.initials}
-                                                avatarColor={review.cleaner.avatarColor}
-                                            />
-                                        </td>
-                                        <td className="px-4 py-3 text-xs text-slate-600 max-w-[130px] truncate">
-                                            {review.client}
-                                        </td>
-                                        <td className="px-4 py-3 text-xs text-slate-600 max-w-[150px] truncate">
-                                            {review.location}
-                                        </td>
-                                        <td className="px-4 py-3 text-xs font-bold text-slate-800 whitespace-nowrap">
-                                            {review.room}
-                                        </td>
-                                        <td className="px-4 py-3 text-xs text-slate-400 whitespace-nowrap">
-                                            {review.dateSubmitted}
-                                        </td>
-                                        <td className="px-4 py-3 text-xs font-semibold text-slate-700">
-                                            {review.aiScore}%
-                                        </td>
-                                        <td className="px-4 py-3">
-                                            <AIScoreBar score={review.aiScore} confidence={review.aiConfidence} />
-                                        </td>
-                                        <td className="px-4 py-3">
-                                            <StatusBadge status={review.status} />
-                                        </td>
-                                        {/* Actions Column with View Icon Button */}
-                                        <td className="px-4 py-3">
-                                            <div className="flex items-center gap-1.5">
-                                                <button
-                                                    onClick={() => { void openReview(review); }}
-                                                    className="flex items-center gap-1 text-xs font-semibold text-[#0ea5e9] bg-sky-50 border border-sky-200 hover:bg-sky-100 px-2.5 py-1 rounded transition-colors whitespace-nowrap cursor-pointer"
-                                                >
-                                                    <Eye className="w-3.5 h-3.5" />
-                                                    View
-                                                </button>
-                                                {review.status === "Pending Review" && (
-                                                    <>
-                                                        <button
-                                                            onClick={() => setApproveReview(review)}
-                                                            className="text-xs font-semibold text-emerald-600 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 px-2.5 py-1 rounded transition-colors whitespace-nowrap cursor-pointer"
-                                                        >
-                                                            ✓ Approve
-                                                        </button>
-                                                        <button
-                                                            onClick={() => setRejectReview(review)}
-                                                            className="text-xs font-semibold text-red-600 bg-red-50 border border-red-200 hover:bg-red-100 px-2.5 py-1 rounded transition-colors whitespace-nowrap cursor-pointer"
-                                                        >
-                                                            ✕ Reject
-                                                        </button>
-                                                    </>
-                                                )}
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-
-                {/* Pagination */}
-                {filtered.length > PAGE_SIZE && (
-                    <div className="px-4 py-3 border-t border-slate-200 bg-slate-50/50">
-                        <BackendPagination
-                            page={page}
-                            limit={PAGE_SIZE}
-                            total={filtered.length}
-                            onPageChange={setPage}
-                            itemLabel="reviews"
-                        />
-                    </div>
-                )}
-            </div>
-
-            {/* Modals */}
-            <ApproveModal
-                review={approveReview}
-                open={!!approveReview}
-                onClose={() => setApproveReview(null)}
-                onConfirm={handleApproveConfirm}
-            />
-            <RejectModal
-                review={rejectReview}
-                open={!!rejectReview}
-                onClose={() => setRejectReview(null)}
-                onConfirm={handleRejectConfirm}
-            />
-        </div>
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return tasks;
+    return tasks.filter((task) =>
+      [task.task_name, task.room_name, task.location_name, task.cleaning_name, task.address]
+        .join(" ")
+        .toLowerCase()
+        .includes(q),
     );
-}
+  }, [tasks, search]);
 
-function resolveImageUrl(url?: string | null): string | null {
-    if (!url) return null;
-    return imgUrl(url);
-}
+  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-function mapReview(item: PhotoReviewApi): PhotoReview {
-    const status: ReviewStatus = item.status?.toLowerCase().includes("approve")
-        ? "Approved"
-        : item.status?.toLowerCase().includes("reject")
-        ? "Rejected"
-        : "Pending Review";
+  const tableHeaders = [
+    "Task",
+    t.extraServices.room,
+    t.extraServices.location,
+    "Cleaning plan",
+    t.roster.date,
+    t.common.duration,
+    t.common.photos,
+    t.common.actions || t.photoReviews.actions,
+  ];
 
-    const rawConfidence = item.ai_confidence?.toLowerCase() ?? "";
-    const confidence = rawConfidence === "high" ? 90 : rawConfidence === "medium" ? 70 : 40;
+  if (selected) {
+    return <PhotoReviewDetail task={selected} onClose={() => setSelected(null)} />;
+  }
 
-    const breakdown: Array<{ label: string; score: number }> = [];
-    if (item.ai_feature_breakdown && typeof item.ai_feature_breakdown === "object") {
-        Object.entries(item.ai_feature_breakdown).forEach(([key, rawVal]) => {
-            const numVal = Number(rawVal);
-            const score = numVal <= 1 && numVal > 0 ? Math.round(numVal * 100) : Math.round(numVal);
-            const label = key
-                .replace(/_/g, " ")
-                .replace(/\b\w/g, (c) => c.toUpperCase());
-            breakdown.push({ label, score });
-        });
-    }
+  return (
+    <div className="flex h-full min-h-0 flex-col space-y-4 overflow-hidden">
+      {error && (
+        <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+          {apiError(error)}
+        </p>
+      )}
 
-    const dynamicPhotos: Array<{ label: string; url: string | null }> = [];
-    if (Array.isArray((item as any).photos) && (item as any).photos.length > 0) {
-        (item as any).photos.forEach((p: any, idx: number) => {
-            const u = p.url || p.photo_url || p.after_photo_url || p.before_photo_url;
-            const l = p.name || p.label || p.type || `Photo ${idx + 1}`;
-            if (u) dynamicPhotos.push({ label: l, url: resolveImageUrl(u) });
-        });
-    }
+      {/* Toolbar */}
+      <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
+        <div className="relative w-full max-w-md">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Search by task, room, location or plan…"
+            value={search}
+            onChange={(event) => {
+              setSearch(event.target.value);
+              setPage(1);
+            }}
+            className="w-full rounded-lg border border-slate-200 bg-white py-2.5 pl-10 pr-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-[#0ea5e9] focus:outline-none focus:ring-1 focus:ring-[#0ea5e9]"
+          />
+        </div>
 
-    if (dynamicPhotos.length === 0) {
-        if (item.before_photo_url) {
-            dynamicPhotos.push({ label: "Before Cleaning", url: resolveImageUrl(item.before_photo_url) });
-        }
-        if (item.after_photo_url || item.photo_url) {
-            const label = item.photo_name || "After Cleaning";
-            dynamicPhotos.push({ label, url: resolveImageUrl(item.after_photo_url || item.photo_url) });
-        }
-    }
+        {!loading && (
+          <span className="whitespace-nowrap rounded-full border border-sky-200 bg-sky-50 px-3.5 py-1.5 text-sm font-semibold text-sky-700">
+            {filtered.length} {filtered.length === 1 ? "task" : "tasks"} with photos
+          </span>
+        )}
+      </div>
 
-    const rawAiScore = Number(item.ai_score ?? 0);
-    const normalizedAiScore = rawAiScore <= 1 && rawAiScore > 0 ? Math.round(rawAiScore * 100) : Math.round(rawAiScore);
+      {/* Table */}
+      <div className="flex flex-1 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xs">
+        <div className="flex-1 overflow-x-auto">
+          <table className="w-full min-w-[980px] border-collapse text-sm">
+            <thead>
+              <tr className="border-b border-slate-200 bg-slate-50">
+                {tableHeaders.map((header, index) => (
+                  <th
+                    key={index}
+                    className="whitespace-nowrap px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-500"
+                  >
+                    {header}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {loading ? (
+                <tr>
+                  <td colSpan={tableHeaders.length} className="p-0">
+                    <TableSkeleton rows={7} columns={tableHeaders.length} />
+                  </td>
+                </tr>
+              ) : paginated.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={tableHeaders.length}
+                    className="py-16 text-center text-sm text-slate-400"
+                  >
+                    {t.photoReviews.noReviews}
+                  </td>
+                </tr>
+              ) : (
+                paginated.map((task) => (
+                  <tr key={rowKey(task)} className="transition-colors hover:bg-sky-50/40">
+                    <td className="max-w-[260px] px-5 py-4 text-sm font-semibold leading-snug text-slate-900">
+                      {task.task_name}
+                    </td>
+                    <td className="whitespace-nowrap px-5 py-4 text-sm text-slate-700">
+                      {task.room_name}
+                    </td>
+                    <td className="max-w-[220px] px-5 py-4 text-sm text-slate-600">
+                      <span className="block truncate font-medium text-slate-800">
+                        {task.location_name}
+                      </span>
+                      {task.address && (
+                        <span className="mt-0.5 block truncate text-xs text-slate-400">
+                          {task.address}
+                        </span>
+                      )}
+                    </td>
+                    <td className="max-w-[200px] truncate px-5 py-4 text-sm text-slate-600">
+                      {task.cleaning_name}
+                    </td>
+                    <td className="whitespace-nowrap px-5 py-4 text-sm text-slate-500">
+                      {formatDate(task.shift_date)}
+                    </td>
+                    <td className="whitespace-nowrap px-5 py-4 text-sm text-slate-600">
+                      {task.duration_minutes}m
+                    </td>
+                    <td className="px-5 py-4">
+                      <span className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-700">
+                        <ImageIcon className="h-3.5 w-3.5 text-slate-400" />
+                        {task.uploaded_photos?.length ?? 0}
+                      </span>
+                    </td>
+                    <td className="px-5 py-4">
+                      <button
+                        onClick={() => setSelected(task)}
+                        className="flex cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-lg border border-sky-200 bg-sky-50 px-3.5 py-2 text-sm font-semibold text-[#0ea5e9] transition-colors hover:border-sky-300 hover:bg-sky-100"
+                      >
+                        <Eye className="h-4 w-4" />
+                        View
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
 
-    const qualityScore = breakdown[0]?.score ?? normalizedAiScore;
-    const coverageScore = breakdown[1]?.score ?? normalizedAiScore;
-    const imageQualityScore = breakdown[2]?.score ?? confidence;
-    const brightnessScore = breakdown[3]?.score ?? confidence;
-
-    return {
-        id: item.review_id,
-        shiftId: item.shift_id,
-        cleaner: {
-            name: item.cleaner?.name || "Unknown Cleaner",
-            initials: (item.cleaner?.name || "C")
-                .split(" ")
-                .map((part) => part[0])
-                .join("")
-                .slice(0, 2),
-            avatarColor: "bg-[#0ea5e9]",
-        },
-        client: item.client?.name || "N/A",
-        location: item.location?.name || "N/A",
-        room: item.room?.name || "N/A",
-        dateSubmitted: item.date_submitted ? new Date(item.date_submitted).toLocaleString() : "N/A",
-        aiScore: normalizedAiScore,
-        aiConfidence: confidence,
-        status,
-        beforeImage: resolveImageUrl(item.before_photo_url) || undefined,
-        afterImage: resolveImageUrl(item.after_photo_url || item.photo_url) || undefined,
-        photos: dynamicPhotos,
-        aiAnalysis: {
-            overallScore: normalizedAiScore,
-            qualityScore,
-            coverageScore,
-            imageQualityScore,
-            brightnessScore,
-            suggestion: status === "Approved" ? "Approve" : status === "Rejected" ? "Reject" : "Review",
-            notes: item.rejection_reason ? [item.rejection_reason] : [],
-            breakdown,
-        },
-    };
+        {filtered.length > PAGE_SIZE && (
+          <div className="border-t border-slate-200 bg-slate-50/50 px-4 py-3">
+            <BackendPagination
+              page={page}
+              limit={PAGE_SIZE}
+              total={filtered.length}
+              onPageChange={setPage}
+              itemLabel="tasks"
+            />
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }

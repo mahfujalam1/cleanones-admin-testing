@@ -214,20 +214,6 @@ export function AssignWorkersModal({ plan, onClose }: { plan: CleaningPlan; onCl
         </div>
 
         <div className="min-h-0 flex-1 space-y-2.5 overflow-y-auto p-5">
-          {error && <ErrorNotice message={error} />}
-
-          {conflict && (
-            <div className="flex items-start gap-2.5 rounded-lg border border-amber-200 bg-amber-50 p-3">
-              <MdWarningAmber className="mt-0.5 shrink-0 text-base text-amber-600" />
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-medium text-amber-800">{conflict}</p>
-                <p className="mt-1 text-[11px] text-amber-700">
-                  Assigning anyway records them with a conflict flag.
-                </p>
-              </div>
-            </div>
-          )}
-
           {(isFetching || loadingDetail) && eligible.length === 0 ? (
             Array.from({ length: 5 }, (_, index) => (
               <div key={index} className="h-16 animate-pulse rounded-lg bg-slate-100" />
@@ -346,7 +332,24 @@ export function AssignWorkersModal({ plan, onClose }: { plan: CleaningPlan; onCl
           )}
         </div>
 
-        <footer className="flex items-center justify-between gap-3 border-t border-slate-100 px-5 py-4">
+        {/* Failures sit with the buttons rather than above the worker list, which is scrolled
+            away by the time anyone presses Save. */}
+        <footer className="space-y-2.5 border-t border-slate-100 px-5 py-4">
+          {error && <ErrorNotice message={error} />}
+
+          {conflict && (
+            <div className="flex items-start gap-2.5 rounded-lg border border-amber-200 bg-amber-50 p-3">
+              <MdWarningAmber className="mt-0.5 shrink-0 text-base text-amber-600" />
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-medium text-amber-800">{conflict}</p>
+                <p className="mt-1 text-[11px] text-amber-700">
+                  Assigning anyway records them with a conflict flag.
+                </p>
+              </div>
+            </div>
+          )}
+
+          <div className="flex items-center justify-between gap-3">
           <p className="text-xs text-slate-500">
             {picked.size} worker{picked.size === 1 ? "" : "s"} assigned
             {chosenConflicts.length > 0 && (
@@ -362,6 +365,7 @@ export function AssignWorkersModal({ plan, onClose }: { plan: CleaningPlan; onCl
             <Button onClick={() => void save()} disabled={saving || loadingDetail}>
               {saving ? "Saving…" : "Save assignment"}
             </Button>
+          </div>
           </div>
         </footer>
       </div>

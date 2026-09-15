@@ -214,9 +214,9 @@ export function RoomsView({
       )}
       {remove && (
         <ConfirmDialog
-          title="Deactivate room?"
-          description={`${remove.name} will be marked inactive.`}
-          confirmText="Deactivate"
+          title="Delete room?"
+          description={`${remove.name} will be removed.`}
+          confirmText="Delete"
           loading={deleting}
           onClose={() => !deleting && setRemove(null)}
           onConfirm={async () => {

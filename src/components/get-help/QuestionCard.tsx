@@ -13,7 +13,7 @@ interface QuestionCardProps {
 
 export function QuestionCard({ item, serialNo, onEdit, onDelete }: QuestionCardProps) {
   const serial = serialNo ?? 1;
-  const rawDate = item.updated_at || item.created_at;
+  const rawDate = item.updatedAt || item.createdAt;
   const parsedDate = rawDate ? new Date(rawDate) : null;
   const formattedDate =
     parsedDate && !Number.isNaN(parsedDate.getTime())

@@ -27,8 +27,8 @@ function toCardItem(item: QuestionSuggestion): SuggestedQuestion {
     question: item.question,
     answer: item.answer,
     created_by_manager_id: "",
-    created_at: item.createdAt ?? item.created_at ?? "",
-    updated_at: item.updatedAt ?? item.updated_at ?? "",
+    createdAt: item.createdAt ?? "",
+    updatedAt: item.updatedAt ?? "",
   };
 }
 

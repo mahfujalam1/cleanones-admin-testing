@@ -15,6 +15,7 @@ import {
 } from 'react-icons/md';
 import { MdMeetingRoom, MdChecklist, MdAdminPanelSettings } from 'react-icons/md';
 import { dashboardApi } from '@/redux/api/dashboardApi';
+import { notificationsApi } from '@/redux/api/endpoints/notifications.api';
 import { shiftMonitoringApi } from '@/redux/api/shiftMonitoringApi';
 import { reportsApi } from '@/redux/api/reportsApi';
 import { getDashboardTranslation } from '@/lib/translations';
@@ -30,8 +31,8 @@ export default function Sidebar() {
 
   const prefetchDashboard = dashboardApi.usePrefetch('getDashboardOverview');
   const prefetchShiftMonitoring = shiftMonitoringApi.usePrefetch('getLiveStatus');
-  const prefetchNotifications = dashboardApi.usePrefetch('getNotifications');
-  const prefetchReports = reportsApi.usePrefetch('getQualityControlReport');
+  const prefetchNotifications = notificationsApi.usePrefetch('getNotifications');
+  const prefetchReports = reportsApi.usePrefetch('getShiftReport');
 
   const handleLinkHover = (href: string) => {
     if (href === '/') prefetchDashboard();

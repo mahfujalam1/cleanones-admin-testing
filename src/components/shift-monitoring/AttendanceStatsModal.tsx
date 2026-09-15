@@ -10,6 +10,8 @@ import { WorkerInfo } from './types';
 import { getWorkerAttendanceStats, type Period } from '@/services/actions/shiftMonitoring';
 import { DetailSkeleton } from '@/components/shared/SkeletonLoader';
 import { useModalJump } from '@/hooks/useModalJump';
+import { apiError } from '@/redux/api/apiError';
+import { useGetShiftAttendanceSummaryQuery } from '@/redux/api/shiftsApi';
 
 interface AttendanceStatsModalProps {
   worker: WorkerInfo;
@@ -49,6 +51,28 @@ export function AttendanceStatsModal({ worker, onClose, period = 'monthly' }: At
       active = false;
     };
   }, [worker.id, period]);
+
+  /**
+   * The headline figures come from /shift/attendance-summary/:workerId for the chosen period;
+   * the worker-stats call above is kept only for the weekly and monthly trend series, which
+   * the summary route does not carry.
+   */
+  const {
+    data: summary,
+    isLoading: loadingSummary,
+    error: summaryError,
+  } = useGetShiftAttendanceSummaryQuery(
+    { workerId: String(worker.id), period },
+    { skip: !worker.id }
+  );
+
+  const hoursWorked = summary ? `${summary.total_hours}h` : stats?.hours_worked ?? '0h';
+  const completedShifts = summary?.completed_shifts ?? stats?.completed_shifts ?? 0;
+  const lateCheckIns = summary?.late_check_ins ?? stats?.late_checkins ?? 0;
+  const avgDuration =
+    summary && summary.completed_shifts > 0
+      ? `${(summary.total_hours / summary.completed_shifts).toFixed(1)}h`
+      : stats?.avg_shift_duration ?? '0h';
 
   const weeklyData = (stats?.weekly_hours_trend ?? []).map((item) => ({
     name: item.week_label,
@@ -138,14 +162,14 @@ export function AttendanceStatsModal({ worker, onClose, period = 'monthly' }: At
 
         {/* Scrollable Content */}
         <div className="min-h-0 flex-1 overflow-y-auto bg-slate-50/50 p-6 space-y-6">
-          {loading ? (
+          {loadingSummary ? (
             <DetailSkeleton blocks={5} />
-          ) : error ? (
+          ) : summaryError ? (
             <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-xs text-red-700">
               <p className="font-medium">Unable to load attendance statistics</p>
-              <p className="mt-0.5 text-red-600">{error}</p>
+              <p className="mt-0.5 text-red-600">{apiError(summaryError)}</p>
             </div>
-          ) : !stats ? (
+          ) : !summary ? (
             <div className="py-12 text-center text-xs text-slate-400">
               No attendance statistics available for this worker.
             </div>
@@ -160,7 +184,7 @@ export function AttendanceStatsModal({ worker, onClose, period = 'monthly' }: At
                       <TbClock className="text-base" />
                     </span>
                   </div>
-                  <p className="mt-2 text-2xl font-medium tracking-tight text-slate-900">{stats.hours_worked}</p>
+                  <p className="mt-2 text-2xl font-medium tracking-tight text-slate-900">{hoursWorked}</p>
                   <p className="mt-0.5 text-[11px] text-slate-400">Total duration</p>
                 </div>
 
@@ -171,7 +195,7 @@ export function AttendanceStatsModal({ worker, onClose, period = 'monthly' }: At
                       <TbCalendarStats className="text-base" />
                     </span>
                   </div>
-                  <p className="mt-2 text-2xl font-medium tracking-tight text-slate-900">{stats.completed_shifts}</p>
+                  <p className="mt-2 text-2xl font-medium tracking-tight text-slate-900">{completedShifts}</p>
                   <p className="mt-0.5 text-[11px] text-slate-400">Total shifts</p>
                 </div>
 
@@ -182,7 +206,7 @@ export function AttendanceStatsModal({ worker, onClose, period = 'monthly' }: At
                       <TbHourglass className="text-base" />
                     </span>
                   </div>
-                  <p className="mt-2 text-2xl font-medium tracking-tight text-slate-900">{stats.avg_shift_duration}</p>
+                  <p className="mt-2 text-2xl font-medium tracking-tight text-slate-900">{avgDuration}</p>
                   <p className="mt-0.5 text-[11px] text-slate-400">Per shift average</p>
                 </div>
 
@@ -191,7 +215,7 @@ export function AttendanceStatsModal({ worker, onClose, period = 'monthly' }: At
                     <span className="text-[11px] font-medium uppercase tracking-wider text-slate-400">Late Check-ins</span>
                     <span
                       className={`flex h-7 w-7 items-center justify-center rounded-lg ${
-                        stats.late_checkins > 0 ? 'bg-amber-50 text-amber-600' : 'bg-slate-100 text-slate-600'
+                        lateCheckIns > 0 ? 'bg-amber-50 text-amber-600' : 'bg-slate-100 text-slate-600'
                       }`}
                     >
                       <TbAlertTriangle className="text-base" />
@@ -199,17 +223,21 @@ export function AttendanceStatsModal({ worker, onClose, period = 'monthly' }: At
                   </div>
                   <p
                     className={`mt-2 text-2xl font-medium tracking-tight ${
-                      stats.late_checkins > 0 ? 'text-amber-600' : 'text-slate-900'
+                      lateCheckIns > 0 ? 'text-amber-600' : 'text-slate-900'
                     }`}
                   >
-                    {stats.late_checkins}
+                    {lateCheckIns}
                   </p>
                   <p className="mt-0.5 text-[11px] text-slate-400">Late occurrences</p>
                 </div>
               </div>
 
-              {/* Charts Section */}
-              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+              {/* Charts Section — the trend series comes from a separate call, so the charts
+                  only appear when that call actually returned something. */}
+              <div
+                className="grid grid-cols-1 gap-4 lg:grid-cols-2"
+                hidden={weeklyData.length === 0 && monthlyData.length === 0}
+              >
                 {/* Weekly Trend Bar Chart */}
                 <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs">
                   <div className="mb-4 flex items-center justify-between">

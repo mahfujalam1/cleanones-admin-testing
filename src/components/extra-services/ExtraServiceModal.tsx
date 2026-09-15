@@ -15,7 +15,7 @@ import { TbSparkles, TbChecklist, TbCamera } from "react-icons/tb";
 import type { ExtraServiceModalProps } from "./types";
 import { useModalJump } from "@/hooks/useModalJump";
 import { getCleaningPlan, type PlanDetails } from "@/services/actions/cleaningPlans";
-import { getExtraService, type ExtraServiceRequest, type ExtraServiceTaskDetail } from "@/services/actions/extraServices";
+import { type ExtraServiceRequest, type ExtraServiceTaskDetail } from "@/services/actions/extraServices";
 import { getLocationCleaningPlans } from "@/services/actions/locations";
 import { statusColor } from "./ExtraServiceCard";
 import {
@@ -106,16 +106,7 @@ export function ExtraServiceModal({ request, onClose, onDone, onError }: ExtraSe
 
     async function loadData() {
       let currentPlanId = getPlanId(request.planId) || getPlanId(taskPlanObj?._id);
-      let locationId = typeof request.location_id === "string" ? request.location_id : (request.location_id as any)?._id;
-
-      if (!request.isCleaningPlanTask) {
-        const res = await getExtraService(request.id);
-        if (active && res.success) {
-          setExtraDetails(res.data);
-          locationId = locationId || res.data.location_id || res.data.location?.id;
-          currentPlanId = currentPlanId || getPlanId(res.data.plan_id);
-        }
-      }
+      const locationId = typeof request.location_id === "string" ? request.location_id : (request.location_id as any)?._id;
 
       if (!currentPlanId && locationId) {
         const locPlansRes = await getLocationCleaningPlans(locationId);

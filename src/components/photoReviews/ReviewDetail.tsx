@@ -1,10 +1,13 @@
 "use client";
 
 import React from "react";
-import { X, Info, Check } from "lucide-react"; 
+import { X, Info, Check } from "lucide-react";
+import { MdArrowBack } from "react-icons/md";
 import { CleanerAvatar } from "./CleanerAvatar";
 import { PhotoReview } from "./types";
 import { ScoreBar } from "./Aiscorebar";
+import { imgUrl } from "@/utils/baseUrl";
+import type { PhotoReviewTask } from "@/redux/api/photoReviewsApi";
 
 interface ReviewDetailProps {
     review: PhotoReview;
@@ -216,4 +219,96 @@ export function ReviewDetail({ review, onClose, onApprove, onReject }: ReviewDet
             </div>
         </div>
     );
+}
+
+/**
+ * Detail view for a `/shift/photo-review` row: the task's context plus every photo the
+ * worker uploaded against its requirements. The endpoint carries no decision or AI data,
+ * so this is a read-only gallery.
+ */
+export function PhotoReviewDetail({
+  task,
+  onClose,
+}: {
+  task: PhotoReviewTask;
+  onClose: () => void;
+}) {
+  const photos = task.uploaded_photos ?? [];
+  const shiftDate = new Date(task.shift_date);
+
+  return (
+    <div className="space-y-4">
+      <button
+        onClick={onClose}
+        className="inline-flex cursor-pointer items-center gap-1 text-xs font-semibold text-slate-500 transition-colors hover:text-sky-600"
+      >
+        <MdArrowBack /> Back to photo reviews
+      </button>
+
+      <header className="rounded-lg border border-slate-200 bg-white p-5">
+        <h1 className="text-lg font-bold text-slate-900">{task.task_name}</h1>
+        <p className="mt-0.5 text-xs text-slate-500">
+          {task.room_name} · {task.cleaning_name}
+        </p>
+
+        <dl className="mt-4 grid grid-cols-2 gap-3 border-t border-slate-100 pt-4 text-xs sm:grid-cols-4">
+          <div>
+            <dt className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Location</dt>
+            <dd className="mt-0.5 font-semibold text-slate-800">{task.location_name}</dd>
+            {task.address && <dd className="text-[11px] text-slate-400">{task.address}</dd>}
+          </div>
+          <div>
+            <dt className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Shift date</dt>
+            <dd className="mt-0.5 font-semibold text-slate-800">
+              {Number.isNaN(shiftDate.getTime()) ? "—" : shiftDate.toLocaleDateString()}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Duration</dt>
+            <dd className="mt-0.5 font-semibold text-slate-800">{task.duration_minutes}m</dd>
+          </div>
+          <div>
+            <dt className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Photos</dt>
+            <dd className="mt-0.5 font-semibold text-slate-800">{photos.length}</dd>
+          </div>
+        </dl>
+      </header>
+
+      <section className="rounded-lg border border-slate-200 bg-white p-5">
+        <h2 className="mb-3 text-sm font-bold text-slate-900">Uploaded photos</h2>
+        {photos.length === 0 ? (
+          <p className="py-10 text-center text-xs text-slate-400">No photos uploaded for this task.</p>
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {photos.map((photo, index) => {
+              const url = photo.photo_url ? imgUrl(photo.photo_url) : null;
+              return (
+                <figure
+                  key={`${photo.title}-${index}`}
+                  className="overflow-hidden rounded-lg border border-slate-200 bg-slate-50"
+                >
+                  {url ? (
+                    <a href={url} target="_blank" rel="noreferrer">
+                      <img
+                        src={url}
+                        alt={photo.title}
+                        className="h-48 w-full bg-white object-cover transition-opacity hover:opacity-90"
+                      />
+                    </a>
+                  ) : (
+                    <div className="flex h-48 items-center justify-center text-xs text-slate-400">
+                      No image
+                    </div>
+                  )}
+                  <figcaption className="border-t border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700">
+                    {photo.title}
+                  </figcaption>
+                </figure>
+              );
+            })}
+          </div>
+        )}
+      </section>
+    </div>
+  );
 }

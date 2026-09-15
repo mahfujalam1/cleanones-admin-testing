@@ -77,7 +77,8 @@ export default function ChatPage() {
     refetchOnMountOrArgChange: true,
   });
 
-  const rawChats: ChatItem[] = chatsData?.result ?? [];
+  // `?? []` would be a fresh array on every render, and this feeds an effect's dependencies.
+  const rawChats: ChatItem[] = useMemo(() => chatsData?.result ?? [], [chatsData]);
 
   // Auto-select first chat if none selected
   useEffect(() => {
@@ -100,15 +101,30 @@ export default function ChatPage() {
     }
   );
 
-  const initialMessages: ChatMessage[] = messagesData?.result ?? [];
+  const initialMessages: ChatMessage[] = useMemo(
+    () => messagesData?.result ?? [],
+    [messagesData],
+  );
 
   useEffect(() => {
     if (initialMessages.length > 0) {
       setMessages(initialMessages);
-    } else if (!loadingMessages) {
-      setMessages([]);
+      return;
+    }
+    // Setting a new [] unconditionally changed the state identity every render, which with an
+    // unmemoised `initialMessages` spun this effect forever and locked up the page.
+    if (!loadingMessages) {
+      setMessages((prev) => (prev.length === 0 ? prev : []));
     }
   }, [initialMessages, loadingMessages, selectedId]);
+
+  /**
+   * The socket broadcast and the send acknowledgement both carry the saved message, so
+   * whichever arrives second must not append it again.
+   */
+  const appendMessage = useCallback((message: ChatMessage) => {
+    setMessages((prev) => (prev.some((m) => m._id === message._id) ? prev : [...prev, message]));
+  }, []);
 
   // 4. Socket.IO Lifecycle
   useEffect(() => {
@@ -134,10 +150,7 @@ export default function ChatPage() {
       sock.on("group:new-message", (newMsg: ChatMessage) => {
         const chatId = typeof newMsg.chat === "object" ? (newMsg.chat as { _id: string })._id : newMsg.chat;
         if (chatId === selectedIdRef.current) {
-          setMessages((prev) => {
-            if (prev.some((m) => m._id === newMsg._id)) return prev;
-            return [...prev, newMsg];
-          });
+          appendMessage(newMsg);
         }
         void refetchChats();
       });
@@ -179,6 +192,10 @@ export default function ChatPage() {
     });
 
     return () => {
+      // Leave the room on the way out, so the next page does not keep receiving its traffic.
+      if (activeSocket && selectedIdRef.current) {
+        leaveChatGroup(activeSocket, selectedIdRef.current);
+      }
       if (activeSocket) {
         activeSocket.off("onlineUser");
         activeSocket.off("group:new-message");
@@ -190,7 +207,7 @@ export default function ChatPage() {
         activeSocket.off("client-chat:created");
       }
     };
-  }, [currentUserId, refetchChats]);
+  }, [currentUserId, refetchChats, appendMessage]);
 
   // Handle switching active chat room in Socket.IO
   const handleSelectChat = (chat: ChatItem) => {
@@ -273,11 +290,7 @@ export default function ChatPage() {
       });
 
       if (response.success && response.data) {
-        const savedMsg = response.data;
-        setMessages((prev) => {
-          if (prev.some((m) => m._id === savedMsg._id)) return prev;
-          return [...prev, savedMsg];
-        });
+        appendMessage(response.data);
         void refetchChats();
       } else {
         console.warn("Error sending message:", response.message);
@@ -328,7 +341,7 @@ export default function ChatPage() {
         attachments: [attachment],
       });
       if (response.success && response.data) {
-        setMessages((prev) => [...prev, response.data!]);
+        appendMessage(response.data);
         void refetchChats();
       }
     } catch (err) {

@@ -2,6 +2,9 @@
 
 import React from "react";
 import { MdAttachFile, MdSend } from "react-icons/md";
+import { usePathname } from "next/navigation";
+import { getLocale } from "@/lib/locale";
+import { getUiTranslation } from "@/lib/translations";
 
 interface ChatMessageInputProps {
   placeholder?: string;
@@ -20,35 +23,58 @@ export function ChatMessageInput({
   onSendMessage,
   onAttachFile,
 }: ChatMessageInputProps) {
+  const ui = getUiTranslation(getLocale(usePathname()));
   return (
     <form onSubmit={onSendMessage} className="border-t border-slate-100 p-3 bg-white">
       <div className="flex items-center gap-2">
         <label
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-700 cursor-pointer transition-colors"
-          title="Attach file or photo"
+          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition-colors ${
+            sending
+              ? "cursor-not-allowed opacity-50"
+              : "cursor-pointer hover:bg-slate-50 hover:text-slate-700"
+          }`}
+          title={ui.attachFile}
         >
           <MdAttachFile className="text-lg" />
           <input
             type="file"
             className="hidden"
-            onChange={(e) => void onAttachFile(e.target.files?.[0])}
+            disabled={sending}
+            onChange={(e) => {
+              void onAttachFile(e.target.files?.[0]);
+              // Clearing lets the same file be picked again after a failed upload.
+              e.target.value = "";
+            }}
           />
         </label>
 
         <input
           value={inputText}
           onChange={(e) => onInputChange(e.target.value)}
-          placeholder={placeholder || "Type a message..."}
+          disabled={sending}
+          placeholder={placeholder || ui.typeAMessage}
           className="h-10 min-w-0 flex-1 rounded-lg border border-slate-200 bg-slate-50/60 px-3.5 text-xs text-slate-800 placeholder:text-slate-400 focus:border-primary focus:bg-white focus:outline-none focus:ring-1 focus:ring-primary transition-all"
         />
 
         <button
           type="submit"
-          disabled={!inputText.trim() || sending}
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary text-white shadow-xs hover:bg-primary/90 disabled:opacity-40 cursor-pointer transition-colors"
-          title="Send message"
+          disabled={sending || !inputText.trim()}
+          aria-busy={sending}
+          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary text-white shadow-xs transition-colors ${
+            sending
+              ? "cursor-wait opacity-100"
+              : "cursor-pointer hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-40"
+          }`}
+          title={ui.sendMessage}
         >
-          <MdSend className="text-base" />
+          {sending ? (
+            <span
+              aria-hidden
+              className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white"
+            />
+          ) : (
+            <MdSend className="text-base" />
+          )}
         </button>
       </div>
     </form>

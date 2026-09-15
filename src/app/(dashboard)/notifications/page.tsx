@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { TbBell, TbChevronRight, TbTrash } from "react-icons/tb";
 import { BackendPagination } from "@/components/shared/BackendPagination";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import {
   useGetNotificationsQuery,
   useSeeNotificationsMutation,
@@ -114,6 +115,11 @@ export default function NotificationsPage() {
     );
   };
 
+  /** What the confirmation dialog is currently asking about. */
+  const [pendingDelete, setPendingDelete] = useState<
+    { kind: "one"; item: NotificationItem } | { kind: "selected" } | { kind: "all" } | null
+  >(null);
+
   const runBulkDelete = async (input: { notification_ids?: string[]; delete_all?: boolean }) => {
     setBulkBusy(true);
     setError("");
@@ -149,13 +155,35 @@ export default function NotificationsPage() {
   };
 
   const dismiss = async (item: NotificationItem) => {
+    setBulkBusy(true);
     try {
       await deleteNotificationMutation(item._id).unwrap();
       void refetch();
     } catch (err) {
       setError(apiError(err));
+    } finally {
+      setBulkBusy(false);
     }
   };
+
+  /** Runs whichever delete the dialog was opened for, then closes it. */
+  const confirmDelete = async () => {
+    if (!pendingDelete) return;
+    if (pendingDelete.kind === "one") await dismiss(pendingDelete.item);
+    else if (pendingDelete.kind === "all") await runBulkDelete({ delete_all: true });
+    else await runBulkDelete({ notification_ids: Array.from(selectedIds) });
+    setPendingDelete(null);
+  };
+
+  const deletePrompt =
+    pendingDelete?.kind === "one"
+      ? { title: "Delete notification?", description: `"${pendingDelete.item.title}" will be removed.` }
+      : pendingDelete?.kind === "all"
+      ? { title: "Delete all notifications?", description: "Every notification on this page will be removed." }
+      : {
+          title: `Delete ${selectedIds.size} notification${selectedIds.size === 1 ? "" : "s"}?`,
+          description: "The selected notifications will be removed.",
+        };
 
   return (
     <div className="space-y-4 text-sm">
@@ -210,7 +238,7 @@ export default function NotificationsPage() {
                 </button>
                 <button
                   disabled={bulkBusy}
-                  onClick={() => void runBulkDelete({ notification_ids: Array.from(selectedIds) })}
+                  onClick={() => setPendingDelete({ kind: "selected" })}
                   className="flex h-8 items-center gap-1.5 rounded bg-red-600 px-3 text-xs font-semibold text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
                 >
                   <TbTrash className="text-sm" /> {bulkBusy ? "Deleting..." : `Delete ${selectedIds.size}`}
@@ -219,7 +247,7 @@ export default function NotificationsPage() {
             )}
             <button
               disabled={bulkBusy}
-              onClick={() => void runBulkDelete({ delete_all: true })}
+              onClick={() => setPendingDelete({ kind: "all" })}
               className="h-8 rounded border border-red-200 px-3 text-xs font-semibold text-red-600 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
               title="Delete every notification, not just this page"
             >
@@ -298,7 +326,7 @@ export default function NotificationsPage() {
                   <button
                     onClick={(event) => {
                       event.stopPropagation();
-                      void dismiss(item);
+                      setPendingDelete({ kind: "one", item });
                     }}
                     className="shrink-0 rounded p-1.5 text-red-400 transition-colors hover:bg-red-50 hover:text-red-600 cursor-pointer"
                     aria-label={`Delete ${item.title}`}
@@ -324,6 +352,17 @@ export default function NotificationsPage() {
         onPageChange={setPage}
         itemLabel="notifications"
       />
+
+      {pendingDelete && (
+        <ConfirmDialog
+          title={deletePrompt.title}
+          description={deletePrompt.description}
+          confirmText="Delete"
+          loading={bulkBusy}
+          onConfirm={() => void confirmDelete()}
+          onClose={() => !bulkBusy && setPendingDelete(null)}
+        />
+      )}
     </div>
   );
 }

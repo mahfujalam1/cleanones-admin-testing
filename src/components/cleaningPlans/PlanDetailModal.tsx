@@ -264,7 +264,11 @@ function PlanBody({ plan, onAssign }: { plan: CleaningPlan; onAssign?: (plan: Cl
                             : "Photo required"}
                         </span>
                       )}
-                      {task.is_approved === false && <span className="text-amber-600">Awaiting approval</span>}
+                      {task.status === "Rejected" ? (
+                        <span className="text-red-600">Rejected</span>
+                      ) : task.status !== "Approved" ? (
+                        <span className="text-amber-600">Awaiting approval</span>
+                      ) : null}
                     </div>
 
                     {task.photo_requirements?.length ? (

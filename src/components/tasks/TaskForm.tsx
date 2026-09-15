@@ -87,19 +87,25 @@ export function TaskForm({
     }
 
     if (photoRequired) {
-      if (namedPhotoRequirements.length === 0) {
+      if (photoRequirements.length === 0 || namedPhotoRequirements.length === 0) {
         setError("Add at least one photo, or turn off \"Photo required\".");
+        return;
+      }
+      // Every slot the worker will be shown needs a name, so an unnamed row is not just
+      // dropped silently from the payload.
+      if (namedPhotoRequirements.length !== photoRequirements.length) {
+        setError("Give every required photo a name, or remove the empty ones.");
         return;
       }
       const count = Number(requiredPhotoCount);
       if (!requiredPhotoCount.trim() || !Number.isInteger(count) || count < 1) {
-        setError("Enter how many photos are required.");
+        setError("Enter the daily random photo count.");
         return;
       }
       // The worker cannot be asked for more photos than there are slots to fill.
       if (count > namedPhotoRequirements.length) {
         setError(
-          `Required photo count cannot be more than the ${namedPhotoRequirements.length} photo${
+          `Daily random photo count cannot be more than the ${namedPhotoRequirements.length} photo${
             namedPhotoRequirements.length === 1 ? "" : "s"
           } added.`
         );
@@ -219,6 +225,34 @@ export function TaskForm({
       )}
 
       <div className="space-y-4 border-t border-slate-100 pt-4">
+        <div className="max-w-xs">
+          <TextField
+            label="Daily random photo count"
+            type="number"
+            value={requiredPhotoCount}
+            onChange={(value) => {
+              setRequiredPhotoCount(value);
+              setError("");
+            }}
+            min={1}
+            max={Math.max(namedPhotoRequirements.length, 1)}
+            placeholder={`1 - ${Math.max(namedPhotoRequirements.length, 1)}`}
+            required={photoRequired}
+            // Meaningless until photos are actually being collected.
+            disabled={!photoRequired}
+          />
+          <p className="mt-1 text-xs text-slate-500">
+            {photoRequired ? (
+              <>
+                How many of the {namedPhotoRequirements.length} photo
+                {namedPhotoRequirements.length === 1 ? "" : "s"} below the worker is asked for each day.
+              </>
+            ) : (
+              <>Turn on &ldquo;Photo required&rdquo; below to set this.</>
+            )}
+          </p>
+        </div>
+
         <div>
           <CheckboxField
             label="Photo required"
@@ -271,25 +305,6 @@ export function TaskForm({
                 + Add Photo
               </button>
 
-              <div className="max-w-xs pt-1">
-                <TextField
-                  label="Required photo count"
-                  type="number"
-                  value={requiredPhotoCount}
-                  onChange={(value) => {
-                    setRequiredPhotoCount(value);
-                    setError("");
-                  }}
-                  min={1}
-                  max={Math.max(namedPhotoRequirements.length, 1)}
-                  placeholder={`1 - ${Math.max(namedPhotoRequirements.length, 1)}`}
-                  required
-                />
-                <p className="mt-1 text-xs text-slate-500">
-                  How many of the {namedPhotoRequirements.length} photo
-                  {namedPhotoRequirements.length === 1 ? "" : "s"} above the worker must supply.
-                </p>
-              </div>
             </div>
           )}
         </div>

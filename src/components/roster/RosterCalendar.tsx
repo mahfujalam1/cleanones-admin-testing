@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { MdCalendarToday, MdChevronLeft, MdChevronRight } from 'react-icons/md';
 import { DayView } from './DayView';
 import { WeekView } from './WeekView';
@@ -9,11 +9,14 @@ import dynamic from 'next/dynamic';
 
 const ShiftModal = dynamic(() => import('./ShiftModal').then((mod) => mod.ShiftModal), { ssr: false });
 import { Shift, ShiftTheme, planIdFromShift } from './types';
-import { PlanDetailSidebar } from '@/components/cleaningPlans/PlanDetailsSidebar';
-import { CreatePlanModal } from '@/components/cleaningPlans/CreatePlanModal';
-import { WorkerAssignmentModal } from '@/components/cleaningPlans/WorkerAssignmentModal';
-import { deleteCleaningPlan } from '@/services/actions/cleaningPlans';
-import type { CleaningPlan } from '@/components/cleaningPlans/types';
+import { PlanDetailModal } from '@/components/cleaningPlans/PlanDetailModal';
+import { PlanForm } from '@/components/cleaningPlans/PlanForm';
+import { AssignWorkersModal } from '@/components/cleaningPlans/AssignWorkersModal';
+import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
+import {
+  useDeleteCleaningPlanMutation,
+  type CleaningPlan,
+} from '@/redux/api/endpoints/cleaningPlans.api';
 import { ContentSkeleton } from '@/components/shared/SkeletonLoader';
 import { BackendPagination } from '@/components/shared/BackendPagination';
 import { useGetShiftRosterQuery, type ShiftRosterParams } from '@/redux/api/rosterApi';
@@ -32,36 +35,27 @@ export function RosterCalendar() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [page, setPage] = useState(1);
   const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
-  const [editingPlanId, setEditingPlanId] = useState<string | null>(null);
+  const [editingPlan, setEditingPlan] = useState<CleaningPlan | null>(null);
   const [assigningPlan, setAssigningPlan] = useState<CleaningPlan | null>(null);
+  const [deletingPlan, setDeletingPlan] = useState<CleaningPlan | null>(null);
   const [error, setError] = useState('');
+  const [deletePlan, { isLoading: removingPlan }] = useDeleteCleaningPlanMutation();
 
   // A shift generated from a cleaning plan opens that plan's own modals, so the roster offers
-  // exactly what the Cleaning Plans page does — view, edit, assign, delete — minus creating one.
+  // exactly what the Cleaning Plans page does - view, edit, assign, delete - minus creating one.
   const selectedPlanId = selectedShift ? (selectedShift.planId || planIdFromShift(selectedShift.id)) : '';
-  const selectedPlan: CleaningPlan | null = selectedShift && selectedPlanId
-    ? {
-      id: selectedPlanId,
-      name: selectedShift.workerName,
-      client: '',
-      location: selectedShift.location,
-      dateSchedule: `${selectedShift.date} · ${selectedShift.startTime} - ${selectedShift.endTime}`,
-      rooms: [],
-      duration: 0,
-      photos: 0,
-      tasks: 0,
-      aiValid: false,
-      checklistTasks: [],
-      photoRequirements: [],
-    }
-    : null;
 
-  const handlePlanDelete = async (planId: string) => {
-    const result = await deleteCleaningPlan(planId);
-    if (!result.success) return setError(result.error);
-    setError('');
-    setSelectedShift(null);
-    void refetchCurrent();
+  const handlePlanDelete = async (plan: CleaningPlan) => {
+    try {
+      await deletePlan(plan._id).unwrap();
+      setDeletingPlan(null);
+      setSelectedShift(null);
+      setError('');
+      void refetchCurrent();
+    } catch (cause) {
+      setDeletingPlan(null);
+      setError(apiError(cause));
+    }
   };
 
   const rosterParams: ShiftRosterParams = useMemo(() => {
@@ -273,37 +267,48 @@ export function RosterCalendar() {
       </div>
 
       {/* Plan-backed shift: the Cleaning Plans modals, reused as-is */}
-      {selectedPlan && (
-        <PlanDetailSidebar
-          plan={selectedPlan}
+      {selectedPlanId && (
+        <PlanDetailModal
+          planId={selectedPlanId}
           onClose={() => setSelectedShift(null)}
-          onDelete={(planId) => { void handlePlanDelete(planId); }}
-          onEdit={() => {
-            setEditingPlanId(selectedPlan.id);
+          onEdit={(plan) => {
             setSelectedShift(null);
+            setEditingPlan(plan);
           }}
-          onAssign={() => {
-            setAssigningPlan(selectedPlan);
+          onDelete={(plan) => {
             setSelectedShift(null);
+            setDeletingPlan(plan);
+          }}
+          onAssign={(plan) => {
+            setSelectedShift(null);
+            setAssigningPlan(plan);
           }}
         />
       )}
 
-      {editingPlanId && (
-        <CreatePlanModal
-          key={editingPlanId}
-          planId={editingPlanId}
-          onClose={() => setEditingPlanId(null)}
-          onAdd={() => { setEditingPlanId(null); refetchCurrent(); }}
+      {editingPlan && (
+        <PlanForm
+          key={editingPlan._id}
+          plan={editingPlan}
+          onClose={() => { setEditingPlan(null); void refetchCurrent(); }}
         />
       )}
 
       {assigningPlan && (
-        <WorkerAssignmentModal
-          planId={assigningPlan.id}
-          planTitle={assigningPlan.name}
-          onClose={() => setAssigningPlan(null)}
-          onAssigned={() => { setAssigningPlan(null); refetchCurrent(); }}
+        <AssignWorkersModal
+          plan={assigningPlan}
+          onClose={() => { setAssigningPlan(null); void refetchCurrent(); }}
+        />
+      )}
+
+      {deletingPlan && (
+        <ConfirmDialog
+          title="Delete cleaning plan?"
+          description={`${deletingPlan.title} will be removed.`}
+          confirmText="Delete"
+          loading={removingPlan}
+          onConfirm={() => void handlePlanDelete(deletingPlan)}
+          onClose={() => !removingPlan && setDeletingPlan(null)}
         />
       )}
 

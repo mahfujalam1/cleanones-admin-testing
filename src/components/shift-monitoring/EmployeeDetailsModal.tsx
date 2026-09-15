@@ -9,8 +9,9 @@ import { WorkerInfo } from './types';
 import { getLiveWorkerDetails, getWorkerStats, type Period } from '@/services/actions/shiftMonitoring';
 import { DetailSkeleton } from '@/components/shared/SkeletonLoader';
 import { planIdFromShift } from '@/components/roster/types';
-import { CreatePlanModal } from '@/components/cleaningPlans/CreatePlanModal';
-import { WorkerAssignmentModal } from '@/components/cleaningPlans/WorkerAssignmentModal';
+import { PlanForm } from '@/components/cleaningPlans/PlanForm';
+import { AssignWorkersModal } from '@/components/cleaningPlans/AssignWorkersModal';
+import { useGetCleaningPlanQuery } from '@/redux/api/endpoints/cleaningPlans.api';
 import { useModalJump } from '@/hooks/useModalJump';
 
 interface EmployeeDetailsModalProps {
@@ -52,6 +53,9 @@ export function EmployeeDetailsModal({ worker, onClose, onChanged }: EmployeeDet
   // Live-status shifts generated from a cleaning plan carry the plan id, which is what makes
   // editing and reassigning possible from here without a shift-level endpoint.
   const planId = planIdFromShift(String(worker.shiftId));
+  // The shared plan modals take the record, not the id, and going through RTK means the
+  // cleaning-plan caches invalidate on save instead of needing a page reload.
+  const { data: planRecord } = useGetCleaningPlanQuery(planId, { skip: !planId });
 
   useEffect(() => {
     setLoading(true);
@@ -231,21 +235,18 @@ export function EmployeeDetailsModal({ worker, onClose, onChanged }: EmployeeDet
         </footer>
       </div>
 
-      {editing && planId && (
-        <CreatePlanModal
-          key={planId}
-          planId={planId}
-          onClose={() => setEditing(false)}
-          onAdd={() => { setEditing(false); onChanged?.(); }}
+      {editing && planRecord && (
+        <PlanForm
+          key={planRecord._id}
+          plan={planRecord}
+          onClose={() => { setEditing(false); onChanged?.(); }}
         />
       )}
 
-      {assigning && planId && (
-        <WorkerAssignmentModal
-          planId={planId}
-          planTitle={worker.name}
-          onClose={() => setAssigning(false)}
-          onAssigned={() => { setAssigning(false); onChanged?.(); }}
+      {assigning && planRecord && (
+        <AssignWorkersModal
+          plan={planRecord}
+          onClose={() => { setAssigning(false); onChanged?.(); }}
         />
       )}
     </div>,

@@ -38,8 +38,8 @@ export type WorkerStatus = (typeof WORKER_STATUSES)[number];
 
 /** Sort values the list endpoint accepts; anything else is ignored by the API. */
 export const WORKER_SORTS = [
-  "-created_at",
-  "created_at",
+  "-createdAt",
+  "createdAt",
   "email",
   "-email",
   "hourly_rate",
@@ -86,8 +86,8 @@ export type Worker = {
   total_earning?: number;
   total_paid?: number;
   pending_amount?: number;
-  created_at?: string;
-  updated_at?: string;
+  createdAt?: string;
+  updatedAt?: string;
 };
 
 /** Creating a worker also creates its user account, so credentials are set here. */

@@ -12,15 +12,11 @@ const ReactQuill = dynamic(() => import("react-quill-new"), {
 export function RichTextEditor({ initialContent, onChange }: { initialContent: string; onChange: (html: string) => void }) {
   const modules = useMemo(() => ({
     toolbar: [
-      [{ font: [] }, { size: ["small", false, "large", "huge"] }],
-      [{ header: [1, 2, 3, 4, 5, 6, false] }],
+      [{ header: [1, 2, 3, false] }, { font: [] }, { size: ["small", false, "large", "huge"] }],
       ["bold", "italic", "underline", "strike"],
       [{ color: [] }, { background: [] }],
-      [{ align: [] }],
-      [{ list: "ordered" }, { list: "bullet" }],
-      [{ indent: "-1" }, { indent: "+1" }],
-      ["blockquote", "code-block"],
-      ["link", "image", "video"],
+      [{ align: [] }, { list: "ordered" }, { list: "bullet" }, { indent: "-1" }, { indent: "+1" }],
+      ["blockquote", "code-block", "link", "image", "video"],
       ["clean"],
     ],
     history: { delay: 500, maxStack: 100, userOnly: true },
@@ -33,14 +29,14 @@ export function RichTextEditor({ initialContent, onChange }: { initialContent: s
     "blockquote", "code-block", "link", "image", "video",
   ];
 
-  return <div className="legal-quill-editor w-full overflow-hidden rounded border border-slate-200 bg-white">
+  return <div className="legal-quill-editor w-full overflow-hidden rounded-lg border border-slate-200 bg-white shadow-2xs">
     <ReactQuill
       theme="snow"
       defaultValue={initialContent.includes("<") ? initialContent : plainTextToHtml(initialContent)}
       onChange={onChange}
       modules={modules}
       formats={formats}
-      placeholder="Write the legal document..."
+      placeholder="Start with a heading, then write each clause as its own section…"
     />
   </div>;
 }

@@ -31,7 +31,7 @@ export type RoomDetails = {
   clean_type: string;
   client_id: string;
   company_name: string;
-  created_at: string;
+  createdAt: string;
   duration: number;
   floor: number;
   id: string;
@@ -45,7 +45,7 @@ export type RoomDetails = {
   task_number: number;
   tasks: Array<RoomTaskInput & { id: string; total_photos_required?: number }>;
   total_photos_required: number;
-  updated_at: string;
+  updatedAt: string;
 };
 
 export type RoomGridItem = {
@@ -62,20 +62,13 @@ export type RoomGridItem = {
   total_photos_required: number;
   task_number: number;
   clean_type: string;
-  updated_at: string;
+  updatedAt: string;
 };
 
 const json = (value: unknown) => ({
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify(value),
 });
-
-export async function getRoomLocations(clientId?: string) {
-  return authenticated<{ locations: Array<{ id: string; name: string; total_rooms: number }> }>(
-    `/manager/dropdowns/locations${clientId ? `?client_id=${encodeURIComponent(clientId)}` : ""}`,
-    { method: "GET" }
-  );
-}
 
 export async function createRoom(locationId: string, input: RoomInput) {
   return authenticated<RoomDetails>(`/manager/locations/${encodeURIComponent(locationId)}/rooms`, {

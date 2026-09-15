@@ -4,10 +4,10 @@ import { useEffect, useMemo, useState } from "react";
 import { MdSearch } from "react-icons/md";
 import { CardGridSkeleton } from "@/components/shared/SkeletonLoader";
 import { BackendPagination } from "@/components/shared/BackendPagination";
-import { useGetExtraServicesQuery, useGetCleaningPlansQuery } from "@/redux/api/dashboardApi";
 // Clients now come from the new backend; the rest of this page is still on the old one.
 import { CLIENT_LOOKUP_ARGS, clientLabel, useGetClientsQuery } from "@/redux/api/endpoints/clients.api";
 import { additionalTaskStatus, useGetAdditionalTasksQuery } from "@/redux/api/endpoints/additionalTasks.api";
+import { useGetCleaningPlanListQuery } from "@/redux/api/endpoints/cleaningPlans.api";
 import { ExtraServiceCard } from "@/components/extra-services/ExtraServiceCard";
 import { ExtraServiceModal } from "@/components/extra-services/ExtraServiceModal";
 import type { UnifiedServiceRequest } from "@/components/extra-services/types";
@@ -42,20 +42,10 @@ export default function ExtraServicesPage() {
   const { data: clientsRes } = useGetClientsQuery(CLIENT_LOOKUP_ARGS);
 
   const {
-    data: servicesRes,
-    isLoading: loadingServices,
-    refetch: refetchServices,
-  } = useGetExtraServicesQuery({
-    status: status || undefined,
-    client_id: clientId || undefined,
-    search: search.trim() || undefined,
-  });
-
-  const {
     data: plansRes,
     isLoading: loadingPlans,
     refetch: refetchPlans,
-  } = useGetCleaningPlansQuery({ limit: 50 });
+  } = useGetCleaningPlanListQuery({ limit: 50 });
 
   const {
     data: tasksRes,
@@ -64,11 +54,10 @@ export default function ExtraServicesPage() {
   } = useGetAdditionalTasksQuery({
     limit: TASK_PAGE_SIZE,
     searchTerm: search.trim() || undefined,
-    sort: "-created_at",
+    sort: "-createdAt",
   });
 
   const refetchAll = () => {
-    void refetchServices();
     void refetchPlans();
     void refetchTasks();
   };
@@ -76,8 +65,9 @@ export default function ExtraServicesPage() {
   /** Additional tasks only reference their plan by id, so names are borrowed from the plan list. */
   const plansById = useMemo(() => {
     const map = new Map<string, any>();
-    for (const plan of (plansRes?.plans ?? []) as any[]) {
-      if (plan?.id) map.set(String(plan.id), plan);
+    for (const plan of (plansRes?.result ?? []) as any[]) {
+      const id = plan?._id || plan?.id;
+      if (id) map.set(String(id), plan);
     }
     return map;
   }, [plansRes]);
@@ -85,35 +75,7 @@ export default function ExtraServicesPage() {
   const items: UnifiedServiceRequest[] = useMemo(() => {
     const list: UnifiedServiceRequest[] = [];
 
-    // 1. Extra Services requests
-    for (const item of servicesRes?.requests ?? []) {
-      const planIdStr = (item as any).plan_id
-        ? String((item as any).plan_id?._id || (item as any).plan_id)
-        : (item as any).cleaning_plan_id
-        ? String((item as any).cleaning_plan_id?._id || (item as any).cleaning_plan_id)
-        : undefined;
-
-      list.push({
-        id: item.id,
-        planId: planIdStr,
-        title: item.title,
-        description: item.description,
-        status: item.status || "under_review",
-        priority: item.priority,
-        preferred_date: item.preferred_date,
-        date_submitted: item.date_submitted,
-        client_id: item.client_id ? String(item.client_id) : item.client?.id ? String(item.client.id) : undefined,
-        client_name: item.client_name || item.client?.name,
-        location_id: item.location_id ? String(item.location_id) : item.location?.id ? String(item.location.id) : undefined,
-        location_name: item.location_name || item.location?.name,
-        room_name: item.room_name || item.room?.name,
-        rejection_reason: item.rejection_reason,
-        rawExtraService: item,
-        isCleaningPlanTask: false,
-      });
-    }
-
-    // 2. Additional tasks, straight from /additional-task/all-additional-tasks
+    // Additional tasks, straight from /additional-task/all-additional-tasks
     for (const task of tasksRes?.result ?? []) {
       const planObj = typeof task.cleaning_plan_id === "object" && task.cleaning_plan_id ? (task.cleaning_plan_id as any) : null;
       const planIdStr = String(planObj?._id || task.cleaning_plan_id || "");
@@ -130,7 +92,7 @@ export default function ExtraServicesPage() {
         description: task.description || "",
         status: additionalTaskStatus(task),
         preferred_date: task.date_time ? task.date_time.slice(0, 10) : plan?.date,
-        date_submitted: (task.createdAt ?? task.created_at)?.slice(0, 10),
+        date_submitted: task.createdAt?.slice(0, 10),
         client_id: planClientId ? String(planClientId) : undefined,
         client_name: typeof planClientName === "string" ? planClientName : undefined,
         location_id: plan?.location_id ? String(plan.location_id) : (typeof plan?.location === "object" ? String(plan.location?._id || plan.location?.id || "") : undefined),
@@ -154,13 +116,13 @@ export default function ExtraServicesPage() {
 
       return matchesSearch && matchesStatus;
     });
-  }, [servicesRes, tasksRes, plansById, search, status, clientId]);
+  }, [tasksRes, plansById, search, status, clientId]);
 
   const pagedItems = useMemo(() => {
     return items.slice((page - 1) * LIMIT, page * LIMIT);
   }, [items, page]);
 
-  const loading = loadingServices || loadingPlans || loadingTasks;
+  const loading = loadingPlans || loadingTasks;
 
   return (
     <div className="space-y-5 pb-10">

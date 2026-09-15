@@ -12,8 +12,8 @@ export type ClientSummary = {
   is_signup: boolean;
   locations_count: number;
   contract_status: string;
-  created_at: string;
-  updated_at: string;
+  createdAt: string;
+  updatedAt: string;
 };
 export type ClientInput = {
   company_name: string;
@@ -85,17 +85,11 @@ export async function getClients(
     method: "GET",
   });
 }
-export async function getClient(clientId: string) {
-  return authenticated<ClientDetails>(
-    `/manager/clients/${encodeURIComponent(clientId)}`,
-    { method: "GET" },
-  );
-}
 export async function updateClient(
   clientId: string,
   input: Omit<
     ClientSummary,
-    "id" | "locations_count" | "contract_status" | "created_at" | "updated_at"
+    "id" | "locations_count" | "contract_status" | "createdAt" | "updatedAt"
   >,
 ) {
   return authenticated<ClientDetails>(
@@ -108,74 +102,6 @@ export async function deleteClient(clientId: string) {
     `/manager/clients/${encodeURIComponent(clientId)}`,
     { method: "DELETE" },
   );
-}
-export async function getDeletedClients(
-  page = 1,
-  limit = 10,
-  search?: string,
-  isSignup?: boolean,
-) {
-  return authenticated<{
-    total_count: number;
-    page: number;
-    limit: number;
-    has_more: boolean;
-    clients: ClientSummary[];
-  }>(`/manager/clients/deleted-list?${query(page, limit, search, isSignup)}`, {
-    method: "GET",
-  });
-}
-export async function restoreClient(clientId: string) {
-  return authenticated<string>(
-    `/manager/clients/${encodeURIComponent(clientId)}/restore`,
-    { method: "POST" },
-  );
-}
-export async function getPendingClientApprovals(page = 1, limit = 10) {
-  return authenticated<{
-    total_count: number;
-    page: number;
-    limit: number;
-    has_more: boolean;
-    users: unknown[];
-  }>(`/manager/clients/pending-approvals?page=${page}&limit=${limit}`, {
-    method: "GET",
-  });
-}
-export async function approveClient(
-  userId: string,
-  licenseExpirationDate: string,
-) {
-  return authenticated<ClientDetails>(
-    `/manager/clients/${encodeURIComponent(userId)}/approve`,
-    {
-      method: "POST",
-      ...json({ license_expiration_date: licenseExpirationDate }),
-    },
-  );
-}
-export async function rejectClient(userId: string, rejectReason: string) {
-  return authenticated<string>(
-    `/manager/clients/${encodeURIComponent(userId)}/reject`,
-    { method: "POST", ...json({ reject_reason: rejectReason }) },
-  );
-}
-export async function getClientOverview(clientId: string) {
-  return authenticated<{
-    client_id: string;
-    company_name: string;
-    industry: string;
-    status: string;
-    subtitle_contract_status: string;
-    contract_status: string;
-    contract_expiry_date: string;
-    contract_expiry_formatted: string;
-    locations_count: number;
-    contacts_count: number;
-    active_tasks_count: number;
-  }>(`/manager/clients/${encodeURIComponent(clientId)}/dashboard-overview`, {
-    method: "GET",
-  });
 }
 export async function getClientContacts(
   clientId: string,
@@ -193,21 +119,6 @@ export async function getClientContacts(
     { method: "GET" },
   );
 }
-export async function addClientContact(
-  clientId: string,
-  input: Omit<ClientContact, "id">,
-) {
-  return authenticated<ClientContact>(
-    `/manager/clients/${encodeURIComponent(clientId)}/contacts`,
-    { method: "POST", ...json(input) },
-  );
-}
-export async function removeClientContact(clientId: string, contactId: string) {
-  return authenticated<string>(
-    `/manager/clients/${encodeURIComponent(clientId)}/contacts/${encodeURIComponent(contactId)}`,
-    { method: "DELETE" },
-  );
-}
 export type Contract = {
   client_id: string;
   company_name: string;
@@ -216,41 +127,6 @@ export type Contract = {
   expiry_date_formatted: string;
   pdf_url: string;
 };
-export async function getClientContract(clientId: string) {
-  const result = await authenticated<Contract>(
-    `/manager/clients/${encodeURIComponent(clientId)}/contract`,
-    { method: "GET" },
-  );
-  return result.success
-    ? {
-        success: true as const,
-        data: { ...result.data, pdf_url: apiUrl(result.data.pdf_url) },
-      }
-    : result;
-}
-export async function renewClientContract(
-  clientId: string,
-  expiryDate: string,
-) {
-  const result = await authenticated<Contract>(
-    `/manager/clients/${encodeURIComponent(clientId)}/contract/renew`,
-    { method: "POST", ...json({ expiry_date: expiryDate }) },
-  );
-  return result.success
-    ? {
-        success: true as const,
-        data: { ...result.data, pdf_url: apiUrl(result.data.pdf_url) },
-      }
-    : result;
-}
-export async function uploadClientContract(clientId: string, file: File) {
-  const data = new FormData();
-  data.append("file", file);
-  return authenticated<string>(
-    `/manager/clients/${encodeURIComponent(clientId)}/contract/upload`,
-    { method: "POST", body: data },
-  );
-}
 export type ClientReport = {
   id: string;
   title: string;
@@ -259,34 +135,3 @@ export type ClientReport = {
   status: string;
   download_url: string;
 };
-export async function getClientReports(clientId: string) {
-  return authenticated<{ total_count: number; reports: ClientReport[] }>(
-    `/manager/clients/${encodeURIComponent(clientId)}/reports`,
-    { method: "GET" },
-  );
-}
-export async function generateClientReport(clientId: string) {
-  return authenticated<ClientReport>(
-    `/manager/clients/${encodeURIComponent(clientId)}/reports/generate`,
-    { method: "POST" },
-  );
-}
-export async function exportClientReport(clientId: string, reportId?: string) {
-  const result = await authenticated<string>(
-    `/manager/clients/${encodeURIComponent(clientId)}/reports/export-pdf${reportId ? `?report_id=${encodeURIComponent(reportId)}` : ""}`,
-    { method: "GET" },
-  );
-  return result.success
-    ? { success: true as const, data: apiUrl(result.data) }
-    : result;
-}
-export async function emailClientReport(
-  clientId: string,
-  reportId: string,
-  email: string,
-) {
-  return authenticated<string>(
-    `/manager/clients/${encodeURIComponent(clientId)}/reports/send-email`,
-    { method: "POST", ...json({ report_id: reportId, email }) },
-  );
-}

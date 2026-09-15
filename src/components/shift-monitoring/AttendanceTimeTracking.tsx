@@ -1,11 +1,10 @@
 "use client";
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { MdSearch, MdClose, MdFilterList, MdChevronRight } from 'react-icons/md';
-import { TbClock, TbCalendarStats, TbAlertTriangle, TbChartBar, TbCheck, TbCircleCheck, TbUsers } from 'react-icons/tb';
+import { MdSearch, MdClose, MdFilterList } from 'react-icons/md';
+import { TbClock, TbCalendarStats, TbAlertTriangle, TbCircleCheck } from 'react-icons/tb';
 import { WorkerInfo } from './types';
 import { type AttendanceWorker, type Period } from '@/services/actions/shiftMonitoring';
-import { useGetAttendanceTrackingQuery } from '@/redux/api/shiftMonitoringApi';
 import { useGetShiftAttendanceSummaryQuery } from '@/redux/api/shiftsApi';
 import { useGetWorkerListQuery, workerName } from '@/redux/api/endpoints/workers.api';
 import { BackendPagination } from '@/components/shared/BackendPagination';
@@ -72,51 +71,45 @@ export function AttendanceTimeTracking({ onWorkerSelect, selectedWorkerId, timeR
 
   const period = timeRange.toLowerCase() as Period;
 
-  // 1. Integrated real Swagger API: /shift/attendance-summary
+  // 1. Period totals for the KPI banner — /shift/attendance-summary.
   const {
     data: attendanceSummary,
     isLoading: loadingSummary,
+    error: summaryError,
     refetch: refetchSummary,
   } = useGetShiftAttendanceSummaryQuery({ period: period as 'today' | 'weekly' | 'monthly' });
 
-  // 2. Existing attendance-tracking endpoint
+  // 2. The rows come from the worker directory. Per-worker hours, shifts and late counts are
+  // read from /shift/attendance-summary/:workerId when a worker is opened, so no aggregated
+  // attendance-tracking call is made from this page.
   const {
-    data: attRes,
-    isLoading: loadingAtt,
-    error,
-    refetch: refetchAtt,
-  } = useGetAttendanceTrackingQuery({
-    period,
-    workerType: roleFilter === 'All' ? undefined : roleFilter.toLowerCase(),
-    search: search.trim() || undefined,
+    data: workerListRes,
+    isLoading: loadingWorkerList,
+    refetch: refetchWorkers,
+  } = useGetWorkerListQuery({
+    page: 1,
+    limit: 100,
+    worker_type: roleFilter === 'All' ? undefined : roleFilter,
   });
+  const loading = loadingWorkerList || loadingSummary;
 
-  // 3. System worker directory fallback
-  const { data: workerListRes, isLoading: loadingWorkerList } = useGetWorkerListQuery({ page: 1, limit: 100 });
-  const loading = (loadingAtt || loadingSummary) && (!workerListRes?.result || workerListRes.result.length === 0);
+  const directoryWorkers = workerListRes?.result;
 
-  const attWorkers = attRes?.workers;
-  const fallbackWorkers = workerListRes?.result;
-
-  const rawWorkers = useMemo(() => {
-    if (attWorkers && attWorkers.length > 0) {
-      return attWorkers;
-    }
-    // Fallback to active workers list if attendance-tracking endpoint is empty
-    if (fallbackWorkers && fallbackWorkers.length > 0) {
-      return fallbackWorkers.map((w) => ({
-        worker_id: String(w._id),
-        worker_name: workerName(w),
-        profile_picture: w.profile_photo || '',
-        worker_type: w.worker_type || 'Employee',
-        hours_worked: `${w.hourly_rate || 0}h`,
-        hours_worked_numeric: 0,
-        total_shifts: 0,
-        late_days: 0,
-      }));
-    }
-    return [];
-  }, [attWorkers, fallbackWorkers]);
+  const rawWorkers = useMemo<AttendanceWorker[]>(() => {
+    if (!directoryWorkers?.length) return [];
+    // The directory carries no attendance figures, so the per-worker counters start at zero
+    // and are filled in by the detail view.
+    return directoryWorkers.map((w) => ({
+      worker_id: String(w._id),
+      worker_name: workerName(w),
+      profile_picture: w.profile_photo || '',
+      worker_type: w.worker_type || 'Employee',
+      hours_worked: '0h',
+      hours_worked_numeric: 0,
+      total_shifts: 0,
+      late_days: 0,
+    }));
+  }, [directoryWorkers]);
 
   useEffect(() => {
     setPage(1);
@@ -350,16 +343,16 @@ export function AttendanceTimeTracking({ onWorkerSelect, selectedWorkerId, timeR
       </div>
 
       {/* Sync / Error Notice */}
-      {error && !attendanceSummary && (
+      {summaryError && (
         <div className="flex items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50/70 px-4 py-2.5 text-xs text-amber-800">
           <div className="flex items-center gap-2">
             <TbAlertTriangle className="text-base text-amber-600 shrink-0" />
-            <span>Could not sync real-time attendance server records. Showing directory data if available.</span>
+            <span>Could not load the attendance totals for this period. The worker list below is still shown.</span>
           </div>
           <button
             onClick={() => {
               void refetchSummary();
-              void refetchAtt();
+              void refetchWorkers();
             }}
             className="cursor-pointer rounded-lg border border-amber-300 bg-white px-3 py-1 text-xs font-semibold text-amber-900 shadow-2xs hover:bg-amber-100/50 transition-colors"
           >
@@ -379,19 +372,18 @@ export function AttendanceTimeTracking({ onWorkerSelect, selectedWorkerId, timeR
                 <th className="px-6 py-3.5">Hours Worked</th>
                 <th className="px-6 py-3.5">Total Shifts</th>
                 <th className="px-6 py-3.5">Punctuality & Late</th>
-                <th className="px-6 py-3.5 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-sm bg-white">
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="p-0">
-                    <TableSkeleton rows={7} columns={6} />
+                  <td colSpan={5} className="p-0">
+                    <TableSkeleton rows={7} columns={5} />
                   </td>
                 </tr>
               ) : workers.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-16 text-center">
+                  <td colSpan={5} className="py-16 text-center">
                     <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 text-slate-400">
                       <TbClock className="text-2xl" />
                     </div>
@@ -496,20 +488,6 @@ export function AttendanceTimeTracking({ onWorkerSelect, selectedWorkerId, timeR
                         )}
                       </td>
 
-                      {/* Action Button */}
-                      <td className="px-6 py-3.5 text-right">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onWorkerSelect(worker);
-                          }}
-                          className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition-all hover:bg-slate-50 hover:border-slate-300 hover:text-primary shadow-2xs"
-                        >
-                          <TbChartBar className="text-sm text-slate-400" />
-                          View Stats & Trends
-                          <MdChevronRight className="text-sm text-slate-400" />
-                        </button>
-                      </td>
                     </tr>
                   );
                 })

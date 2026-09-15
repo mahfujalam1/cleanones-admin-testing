@@ -2,16 +2,14 @@
 
 import { useState } from "react";
 import { FormModal } from "@/components/shared/FormModal";
-import { DateField, SelectField, TextField } from "@/components/shared/Field";
+import { DateField, TextField } from "@/components/shared/Field";
 import { apiError } from "@/redux/api/apiError";
 import { MIN_PASSWORD_LENGTH } from "@/lib/auth/password";
 import {
-  CONTRACT_STATUSES,
   useCreateClientMutation,
   clientLabel,
   useUpdateClientMutation,
   type Client,
-  type ContractStatus,
 } from "@/redux/api/endpoints/clients.api";
 
 /** `2026-09-12T09:00:00.000Z` → `2026-09-12`, which is what a date input wants. */
@@ -23,7 +21,6 @@ type Draft = {
   phone: string;
   company_name: string;
   licence_expiration_date: string;
-  contract_status: ContractStatus | "";
   password: string;
   confirmPassword: string;
 };
@@ -34,7 +31,6 @@ const emptyDraft: Draft = {
   phone: "",
   company_name: "",
   licence_expiration_date: "",
-  contract_status: "",
   password: "",
   confirmPassword: "",
 };
@@ -46,7 +42,6 @@ const draftFrom = (client: Client): Draft => ({
   phone: client.phone,
   company_name: client.company_name ?? "",
   licence_expiration_date: toDateInput(client.licence_expiration_date),
-  contract_status: client.contract_status ?? "",
 });
 
 /**
@@ -72,15 +67,27 @@ export function ClientForm({ client, onClose }: { client?: Client; onClose: () =
     name: draft.name.trim(),
     email: draft.email.trim(),
     phone: draft.phone.trim(),
-    company_name: draft.company_name.trim() || undefined,
+    company_name: draft.company_name.trim(),
     // A date input gives `YYYY-MM-DD`; the API stores a full timestamp.
     licence_expiration_date: draft.licence_expiration_date
       ? new Date(draft.licence_expiration_date).toISOString()
       : undefined,
-    contract_status: draft.contract_status || undefined,
   };
 
   const submit = async () => {
+    if (!shared.name) {
+      setError("Client name is required.");
+      return;
+    }
+    if (!shared.company_name) {
+      setError("Company name is required.");
+      return;
+    }
+    if (!draft.licence_expiration_date) {
+      setError("Licence expiry is required.");
+      return;
+    }
+
     try {
       if (isEdit) {
         await updateClient({ id: client._id, body: shared }).unwrap();
@@ -116,26 +123,19 @@ export function ClientForm({ client, onClose }: { client?: Client; onClose: () =
       onSubmit={() => void submit()}
     >
       <TextField label="Client name" value={draft.name} onChange={set("name")} required />
-      <TextField label="Company name" value={draft.company_name} onChange={set("company_name")} />
+      <TextField label="Company name" value={draft.company_name} onChange={set("company_name")} required />
 
       <div className="grid gap-4 sm:grid-cols-2">
         <TextField label="Email" type="email" value={draft.email} onChange={set("email")} required />
         <TextField label="Phone" type="tel" value={draft.phone} onChange={set("phone")} required />
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <SelectField
-          label="Contract status"
-          value={draft.contract_status}
-          options={CONTRACT_STATUSES}
-          onChange={set("contract_status")}
-        />
-        <DateField
-          label="Licence expiry"
-          value={draft.licence_expiration_date}
-          onChange={set("licence_expiration_date")}
-        />
-      </div>
+      <DateField
+        label="Licence expiry"
+        value={draft.licence_expiration_date}
+        onChange={set("licence_expiration_date")}
+        required
+      />
 
       {!isEdit && (
         <div className="grid gap-4 border-t border-slate-100 pt-4 sm:grid-cols-2">

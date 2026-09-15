@@ -41,8 +41,8 @@ export type WorkerInvoice = {
     payment_method?: string;
     payment_reference?: string;
     notes?: string;
-    created_at?: string;
-    updated_at?: string;
+    createdAt?: string;
+    updatedAt?: string;
     shifts_included?: InvoiceShift[];
 };
 
@@ -113,29 +113,3 @@ export async function getWorkerEarnings(workerId: string, month?: number, year?:
     return authenticated<WorkerEarnings>(`/manager/workers/${encodeURIComponent(workerId)}/earnings${suffix}`, { method: "GET" });
 }
 
-export async function getWorkerInvoices(
-    input: { workerId?: string; month?: number; year?: number; paymentStatus?: string; page?: number; limit?: number } = {},
-) {
-    const query = new URLSearchParams({ page: String(input.page ?? 1), limit: String(input.limit ?? 10) });
-    if (input.workerId) query.set("worker_id", input.workerId);
-    if (input.month) query.set("month", String(input.month));
-    if (input.year) query.set("year", String(input.year));
-    if (input.paymentStatus) query.set("payment_status", input.paymentStatus);
-    return authenticated<{
-        total_count: number;
-        page: number;
-        limit: number;
-        has_more: boolean;
-        total_invoiced_amount: number;
-        total_paid_amount: number;
-        invoices: WorkerInvoice[];
-    }>(`/manager/worker-invoices?${query}`, { method: "GET" });
-}
-
-export async function createWorkerInvoice(input: CreateInvoiceInput) {
-    return authenticated<WorkerInvoice>("/manager/worker-invoices", { method: "POST", ...json(input) });
-}
-
-export async function getWorkerInvoice(invoiceId: string) {
-    return authenticated<WorkerInvoice>(`/manager/worker-invoices/${encodeURIComponent(invoiceId)}`, { method: "GET" });
-}

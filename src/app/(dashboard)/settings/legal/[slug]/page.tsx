@@ -4,8 +4,8 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { MdArrowBack, MdEdit } from "react-icons/md";
-import { isLegalSlug, legalDocuments, legalTypeForSlug } from "@/lib/legal-content";
-import { getLegalDocument } from "@/services/actions/manager";
+import { isLegalSlug, legalDocuments } from "@/lib/legal-content";
+import { getLegalDocument } from "@/services/actions/legal";
 import { DetailSkeleton } from "@/components/shared/SkeletonLoader";
 
 const formatUpdated = (value?: string) => {
@@ -20,7 +20,8 @@ export default function LegalDocumentPage() {
   const valid = isLegalSlug(slug);
   const fallback = valid ? legalDocuments[slug] : null;
 
-  const [title, setTitle] = useState(fallback?.title ?? "");
+  // `/manage/*` stores only the body text, so the heading always comes from the app's own copy.
+  const title = fallback?.title ?? "";
   const [content, setContent] = useState("");
   const [updated, setUpdated] = useState("");
   const [loading, setLoading] = useState(true);
@@ -30,13 +31,12 @@ export default function LegalDocumentPage() {
     if (!valid) return;
     let active = true;
     setLoading(true);
-    void getLegalDocument(legalTypeForSlug(slug)).then((result) => {
+    void getLegalDocument(slug).then((result) => {
       if (!active) return;
       setLoading(false);
       if (result.success) {
-        setContent(result.data.content ?? "");
-        setUpdated(result.data.updated_at ?? "");
-        setTitle(result.data.title || legalDocuments[slug].title);
+        setContent(result.data.content);
+        setUpdated(result.data.updatedAt);
         setError("");
       } else {
         setError(result.error);

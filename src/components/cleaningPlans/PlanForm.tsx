@@ -21,7 +21,10 @@ import {
   type CleaningPlan,
 } from "@/redux/api/endpoints/cleaningPlans.api";
 import {
+  additionalTaskApproved,
   useCreateAdditionalTaskMutation,
+  useDeleteAdditionalTaskMutation,
+  useUpdateAdditionalTaskMutation,
   type AdditionalTask,
 } from "@/redux/api/endpoints/additionalTasks.api";
 import { refDoc, refId } from "@/redux/api/types";
@@ -145,6 +148,13 @@ export function PlanForm({ plan, onClose, onCreated }: {
   const [createPlan, { isLoading: creating }] = useCreateCleaningPlanMutation();
   const [updatePlan, { isLoading: updating }] = useUpdateCleaningPlanMutation();
   const [createTask] = useCreateAdditionalTaskMutation();
+  const [updateTask] = useUpdateAdditionalTaskMutation();
+  const [deleteTask] = useDeleteAdditionalTaskMutation();
+
+  /** Inline edits to tasks already saved on the plan, keyed by task id. */
+  const [taskEdits, setTaskEdits] = useState<Record<string, { name: string; duration: string }>>({});
+  /** The task id currently being saved or deleted, so only its own row shows a busy state. */
+  const [busyTaskId, setBusyTaskId] = useState("");
 
   const editDraft = (key: string, patch: Partial<TaskDraft>) =>
     setDrafts((current) => current.map((item) => (item.key === key ? { ...item, ...patch } : item)));
@@ -157,6 +167,68 @@ export function PlanForm({ plan, onClose, onCreated }: {
     .map((task) => refDoc<AdditionalTask>(task))
     .filter(Boolean) as AdditionalTask[];
 
+  /** The values shown in a row: the local edit if there is one, otherwise the saved task. */
+  const taskValue = (task: AdditionalTask) =>
+    taskEdits[task._id] ?? {
+      name: task.name ?? "",
+      duration: task.duration_minutes ? String(task.duration_minutes) : "",
+    };
+
+  const taskIsDirty = (task: AdditionalTask) => {
+    const edit = taskEdits[task._id];
+    if (!edit) return false;
+    const saved = { name: task.name ?? "", duration: task.duration_minutes ? String(task.duration_minutes) : "" };
+    return edit.name.trim() !== saved.name || edit.duration.trim() !== saved.duration;
+  };
+
+  const saveExistingTask = async (task: AdditionalTask) => {
+    const edit = taskValue(task);
+    if (!edit.name.trim()) {
+      setError("A task needs a name.");
+      return;
+    }
+    if (!edit.duration.trim() || Number(edit.duration) <= 0) {
+      setError(`Set a duration for "${edit.name.trim()}".`);
+      return;
+    }
+    setBusyTaskId(task._id);
+    setError("");
+    try {
+      await updateTask({
+        id: task._id,
+        name: edit.name.trim(),
+        duration_minutes: Number(edit.duration),
+      }).unwrap();
+      // The refetched plan is the source of truth again, so the local edit is dropped.
+      setTaskEdits((current) => {
+        const next = { ...current };
+        delete next[task._id];
+        return next;
+      });
+    } catch (cause) {
+      setError(apiError(cause));
+    } finally {
+      setBusyTaskId("");
+    }
+  };
+
+  const removeExistingTask = async (task: AdditionalTask) => {
+    setBusyTaskId(task._id);
+    setError("");
+    try {
+      await deleteTask(task._id).unwrap();
+      setTaskEdits((current) => {
+        const next = { ...current };
+        delete next[task._id];
+        return next;
+      });
+    } catch (cause) {
+      setError(apiError(cause));
+    } finally {
+      setBusyTaskId("");
+    }
+  };
+
   const submit = async () => {
     if (!client || !location) {
       setError("Pick a client and location.");
@@ -166,23 +238,50 @@ export function PlanForm({ plan, onClose, onCreated }: {
       setError("Pick at least one room.");
       return;
     }
-    if (!startDate || !endDate) {
-      setError("Set both a start and an end date.");
+    if (!startDate) {
+      setError("Set a start date.");
       return;
     }
-    if (new Date(endDate) < new Date(startDate)) {
+    // The end date is optional; it is only checked when one was actually picked.
+    if (endDate && new Date(endDate) < new Date(startDate)) {
       setError("The end date cannot be before the start date.");
       return;
     }
+    if (!description.trim()) {
+      setError("Description is required.");
+      return;
+    }
 
-    const missingPhotos = drafts.find(
+    const missingDuration = drafts.find(
+      (draft) => draft.name.trim() && !draft.duration_minutes.trim(),
+    );
+    if (missingDuration) {
+      setError(`Set a duration for "${missingDuration.name.trim()}".`);
+      return;
+    }
+
+    const noPhotos = drafts.find(
       (draft) =>
         draft.name.trim() &&
         draft.is_photo_required &&
         !draft.photo_requirements.some((title) => title.trim()),
     );
-    if (missingPhotos) {
-      setError(`Name at least one photo for "${missingPhotos.name.trim()}", or turn photos off.`);
+    if (noPhotos) {
+      setError(`Name at least one photo for "${noPhotos.name.trim()}", or turn photos off.`);
+      return;
+    }
+
+    // An unnamed row would otherwise be dropped from the payload without saying so.
+    const unnamedPhoto = drafts.find(
+      (draft) =>
+        draft.name.trim() &&
+        draft.is_photo_required &&
+        draft.photo_requirements.some((title) => !title.trim()),
+    );
+    if (unnamedPhoto) {
+      setError(
+        `Give every required photo for "${unnamedPhoto.name.trim()}" a name, or remove the empty ones.`,
+      );
       return;
     }
 
@@ -192,8 +291,8 @@ export function PlanForm({ plan, onClose, onCreated }: {
       location,
       rooms,
       date_time: toTimestamp(startDate, startTime),
-      end_date: new Date(endDate).toISOString(),
-      description: description.trim() || undefined,
+      end_date: endDate ? new Date(endDate).toISOString() : undefined,
+      description: description.trim(),
     };
 
     try {
@@ -208,7 +307,7 @@ export function PlanForm({ plan, onClose, onCreated }: {
             await createTask({
               cleaning_plan_id: plan._id,
               name: draft.name.trim(),
-              duration_minutes: draft.duration_minutes.trim() ? Number(draft.duration_minutes) : 0,
+              duration_minutes: Number(draft.duration_minutes),
               is_photo_required: draft.is_photo_required,
               photo_requirements: draft.is_photo_required
                 ? draft.photo_requirements
@@ -345,7 +444,7 @@ export function PlanForm({ plan, onClose, onCreated }: {
           </div>
 
           <div>
-            <DateField label="End date" value={endDate} onChange={setEndDate} required min={earliestEnd} />
+            <DateField label="End date" value={endDate} onChange={setEndDate} min={earliestEnd} />
             <p className="mt-1.5 text-[11px] text-slate-400">
               For a single visit, use the same date as the start date.
             </p>
@@ -357,6 +456,7 @@ export function PlanForm({ plan, onClose, onCreated }: {
             onChange={setDescription}
             placeholder="Add notes or instructions…"
             rows={3}
+            required
           />
 
           {/* Additional tasks attach to a plan that already exists, so they only appear when editing. */}
@@ -385,27 +485,81 @@ export function PlanForm({ plan, onClose, onCreated }: {
                   <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                     Existing tasks on this plan ({existingTasks.length})
                   </p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {existingTasks.map((task) => (
-                      <div
-                        key={task._id}
-                        className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-xs text-slate-700"
-                      >
-                        <span className="font-medium text-slate-900">{task.name}</span>
-                        {task.duration_minutes ? (
-                          <span className="text-[11px] text-slate-400">{task.duration_minutes}m</span>
-                        ) : null}
-                        <span
-                          className={`rounded px-1 py-0.5 text-[10px] font-semibold ${
-                            task.is_approved
-                              ? "bg-emerald-50 text-emerald-700"
-                              : "bg-amber-50 text-amber-700"
-                          }`}
+                  <div className="space-y-2">
+                    {existingTasks.map((task) => {
+                      const value = taskValue(task);
+                      const dirty = taskIsDirty(task);
+                      const busy = busyTaskId === task._id;
+                      return (
+                        <div
+                          key={task._id}
+                          className="flex flex-wrap items-center gap-2 rounded-md border border-slate-200 bg-slate-50 p-2"
                         >
-                          {task.is_approved ? "Approved" : "Pending"}
-                        </span>
-                      </div>
-                    ))}
+                          <input
+                            type="text"
+                            value={value.name}
+                            disabled={busy}
+                            onChange={(event) =>
+                              setTaskEdits((current) => ({
+                                ...current,
+                                [task._id]: { ...value, name: event.target.value },
+                              }))
+                            }
+                            placeholder="Task name"
+                            className="h-8 min-w-40 flex-1 rounded border border-slate-200 bg-white px-2 text-xs text-slate-800 outline-none focus:border-primary focus:ring-1 focus:ring-primary disabled:bg-slate-100"
+                          />
+                          <div className="relative w-24 shrink-0">
+                            <input
+                              type="number"
+                              min={1}
+                              value={value.duration}
+                              disabled={busy}
+                              onChange={(event) =>
+                                setTaskEdits((current) => ({
+                                  ...current,
+                                  [task._id]: { ...value, duration: event.target.value },
+                                }))
+                              }
+                              placeholder="0"
+                              className="h-8 w-full rounded border border-slate-200 bg-white pl-2 pr-7 text-xs text-slate-800 outline-none focus:border-primary focus:ring-1 focus:ring-primary disabled:bg-slate-100"
+                            />
+                            <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-slate-400">
+                              m
+                            </span>
+                          </div>
+                          <span
+                            className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold ${
+                              additionalTaskApproved(task)
+                                ? "bg-emerald-50 text-emerald-700"
+                                : task.status === "Rejected"
+                                ? "bg-red-50 text-red-700"
+                                : "bg-amber-50 text-amber-700"
+                            }`}
+                          >
+                            {task.status ?? "Pending"}
+                          </span>
+                          {dirty && (
+                            <button
+                              type="button"
+                              disabled={busy}
+                              onClick={() => void saveExistingTask(task)}
+                              className="shrink-0 cursor-pointer rounded bg-primary px-2.5 py-1 text-[11px] font-semibold text-white transition-colors hover:bg-[#0284c7] disabled:opacity-50"
+                            >
+                              {busy ? "Saving…" : "Save"}
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            disabled={busy}
+                            aria-label={`Delete ${task.name}`}
+                            onClick={() => void removeExistingTask(task)}
+                            className="shrink-0 cursor-pointer rounded p-1 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
+                          >
+                            <MdDeleteOutline className="text-base" />
+                          </button>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -453,6 +607,7 @@ export function PlanForm({ plan, onClose, onCreated }: {
                       label="Duration (minutes)"
                       type="number"
                       min={1}
+                      required
                       value={draft.duration_minutes}
                       onChange={(value) =>
                         setDrafts((current) =>

@@ -87,7 +87,7 @@ export function RoomCard({
           {onDelete && (
             <button
               type="button"
-              aria-label={`Deactivate ${room.name}`}
+              aria-label={`Delete ${room.name}`}
               onClick={() => onDelete(room)}
               className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-400 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-600"
             >

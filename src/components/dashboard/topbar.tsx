@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { getLocale, localizePath, LOCALE_OPTIONS, setLocale, stripLocale } from "@/lib/locale";
+import { getUiTranslation } from "@/lib/translations";
 import {
   MdChevronRight,
   MdClose,
@@ -141,7 +142,7 @@ export default function Topbar() {
 
   return (
     <>
-      <header className="z-30 flex h-14 shrink-0 items-center justify-between gap-2 border-b border-sidebar-border bg-sidebar px-3 shadow-none sm:px-4 lg:px-6">
+      <header className="relative z-30 flex h-14 shrink-0 items-center justify-between gap-2 border-b border-sidebar-border bg-sidebar px-3 shadow-none sm:px-4 lg:px-6">
         <div className="flex items-center gap-2 sm:gap-4 min-w-0">
           {/* Mobile/tablet hamburger - always visible below lg */}
           <button
@@ -181,7 +182,7 @@ export default function Topbar() {
             <div
               role="menu"
               aria-hidden={!languageOpen}
-              className={`shadow absolute right-0 top-10 w-36 origin-top-right overflow-hidden rounded border border-border bg-white py-1 transition-all duration-150 ease-out ${languageOpen
+              className={`shadow absolute right-0 top-10 z-[80] w-36 origin-top-right overflow-hidden rounded border border-border bg-white py-1 transition-all duration-150 ease-out ${languageOpen
                 ? "visible translate-y-0 scale-100 opacity-100"
                 : "invisible -translate-y-1 scale-95 opacity-0"
                 }`}
@@ -328,8 +329,9 @@ function NotificationsPopover({
   onItemClick: (item: NotificationItem) => void;
   onMarkAllRead: () => Promise<void>;
 }) {
+  const ui = getUiTranslation(locale);
   return (
-    <div className="shadow-lg absolute -right-12 top-11 w-[320px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border border-gray-200 bg-white sm:right-0 sm:w-[380px] z-50">
+    <div className="shadow-lg absolute -right-12 top-11 z-[80] w-[320px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border border-gray-200 bg-white sm:right-0 sm:w-[380px]">
       <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3 bg-gray-50/70">
         <div className="flex items-center gap-2">
           <h2 className="text-sm font-bold text-slate-900">Notifications</h2>
@@ -339,7 +341,7 @@ function NotificationsPopover({
               onClick={() => void onMarkAllRead()}
               className="text-[11px] font-medium text-sky-600 hover:text-sky-700 hover:underline"
             >
-              Mark all as read
+              {ui.markAllAsRead}
             </button>
           )}
         </div>
@@ -348,7 +350,7 @@ function NotificationsPopover({
           href={localizePath("/notifications", locale)}
           className="text-xs font-semibold text-[#0ea5e9] hover:underline"
         >
-          View all
+          {ui.viewAll}
         </Link>
       </div>
       <div className="max-h-[380px] overflow-y-auto divide-y divide-gray-100">
@@ -384,7 +386,7 @@ function NotificationsPopover({
           </button>
         ))}
         {!loading && items.length === 0 && (
-          <p className="p-6 text-center text-xs text-slate-400">No notifications found</p>
+          <p className="p-6 text-center text-xs text-slate-400">{ui.noNotificationsFound}</p>
         )}
       </div>
     </div>
@@ -392,8 +394,9 @@ function NotificationsPopover({
 }
 
 function ProfileMenu({ locale, onHelp, onSignOut }: { locale: string; onHelp: () => void; onSignOut: () => void }) {
+  const ui = getUiTranslation(locale);
   return (
-    <div className="shadow absolute right-0 top-10 w-44 overflow-hidden rounded border border-gray-200 bg-white py-1">
+    <div className="shadow absolute right-0 top-10 z-[80] w-44 overflow-hidden rounded border border-gray-200 bg-white py-1">
       <Link
         prefetch={prefetchRoutes}
         href={localizePath("/profile", locale)}
@@ -408,7 +411,7 @@ function ProfileMenu({ locale, onHelp, onSignOut }: { locale: string; onHelp: ()
         className="flex items-center gap-3 px-4 py-3 text-sm text-slate-800 hover:bg-gray-50"
       >
         <MdOutlineSettings className="text-base" />
-        Settings
+        {ui.settings}
       </Link>
       {/* <button
         type="button"
@@ -424,13 +427,14 @@ function ProfileMenu({ locale, onHelp, onSignOut }: { locale: string; onHelp: ()
         className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-red-500 hover:bg-red-50"
       >
         <MdLogout className="text-base" />
-        Sign Out
+        {ui.signOut}
       </button>
     </div>
   );
 }
 
 function HelpCenterModal({ onClose }: { onClose: () => void }) {
+  const ui = getUiTranslation(getLocale(usePathname()));
   const [chatOpen, setChatOpen] = useState(false);
   const [apiFaqs, setApiFaqs] = useState<Faq[]>([]);
   const [openFaq, setOpenFaq] = useState<string | null>(null);
@@ -449,7 +453,7 @@ function HelpCenterModal({ onClose }: { onClose: () => void }) {
     >
       <button
         type="button"
-        aria-label="Close help center"
+        aria-label={ui.closeHelpCenter}
         className="absolute inset-0 cursor-default"
         onClick={triggerJump}
       />
@@ -462,10 +466,10 @@ function HelpCenterModal({ onClose }: { onClose: () => void }) {
             </span>
             <div>
               <h2 className="text-lg font-bold leading-none text-slate-950">
-                Help Center
+                {ui.helpCenter}
               </h2>
               <p className="mt-2 text-xs text-slate-500">
-                Get support or find answers
+                {ui.getSupportOrAnswers}
               </p>
             </div>
           </div>
@@ -489,8 +493,8 @@ function HelpCenterModal({ onClose }: { onClose: () => void }) {
               <span className="mb-3 flex h-10 w-10 items-center justify-center rounded bg-white text-[#0ea5e9]">
                 <MdSupportAgent className="text-2xl" />
               </span>
-              <span className="text-sm font-bold text-slate-950">Live Chat</span>
-              <span className="mt-2 text-xs text-slate-500">Chat with support</span>
+              <span className="text-sm font-bold text-slate-950">{ui.liveChat}</span>
+              <span className="mt-2 text-xs text-slate-500">{ui.chatWithSupport}</span>
             </button>
 
             <button
@@ -500,7 +504,7 @@ function HelpCenterModal({ onClose }: { onClose: () => void }) {
               <span className="mb-3 flex h-10 w-10 items-center justify-center rounded bg-white text-[#8b5cf6]">
                 <MdOutlineEmail className="text-2xl" />
               </span>
-              <span className="text-sm font-bold text-slate-950">Email Support</span>
+              <span className="text-sm font-bold text-slate-950">{ui.emailSupport}</span>
               <span className="mt-2 text-xs text-slate-500">support@cleanones.nl</span>
             </button>
           </div>
@@ -508,10 +512,10 @@ function HelpCenterModal({ onClose }: { onClose: () => void }) {
           {chatOpen && <SupportChat onClose={() => setChatOpen(false)} />}
 
           <h3 className="mt-5 text-sm font-bold text-slate-950">
-            Frequently Asked Questions
+            {ui.faq}
           </h3>
           <div className="mt-3 space-y-2">
-            {(apiFaqs.length ? apiFaqs : faqs.map((question, index) => ({ _id: String(index), question, answer: "", serial_no: index, created_at: "", updated_at: "" }))).map((faq) => (
+            {(apiFaqs.length ? apiFaqs : faqs.map((question, index) => ({ _id: String(index), question, answer: "", serial_no: index, createdAt: "", updatedAt: "" }))).map((faq) => (
               <div key={faq._id} className="rounded border border-gray-200 bg-white">
                 <button type="button" onClick={() => setOpenFaq((current) => current === faq._id ? null : faq._id)} className="flex w-full items-center justify-between px-4 py-3 text-left text-sm font-medium text-slate-950 transition-colors hover:bg-gray-50">{faq.question}<MdChevronRight className={`text-xl text-slate-400 transition-transform ${openFaq === faq._id ? "rotate-90" : ""}`} /></button>
                 {openFaq === faq._id && faq.answer && <p className="border-t border-gray-100 px-4 py-3 text-xs leading-5 text-slate-600">{faq.answer}</p>}
@@ -529,18 +533,19 @@ function HelpCenterModal({ onClose }: { onClose: () => void }) {
 }
 
 function SupportChat({ onClose }: { onClose: () => void }) {
+  const ui = getUiTranslation(getLocale(usePathname()));
   return (
     <div className="mt-5 overflow-hidden rounded border border-[#0ea5e9]/30 bg-white shadow-sm">
       <div className="flex items-center justify-between bg-[#0ea5e9] px-4 py-3 text-white">
         <div className="flex items-center gap-2 text-sm font-bold">
           <span className="h-2 w-2 rounded-full bg-white" />
-          Support Chat
+          {ui.supportChat}
         </div>
         <button
           type="button"
           onClick={onClose}
           className="rounded p-0.5 text-white/80 transition-colors hover:bg-white/10 hover:text-white"
-          aria-label="Close support chat"
+          aria-label={ui.closeSupportChat}
         >
           <MdClose className="text-lg" />
         </button>
@@ -548,19 +553,19 @@ function SupportChat({ onClose }: { onClose: () => void }) {
 
       <div className="min-h-[150px] bg-white p-3">
         <div className="inline-flex max-w-full rounded-full border border-gray-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm">
-          Hi there! How can we help you today?
+          {ui.helpGreeting}
         </div>
       </div>
 
       <div className="flex items-center gap-2 border-t border-gray-100 p-3">
         <input
-          placeholder="Type a message..."
+          placeholder={ui.typeAMessage}
           className="h-10 min-w-0 flex-1 rounded border border-gray-200 bg-gray-50 px-3 text-sm outline-none transition-colors placeholder:text-slate-400 focus:border-[#0ea5e9] focus:bg-white focus:ring-1 focus:ring-[#0ea5e9]"
         />
         <button
           type="button"
           className="flex h-10 w-10 shrink-0 items-center justify-center rounded bg-[#0ea5e9] text-white transition-colors hover:bg-[#0284c7]"
-          aria-label="Send message"
+          aria-label={ui.sendMessage}
         >
           <MdSend className="text-xl" />
         </button>

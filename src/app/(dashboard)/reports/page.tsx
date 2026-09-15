@@ -15,7 +15,7 @@ import { ShiftTrendsChart } from "@/components/reports/ShiftTrendsChart";
 import { QualityDistributionChart } from "@/components/reports/QualityDistributionChart";
 import { exportReportToPdf } from "@/components/reports/exportReportPdf";
 
-const ranges: ReportRange[] = ["Week", "Month", "Quarter", "Year"];
+const ranges: ReportRange[] = ["Week", "Month", "Year"];
 
 export default function ReportsPage() {
   const pathname = usePathname();
@@ -30,7 +30,6 @@ export default function ReportsPage() {
   const rangeLabels: Record<ReportRange, string> = {
     Week: t.reports.week,
     Month: t.reports.month,
-    Quarter: t.reports.quarter,
     Year: t.reports.year,
   };
 

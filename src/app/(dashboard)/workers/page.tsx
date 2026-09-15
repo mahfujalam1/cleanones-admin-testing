@@ -27,8 +27,8 @@ import { getDashboardTranslation } from "@/lib/translations";
 const LIMIT = 10;
 
 const SORT_LABELS: Array<{ value: WorkerSort; label: string }> = [
-  { value: "-created_at", label: "Newest First" },
-  { value: "created_at", label: "Oldest First" },
+  { value: "-createdAt", label: "Newest First" },
+  { value: "createdAt", label: "Oldest First" },
   { value: "email", label: "Email A–Z" },
   { value: "-email", label: "Email Z–A" },
   { value: "hourly_rate", label: "Rate Low To High" },
@@ -42,7 +42,7 @@ export default function WorkersPage() {
   const [search, setSearch] = useState("");
   const searchTerm = useDebouncedValue(search.trim());
   const [workerType, setWorkerType] = useState<WorkerType | "">("");
-  const [sort, setSort] = useState<WorkerSort>("-created_at");
+  const [sort, setSort] = useState<WorkerSort>("-createdAt");
   const [page, setPage] = useState(1);
 
   const [formTarget, setFormTarget] = useState<Worker | "new" | null>(null);

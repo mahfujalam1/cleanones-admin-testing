@@ -17,6 +17,9 @@ import { CardGridSkeleton, DetailSkeleton } from "@/components/shared/SkeletonLo
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { BackendPagination } from "@/components/shared/BackendPagination";
 import { Select } from "@/components/ui/select";
+import { usePathname } from "next/navigation";
+import { getLocale } from "@/lib/locale";
+import { getUiTranslation } from "@/lib/translations";
 import {
   useDeleteIssueReportMutation,
   useGetEscalationsQuery,
@@ -24,7 +27,7 @@ import {
   type IssueReport,
 } from "@/redux/api/escalationsApi";
 import { useGetLocationCatalogQuery } from "@/redux/api/endpoints/catalog.api";
-import { useGetWorkersQuery } from "@/redux/api/workersApi";
+import { useGetWorkerListQuery, workerName } from "@/redux/api/endpoints/workers.api";
 
 const SEVERITY_CONFIG: Record<string, { border: string; text: string; bg: string; badge: string }> = {
   emergency: {
@@ -72,6 +75,7 @@ const STATUS_CONFIG: Record<string, { label: string; badge: string; dot: string 
 };
 
 export default function EscalationsPage() {
+  const ui = getUiTranslation(getLocale(usePathname()));
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [severityFilter, setSeverityFilter] = useState("");
@@ -87,7 +91,7 @@ export default function EscalationsPage() {
 
   const { data: rawIssues = [], isLoading, isFetching, refetch } = useGetEscalationsQuery();
   const { data: locations = [] } = useGetLocationCatalogQuery(undefined, { refetchOnMountOrArgChange: false });
-  const { data: workersData } = useGetWorkersQuery({ limit: 100 });
+  const { data: workersData } = useGetWorkerListQuery({ limit: 100 });
 
   const [updateReport, { isLoading: updating }] = useUpdateIssueReportMutation();
   const [deleteReport, { isLoading: deleting }] = useDeleteIssueReportMutation();
@@ -102,8 +106,8 @@ export default function EscalationsPage() {
 
   const workerMap = useMemo(() => {
     const map = new Map<string, string>();
-    for (const w of workersData?.workers ?? []) {
-      map.set(w.worker_id, w.full_name);
+    for (const w of workersData?.result ?? []) {
+      map.set(w._id, workerName(w));
     }
     return map;
   }, [workersData]);
@@ -195,7 +199,7 @@ export default function EscalationsPage() {
       <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <h1 className="text-xl font-bold text-slate-900">Escalations & Field Issues</h1>
+            <h1 className="text-xl font-bold text-slate-900">{ui.escalationsTitle}</h1>
             <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-semibold text-slate-600">
               {counts.total}
             </span>
@@ -212,34 +216,34 @@ export default function EscalationsPage() {
           className="flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer self-start sm:self-auto disabled:opacity-50"
         >
           <MdOutlineRefresh className={`text-base ${isFetching ? "animate-spin text-primary" : ""}`} />
-          <span>Refresh</span>
+          <span>{ui.refresh}</span>
         </button>
       </header>
 
       {/* KPI Stats Row */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <div className="rounded-xl border border-slate-200/80 bg-white p-3.5 shadow-2xs">
-          <p className="text-[11px] font-medium text-slate-500">Total Issues</p>
+          <p className="text-[11px] font-medium text-slate-500">{ui.totalIssues}</p>
           <p className="mt-1 text-xl font-bold text-slate-900">{counts.total}</p>
         </div>
         <div className="rounded-xl border border-amber-200/60 bg-amber-50/40 p-3.5 shadow-2xs">
           <div className="flex items-center gap-1.5 text-amber-700">
             <MdPendingActions className="text-sm" />
-            <p className="text-[11px] font-semibold">Pending</p>
+            <p className="text-[11px] font-semibold">{ui.pending}</p>
           </div>
           <p className="mt-1 text-xl font-bold text-amber-800">{counts.pending}</p>
         </div>
         <div className="rounded-xl border border-sky-200/60 bg-sky-50/40 p-3.5 shadow-2xs">
           <div className="flex items-center gap-1.5 text-sky-700">
             <MdSync className="text-sm" />
-            <p className="text-[11px] font-semibold">In Progress</p>
+            <p className="text-[11px] font-semibold">{ui.inProgress}</p>
           </div>
           <p className="mt-1 text-xl font-bold text-sky-800">{counts.inProgress}</p>
         </div>
         <div className="rounded-xl border border-emerald-200/60 bg-emerald-50/40 p-3.5 shadow-2xs">
           <div className="flex items-center gap-1.5 text-emerald-700">
             <MdCheckCircle className="text-sm" />
-            <p className="text-[11px] font-semibold">Resolved</p>
+            <p className="text-[11px] font-semibold">{ui.resolved}</p>
           </div>
           <p className="mt-1 text-xl font-bold text-emerald-800">{counts.resolved}</p>
         </div>
@@ -252,7 +256,7 @@ export default function EscalationsPage() {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by issue type, description, location..."
+            placeholder={ui.escalationSearchPlaceholder}
             className="h-10 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-xs text-slate-800 placeholder:text-slate-400 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
           />
         </div>
@@ -260,21 +264,21 @@ export default function EscalationsPage() {
         <Select
           value={statusFilter}
           onValueChange={setStatusFilter}
-          placeholder="All statuses"
+          placeholder={ui.allStatuses}
           options={[
-            { value: "", label: "All statuses" },
-            { value: "PENDING", label: `Pending (${counts.pending})` },
-            { value: "IN_PROGRESS", label: `In Progress (${counts.inProgress})` },
-            { value: "RESOLVED", label: `Resolved (${counts.resolved})` },
+            { value: "", label: ui.allStatuses },
+            { value: "PENDING", label: `${ui.pending} (${counts.pending})` },
+            { value: "IN_PROGRESS", label: `${ui.inProgress} (${counts.inProgress})` },
+            { value: "RESOLVED", label: `${ui.resolved} (${counts.resolved})` },
           ]}
         />
 
         <Select
           value={severityFilter}
           onValueChange={setSeverityFilter}
-          placeholder="All severities"
+          placeholder={ui.allSeverities}
           options={[
-            { value: "", label: "All severities" },
+            { value: "", label: ui.allSeverities },
             { value: "Emergency", label: "Emergency" },
             { value: "High", label: "High" },
             { value: "Medium", label: "Medium" },
@@ -297,7 +301,7 @@ export default function EscalationsPage() {
           <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
             <MdOutlineWarningAmber className="text-2xl" />
           </span>
-          <p className="mt-3 text-sm font-semibold text-slate-800">No issue reports found</p>
+          <p className="mt-3 text-sm font-semibold text-slate-800">{ui.noIssueReports}</p>
           <p className="mt-1 text-xs text-slate-500">
             {search || statusFilter || severityFilter
               ? "Try adjusting your search query or filters."
@@ -402,9 +406,9 @@ export default function EscalationsPage() {
       {/* Delete Confirmation Dialog */}
       {deleteTarget && (
         <ConfirmDialog
-          title="Delete Issue Report?"
+          title={ui.deleteIssueReport}
           description={`Are you sure you want to permanently delete this report for "${deleteTarget.issueType}"? This action cannot be undone.`}
-          confirmText="Delete Report"
+          confirmText={ui.deleteReport}
           destructive
           loading={deleting}
           onConfirm={() => void handleDelete()}
@@ -432,6 +436,7 @@ function IssueDetailModal({
   onUpdateStatus: (status: "PENDING" | "IN_PROGRESS" | "RESOLVED") => Promise<void>;
   onDelete: () => void;
 }) {
+  const ui = getUiTranslation(getLocale(usePathname()));
   const currentStatus = (issue.status || "PENDING").toUpperCase() as "PENDING" | "IN_PROGRESS" | "RESOLVED";
   const [selectedStatus, setSelectedStatus] = useState<"PENDING" | "IN_PROGRESS" | "RESOLVED">(currentStatus);
 
@@ -504,7 +509,7 @@ function IssueDetailModal({
             <div className="rounded-xl border border-slate-200/80 bg-white p-3 shadow-2xs">
               <div className="flex items-center gap-1.5 text-slate-400">
                 <MdLocationOn className="text-sm text-primary" />
-                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Location</span>
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">{ui.location}</span>
               </div>
               <p className="mt-1 text-xs font-semibold text-slate-800 truncate">{locationName}</p>
             </div>
@@ -512,7 +517,7 @@ function IssueDetailModal({
             <div className="rounded-xl border border-slate-200/80 bg-white p-3 shadow-2xs">
               <div className="flex items-center gap-1.5 text-slate-400">
                 <MdOutlinePerson className="text-sm text-emerald-600" />
-                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Reported By</span>
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">{ui.reportedBy}</span>
               </div>
               <p className="mt-1 text-xs font-semibold text-slate-800 truncate">{workerName}</p>
             </div>
@@ -520,16 +525,16 @@ function IssueDetailModal({
 
           {/* Report Date */}
           <div className="rounded-xl border border-slate-200/80 bg-white p-3 shadow-2xs text-xs text-slate-600 flex items-center justify-between">
-            <span className="text-slate-400 font-medium">Logged At</span>
+            <span className="text-slate-400 font-medium">{ui.loggedAt}</span>
             <span className="font-semibold text-slate-700">{formattedDate}</span>
           </div>
 
           {/* Manager Action: Status Management (PATCH) */}
           <div className="rounded-xl border border-primary/20 bg-sky-50/40 p-4 space-y-3">
             <div>
-              <h3 className="text-xs font-bold text-slate-900">Manager Status Action</h3>
+              <h3 className="text-xs font-bold text-slate-900">{ui.managerStatusAction}</h3>
               <p className="text-[11px] text-slate-500 mt-0.5">
-                Update the operational resolution status via PATCH API.
+                {ui.updateResolutionHint}
               </p>
             </div>
 
@@ -544,7 +549,7 @@ function IssueDetailModal({
                 }`}
               >
                 <MdPendingActions className="text-base text-amber-600 mb-0.5" />
-                <span>Pending</span>
+                <span>{ui.pending}</span>
               </button>
 
               <button
@@ -557,7 +562,7 @@ function IssueDetailModal({
                 }`}
               >
                 <MdSync className="text-base text-primary mb-0.5" />
-                <span>In Progress</span>
+                <span>{ui.inProgress}</span>
               </button>
 
               <button

@@ -3,8 +3,8 @@ export interface FaqItem {
   serial_no: number;
   question: string;
   answer: string;
-  created_at: string;
-  updated_at: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface CreateFaqDto {
@@ -31,9 +31,6 @@ export interface ManageFaq {
   answer: string;
   createdAt?: string;
   updatedAt?: string;
-  /** Some deployments answer in snake_case; both are read defensively. */
-  created_at?: string;
-  updated_at?: string;
 }
 
 export interface CreateManageFaqDto {

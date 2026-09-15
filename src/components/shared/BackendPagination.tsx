@@ -1,5 +1,8 @@
 "use client";
 
+import { usePathname } from "next/navigation";
+import { getLocale } from "@/lib/locale";
+import { getUiTranslation } from "@/lib/translations";
 import React, { useState, useRef, useEffect } from "react";
 import { ChevronLeft, ChevronRight, MoreHorizontal } from "lucide-react";
 
@@ -26,6 +29,7 @@ export function BackendPagination({
   itemLabel = "items",
   itemCount,
 }: BackendPaginationProps) {
+  const ui = getUiTranslation(getLocale(usePathname()));
   const totalPages = Math.max(1, Math.ceil(total / limit));
   const [popoverPosition, setPopoverPosition] = useState<"left" | "right" | null>(null);
   const [jumpInput, setJumpInput] = useState("");
@@ -113,7 +117,7 @@ export function BackendPagination({
       {/* Pagination Controls */}
       <nav
         role="navigation"
-        aria-label="Pagination Navigation"
+        aria-label={ui.pagination}
         className="flex items-center gap-1.5 ml-auto relative select-none"
       >
         {/* Previous Button */}
@@ -122,10 +126,10 @@ export function BackendPagination({
           disabled={page <= 1}
           onClick={() => onPageChange(page - 1)}
           className="inline-flex h-8 items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-medium text-slate-700 transition-colors hover:bg-slate-50 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer shadow-2xs"
-          aria-label="Previous page"
+          aria-label={ui.previousPage}
         >
           <ChevronLeft className="h-3.5 w-3.5" />
-          <span className="hidden sm:inline">Previous</span>
+          <span className="hidden sm:inline">{ui.previous}</span>
         </button>
 
         {/* Page Buttons & Interactive Ellipsis */}
@@ -207,9 +211,9 @@ export function BackendPagination({
           disabled={page >= totalPages}
           onClick={() => onPageChange(page + 1)}
           className="inline-flex h-8 items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-medium text-slate-700 transition-colors hover:bg-slate-50 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer shadow-2xs"
-          aria-label="Next page"
+          aria-label={ui.nextPage}
         >
-          <span className="hidden sm:inline">Next</span>
+          <span className="hidden sm:inline">{ui.next}</span>
           <ChevronRight className="h-3.5 w-3.5" />
         </button>
       </nav>

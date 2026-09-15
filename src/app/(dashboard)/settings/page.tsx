@@ -7,6 +7,7 @@ import {
   MdChevronRight,
   MdClose,
   MdDescription,
+  MdInfoOutline,
   MdLiveHelp,
   MdSecurity,
   MdVpnKey,
@@ -140,6 +141,13 @@ export default function SettingsPage() {
             iconClassName="bg-[#ede9fe] text-[#8b5cf6]"
             title={t.settings.termsAndConditions}
             subtitle={t.settings.termsAndConditionsSubtitle}
+          />
+          <SettingsRow
+            href="/settings/legal/about-us"
+            icon={<MdInfoOutline />}
+            iconClassName="bg-[#dcfce7] text-[#16a34a]"
+            title="About Us"
+            subtitle="Describe the company shown to clients and workers"
           />
           <SettingsRow
             href="/settings/faqs"

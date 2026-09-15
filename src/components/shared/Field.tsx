@@ -7,7 +7,7 @@ import { Select } from "@/components/ui/select";
 
 /** Shared control styling, exported so bespoke inputs (address search) can match the rest. */
 export const CONTROL_CLASS =
-  "h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 transition-colors placeholder:text-slate-400 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary";
+  "h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 transition-colors placeholder:text-slate-400 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-50 disabled:text-slate-400";
 
 export function FieldLabel({ htmlFor, label, required }: { htmlFor: string; label: string; required?: boolean }) {
   return (
@@ -28,6 +28,7 @@ type TextFieldProps = {
   autoComplete?: string;
   min?: number;
   max?: number;
+  disabled?: boolean;
 };
 
 export function TextField({ label, value, onChange, type = "text", placeholder, ...rest }: TextFieldProps) {

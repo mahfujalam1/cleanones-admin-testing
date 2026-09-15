@@ -19,8 +19,8 @@ export type Client = {
   last_updated_by?: string;
   /** Snake_case elsewhere, but the API really does spell this one in camelCase. */
   isDeleted?: boolean;
-  created_at?: string;
-  updated_at?: string;
+  createdAt?: string;
+  updatedAt?: string;
 };
 
 /**

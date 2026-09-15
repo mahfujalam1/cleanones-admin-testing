@@ -2,16 +2,14 @@
 
 import React, { useState } from "react";
 import { usePathname } from "next/navigation";
-import { MdCheck, MdClose, MdDeleteOutline } from "react-icons/md";
+import { MdCheck, MdClose } from "react-icons/md";
 import type { UnifiedServiceRequest } from "./types";
 import { approveAdditionalTask, rejectAdditionalTask } from "@/services/actions/cleaningPlans";
-import { rejectExtraService, completeApproveExtraService, approveExtraService } from "@/services/actions/extraServices";
 import {
   useApproveAdditionalTaskMutation,
-  useDeleteAdditionalTaskMutation,
   useUpdateAdditionalTaskMutation,
 } from "@/redux/api/endpoints/additionalTasks.api";
-import { ApproveDurationModal } from "./ApproveDurationModal";
+import { ApproveDurationModal, type ApproveDecision } from "./ApproveDurationModal";
 import { apiError } from "@/redux/api/apiError";
 import { getLocale } from "@/lib/locale";
 
@@ -42,6 +40,13 @@ const footerTranslations: Record<
     durationSaving: string;
     durationInvalid: string;
     failedDuration: string;
+    photoRequired: string;
+    photoName: string;
+    addPhoto: string;
+    removePhoto: string;
+    photoNeeded: string;
+    photoUnnamed: string;
+    defaultRejectReason: string;
   }
 > = {
   en: {
@@ -69,6 +74,13 @@ const footerTranslations: Record<
     durationSaving: "Saving...",
     durationInvalid: "Enter a duration in whole minutes.",
     failedDuration: "Failed to update the task duration.",
+    photoRequired: "Photo required",
+    photoName: "Required photo name",
+    addPhoto: "+ Add photo",
+    removePhoto: "Remove",
+    photoNeeded: "Add at least one photo, or turn off photo required.",
+    photoUnnamed: "Give every required photo a name, or remove the empty ones.",
+    defaultRejectReason: "Not within the scope of the current contract.",
   },
   nl: {
     close: "Sluiten",
@@ -95,6 +107,13 @@ const footerTranslations: Record<
     durationSaving: "Opslaan...",
     durationInvalid: "Voer een duur in hele minuten in.",
     failedDuration: "Bijwerken van de taakduur mislukt.",
+    photoRequired: "Foto vereist",
+    photoName: "Naam van vereiste foto",
+    addPhoto: "+ Foto toevoegen",
+    removePhoto: "Verwijderen",
+    photoNeeded: "Voeg minstens één foto toe of schakel foto vereist uit.",
+    photoUnnamed: "Geef elke vereiste foto een naam of verwijder de lege.",
+    defaultRejectReason: "Valt buiten het bereik van het huidige contract.",
   },
   pl: {
     close: "Zamknij",
@@ -121,6 +140,13 @@ const footerTranslations: Record<
     durationSaving: "Zapisywanie...",
     durationInvalid: "Podaj czas trwania w pełnych minutach.",
     failedDuration: "Nie udało się zaktualizować czasu zadania.",
+    photoRequired: "Wymagane zdjęcie",
+    photoName: "Nazwa wymaganego zdjęcia",
+    addPhoto: "+ Dodaj zdjęcie",
+    removePhoto: "Usuń",
+    photoNeeded: "Dodaj co najmniej jedno zdjęcie lub wyłącz wymagane zdjęcie.",
+    photoUnnamed: "Nadaj nazwę każdemu wymaganemu zdjęciu lub usuń puste.",
+    defaultRejectReason: "Poza zakresem obowiązującej umowy.",
   },
   uk: {
     close: "Закрити",
@@ -147,6 +173,13 @@ const footerTranslations: Record<
     durationSaving: "Збереження...",
     durationInvalid: "Вкажіть тривалість у цілих хвилинах.",
     failedDuration: "Не вдалося оновити тривалість завдання.",
+    photoRequired: "Потрібне фото",
+    photoName: "Назва потрібного фото",
+    addPhoto: "+ Додати фото",
+    removePhoto: "Видалити",
+    photoNeeded: "Додайте щонайменше одне фото або вимкніть вимогу фото.",
+    photoUnnamed: "Дайте назву кожному фото або видаліть порожні.",
+    defaultRejectReason: "Не входить до обсягу чинного договору.",
   },
   pt: {
     close: "Fechar",
@@ -173,6 +206,13 @@ const footerTranslations: Record<
     durationSaving: "A guardar...",
     durationInvalid: "Indique a duração em minutos inteiros.",
     failedDuration: "Falha ao atualizar a duração da tarefa.",
+    photoRequired: "Foto obrigatória",
+    photoName: "Nome da foto obrigatória",
+    addPhoto: "+ Adicionar foto",
+    removePhoto: "Remover",
+    photoNeeded: "Adicione pelo menos uma foto ou desative a foto obrigatória.",
+    photoUnnamed: "Dê um nome a cada foto obrigatória ou remova as vazias.",
+    defaultRejectReason: "Fora do âmbito do contrato atual.",
   },
   ar: {
     close: "إغلاق",
@@ -199,6 +239,13 @@ const footerTranslations: Record<
     durationSaving: "جارٍ الحفظ...",
     durationInvalid: "أدخل المدة بالدقائق الكاملة.",
     failedDuration: "فشل تحديث مدة المهمة.",
+    photoRequired: "صورة مطلوبة",
+    photoName: "اسم الصورة المطلوبة",
+    addPhoto: "+ إضافة صورة",
+    removePhoto: "إزالة",
+    photoNeeded: "أضف صورة واحدة على الأقل أو أوقف طلب الصور.",
+    photoUnnamed: "أعطِ كل صورة مطلوبة اسمًا أو احذف الفارغة.",
+    defaultRejectReason: "خارج نطاق العقد الحالي.",
   },
   fr: {
     close: "Fermer",
@@ -225,6 +272,13 @@ const footerTranslations: Record<
     durationSaving: "Enregistrement...",
     durationInvalid: "Saisissez une durée en minutes entières.",
     failedDuration: "Échec de la mise à jour de la durée de la tâche.",
+    photoRequired: "Photo requise",
+    photoName: "Nom de la photo requise",
+    addPhoto: "+ Ajouter une photo",
+    removePhoto: "Supprimer",
+    photoNeeded: "Ajoutez au moins une photo ou désactivez la photo requise.",
+    photoUnnamed: "Nommez chaque photo requise ou supprimez les vides.",
+    defaultRejectReason: "Hors du périmètre du contrat actuel.",
   },
   es: {
     close: "Cerrar",
@@ -251,6 +305,13 @@ const footerTranslations: Record<
     durationSaving: "Guardando...",
     durationInvalid: "Introduzca una duración en minutos enteros.",
     failedDuration: "Error al actualizar la duración de la tarea.",
+    photoRequired: "Foto obligatoria",
+    photoName: "Nombre de la foto obligatoria",
+    addPhoto: "+ Añadir foto",
+    removePhoto: "Eliminar",
+    photoNeeded: "Añada al menos una foto o desactive la foto obligatoria.",
+    photoUnnamed: "Dé un nombre a cada foto obligatoria o elimine las vacías.",
+    defaultRejectReason: "Fuera del alcance del contrato actual.",
   },
 };
 
@@ -272,12 +333,10 @@ export function ExtraServiceActionFooter({
   const t = footerTranslations[locale] || footerTranslations.en;
 
   const [approveAdditional] = useApproveAdditionalTaskMutation();
-  const [deleteAdditional] = useDeleteAdditionalTaskMutation();
   const [updateAdditional] = useUpdateAdditionalTaskMutation();
   const [saving, setSaving] = useState(false);
   const [showDurationPrompt, setShowDurationPrompt] = useState(false);
   const [showRejectPrompt, setShowRejectPrompt] = useState(false);
-  const [showDeletePrompt, setShowDeletePrompt] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
 
   const currentStatus = (request.status || "").toLowerCase();
@@ -298,15 +357,20 @@ export function ExtraServiceActionFooter({
    * Returns `null` on success, or the failure message. When the duration modal is driving
    * this, that message is rendered inside it instead of on the request modal behind it.
    */
-  const handleApprove = async (durationMinutes?: number) => {
+  const handleApprove = async (decision?: ApproveDecision) => {
     setSaving(true);
     const planId = request.planId;
     const taskIds = approvalTaskIds;
 
-    if (durationMinutes !== undefined && taskIds.length > 0) {
+    if (decision && taskIds.length > 0) {
       try {
         for (const tId of taskIds) {
-          await updateAdditional({ id: tId, duration_minutes: durationMinutes }).unwrap();
+          await updateAdditional({
+            id: tId,
+            duration_minutes: decision.minutes,
+            is_photo_required: decision.is_photo_required,
+            photo_requirements: decision.photo_requirements,
+          }).unwrap();
         }
       } catch (err) {
         setSaving(false);
@@ -321,7 +385,7 @@ export function ExtraServiceActionFooter({
     if (request.rawAdditionalTask && taskIds.length > 0) {
       for (const tId of taskIds) {
         try {
-          await approveAdditional({ id: tId, is_approved: true }).unwrap();
+          await approveAdditional({ id: tId, status: "Approved" }).unwrap();
           approveSuccess = true;
         } catch {
           // Keep going; a partial success is still reported below.
@@ -334,26 +398,16 @@ export function ExtraServiceActionFooter({
       }
     }
 
-    // Also approve extra service if it's an extra service request
-    if (request.id && !request.isCleaningPlanTask) {
-      const res = await completeApproveExtraService(request.id);
-      if (res.success) approveSuccess = true;
-      else if (!approveSuccess) {
-        const fallbackRes = await approveExtraService(request.id, {});
-        if (fallbackRes.success) approveSuccess = true;
-      }
-    }
-
     setSaving(false);
     if (!approveSuccess && (request.rawAdditionalTask || !planId)) {
       // Without the duration modal open there is nowhere else to put this.
-      if (durationMinutes === undefined) onError(t.failedApprove);
+      if (!decision) onError(t.failedApprove);
       return t.failedApprove;
     }
     // The duration modal is dismissed first and the request modal behind it a beat later,
     // so the two closings read as a sequence rather than both vanishing at once.
     setShowDurationPrompt(false);
-    if (durationMinutes !== undefined) {
+    if (decision) {
       window.setTimeout(onDone, 160);
     } else {
       onDone();
@@ -362,8 +416,14 @@ export function ExtraServiceActionFooter({
   };
 
   const handleReject = async () => {
+    // `reject_reason` is required by the API whenever the status is Rejected, and it is stored
+    // verbatim for the worker and client to read, so an empty box is not sent.
+    const reason = rejectionReason.trim();
+    if (!reason) {
+      onError(t.specifyReason);
+      return;
+    }
     setSaving(true);
-    const reason = rejectionReason.trim() || "Service requested is outside operational scope.";
     const planId = request.planId;
     const taskIds = request.taskIds?.length
       ? request.taskIds
@@ -373,11 +433,11 @@ export function ExtraServiceActionFooter({
 
     let rejectSuccess = false;
 
-    // The decision endpoint is a single boolean, so a rejection reason cannot ride along here.
+    // The decision endpoint takes the reason, so it rides along with the rejection.
     if (request.rawAdditionalTask && taskIds.length > 0) {
       for (const tId of taskIds) {
         try {
-          await approveAdditional({ id: tId, is_approved: false }).unwrap();
+          await approveAdditional({ id: tId, status: "Rejected", reject_reason: reason }).unwrap();
           rejectSuccess = true;
         } catch {
           // Keep going; a partial success is still reported below.
@@ -390,11 +450,6 @@ export function ExtraServiceActionFooter({
       }
     }
 
-    if (request.id && !request.isCleaningPlanTask) {
-      const res = await rejectExtraService(request.id, reason);
-      if (res.success) rejectSuccess = true;
-    }
-
     setSaving(false);
     if (!rejectSuccess && (request.rawAdditionalTask || !planId)) {
       return onError(t.failedReject);
@@ -402,70 +457,10 @@ export function ExtraServiceActionFooter({
     onDone();
   };
 
-  /**
-   * `/additional-task/delete-additional-task` also pulls the id from the parent plan. The route
-   * is documented as client-only, so a manager session can legitimately come back 401 — the
-   * server's own wording is surfaced rather than a generic failure.
-   */
-  const handleDelete = async () => {
-    const taskId = request.rawAdditionalTask?._id;
-    if (!taskId) return;
-    setSaving(true);
-    try {
-      await deleteAdditional(taskId).unwrap();
-      setSaving(false);
-      onDone();
-    } catch (err) {
-      setSaving(false);
-      setShowDeletePrompt(false);
-      onError(apiError(err, t.failedDelete));
-    }
-  };
-
-  const deleteButton = request.rawAdditionalTask ? (
-    <button
-      type="button"
-      disabled={saving}
-      onClick={() => setShowDeletePrompt(true)}
-      className="mr-auto flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-600 hover:border-red-300 hover:bg-red-50 hover:text-red-600 transition-all disabled:opacity-50 cursor-pointer"
-    >
-      <MdDeleteOutline className="text-base" />
-      {t.deleteTask}
-    </button>
-  ) : null;
-
-  const deletePrompt = (
-    <div className="space-y-3 rounded-lg border border-red-200 bg-red-50/70 p-3.5">
-      <p className="text-xs font-semibold text-red-800">{t.deletePrompt}</p>
-      <div className="flex items-center justify-end gap-2">
-        <button
-          type="button"
-          disabled={saving}
-          onClick={() => setShowDeletePrompt(false)}
-          className="rounded border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer"
-        >
-          {t.cancel}
-        </button>
-        <button
-          type="button"
-          disabled={saving}
-          onClick={() => void handleDelete()}
-          className="rounded bg-red-600 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-red-700 transition-colors disabled:opacity-50 cursor-pointer"
-        >
-          {saving ? t.deleting : t.confirmDelete}
-        </button>
-      </div>
-    </div>
-  );
-
   if (!isActionable) {
     return (
       <div className="border-t border-slate-200 bg-slate-50 px-6 py-3 shrink-0">
-        {showDeletePrompt ? (
-          deletePrompt
-        ) : (
-          <div className="flex items-center justify-end gap-3">
-            {deleteButton}
+        <div className="flex items-center justify-end gap-3">
             <button
               type="button"
               onClick={onDone}
@@ -473,50 +468,64 @@ export function ExtraServiceActionFooter({
             >
               {t.close}
             </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (showRejectPrompt) {
+    return (
+      <div className="border-t border-slate-200 bg-slate-50 px-6 py-4 shrink-0">
+        <div className="space-y-3 rounded-lg border border-red-200 bg-red-50/70 p-3.5">
+          <label htmlFor="reject-reason" className="block text-xs font-semibold text-red-800">
+            {t.specifyReason}
+          </label>
+          <textarea
+            id="reject-reason"
+            autoFocus
+            value={rejectionReason}
+            onChange={(event) => setRejectionReason(event.target.value)}
+            placeholder={t.reasonPlaceholder}
+            rows={3}
+            disabled={saving}
+            className="w-full rounded border border-red-300 bg-white p-2.5 text-xs text-slate-800 outline-none focus:ring-2 focus:ring-red-300 disabled:bg-slate-50"
+          />
+          <div className="flex items-center justify-between gap-2">
+            <button
+              type="button"
+              disabled={saving}
+              onClick={() => setRejectionReason(t.defaultRejectReason)}
+              className="cursor-pointer text-[11px] font-semibold text-red-700 underline transition-opacity hover:opacity-80 disabled:opacity-50"
+            >
+              {t.defaultRejectReason}
+            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                disabled={saving}
+                onClick={() => setShowRejectPrompt(false)}
+                className="cursor-pointer rounded border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-50"
+              >
+                {t.cancel}
+              </button>
+              <button
+                type="button"
+                disabled={saving || !rejectionReason.trim()}
+                onClick={() => void handleReject()}
+                className="cursor-pointer rounded bg-red-600 px-3.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {saving ? t.rejecting : t.confirmReject}
+              </button>
+            </div>
           </div>
-        )}
+        </div>
       </div>
     );
   }
 
   return (
     <div className="border-t border-slate-200 bg-slate-50 px-6 py-4 shrink-0">
-      {showDeletePrompt ? (
-        deletePrompt
-      ) : showRejectPrompt ? (
-        <div className="space-y-3 rounded-lg border border-red-200 bg-red-50/70 p-3.5">
-          <label className="block text-xs font-semibold text-red-800">
-            {t.specifyReason}
-          </label>
-          <textarea
-            value={rejectionReason}
-            onChange={(e) => setRejectionReason(e.target.value)}
-            placeholder={t.reasonPlaceholder}
-            rows={2}
-            className="w-full rounded border border-red-300 bg-white p-2.5 text-xs text-slate-800 outline-none focus:ring-2 focus:ring-red-300"
-          />
-          <div className="flex items-center justify-end gap-2">
-            <button
-              type="button"
-              disabled={saving}
-              onClick={() => setShowRejectPrompt(false)}
-              className="rounded border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer"
-            >
-              {t.cancel}
-            </button>
-            <button
-              type="button"
-              disabled={saving}
-              onClick={() => void handleReject()}
-              className="rounded bg-red-600 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-red-700 transition-colors disabled:opacity-50 cursor-pointer"
-            >
-              {saving ? t.rejecting : t.confirmReject}
-            </button>
-          </div>
-        </div>
-      ) : (
-        <div className="flex flex-wrap items-center justify-end gap-3">
-          {deleteButton}
+      <div className="flex flex-wrap items-center justify-end gap-3">
           <button
             type="button"
             disabled={saving}
@@ -541,12 +550,13 @@ export function ExtraServiceActionFooter({
             <MdCheck className="text-base" />
             {saving ? t.processing : t.acceptAndApprove}
           </button>
-        </div>
-      )}
+      </div>
 
       {showDurationPrompt && (
         <ApproveDurationModal
           initialMinutes={request.rawAdditionalTask?.duration_minutes}
+          initialPhotoRequired={request.rawAdditionalTask?.is_photo_required}
+          initialPhotoTitles={request.rawAdditionalTask?.photo_requirements?.map((p) => p.title)}
           copy={{
             title: t.durationTitle,
             hint: t.durationHint,
@@ -556,9 +566,15 @@ export function ExtraServiceActionFooter({
             confirm: t.durationConfirm,
             saving: t.durationSaving,
             invalid: t.durationInvalid,
+            photoRequired: t.photoRequired,
+            photoName: t.photoName,
+            addPhoto: t.addPhoto,
+            remove: t.removePhoto,
+            photoNeeded: t.photoNeeded,
+            photoUnnamed: t.photoUnnamed,
           }}
           onCancel={() => setShowDurationPrompt(false)}
-          onConfirm={(minutes) => handleApprove(minutes)}
+          onConfirm={(decision) => handleApprove(decision)}
         />
       )}
     </div>

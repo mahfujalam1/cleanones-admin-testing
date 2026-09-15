@@ -91,7 +91,8 @@ export type CreatePlanInput = {
   rooms: string[];
   /** Start of the plan: the date and the start time together, as one timestamp. */
   date_time: string;
-  end_date: string;
+  /** Optional — a plan with no end date runs open-ended. */
+  end_date?: string;
   description?: string;
   note?: string;
 };

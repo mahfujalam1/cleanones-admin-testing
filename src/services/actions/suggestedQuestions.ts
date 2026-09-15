@@ -4,8 +4,6 @@ export interface QuestionSuggestion {
   answer: string;
   createdAt?: string;
   updatedAt?: string;
-  created_at?: string;
-  updated_at?: string;
 }
 
 export interface CreateQuestionSuggestionDto {
@@ -23,8 +21,8 @@ export interface SuggestedQuestion {
   question: string;
   answer: string;
   created_by_manager_id?: string;
-  created_at?: string;
-  updated_at?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface SuggestedQuestionsResponse {

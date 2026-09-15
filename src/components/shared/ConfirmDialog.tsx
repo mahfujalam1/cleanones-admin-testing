@@ -2,6 +2,9 @@
 
 import React from "react";
 import { MdOutlineWarningAmber, MdClose } from "react-icons/md";
+import { usePathname } from "next/navigation";
+import { getLocale } from "@/lib/locale";
+import { getUiTranslation } from "@/lib/translations";
 import { useModalJump } from "@/hooks/useModalJump";
 
 interface ConfirmDialogProps {
@@ -18,14 +21,16 @@ interface ConfirmDialogProps {
 export function ConfirmDialog({
   title,
   description,
-  confirmText = "Delete",
-  cancelText = "Cancel",
+  confirmText,
+  cancelText,
   destructive = true,
   loading = false,
   onConfirm,
   onClose,
 }: ConfirmDialogProps) {
   const { triggerJump, jumpClassName } = useModalJump();
+
+  const ui = getUiTranslation(getLocale(usePathname()));
 
   return (
     <div
@@ -52,7 +57,7 @@ export function ConfirmDialog({
             </span>
             <div>
               <h2 className="text-base font-semibold text-slate-900">{title}</h2>
-              <p className="text-xs text-slate-400 mt-0.5">Please confirm your action</p>
+              <p className="text-xs text-slate-400 mt-0.5">{ui.confirmAction}</p>
             </div>
           </div>
           <button
@@ -78,7 +83,7 @@ export function ConfirmDialog({
             onClick={onClose}
             className="cursor-pointer rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-50"
           >
-            {cancelText}
+            {cancelText ?? ui.cancel}
           </button>
           <button
             type="button"
@@ -88,7 +93,7 @@ export function ConfirmDialog({
               destructive ? "bg-red-600 hover:bg-red-700" : "bg-sky-600 hover:bg-sky-700"
             }`}
           >
-            {loading ? "Deleting..." : confirmText}
+            {loading ? `${ui.delete}…` : (confirmText ?? ui.delete)}
           </button>
         </div>
       </div>

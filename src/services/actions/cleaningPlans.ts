@@ -78,8 +78,8 @@ export type PlanSummary = {
     working_days: string[];
     status: string;
     is_active: boolean;
-    created_at: string;
-    updated_at: string;
+    createdAt: string;
+    updatedAt: string;
 };
 export type PlanDetails = PlanSummary & {
     shift_notes: string;
@@ -144,36 +144,6 @@ const json = (value: unknown) => ({
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(value),
 });
-export async function getPlanRooms(
-    input: {
-        clientId?: string;
-        locationId?: string;
-        search?: string;
-        page?: number;
-        limit?: number;
-    } = {},
-) {
-    const query = new URLSearchParams({
-        page: String(input.page ?? 1),
-        limit: String(input.limit ?? 100),
-    });
-    if (input.clientId) query.set("client_id", input.clientId);
-    if (input.locationId) query.set("location_id", input.locationId);
-    if (input.search) query.set("search", input.search);
-    return authenticated<{
-        total_count: number;
-        page: number;
-        limit: number;
-        has_more: boolean;
-        rooms: PlanRoomOption[];
-    }>(`/manager/dropdowns/rooms?${query}`, { method: "GET" });
-}
-export async function createCleaningPlan(input: PlanInput) {
-    return authenticated<PlanDetails>("/manager/cleaning-plans", {
-        method: "POST",
-        ...json(input),
-    });
-}
 export async function getCleaningPlans(
     input: {
         clientId?: string;
@@ -217,12 +187,16 @@ export async function getCleaningPlans(
  * needs an endpoint that supplies them.
  */
 export async function getCleaningPlan(planId: string) {
-    const res = await authenticated<SingleCleaningPlan>(
+    const res = await authenticated<SingleCleaningPlan | { data: SingleCleaningPlan }>(
         `/cleaning-plan/single-cleaning-plan/${encodeURIComponent(planId)}`,
         { method: "GET" },
     );
     if (!res.success) return res;
-    return { ...res, data: toPlanDetails(res.data) };
+    // Unlike the RTK Query base, `authenticated` hands back the whole `{ success, message, data }`
+    // envelope. Reading it as the plan itself left every field undefined.
+    const payload = ((res.data as { data?: SingleCleaningPlan })?.data ??
+        res.data) as SingleCleaningPlan;
+    return { ...res, data: toPlanDetails(payload) };
 }
 
 /** Only the fields this adapter reads; the full shape lives in `redux/api/endpoints`. */
@@ -234,7 +208,24 @@ type SingleCleaningPlan = {
     note?: string;
     client?: PlanRef<{ _id: string; name?: string; company_name?: string; email?: string; phone?: string }>;
     location?: PlanRef<{ _id: string; name?: string }>;
-    rooms?: Array<PlanRef<{ _id: string; name?: string; room_type?: string; floor?: number }>>;
+    rooms?: Array<PlanRef<{
+        _id: string;
+        name?: string;
+        room_type?: string;
+        cleaning_type?: string;
+        floor?: number;
+        tasks?: Array<{
+            _id: string;
+            name?: string;
+            frequency_type?: string;
+            is_photo_required?: boolean;
+            photo_requirements?: Array<{ title: string }>;
+            required_photo_count?: number;
+            duration_minutes?: number;
+        }>;
+        total_task?: number;
+        total_duration?: number;
+    }>>;
     assigned_workers?: Array<{
         worker?: PlanRef<{ _id: string; name?: string; position?: string; profile_photo?: string }>;
         role?: string;
@@ -247,16 +238,18 @@ type SingleCleaningPlan = {
         is_photo_required?: boolean;
         photo_requirements?: Array<{ title: string }>;
         date_time?: string;
-        is_approved?: boolean;
+        status?: string;
+        reject_reason?: string | null;
     }>>;
     date_time?: string;
     end_date?: string;
     max_estimated_duration?: number;
+    total_rooms?: number;
+    total_tasks?: number;
+    total_duration?: number;
     status?: string;
     is_active?: boolean;
     manager?: string;
-    created_at?: string;
-    updated_at?: string;
     createdAt?: string;
     updatedAt?: string;
 };
@@ -271,9 +264,25 @@ const dayOf = (value?: string) => (value ? value.slice(0, 10) : "");
 function toPlanDetails(plan: SingleCleaningPlan): PlanDetails {
     const client = populated(plan.client);
     const location = populated(plan.location);
-    const rooms = (plan.rooms ?? []).map(populated).filter(Boolean) as Array<{
-        _id: string; name?: string; room_type?: string; floor?: number;
-    }>;
+    type RoomDoc = NonNullable<ReturnType<typeof populated<{
+        _id: string;
+        name?: string;
+        room_type?: string;
+        cleaning_type?: string;
+        floor?: number;
+        tasks?: Array<{
+            _id: string;
+            name?: string;
+            frequency_type?: string;
+            is_photo_required?: boolean;
+            photo_requirements?: Array<{ title: string }>;
+            required_photo_count?: number;
+            duration_minutes?: number;
+        }>;
+        total_task?: number;
+        total_duration?: number;
+    }>>>;
+    const rooms = (plan.rooms ?? []).map(populated).filter(Boolean) as RoomDoc[];
     const workers = (plan.assigned_workers ?? [])
         .map((entry) => ({ worker: populated(entry.worker), role: entry.role }))
         .filter((entry) => entry.worker) as Array<{
@@ -319,17 +328,39 @@ function toPlanDetails(plan: SingleCleaningPlan): PlanDetails {
         rooms_count: plan.rooms?.length ?? 0,
         room_names: rooms.map((room) => room.name ?? ""),
         room_ids: (plan.rooms ?? []).map(idOf),
-        rooms: rooms.map((room) => ({
-            room_id: room._id,
-            room_name: room.name ?? "",
-            room_type: room.room_type ?? "",
-            floor: room.floor ?? 0,
-            // The document model keeps tasks on the plan, not per room.
-            duration: 0,
-            task_number: 0,
-            total_photos_required: 0,
-            tasks: [],
-        })),
+        rooms: rooms.map((room) => {
+            const roomTasks = room.tasks ?? [];
+            return {
+                room_id: room._id,
+                room_name: room.name ?? "",
+                room_type: room.room_type ?? "",
+                clean_type: room.cleaning_type ?? "",
+                floor: room.floor ?? 0,
+                duration:
+                    room.total_duration ??
+                    roomTasks.reduce((sum, task) => sum + (task.duration_minutes ?? 0), 0),
+                task_number: room.total_task ?? roomTasks.length,
+                total_photos_required: roomTasks.reduce(
+                    (sum, task) => sum + (task.photo_requirements?.length ?? 0),
+                    0,
+                ),
+                tasks: roomTasks.map((task) => ({
+                    id: task._id,
+                    name: task.name ?? "",
+                    frequency_type: task.frequency_type ?? "",
+                    duration_minutes: task.duration_minutes,
+                    is_photo_req: Boolean(task.is_photo_required),
+                    photo: (task.photo_requirements ?? []).map((photo) => ({ name: photo.title })),
+                    total_photos_required: task.photo_requirements?.length ?? 0,
+                })),
+                required_photos: roomTasks.flatMap((task) =>
+                    (task.photo_requirements ?? []).map((photo, index) => ({
+                        id: `${task._id}-${index}`,
+                        name: photo.title,
+                    })),
+                ),
+            };
+        }),
         workers_count: plan.assigned_workers?.length ?? 0,
         worker_names: workers.map((entry) => entry.worker.name ?? ""),
         worker_ids: (plan.assigned_workers ?? []).map((entry) => idOf(entry.worker)),
@@ -340,14 +371,29 @@ function toPlanDetails(plan: SingleCleaningPlan): PlanDetails {
             profile_photo: entry.worker.profile_photo ?? "",
         })),
         additional_tasks: mappedTasks,
-        total_tasks_count: mappedTasks.length,
-        total_photos_count: mappedTasks.reduce((sum, task) => sum + (task.total_photos_required ?? 0), 0),
+        total_tasks_count:
+            (plan.total_tasks ?? rooms.reduce((sum, room) => sum + (room.tasks?.length ?? 0), 0)) +
+            mappedTasks.length,
+        total_photos_count:
+            rooms.reduce(
+                (sum, room) =>
+                    sum +
+                    (room.tasks ?? []).reduce(
+                        (roomSum, task) => roomSum + (task.photo_requirements?.length ?? 0),
+                        0,
+                    ),
+                0,
+            ) + mappedTasks.reduce((sum, task) => sum + (task.total_photos_required ?? 0), 0),
         date: dayOf(plan.date_time),
-        duration_minutes: plan.max_estimated_duration ?? 0,
+        // `max_estimated_duration` is 0 on this payload; the real figure is the rooms' total.
+        duration_minutes:
+            plan.total_duration ||
+            plan.max_estimated_duration ||
+            rooms.reduce((sum, room) => sum + (room.total_duration ?? 0), 0),
         status: plan.status ?? (plan.is_active === false ? "inactive" : "active"),
         is_active: plan.is_active ?? plan.status !== "inactive",
-        created_at: plan.created_at ?? plan.createdAt ?? "",
-        updated_at: plan.updated_at ?? plan.updatedAt ?? "",
+        createdAt: plan.createdAt ?? "",
+        updatedAt: plan.updatedAt ?? "",
         // Not represented in the new payload.
         start_time: "",
         end_time: "",
@@ -357,67 +403,11 @@ function toPlanDetails(plan: SingleCleaningPlan): PlanDetails {
         shift_notes: plan.note ?? plan.description ?? "",
     };
 }
-export async function updateCleaningPlan(
-    planId: string,
-    input: Partial<PlanInput> & {
-        worker_ids?: string[];
-        duration_minutes?: number;
-        description?: string;
-        location_id?: string;
-        frequency_type?: string;
-        status?: string;
-        is_active?: boolean;
-    },
-) {
-    return authenticated<PlanDetails>(
-        `/manager/cleaning-plans/${encodeURIComponent(planId)}`,
-        { method: "PATCH", ...json(input) },
-    );
-}
 export async function deleteCleaningPlan(planId: string) {
     return authenticated<string>(
         `/manager/cleaning-plans/${encodeURIComponent(planId)}`,
         { method: "DELETE" },
     );
-}
-export async function getPlanWorkers(
-    planId: string,
-    input: {
-        search?: string;
-        workerType?: string;
-        sortBy?: string;
-        page?: number;
-        limit?: number;
-    } = {},
-) {
-    const query = new URLSearchParams({
-        sort_by: input.sortBy ?? "smart",
-        page: String(input.page ?? 1),
-        limit: String(input.limit ?? 10),
-    });
-    if (input.search) query.set("search", input.search);
-    if (input.workerType && input.workerType !== "all")
-        query.set("worker_type", input.workerType);
-    return authenticated<any>(
-        `/manager/cleaning-plans/${encodeURIComponent(planId)}/workers-dropdown?${query}`,
-        { method: "GET" },
-    ).then((res) => {
-        if (res.success && res.data?.workers) {
-            res.data.workers = res.data.workers.map((w: any) => {
-                if (w.worker) {
-                    return {
-                        ...w.worker,
-                        ...w, // In case stats are at the root
-                        worker_id: w.worker._id || w.worker.worker_id,
-                        is_available: !w.is_conflict,
-                        unavailable_reason: w.conflict_reason,
-                    };
-                }
-                return w;
-            });
-        }
-        return res;
-    });
 }
 export async function assignPlanWorkers(
     planId: string,

@@ -1,20 +1,29 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { MdAccessTime, MdChevronRight, MdClose, MdLocationOn, MdSearch } from "react-icons/md";
+import {
+  MdAccessTime,
+  MdChevronRight,
+  MdClose,
+  MdDeleteOutline,
+  MdLocationOn,
+  MdModeEditOutline,
+  MdMoreVert,
+  MdOutlineGroupAdd,
+  MdSearch,
+} from "react-icons/md";
 import { TbActivity, TbClock, TbCalendarStats, TbCircleCheck } from "react-icons/tb";
 import { type LiveWorker } from "@/services/actions/shiftMonitoring";
 import { useGetLiveStatusQuery } from "@/redux/api/shiftMonitoringApi";
 import {
-  useGetShiftsQuery,
   useGetTodayLiveShiftMetaQuery,
   useGetTodayLiveShiftsQuery,
 } from "@/redux/api/shiftsApi";
 import { EmployeeDetailsModal } from "@/components/shift-monitoring/EmployeeDetailsModal";
 import type { WorkerInfo } from "@/components/shift-monitoring/types";
 import { BackendPagination } from "@/components/shared/BackendPagination";
-import { usePathname } from "next/navigation";
-import { getLocale } from "@/lib/locale";
+import { usePathname, useRouter } from "next/navigation";
+import { getLocale, localizePath } from "@/lib/locale";
 import { getDashboardTranslation } from "@/lib/translations";
 
 const formatShiftTime = (dateTimeStr?: string) => {
@@ -55,6 +64,8 @@ type UnifiedLiveShift = {
   client_name?: string;
   location_name?: string;
   plan_title?: string;
+  /** Present when the shift was generated from a cleaning plan; the quick actions need it. */
+  plan_id?: string;
   start_time: string;
   duration_text?: string;
   status: string;
@@ -68,6 +79,18 @@ type UnifiedLiveShift = {
 export default function LiveStatusPage() {
   const pathname = usePathname();
   const locale = getLocale(pathname);
+  const router = useRouter();
+  /** Which row has its quick-actions menu open. */
+  const [menuFor, setMenuFor] = useState("");
+
+  /**
+   * The quick actions hand off to the Cleaning Plans page rather than editing in place —
+   * that page owns the plan modals, and `?plan=&action=` opens the right one on arrival.
+   */
+  const openPlanAction = (planId: string, action: "edit" | "assign" | "delete") => {
+    setMenuFor("");
+    router.push(localizePath(`/cleaning-plans?plan=${encodeURIComponent(planId)}&action=${action}`, locale));
+  };
   const t = getDashboardTranslation(locale);
 
   const [selected, setSelected] = useState<WorkerInfo | null>(null);
@@ -117,10 +140,8 @@ export default function LiveStatusPage() {
   } = useGetLiveStatusQuery({
     search: search.trim() || undefined,
   });
-  const { data: shiftsRes } = useGetShiftsQuery({ limit: 200 });
 
   const rawLiveItems = statusRes?.items ?? [];
-  const rawAllShifts = shiftsRes?.shifts ?? [];
   const todayShifts = todayShiftsRes?.result ?? [];
 
   // Refetch all endpoints
@@ -143,55 +164,38 @@ export default function LiveStatusPage() {
 
     const res = statusRes as any;
     const total =
-      res?.total_shifts_count ??
-      shiftsRes?.total_count ??
-      (rawLiveItems.length > 0 ? rawLiveItems.length : rawAllShifts.length);
+      res?.total_shifts_count ?? rawLiveItems.length;
 
     const inprogress =
       res?.inprogress_count ??
       res?.in_progress_count ??
-      (rawAllShifts.length > 0
-        ? rawAllShifts.filter((s) => {
-            const st = (s.status || "").toLowerCase();
-            return st === "in_progress" || st === "inprogress" || st === "active";
-          }).length
-        : rawLiveItems.filter((i) => {
+      rawLiveItems.filter((i) => {
             const st = (i.status || "").toLowerCase();
             return (
               st.includes("progress") ||
               st.includes("ontime") ||
               st.includes("late") ||
-              (i.progress_percentage > 0 && i.progress_percentage < 100)
-            );
-          }).length);
+          (i.progress_percentage > 0 && i.progress_percentage < 100)
+        );
+      }).length;
 
     const upcoming =
       res?.upcoming_count ??
-      (rawAllShifts.length > 0
-        ? rawAllShifts.filter((s) => {
-            const st = (s.status || "").toLowerCase();
-            return st === "upcoming" || st === "scheduled" || st === "pending" || st === "draft";
-          }).length
-        : rawLiveItems.filter((i) => {
-            const st = (i.status || "").toLowerCase();
-            return st.includes("upcoming") || st.includes("scheduled") || (!i.checkin_time && !i.checkout_time);
-          }).length);
+      rawLiveItems.filter((i) => {
+        const st = (i.status || "").toLowerCase();
+        return st.includes("upcoming") || st.includes("scheduled") || (!i.checkin_time && !i.checkout_time);
+      }).length;
 
     const complete =
       res?.completed_count ??
       res?.complete_count ??
-      (rawAllShifts.length > 0
-        ? rawAllShifts.filter((s) => {
-            const st = (s.status || "").toLowerCase();
-            return st === "completed" || st === "complete";
-          }).length
-        : rawLiveItems.filter((i) => {
-            const st = (i.status || "").toLowerCase();
-            return st.includes("complete") || Boolean(i.checkout_time) || i.progress_percentage === 100;
-          }).length);
+      rawLiveItems.filter((i) => {
+        const st = (i.status || "").toLowerCase();
+        return st.includes("complete") || Boolean(i.checkout_time) || i.progress_percentage === 100;
+      }).length;
 
     return { total, inprogress, upcoming, complete };
-  }, [todayMeta, statusRes, shiftsRes, rawLiveItems, rawAllShifts]);
+  }, [todayMeta, statusRes, rawLiveItems]);
 
   // Unified items for display
   const unifiedItems: UnifiedLiveShift[] = useMemo(() => {
@@ -203,6 +207,7 @@ export default function LiveStatusPage() {
         client_name: s.client?.name,
         location_name: s.location?.name,
         plan_title: typeof s.cleaning_plan === "object" ? s.cleaning_plan?.title : undefined,
+        plan_id: typeof s.cleaning_plan === "object" ? s.cleaning_plan?._id : s.cleaning_plan,
         start_time: formatShiftTime(s.date_time || s.date),
         duration_text: s.duration_minutes ? `${s.duration_minutes}m` : undefined,
         status: s.status,
@@ -225,6 +230,7 @@ export default function LiveStatusPage() {
       client_name: i.client_name,
       location_name: i.location_name,
       plan_title: i.shift_name,
+      plan_id: (i as { cleaning_plan_id?: string; plan_id?: string }).cleaning_plan_id ?? (i as { plan_id?: string }).plan_id,
       start_time: i.shift_start_time ? `${i.shift_start_time}${i.shift_end_time ? `–${i.shift_end_time}` : ""}` : "--:--",
       duration_text: i.hours_worked_display,
       status: i.status,
@@ -488,6 +494,64 @@ export default function LiveStatusPage() {
                     <p className="text-sm font-bold text-slate-900">{item.progress}%</p>
                     <p className="text-[10px] uppercase tracking-wide text-slate-400">progress</p>
                   </div>
+
+                  {item.plan_id && (
+                    <div className="relative shrink-0">
+                      <button
+                        type="button"
+                        aria-label="Quick actions"
+                        aria-expanded={menuFor === item.id}
+                        onClick={(event) => {
+                          // The row itself opens the worker modal, so the menu must not bubble.
+                          event.stopPropagation();
+                          setMenuFor((current) => (current === item.id ? "" : item.id));
+                        }}
+                        className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition-colors hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700"
+                      >
+                        <MdMoreVert className="text-lg" />
+                      </button>
+
+                      {menuFor === item.id && (
+                        <>
+                          {/* Click-away target, under the menu but over the page. */}
+                          <span
+                            className="fixed inset-0 z-20 cursor-default"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              setMenuFor("");
+                            }}
+                          />
+                          <div
+                            role="menu"
+                            onClick={(event) => event.stopPropagation()}
+                            className="absolute right-0 top-9 z-30 w-48 overflow-hidden rounded-lg border border-slate-200 bg-white py-1 shadow-lg"
+                          >
+                            <button
+                              type="button"
+                              onClick={() => openPlanAction(item.plan_id as string, "edit")}
+                              className="flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-left text-xs font-medium text-slate-700 transition-colors hover:bg-slate-50"
+                            >
+                              <MdModeEditOutline className="text-base text-slate-400" /> Edit plan
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => openPlanAction(item.plan_id as string, "assign")}
+                              className="flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-left text-xs font-medium text-slate-700 transition-colors hover:bg-slate-50"
+                            >
+                              <MdOutlineGroupAdd className="text-base text-slate-400" /> Reassign workers
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => openPlanAction(item.plan_id as string, "delete")}
+                              className="flex w-full cursor-pointer items-center gap-2 border-t border-slate-100 px-3 py-2 text-left text-xs font-medium text-red-600 transition-colors hover:bg-red-50"
+                            >
+                              <MdDeleteOutline className="text-base" /> Delete plan
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
 
                   {item.worker_id && (
                     <MdChevronRight className="mt-2 shrink-0 text-lg text-slate-300 transition-all group-hover:translate-x-0.5 group-hover:text-primary" />
