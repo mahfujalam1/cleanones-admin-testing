@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { MdOutlineClose, MdWarningAmber } from "react-icons/md";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
@@ -17,8 +18,10 @@ import {
 } from "@/redux/api/endpoints/cleaningPlans.api";
 import { useModalJump } from "@/hooks/useModalJump";
 
-/** Roles a worker can hold on a plan. Default is Team leader for the primary assignment. */
-const ROLES = ["Team leader", "Cleaner", "Supervisor"] as const;
+/** Roles a worker can hold on a plan. */
+const ROLES = ["Team leader", "Co-leader", "Normal worker"] as const;
+
+const DEFAULT_ROLE: (typeof ROLES)[number] = "Normal worker";
 
 const formatWindow = (plan: CleaningPlan) => {
   if (!plan.date_time) return plan.title;
@@ -46,7 +49,10 @@ function getWorkerIdFromAssignment(assignment: any): string {
 }
 
 function getRoleFromAssignment(assignment: any): string {
-  return assignment?.role || assignment?.position || "Team leader";
+  const stored = assignment?.role || assignment?.position;
+  // Plans saved before this list settled can hold a role that is no longer offered; those
+  // fall back to the default rather than leaving the select showing nothing.
+  return ROLES.includes(stored) ? stored : DEFAULT_ROLE;
 }
 
 export function AssignWorkersModal({ plan, onClose }: { plan: CleaningPlan; onClose: () => void }) {
@@ -102,7 +108,7 @@ export function AssignWorkersModal({ plan, onClose }: { plan: CleaningPlan; onCl
       } else {
         next.add(id);
         if (!roles[id]) {
-          setRoles((r) => ({ ...r, [id]: current.size === 0 ? "Team leader" : "Cleaner" }));
+          setRoles((r) => ({ ...r, [id]: DEFAULT_ROLE }));
         }
       }
       return next;
@@ -115,7 +121,7 @@ export function AssignWorkersModal({ plan, onClose }: { plan: CleaningPlan; onCl
       if (nextForced) {
         // Turning force on: also select the worker and set a default role
         setPicked((cur) => new Set(cur).add(id));
-        setRoles((cur) => ({ ...cur, [id]: cur[id] || (picked.size === 0 ? "Team leader" : "Cleaner") }));
+        setRoles((cur) => ({ ...cur, [id]: cur[id] || DEFAULT_ROLE }));
       } else {
         // Turning force off: deselect the conflicting worker
         setPicked((cur) => {
@@ -136,7 +142,7 @@ export function AssignWorkersModal({ plan, onClose }: { plan: CleaningPlan; onCl
       .filter(Boolean)
       .map((id) => ({
         worker: id,
-        role: roles[id] ?? (picked.size === 1 ? "Team leader" : "Cleaner"),
+        role: roles[id] ?? DEFAULT_ROLE,
       }));
 
     const hasForced = [...picked].some((id) => forcedWorkers[id]);
@@ -159,7 +165,11 @@ export function AssignWorkersModal({ plan, onClose }: { plan: CleaningPlan; onCl
   });
   const { triggerJump, jumpClassName } = useModalJump();
 
-  return (
+  if (typeof document === "undefined") return null;
+
+  // Portalled to <body> for the same reason as the plan detail modal: stacked on top of it,
+  // a `fixed` backdrop nested in the dashboard tree stopped short of the viewport bottom.
+  return createPortal(
     <div
       className="modal-backdrop fixed inset-0 z-[80] flex items-center justify-center p-4 animate-in fade-in duration-200"
       onMouseDown={(event) => {
@@ -320,7 +330,7 @@ export function AssignWorkersModal({ plan, onClose }: { plan: CleaningPlan; onCl
                       {checked && (
                         <div className="w-36 shrink-0">
                           <Select
-                            value={roles[workerId] ?? (picked.size === 1 ? "Team leader" : "Cleaner")}
+                            value={roles[workerId] ?? DEFAULT_ROLE}
                             onValueChange={(value) =>
                               setRoles((current) => ({ ...current, [workerId]: value }))
                             }
@@ -355,7 +365,8 @@ export function AssignWorkersModal({ plan, onClose }: { plan: CleaningPlan; onCl
           </div>
         </footer>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 

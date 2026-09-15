@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { createPortal } from "react-dom";
 import {
   MdDeleteOutline,
   MdModeEditOutline,
@@ -351,7 +352,12 @@ export function PlanDetailModal({
   const active = plan?.is_active ?? plan?.status === "active";
   const { triggerJump, jumpClassName } = useModalJump();
 
-  return (
+  if (typeof document === "undefined") return null;
+
+  // Portalled to <body> so the backdrop is laid out against the viewport. Inside the
+  // dashboard tree an animating ancestor can become the containing block for `fixed`,
+  // which left a strip uncovered at the bottom when this modal was stacked under another.
+  return createPortal(
     <div
       className="modal-backdrop fixed inset-0 z-[70] flex items-center justify-center p-4 animate-in fade-in duration-200"
       onMouseDown={(event) => {
@@ -442,6 +448,7 @@ export function PlanDetailModal({
           ) : null}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

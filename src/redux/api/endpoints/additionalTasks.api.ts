@@ -40,6 +40,17 @@ export type CreateAdditionalTaskInput = {
   date_time?: string;
 };
 
+/** Fields the partial-update route accepts. `is_approved` is ignored by the server. */
+export type UpdateAdditionalTaskInput = {
+  name?: string;
+  description?: string;
+  duration_minutes?: number;
+  is_photo_required?: boolean;
+  photo_requirements?: PhotoRequirement[];
+  date_time?: string;
+  is_completed?: boolean;
+};
+
 /**
  * An additional task carries booleans rather than a status string. `is_approved` only turns
  * true once a manager approves, so anything else is still awaiting a decision.
@@ -125,6 +136,25 @@ export const additionalTasksApi = baseApi.injectEndpoints({
       providesTags: (_result, _error, id) => [{ type: tagTypes.tasks, id }],
     }),
 
+    /**
+     * PATCH /additional-task/update-additional-task/{id} — partial update.
+     * `is_approved` is stripped server-side even if sent, so approval stays on the
+     * approve endpoint; this is only used to correct fields such as the duration.
+     */
+    updateAdditionalTask: builder.mutation<AdditionalTask, { id: string } & UpdateAdditionalTaskInput>({
+      query: ({ id, ...body }) => ({
+        url: `/additional-task/update-additional-task/${encodeURIComponent(id)}`,
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body,
+      }),
+      invalidatesTags: (_result, _error, { id }) => [
+        { type: tagTypes.tasks, id },
+        { type: tagTypes.tasks, id: "LIST" },
+        { type: tagTypes.cleaningPlans, id: "LIST" },
+      ],
+    }),
+
     /** Approve with `is_approved: true`, reject with `false`. Manager only. */
     approveAdditionalTask: builder.mutation<AdditionalTask, { id: string; is_approved: boolean }>({
       query: ({ id, is_approved }) => ({
@@ -163,5 +193,6 @@ export const {
   useGetAdditionalTasksQuery,
   useGetAdditionalTaskQuery,
   useApproveAdditionalTaskMutation,
+  useUpdateAdditionalTaskMutation,
   useDeleteAdditionalTaskMutation,
 } = additionalTasksApi;

@@ -9,7 +9,9 @@ import { rejectExtraService, completeApproveExtraService, approveExtraService } 
 import {
   useApproveAdditionalTaskMutation,
   useDeleteAdditionalTaskMutation,
+  useUpdateAdditionalTaskMutation,
 } from "@/redux/api/endpoints/additionalTasks.api";
+import { ApproveDurationModal } from "./ApproveDurationModal";
 import { apiError } from "@/redux/api/apiError";
 import { getLocale } from "@/lib/locale";
 
@@ -32,6 +34,14 @@ const footerTranslations: Record<
     deletePrompt: string;
     deleting: string;
     failedDelete: string;
+    durationTitle: string;
+    durationHint: string;
+    durationLabel: string;
+    durationMinutes: string;
+    durationConfirm: string;
+    durationSaving: string;
+    durationInvalid: string;
+    failedDuration: string;
   }
 > = {
   en: {
@@ -51,6 +61,14 @@ const footerTranslations: Record<
     deletePrompt: "Permanently delete this task? It is also removed from its cleaning plan.",
     deleting: "Deleting...",
     failedDelete: "Failed to delete task.",
+    durationTitle: "Set task duration",
+    durationHint: "Confirm how long this task should take before approving the request.",
+    durationLabel: "Duration",
+    durationMinutes: "min",
+    durationConfirm: "Approve",
+    durationSaving: "Saving...",
+    durationInvalid: "Enter a duration in whole minutes.",
+    failedDuration: "Failed to update the task duration.",
   },
   nl: {
     close: "Sluiten",
@@ -69,6 +87,14 @@ const footerTranslations: Record<
     deletePrompt: "Deze taak definitief verwijderen? Ze wordt ook uit het schoonmaakplan gehaald.",
     deleting: "Verwijderen...",
     failedDelete: "Verwijderen van taak mislukt.",
+    durationTitle: "Taakduur instellen",
+    durationHint: "Bevestig hoelang deze taak duurt voordat je het verzoek goedkeurt.",
+    durationLabel: "Duur",
+    durationMinutes: "min",
+    durationConfirm: "Goedkeuren",
+    durationSaving: "Opslaan...",
+    durationInvalid: "Voer een duur in hele minuten in.",
+    failedDuration: "Bijwerken van de taakduur mislukt.",
   },
   pl: {
     close: "Zamknij",
@@ -87,6 +113,14 @@ const footerTranslations: Record<
     deletePrompt: "Trwale usunąć to zadanie? Zostanie też usunięte z planu sprzątania.",
     deleting: "Usuwanie...",
     failedDelete: "Nie udało się usunąć zadania.",
+    durationTitle: "Ustaw czas zadania",
+    durationHint: "Potwierdź czas trwania zadania przed zatwierdzeniem wniosku.",
+    durationLabel: "Czas trwania",
+    durationMinutes: "min",
+    durationConfirm: "Zatwierdź",
+    durationSaving: "Zapisywanie...",
+    durationInvalid: "Podaj czas trwania w pełnych minutach.",
+    failedDuration: "Nie udało się zaktualizować czasu zadania.",
   },
   uk: {
     close: "Закрити",
@@ -105,6 +139,14 @@ const footerTranslations: Record<
     deletePrompt: "Остаточно видалити це завдання? Його також буде вилучено з плану прибирання.",
     deleting: "Видалення...",
     failedDelete: "Не вдалося видалити завдання.",
+    durationTitle: "Встановіть тривалість",
+    durationHint: "Підтвердьте тривалість завдання перед затвердженням запиту.",
+    durationLabel: "Тривалість",
+    durationMinutes: "хв",
+    durationConfirm: "Затвердити",
+    durationSaving: "Збереження...",
+    durationInvalid: "Вкажіть тривалість у цілих хвилинах.",
+    failedDuration: "Не вдалося оновити тривалість завдання.",
   },
   pt: {
     close: "Fechar",
@@ -123,6 +165,14 @@ const footerTranslations: Record<
     deletePrompt: "Eliminar permanentemente esta tarefa? Também é removida do plano de limpeza.",
     deleting: "A eliminar...",
     failedDelete: "Falha ao eliminar a tarefa.",
+    durationTitle: "Definir duração da tarefa",
+    durationHint: "Confirme a duração desta tarefa antes de aprovar o pedido.",
+    durationLabel: "Duração",
+    durationMinutes: "min",
+    durationConfirm: "Aprovar",
+    durationSaving: "A guardar...",
+    durationInvalid: "Indique a duração em minutos inteiros.",
+    failedDuration: "Falha ao atualizar a duração da tarefa.",
   },
   ar: {
     close: "إغلاق",
@@ -141,6 +191,14 @@ const footerTranslations: Record<
     deletePrompt: "حذف هذه المهمة نهائيًا؟ ستتم إزالتها أيضًا من خطة التنظيف.",
     deleting: "جارٍ الحذف...",
     failedDelete: "فشل حذف المهمة.",
+    durationTitle: "تحديد مدة المهمة",
+    durationHint: "أكد مدة هذه المهمة قبل الموافقة على الطلب.",
+    durationLabel: "المدة",
+    durationMinutes: "دقيقة",
+    durationConfirm: "موافقة",
+    durationSaving: "جارٍ الحفظ...",
+    durationInvalid: "أدخل المدة بالدقائق الكاملة.",
+    failedDuration: "فشل تحديث مدة المهمة.",
   },
   fr: {
     close: "Fermer",
@@ -159,6 +217,14 @@ const footerTranslations: Record<
     deletePrompt: "Supprimer définitivement cette tâche ? Elle est aussi retirée du plan de nettoyage.",
     deleting: "Suppression...",
     failedDelete: "Échec de la suppression de la tâche.",
+    durationTitle: "Définir la durée de la tâche",
+    durationHint: "Confirmez la durée de cette tâche avant d'approuver la demande.",
+    durationLabel: "Durée",
+    durationMinutes: "min",
+    durationConfirm: "Approuver",
+    durationSaving: "Enregistrement...",
+    durationInvalid: "Saisissez une durée en minutes entières.",
+    failedDuration: "Échec de la mise à jour de la durée de la tâche.",
   },
   es: {
     close: "Cerrar",
@@ -177,6 +243,14 @@ const footerTranslations: Record<
     deletePrompt: "¿Eliminar permanentemente esta tarea? También se quita del plan de limpieza.",
     deleting: "Eliminando...",
     failedDelete: "Error al eliminar la tarea.",
+    durationTitle: "Definir duración de la tarea",
+    durationHint: "Confirme cuánto dura esta tarea antes de aprobar la solicitud.",
+    durationLabel: "Duración",
+    durationMinutes: "min",
+    durationConfirm: "Aprobar",
+    durationSaving: "Guardando...",
+    durationInvalid: "Introduzca una duración en minutos enteros.",
+    failedDuration: "Error al actualizar la duración de la tarea.",
   },
 };
 
@@ -199,7 +273,9 @@ export function ExtraServiceActionFooter({
 
   const [approveAdditional] = useApproveAdditionalTaskMutation();
   const [deleteAdditional] = useDeleteAdditionalTaskMutation();
+  const [updateAdditional] = useUpdateAdditionalTaskMutation();
   const [saving, setSaving] = useState(false);
+  const [showDurationPrompt, setShowDurationPrompt] = useState(false);
   const [showRejectPrompt, setShowRejectPrompt] = useState(false);
   const [showDeletePrompt, setShowDeletePrompt] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
@@ -207,14 +283,36 @@ export function ExtraServiceActionFooter({
   const currentStatus = (request.status || "").toLowerCase();
   const isActionable = ["pending", "under_review", "awaiting_approval"].includes(currentStatus);
 
-  const handleApprove = async () => {
+  /** Task ids this request approves — an /additional-task row stands alone. */
+  const approvalTaskIds = request.taskIds?.length
+    ? request.taskIds
+    : request.taskId
+    ? [request.taskId]
+    : [];
+
+  /**
+   * Approving runs in two steps: the duration entered in the confirmation modal is written
+   * back to the additional task first, then the approval itself. A failed duration update
+   * aborts before approving, so the manager can correct the value and retry.
+   *
+   * Returns `null` on success, or the failure message. When the duration modal is driving
+   * this, that message is rendered inside it instead of on the request modal behind it.
+   */
+  const handleApprove = async (durationMinutes?: number) => {
     setSaving(true);
     const planId = request.planId;
-    const taskIds = request.taskIds?.length
-      ? request.taskIds
-      : request.taskId
-      ? [request.taskId]
-      : [];
+    const taskIds = approvalTaskIds;
+
+    if (durationMinutes !== undefined && taskIds.length > 0) {
+      try {
+        for (const tId of taskIds) {
+          await updateAdditional({ id: tId, duration_minutes: durationMinutes }).unwrap();
+        }
+      } catch (err) {
+        setSaving(false);
+        return apiError(err, t.failedDuration);
+      }
+    }
 
     let approveSuccess = false;
 
@@ -248,9 +346,19 @@ export function ExtraServiceActionFooter({
 
     setSaving(false);
     if (!approveSuccess && (request.rawAdditionalTask || !planId)) {
-      return onError(t.failedApprove);
+      // Without the duration modal open there is nowhere else to put this.
+      if (durationMinutes === undefined) onError(t.failedApprove);
+      return t.failedApprove;
     }
-    onDone();
+    // The duration modal is dismissed first and the request modal behind it a beat later,
+    // so the two closings read as a sequence rather than both vanishing at once.
+    setShowDurationPrompt(false);
+    if (durationMinutes !== undefined) {
+      window.setTimeout(onDone, 160);
+    } else {
+      onDone();
+    }
+    return null;
   };
 
   const handleReject = async () => {
@@ -422,13 +530,36 @@ export function ExtraServiceActionFooter({
           <button
             type="button"
             disabled={saving}
-            onClick={() => void handleApprove()}
+            onClick={() => {
+              // Nothing to re-time when the request carries no additional task, so the
+              // duration step is skipped and the approval runs straight away.
+              if (approvalTaskIds.length > 0) setShowDurationPrompt(true);
+              else void handleApprove();
+            }}
             className="flex items-center gap-1.5 rounded-lg bg-sky-600 px-5 py-2 text-xs font-semibold text-white shadow-xs hover:bg-sky-700 transition-all disabled:opacity-50 cursor-pointer"
           >
             <MdCheck className="text-base" />
             {saving ? t.processing : t.acceptAndApprove}
           </button>
         </div>
+      )}
+
+      {showDurationPrompt && (
+        <ApproveDurationModal
+          initialMinutes={request.rawAdditionalTask?.duration_minutes}
+          copy={{
+            title: t.durationTitle,
+            hint: t.durationHint,
+            label: t.durationLabel,
+            minutes: t.durationMinutes,
+            cancel: t.cancel,
+            confirm: t.durationConfirm,
+            saving: t.durationSaving,
+            invalid: t.durationInvalid,
+          }}
+          onCancel={() => setShowDurationPrompt(false)}
+          onConfirm={(minutes) => handleApprove(minutes)}
+        />
       )}
     </div>
   );

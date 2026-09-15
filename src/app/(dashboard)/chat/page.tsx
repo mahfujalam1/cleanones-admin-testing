@@ -51,7 +51,9 @@ export default function ChatPage() {
 
   const socketRef = useRef<Socket | null>(null);
   const selectedIdRef = useRef<string | null>(selectedId);
-  selectedIdRef.current = selectedId;
+  useEffect(() => {
+    selectedIdRef.current = selectedId;
+  }, [selectedId]);
   const typingTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // 1. Determine Current User ID from Token or Store

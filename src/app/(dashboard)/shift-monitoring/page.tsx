@@ -288,7 +288,7 @@ export default function LiveStatusPage() {
         </span>
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <h1 className="truncate text-lg font-bold leading-tight text-slate-900">Today's Live Shifts</h1>
+            <h1 className="truncate text-lg font-bold leading-tight text-slate-900">Today&apos;s Live Shifts</h1>
             <span className="rounded-full bg-sky-50 px-2.5 py-0.5 text-[10px] font-bold text-sky-700 border border-sky-200/60 uppercase tracking-wide">
               Live Today
             </span>

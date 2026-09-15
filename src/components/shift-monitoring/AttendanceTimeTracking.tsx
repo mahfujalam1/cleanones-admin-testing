@@ -95,13 +95,16 @@ export function AttendanceTimeTracking({ onWorkerSelect, selectedWorkerId, timeR
   const { data: workerListRes, isLoading: loadingWorkerList } = useGetWorkerListQuery({ page: 1, limit: 100 });
   const loading = (loadingAtt || loadingSummary) && (!workerListRes?.result || workerListRes.result.length === 0);
 
+  const attWorkers = attRes?.workers;
+  const fallbackWorkers = workerListRes?.result;
+
   const rawWorkers = useMemo(() => {
-    if (attRes?.workers && attRes.workers.length > 0) {
-      return attRes.workers;
+    if (attWorkers && attWorkers.length > 0) {
+      return attWorkers;
     }
     // Fallback to active workers list if attendance-tracking endpoint is empty
-    if (workerListRes?.result && workerListRes.result.length > 0) {
-      return workerListRes.result.map((w) => ({
+    if (fallbackWorkers && fallbackWorkers.length > 0) {
+      return fallbackWorkers.map((w) => ({
         worker_id: String(w._id),
         worker_name: workerName(w),
         profile_picture: w.profile_photo || '',
@@ -113,7 +116,7 @@ export function AttendanceTimeTracking({ onWorkerSelect, selectedWorkerId, timeR
       }));
     }
     return [];
-  }, [attRes?.workers, workerListRes?.result]);
+  }, [attWorkers, fallbackWorkers]);
 
   useEffect(() => {
     setPage(1);

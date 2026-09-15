@@ -1,7 +1,7 @@
 import * as React from "react";
 import { ChevronLeft, ChevronRight, MoreHorizontal } from "lucide-react";
 
-export interface PaginationProps extends React.ComponentProps<"nav"> {}
+export type PaginationProps = React.ComponentProps<"nav">;
 
 export function Pagination({ className = "", ...props }: PaginationProps) {
   return (

@@ -48,8 +48,13 @@ export function TaskForm({
       ? task.photo_requirements
       : [{ title: "", photo_url: null, is_uploaded: false }]
   );
-  const [isActive, setIsActive] = useState(task?.is_active ?? true);
+  const [requiredPhotoCount, setRequiredPhotoCount] = useState(
+    task?.required_photo_count?.toString() ?? ""
+  );
   const [error, setError] = useState("");
+
+  /** Only titled rows are sent, so they are what the required count is measured against. */
+  const namedPhotoRequirements = photoRequirements.filter((r) => r.title.trim() !== "");
 
   const [createTask, { isLoading: creating }] = useCreateTaskMutation();
   const [updateTask, { isLoading: updating }] = useUpdateTaskMutation();
@@ -64,9 +69,11 @@ export function TaskForm({
       duration_minutes: duration.trim() ? Number(duration) : undefined,
       is_photo_required: photoRequired,
       photo_requirements: photoRequired
-        ? photoRequirements.filter((r) => r.title.trim() !== "").map((r) => ({ ...r, title: r.title.trim() }))
+        ? namedPhotoRequirements.map((r) => ({ ...r, title: r.title.trim() }))
         : undefined,
-      is_active: isActive,
+      required_photo_count: photoRequired && requiredPhotoCount.trim()
+        ? Number(requiredPhotoCount)
+        : undefined,
     };
 
     if (!duration.trim()) {
@@ -77,6 +84,27 @@ export function TaskForm({
     if (!targetRoom) {
       setError("Pick a client, location and room first.");
       return;
+    }
+
+    if (photoRequired) {
+      if (namedPhotoRequirements.length === 0) {
+        setError("Add at least one photo, or turn off \"Photo required\".");
+        return;
+      }
+      const count = Number(requiredPhotoCount);
+      if (!requiredPhotoCount.trim() || !Number.isInteger(count) || count < 1) {
+        setError("Enter how many photos are required.");
+        return;
+      }
+      // The worker cannot be asked for more photos than there are slots to fill.
+      if (count > namedPhotoRequirements.length) {
+        setError(
+          `Required photo count cannot be more than the ${namedPhotoRequirements.length} photo${
+            namedPhotoRequirements.length === 1 ? "" : "s"
+          } added.`
+        );
+        return;
+      }
     }
 
     const problem = scheduleProblem(body);
@@ -192,8 +220,15 @@ export function TaskForm({
 
       <div className="space-y-4 border-t border-slate-100 pt-4">
         <div>
-          <CheckboxField label="Photo required" checked={photoRequired} onChange={setPhotoRequired} />
-          
+          <CheckboxField
+            label="Photo required"
+            checked={photoRequired}
+            onChange={(checked) => {
+              setPhotoRequired(checked);
+              setError("");
+            }}
+          />
+
           {photoRequired && (
             <div className="ml-3 mt-3 space-y-3 border-l-2 border-primary pl-4">
               {photoRequirements.map((req, index) => (
@@ -206,6 +241,7 @@ export function TaskForm({
                         const newReqs = [...photoRequirements];
                         newReqs[index] = { ...newReqs[index], title: e.target.value };
                         setPhotoRequirements(newReqs);
+                        setError("");
                       }}
                       placeholder="Required photo name"
                       className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none transition-all placeholder:text-slate-400 hover:border-slate-300 focus:border-primary focus:ring-1 focus:ring-primary"
@@ -215,8 +251,10 @@ export function TaskForm({
                     type="button"
                     onClick={() => {
                       setPhotoRequirements(photoRequirements.filter((_, i) => i !== index));
+                      setError("");
                     }}
                     className="text-sm font-semibold text-red-500 hover:text-red-600"
+                    disabled={photoRequirements.length === 1}
                   >
                     Remove
                   </button>
@@ -226,15 +264,35 @@ export function TaskForm({
                 type="button"
                 onClick={() => {
                   setPhotoRequirements([...photoRequirements, { title: "", photo_url: null, is_uploaded: false }]);
+                  setError("");
                 }}
                 className="text-sm font-semibold text-primary hover:text-sky-600"
               >
                 + Add Photo
               </button>
+
+              <div className="max-w-xs pt-1">
+                <TextField
+                  label="Required photo count"
+                  type="number"
+                  value={requiredPhotoCount}
+                  onChange={(value) => {
+                    setRequiredPhotoCount(value);
+                    setError("");
+                  }}
+                  min={1}
+                  max={Math.max(namedPhotoRequirements.length, 1)}
+                  placeholder={`1 - ${Math.max(namedPhotoRequirements.length, 1)}`}
+                  required
+                />
+                <p className="mt-1 text-xs text-slate-500">
+                  How many of the {namedPhotoRequirements.length} photo
+                  {namedPhotoRequirements.length === 1 ? "" : "s"} above the worker must supply.
+                </p>
+              </div>
             </div>
           )}
         </div>
-        <CheckboxField label="Active" checked={isActive} onChange={setIsActive} />
       </div>
     </FormModal>
   );

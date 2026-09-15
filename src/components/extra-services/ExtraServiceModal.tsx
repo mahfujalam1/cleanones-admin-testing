@@ -164,15 +164,16 @@ export function ExtraServiceModal({ request, onClose, onDone, onError }: ExtraSe
     (typeof taskPlanObj?.client === "object" ? taskPlanObj.client?.name || taskPlanObj.client?.company_name : undefined) ||
     "";
 
+  const clientList = clientsData?.result;
   const matchedClient: Client | undefined = useMemo(() => {
-    if (!clientsData?.result) return undefined;
+    if (!clientList) return undefined;
     if (targetClientId) {
-      const found = clientsData.result.find((c) => c._id === targetClientId);
+      const found = clientList.find((c) => c._id === targetClientId);
       if (found) return found;
     }
     if (targetClientName) {
       const norm = targetClientName.trim().toLowerCase();
-      const found = clientsData.result.find((c) =>
+      const found = clientList.find((c) =>
         (c.name && c.name.trim().toLowerCase() === norm) ||
         (c.company_name && c.company_name.trim().toLowerCase() === norm) ||
         (c.email && c.email.trim().toLowerCase() === norm)
@@ -180,7 +181,7 @@ export function ExtraServiceModal({ request, onClose, onDone, onError }: ExtraSe
       if (found) return found;
     }
     return undefined;
-  }, [clientsData?.result, targetClientId, targetClientName]);
+  }, [clientList, targetClientId, targetClientName]);
 
   const clientDisplayName =
     (matchedClient && clientLabel(matchedClient)) ||

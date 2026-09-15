@@ -2,12 +2,9 @@
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
-  MdCalendarToday,
   MdCheckCircle,
   MdEmail,
   MdEvent,
-  MdLanguage,
-  MdLocationOn,
   MdOutlinePerson,
   MdPhone,
   MdPhotoCamera,
@@ -16,6 +13,7 @@ import {
   MdUpdate,
   MdVerifiedUser,
 } from "react-icons/md";
+import { DatePicker, todayIso } from "@/components/ui/date-picker";
 import {
   getMyProfile,
   updateUserProfile,
@@ -35,9 +33,7 @@ export default function ProfilePage() {
   const [formData, setFormData] = useState({
     full_name: "",
     phone: "",
-    address: "",
     dateOfBirth: "",
-    website: "",
   });
 
   const [loading, setLoading] = useState(true);
@@ -47,22 +43,31 @@ export default function ProfilePage() {
   const [photoPreview, setPhotoPreview] = useState("");
   const photoInputRef = useRef<HTMLInputElement>(null);
 
+  // `syncUser` dispatches `setUser`, so reading `authUser` from the closure would give the
+  // callback a new identity on every dispatch and re-run the effect below forever. The ref
+  // keeps the latest values readable while the callback identity stays stable.
+  const authUserRef = useRef(authUser);
+  useEffect(() => {
+    authUserRef.current = authUser;
+  }, [authUser]);
+
   // Keeps the header avatar and the topbar in step after a photo or name change.
   const syncUser = useCallback(
     (source: { id?: string; _id?: string; full_name?: string; name?: string; email?: string; role?: string; profile_photo?: string; profile_image?: string }) => {
+      const current = authUserRef.current;
       const nextUser = {
-        id: source.id || source._id || authUser?.id || "",
-        name: source.name || source.full_name || authUser?.name || "User",
-        email: source.email || authUser?.email || "",
-        role: toDashboardRole(source.role) ?? authUser?.role ?? "MANAGER",
-        profilePhoto: source.profile_image || source.profile_photo || authUser?.profilePhoto,
+        id: source.id || source._id || current?.id || "",
+        name: source.name || source.full_name || current?.name || "User",
+        email: source.email || current?.email || "",
+        role: toDashboardRole(source.role) ?? current?.role ?? "MANAGER",
+        profilePhoto: source.profile_image || source.profile_photo || current?.profilePhoto,
       };
       dispatch(setUser(nextUser));
       try {
         localStorage.setItem("cleanones-dashboard-user", JSON.stringify(nextUser));
       } catch {}
     },
-    [dispatch, authUser]
+    [dispatch]
   );
 
   const handlePhotoChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -132,9 +137,7 @@ export default function ProfilePage() {
         setFormData({
           full_name: (d.name || d.full_name || "") as string,
           phone: (d.phone || "") as string,
-          address: (d.address || "") as string,
           dateOfBirth: d.dateOfBirth ? String(d.dateOfBirth).slice(0, 10) : "",
-          website: (d.website || "") as string,
         });
 
         syncUser(d);
@@ -161,9 +164,7 @@ export default function ProfilePage() {
     const result = await updateUserProfile({
       name: formData.full_name,
       phone: formData.phone,
-      address: formData.address,
       dateOfBirth: formData.dateOfBirth || undefined,
-      website: formData.website,
     });
 
     setSaving(false);
@@ -178,9 +179,7 @@ export default function ProfilePage() {
     setFormData({
       full_name: (updated.name || updated.full_name || "") as string,
       phone: (updated.phone || "") as string,
-      address: (updated.address || "") as string,
       dateOfBirth: updated.dateOfBirth ? String(updated.dateOfBirth).slice(0, 10) : "",
-      website: (updated.website || "") as string,
     });
 
     syncUser(updated);
@@ -199,9 +198,7 @@ export default function ProfilePage() {
   const isDirty = profile
     ? formData.full_name !== (profile.name || profile.full_name || "") ||
       formData.phone !== (profile.phone || "") ||
-      formData.address !== (profile.address || "") ||
-      formData.dateOfBirth !== (profile.dateOfBirth ? String(profile.dateOfBirth).slice(0, 10) : "") ||
-      formData.website !== (profile.website || "")
+      formData.dateOfBirth !== (profile.dateOfBirth ? String(profile.dateOfBirth).slice(0, 10) : "")
     : false;
 
   const roleTitle = (profile?.role || authUser?.role || "Manager")
@@ -358,47 +355,19 @@ export default function ProfilePage() {
                 </div>
               </label>
 
-              <label className="block">
+              <div>
                 <span className="mb-1.5 block text-xs font-semibold text-slate-700">Date of Birth</span>
-                <div className="relative">
-                  <input
-                    type="date"
-                    value={formData.dateOfBirth}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, dateOfBirth: e.target.value }))}
-                    className="h-11 w-full rounded-lg border border-slate-200 bg-white px-3.5 pl-10 text-sm text-slate-800 outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/20"
-                  />
-                  <MdCalendarToday className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-base text-slate-400" />
-                </div>
-              </label>
+                <DatePicker
+                  value={formData.dateOfBirth}
+                  onValueChange={(value) => setFormData((prev) => ({ ...prev, dateOfBirth: value }))}
+                  placeholder="Select date of birth"
+                  // Nobody was born tomorrow.
+                  max={todayIso()}
+                  clearable
+                />
+              </div>
             </div>
 
-            <label className="block">
-              <span className="mb-1.5 block text-xs font-semibold text-slate-700">Address</span>
-              <div className="relative">
-                <input
-                  type="text"
-                  value={formData.address}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, address: e.target.value }))}
-                  className="h-11 w-full rounded-lg border border-slate-200 bg-white px-3.5 pl-10 text-sm text-slate-800 outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/20"
-                  placeholder="Street address, city, country"
-                />
-                <MdLocationOn className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-base text-slate-400" />
-              </div>
-            </label>
-
-            <label className="block">
-              <span className="mb-1.5 block text-xs font-semibold text-slate-700">Website</span>
-              <div className="relative">
-                <input
-                  type="text"
-                  value={formData.website}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, website: e.target.value }))}
-                  className="h-11 w-full rounded-lg border border-slate-200 bg-white px-3.5 pl-10 text-sm text-slate-800 outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/20"
-                  placeholder="www.example.com"
-                />
-                <MdLanguage className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-base text-slate-400" />
-              </div>
-            </label>
           </div>
 
           <div className="flex flex-wrap items-center border-t border-slate-100 pt-4">

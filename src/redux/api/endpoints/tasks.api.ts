@@ -25,6 +25,8 @@ export type Task = {
   frequency_type: FrequencyType;
   is_photo_required?: boolean;
   photo_requirements?: PhotoRequirement[];
+  /** How many of `photo_requirements` the worker actually has to supply. */
+  required_photo_count?: number;
   duration_minutes?: number;
   days_of_week?: WeekDay[];
   days_of_month?: number[];
@@ -39,6 +41,7 @@ export type CreateTaskInput = {
   frequency_type: FrequencyType;
   is_photo_required?: boolean;
   photo_requirements?: PhotoRequirement[];
+  required_photo_count?: number;
   duration_minutes?: number;
   days_of_week?: WeekDay[];
   days_of_month?: number[];

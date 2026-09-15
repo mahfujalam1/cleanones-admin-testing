@@ -418,6 +418,10 @@ input:disabled,
 .modal-backdrop {
   background-color: rgb(15 23 42 / 0.35);
   backdrop-filter: blur(2px);
+  /* Modals are often rendered as siblings of page content inside a `space-y-*` wrapper,
+     whose `> * ~ *` margin would otherwise push the fixed backdrop down and leave an
+     uncovered strip at the bottom of the viewport. */
+  margin: 0 !important;
 }
 
 @keyframes modal-jump {

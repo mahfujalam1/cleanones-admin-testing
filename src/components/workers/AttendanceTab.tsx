@@ -246,7 +246,7 @@ export function AttendanceTab({ worker }: AttendanceTabProps) {
               </span>
               <div>
                 <h4 className="text-xs font-bold text-slate-900">
-                  {workerName(worker)}'s Shift Record
+                  {workerName(worker)}&apos;s Shift Record
                 </h4>
                 <p className="text-[10px] text-slate-500">
                   {workerDetails.shift_label || "Active Schedule"}
