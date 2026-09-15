@@ -22,6 +22,7 @@ import {
 } from "@/redux/api/endpoints/workers.api";
 import { apiError } from "@/redux/api/apiError";
 import { getLocale } from "@/lib/locale";
+import { getUiTranslation } from "@/lib/translations";
 import { getDashboardTranslation } from "@/lib/translations";
 
 const LIMIT = 10;
@@ -37,6 +38,7 @@ const SORT_LABELS: Array<{ value: WorkerSort; label: string }> = [
 
 export default function WorkersPage() {
   const locale = getLocale(usePathname());
+  const ui = getUiTranslation(getLocale(usePathname()));
   const t = getDashboardTranslation(locale);
 
   const [search, setSearch] = useState("");
@@ -95,7 +97,7 @@ export default function WorkersPage() {
         <div className="min-w-0">
           <h1 className="text-xl font-bold text-slate-900">{t.nav.workers}</h1>
           <p className="mt-1 text-sm text-slate-500">
-            {total} {total === 1 ? "worker" : "workers"} on the roster
+            {total} {ui.workersOnRoster}
           </p>
         </div>
 
@@ -134,7 +136,7 @@ export default function WorkersPage() {
             value={sort}
             options={SORT_LABELS.map(({ value, label }) => ({ value, label }))}
             onValueChange={(next) => setSort(next as WorkerSort)}
-            placeholder="Sort"
+            placeholder={ui.sort}
           />
         </div>
       </div>
@@ -180,9 +182,9 @@ export default function WorkersPage() {
 
       {deleteTarget && (
         <ConfirmDialog
-          title="Delete worker?"
+          title={ui.deleteWorker}
           description={`${workerName(deleteTarget)} will be removed from the roster and their login blocked.`}
-          confirmText="Delete"
+          confirmText={ui.delete}
           loading={deleting}
           onConfirm={() => void confirmDelete()}
           onClose={() => !deleting && setDeleteTarget(null)}

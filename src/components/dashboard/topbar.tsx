@@ -30,6 +30,7 @@ import {
   type NotificationItem,
 } from "@/redux/api/endpoints/notifications.api";
 import { resolveNotificationRoute } from "@/lib/notification-routes";
+import { CountBadge } from "@/components/shared/CountBadge";
 import { DetailSkeleton } from "@/components/shared/SkeletonLoader";
 
 const prefetchRoutes = process.env.NODE_ENV === 'production';
@@ -142,7 +143,11 @@ export default function Topbar() {
 
   return (
     <>
-      <header className="relative z-30 flex h-14 shrink-0 items-center justify-between gap-2 border-b border-sidebar-border bg-sidebar px-3 shadow-none sm:px-4 lg:px-6">
+      {/* The header owns a stacking context, so this value — not the z-[80] on the menus
+          inside it — is what decides whether a dropdown paints over the page. Sticky
+          table headers on Roster and Shift Monitoring sit at z-30/z-40, and modals start
+          at z-[70], so the navbar belongs between them. */}
+      <header className="relative z-50 flex h-14 shrink-0 items-center justify-between gap-2 border-b border-sidebar-border bg-sidebar px-3 shadow-none sm:px-4 lg:px-6">
         <div className="flex items-center gap-2 sm:gap-4 min-w-0">
           {/* Mobile/tablet hamburger - always visible below lg */}
           <button
@@ -224,7 +229,11 @@ export default function Topbar() {
               className="relative flex h-8 w-8 items-center justify-center rounded border border-border bg-white text-muted-foreground shadow-[var(--shadow-xs)] transition-colors hover:bg-muted/60 hover:text-foreground"
             >
               <MdNotificationsNone className="text-lg" />
-              {unreadCount > 0 && <span className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-primary" />}
+              <CountBadge
+                count={unreadCount}
+                label="unread notifications"
+                className="absolute -right-1.5 -top-1.5"
+              />
             </button>
 
             {notificationsOpen && (

@@ -6,16 +6,18 @@ import { usePathname } from 'next/navigation';
 import { getLocale, localizePath, stripLocale } from '@/lib/locale';
 
 import { getDashboardTranslation } from '@/lib/translations';
+import { getUiTranslation } from "@/lib/translations";
 
 export default function ShiftMonitoringLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const locale = getLocale(pathname);
   const routePath = stripLocale(pathname);
   const t = getDashboardTranslation(locale);
+  const ui = getUiTranslation(getLocale(usePathname()));
 
   const tabs = [
     { 
-      name: 'Live Shifts', 
+      name: ui.liveShifts, 
       path: '/shift-monitoring',
       icon: <span className="text-lg">⚡</span>,
       exact: true

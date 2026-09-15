@@ -106,7 +106,9 @@ export function RosterCalendar() {
       }
       if (!worker.shifts_by_date) continue;
       for (const [rawDate, occurrences] of Object.entries(worker.shifts_by_date)) {
-        const cleanDate = rawDate.includes('T') ? rawDate.split('T')[0] : rawDate;
+        // The date key follows the local clock too, so a shift whose local time crosses
+        // midnight is filed under the same day its start time is drawn in.
+        const cleanDate = rawDate.includes('T') ? toLocalDateKey(rawDate) : rawDate;
         for (const occ of occurrences || []) {
           shiftCounter += 1;
           const shiftId =
@@ -328,9 +330,23 @@ function formatYYYYMMDD(d: Date): string {
   return `${year}-${month}-${day}`;
 }
 
+/** `2026-09-15T16:00:00.000Z` -> `2026-09-15` in the viewer's timezone. */
+function toLocalDateKey(value: string): string {
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return value.split('T')[0];
+  return formatYYYYMMDD(parsed);
+}
+
 function formatTimeToHHMM(value?: string): string {
   if (!value) return "08:00";
+  // A full timestamp is converted to the viewer's own clock. Slicing the ISO string instead
+  // showed the raw UTC time, so a 16:00Z shift read as 16:00 here while the plan modal -
+  // which parses the same value as a Date - correctly showed 22:00 local.
   if (value.includes("T")) {
+    const parsed = new Date(value);
+    if (!Number.isNaN(parsed.getTime())) {
+      return `${String(parsed.getHours()).padStart(2, "0")}:${String(parsed.getMinutes()).padStart(2, "0")}`;
+    }
     const timePart = value.split("T")[1];
     if (timePart && timePart.length >= 5) {
       return timePart.slice(0, 5);

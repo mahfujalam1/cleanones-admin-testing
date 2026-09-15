@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { TbBell, TbChevronRight, TbTrash } from "react-icons/tb";
 import { BackendPagination } from "@/components/shared/BackendPagination";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
+import { getUiTranslation } from "@/lib/translations";
 import {
   useGetNotificationsQuery,
   useSeeNotificationsMutation,
@@ -49,6 +50,7 @@ export default function NotificationsPage() {
   const router = useRouter();
   const locale = getLocale(pathname);
   const t = getDashboardTranslation(locale);
+  const ui = getUiTranslation(locale);
 
   const [error, setError] = useState("");
   const [page, setPage] = useState(1);
@@ -190,7 +192,7 @@ export default function NotificationsPage() {
       <div className="flex items-start justify-between gap-3">
         <div>
           <h1 className="text-lg font-bold text-slate-900">{t.notifications.notificationCenter}</h1>
-          <p className="mt-0.5 text-xs text-slate-500">Review your activity updates.</p>
+          <p className="mt-0.5 text-xs text-slate-500">{ui.reviewUpdates}</p>
         </div>
         <div className="flex items-center gap-3">
           {unreadCount > 0 && (
@@ -220,7 +222,7 @@ export default function NotificationsPage() {
               onChange={toggleSelectAll}
               className="h-4 w-4 accent-sky-500 cursor-pointer"
             />
-            Select all on this page
+            {ui.selectAllOnPage}
           </label>
           {selectedIds.size > 0 && (
             <span className="rounded-full bg-sky-50 px-2.5 py-0.5 text-[11px] font-semibold text-sky-600">
@@ -249,7 +251,7 @@ export default function NotificationsPage() {
               disabled={bulkBusy}
               onClick={() => setPendingDelete({ kind: "all" })}
               className="h-8 rounded border border-red-200 px-3 text-xs font-semibold text-red-600 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
-              title="Delete every notification, not just this page"
+              title={ui.deleteEveryNotification}
             >
               Delete all
             </button>
@@ -330,7 +332,7 @@ export default function NotificationsPage() {
                     }}
                     className="shrink-0 rounded p-1.5 text-red-400 transition-colors hover:bg-red-50 hover:text-red-600 cursor-pointer"
                     aria-label={`Delete ${item.title}`}
-                    title="Delete notification"
+                    title={ui.deleteNotification}
                   >
                     <TbTrash className="text-base" />
                   </button>

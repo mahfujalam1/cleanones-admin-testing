@@ -5,6 +5,7 @@ import { MdAdd, MdMeetingRoom } from "react-icons/md";
 import { RoomCard } from "./RoomCard";
 import { RoomForm } from "./RoomForm";
 import { CatalogFilters } from "@/components/shared/CatalogFilters";
+import { getUiTranslation } from "@/lib/translations";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { BackendPagination } from "@/components/shared/BackendPagination";
 import {
@@ -30,6 +31,7 @@ export function RoomsView({
 }: { scopedClientId?: string; scopedLocationId?: string } = {}) {
   const router = useRouter();
   const locale = getLocale(usePathname());
+  const ui = getUiTranslation(locale);
   
   // Default to empty ("All") so no filter is selected on initial page load
   const [clientId, setClientId] = useState(scopedClientId ?? "");
@@ -99,7 +101,7 @@ export function RoomsView({
         setCreating(true);
       }}
     >
-      <MdAdd className="text-base" /> Add room
+      <MdAdd className="text-base" /> {ui.addRoom}
     </Button>
   );
   return (
@@ -108,13 +110,13 @@ export function RoomsView({
         <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <h1 className="text-xl font-bold text-slate-900">Rooms</h1>
+              <h1 className="text-xl font-bold text-slate-900">{ui.rooms}</h1>
               <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">
                 {filtered.length}
               </span>
             </div>
             <p className="mt-1 text-xs text-slate-500">
-              Manage rooms and cleaning specifications across client locations.
+              {ui.roomsSubtitle}
             </p>
           </div>
         </header>
@@ -129,7 +131,7 @@ export function RoomsView({
             setSearch(value);
             setPage(1);
           }}
-          placeholder="Search rooms…"
+          placeholder={ui.searchRooms}
         />
         {!scopedLocationId && (
           <>
@@ -142,9 +144,9 @@ export function RoomsView({
             <Select
               value={roomId}
               onValueChange={(value) => filter(clientId, locationId, value)}
-              placeholder="All rooms"
+              placeholder={ui.allRooms}
               options={[
-                { value: "", label: "All rooms" },
+                { value: "", label: ui.allRooms },
                 ...rooms.map((room) => ({ value: room._id, label: room.name })),
               ]}
             />
@@ -185,8 +187,8 @@ export function RoomsView({
         !error && (
           <EmptyState
             icon={<MdMeetingRoom />}
-            title="No rooms found"
-            description="Try another filter or add a room."
+            title={ui.noRoomsFound}
+            description={ui.tryAnotherFilter}
             action={add}
           />
         )
@@ -214,9 +216,9 @@ export function RoomsView({
       )}
       {remove && (
         <ConfirmDialog
-          title="Delete room?"
+          title={ui.deleteRoom}
           description={`${remove.name} will be removed.`}
-          confirmText="Delete"
+          confirmText={ui.delete}
           loading={deleting}
           onClose={() => !deleting && setRemove(null)}
           onConfirm={async () => {

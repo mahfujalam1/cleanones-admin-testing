@@ -9,9 +9,13 @@ import { ClientContactForm } from "@/components/clients/ClientContactForm";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { CardGridSkeleton, ErrorNotice } from "@/components/shared/ListStates";
 import { apiError } from "@/redux/api/apiError";
+import { usePathname } from "next/navigation";
+import { getLocale } from "@/lib/locale";
+import { getUiTranslation } from "@/lib/translations";
 
 export default function ClientContacts({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
+  const ui = getUiTranslation(getLocale(usePathname()));
   const [creating, setCreating] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
@@ -40,7 +44,7 @@ export default function ClientContacts({ params }: { params: Promise<{ id: strin
           onClick={() => setCreating(true)}
           className="inline-flex items-center gap-1.5 rounded bg-primary px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-primary-dark"
         >
-          <MdAdd className="text-lg" /> Add contact
+          <MdAdd className="text-lg" /> {ui.addContact}
         </button>
       </div>
 
@@ -58,7 +62,7 @@ export default function ClientContacts({ params }: { params: Promise<{ id: strin
             <button
               onClick={() => setDeleteTarget(contact._id)}
               className="absolute right-3 top-3 rounded p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-500"
-              title="Remove contact"
+              title={ui.removeContact}
             >
               <MdDeleteOutline className="text-lg" />
             </button>
@@ -67,7 +71,7 @@ export default function ClientContacts({ params }: { params: Promise<{ id: strin
 
         {contacts.length === 0 && (
           <div className="col-span-full rounded border border-dashed border-slate-300 py-10 text-center text-slate-500">
-            No contacts found for this client.
+            {ui.noContactsFound}
           </div>
         )}
       </div>
@@ -78,9 +82,9 @@ export default function ClientContacts({ params }: { params: Promise<{ id: strin
 
       {deleteTarget && (
         <ConfirmDialog
-          title="Remove Contact"
-          description="Are you sure you want to remove this contact?"
-          confirmText="Remove"
+          title={ui.removeContact}
+          description={ui.removeContactConfirm}
+          confirmText={ui.remove}
           destructive
           loading={deleting}
           onConfirm={() => void confirmDelete()}

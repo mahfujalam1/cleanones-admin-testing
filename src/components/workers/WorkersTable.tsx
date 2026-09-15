@@ -3,6 +3,7 @@
 import { MdDeleteOutline, MdEdit, MdVisibility } from "react-icons/md";
 import { usePathname } from "next/navigation";
 import { getLocale } from "@/lib/locale";
+import { getUiTranslation } from "@/lib/translations";
 import { getDashboardTranslation } from "@/lib/translations";
 import { workerName, type Worker } from "@/redux/api/endpoints/workers.api";
 import { WorkerAvatar } from "./WorkerAvatar";
@@ -25,6 +26,7 @@ export function WorkersTable({
   onDeleteWorker: (worker: Worker) => void;
 }) {
   const t = getDashboardTranslation(getLocale(usePathname()));
+  const ui = getUiTranslation(getLocale(usePathname()));
 
   return (
     <div className="dashboard-card overflow-hidden rounded-lg border border-slate-200 bg-white">
@@ -33,10 +35,10 @@ export function WorkersTable({
           <div className="grid grid-cols-[2fr_1fr_1fr_1fr_1.1fr_1fr] gap-2 border-b border-gray-100 px-6 py-3 text-[10px] font-bold uppercase tracking-wider text-gray-400">
             <div>{t.managerAccess.name}</div>
             <div>{t.managerAccess.role}</div>
-            <div>Hourly Rate</div>
-            <div>{t.common.duration}</div>
-            <div>Total Earning</div>
-            <div className="text-right">Actions</div>
+            <div>{ui.hourlyRate}</div>
+            <div>{ui.workingHours}</div>
+            <div>{ui.totalEarning}</div>
+            <div className="text-right">{ui.actions}</div>
           </div>
 
           <div className="divide-y divide-gray-50">
@@ -113,7 +115,7 @@ export function WorkersTable({
                   </button>
                   <button
                     onClick={() => onEditWorker(worker)}
-                    title="Edit Worker"
+                    title={ui.editWorker}
                     aria-label={`Edit ${workerName(worker)}`}
                     className="cursor-pointer rounded p-1 text-gray-400 transition-colors hover:bg-sky-50 hover:text-[#0ea5e9]"
                   >
@@ -121,7 +123,7 @@ export function WorkersTable({
                   </button>
                   <button
                     onClick={() => onDeleteWorker(worker)}
-                    title="Delete Worker"
+                    title={ui.deleteWorker}
                     aria-label={`Delete ${workerName(worker)}`}
                     className="cursor-pointer rounded p-1 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600"
                   >

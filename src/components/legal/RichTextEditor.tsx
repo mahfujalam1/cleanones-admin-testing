@@ -2,6 +2,9 @@
 
 import dynamic from "next/dynamic";
 import { useMemo } from "react";
+import { usePathname } from "next/navigation";
+import { getLocale } from "@/lib/locale";
+import { getUiTranslation } from "@/lib/translations";
 import "react-quill-new/dist/quill.snow.css";
 
 const ReactQuill = dynamic(() => import("react-quill-new"), {
@@ -10,6 +13,7 @@ const ReactQuill = dynamic(() => import("react-quill-new"), {
 });
 
 export function RichTextEditor({ initialContent, onChange }: { initialContent: string; onChange: (html: string) => void }) {
+  const ui = getUiTranslation(getLocale(usePathname()));
   const modules = useMemo(() => ({
     toolbar: [
       [{ header: [1, 2, 3, false] }, { font: [] }, { size: ["small", false, "large", "huge"] }],
@@ -36,7 +40,7 @@ export function RichTextEditor({ initialContent, onChange }: { initialContent: s
       onChange={onChange}
       modules={modules}
       formats={formats}
-      placeholder="Start with a heading, then write each clause as its own section…"
+      placeholder={ui.editorPlaceholder}
     />
   </div>;
 }

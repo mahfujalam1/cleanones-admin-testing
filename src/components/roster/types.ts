@@ -11,6 +11,27 @@ export const planIdFromShift = (shiftId: string) => {
   return /^plan_[A-Za-z0-9]+$/.test(shiftId) ? shiftId : '';
 };
 
+/**
+ * Roster times are held as 24-hour "HH:MM" but shown on a 12-hour clock.
+ * "16:00" -> "4:00 PM".
+ */
+export const formatTime12 = (value?: string) => {
+  if (!value) return "";
+  const [rawHour, rawMinute] = value.split(":");
+  const hour = Number(rawHour);
+  if (!Number.isFinite(hour)) return value;
+  const period = hour >= 12 ? "PM" : "AM";
+  const hour12 = hour % 12 === 0 ? 12 : hour % 12;
+  return `${hour12}:${(rawMinute ?? "00").padStart(2, "0")} ${period}`;
+};
+
+/** Hour-axis label: 13 -> "1 PM". */
+export const formatHour12 = (hour: number) => {
+  const period = hour >= 12 ? "PM" : "AM";
+  const hour12 = hour % 12 === 0 ? 12 : hour % 12;
+  return `${hour12} ${period}`;
+};
+
 export type ShiftTheme = 'blue' | 'pink' | 'orange' | 'purple' | 'green' | 'teal' | 'gray';
 
 export interface Shift {

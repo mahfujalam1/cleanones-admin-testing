@@ -1,19 +1,31 @@
 "use client";
 
 import React from "react";
-import { MdBusiness, MdEdit, MdEngineering, MdGroups } from "react-icons/md";
+import { MdArrowBack, MdBusiness, MdEdit, MdEngineering, MdGroups } from "react-icons/md";
 import type { ChatItem } from "@/redux/api/endpoints/chat.api";
 
 interface ChatHeaderProps {
   chat: ChatItem;
   isOnline: boolean;
   onRename: () => void;
+  /** Returns to the conversation list on screens too narrow to show both panes. */
+  onBack?: () => void;
 }
 
-export function ChatHeader({ chat, isOnline, onRename }: ChatHeaderProps) {
+export function ChatHeader({ chat, isOnline, onRename, onBack }: ChatHeaderProps) {
   return (
     <header className="flex h-16 shrink-0 items-center justify-between gap-3 border-b border-slate-100 px-4 bg-white">
-      <div className="flex items-center gap-3 min-w-0">
+      <div className="flex items-center gap-2 min-w-0 sm:gap-3">
+        {onBack && (
+          <button
+            type="button"
+            onClick={onBack}
+            aria-label="Back to conversations"
+            className="-ml-1 flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 lg:hidden"
+          >
+            <MdArrowBack className="text-xl" />
+          </button>
+        )}
         <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-white font-bold shadow-xs">
           {chat.type === "group" ? (
             <MdGroups className="text-xl text-white" />

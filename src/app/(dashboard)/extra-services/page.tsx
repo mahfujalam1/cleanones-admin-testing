@@ -4,6 +4,9 @@ import { useEffect, useMemo, useState } from "react";
 import { MdSearch } from "react-icons/md";
 import { CardGridSkeleton } from "@/components/shared/SkeletonLoader";
 import { BackendPagination } from "@/components/shared/BackendPagination";
+import { usePathname } from "next/navigation";
+import { getLocale } from "@/lib/locale";
+import { getUiTranslation } from "@/lib/translations";
 // Clients now come from the new backend; the rest of this page is still on the old one.
 import { CLIENT_LOOKUP_ARGS, clientLabel, useGetClientsQuery } from "@/redux/api/endpoints/clients.api";
 import { additionalTaskStatus, useGetAdditionalTasksQuery } from "@/redux/api/endpoints/additionalTasks.api";
@@ -28,6 +31,7 @@ const STATUS_OPTIONS = [
 ];
 
 export default function ExtraServicesPage() {
+  const ui = getUiTranslation(getLocale(usePathname()));
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
   const [clientId, setClientId] = useState("");
@@ -133,7 +137,7 @@ export default function ExtraServicesPage() {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search extra services or additional tasks..."
+            placeholder={ui.searchExtraServices}
             className="h-10 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-sm outline-none transition-colors focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
           />
         </div>
@@ -143,9 +147,9 @@ export default function ExtraServicesPage() {
           <Select
             value={clientId}
             onValueChange={setClientId}
-            placeholder="All Clients"
+            placeholder={ui.allClients}
             options={[
-              { value: "", label: "All Clients" },
+              { value: "", label: ui.allClients },
               ...(clientsRes?.result ?? []).map((c) => ({
                 value: c._id,
                 label: clientLabel(c),
@@ -159,7 +163,7 @@ export default function ExtraServicesPage() {
           <Select
             value={status}
             onValueChange={setStatus}
-            placeholder="All Statuses"
+            placeholder={ui.allStatuses}
             options={STATUS_OPTIONS}
           />
         </div>
@@ -186,9 +190,9 @@ export default function ExtraServicesPage() {
 
           {items.length === 0 && (
             <div className="col-span-full rounded-xl border border-dashed border-slate-200 bg-white py-16 text-center">
-              <p className="text-sm font-semibold text-slate-700">No service requests found</p>
+              <p className="text-sm font-semibold text-slate-700">{ui.noServiceRequests}</p>
               <p className="text-xs text-slate-400 mt-1">
-                New extra services and client additional tasks will appear here.
+                {ui.newServicesAppearHere}
               </p>
             </div>
           )}

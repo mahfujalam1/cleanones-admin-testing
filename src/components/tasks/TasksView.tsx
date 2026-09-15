@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { MdAdd, MdTaskAlt, MdSearch, MdClose} from "react-icons/md";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { getLocale, localizePath } from "@/lib/locale";
+import { getUiTranslation } from "@/lib/translations";
 import { CardGridSkeleton, ErrorNotice } from "@/components/shared/ListStates";
 import { BackendPagination } from "@/components/shared/BackendPagination";
 import { apiError } from "@/redux/api/apiError";
@@ -30,6 +31,7 @@ export function TasksView({
 }: TasksViewProps) {
   const pathname = usePathname();
   const locale = getLocale(pathname);
+  const ui = getUiTranslation(getLocale(usePathname()));
   const router = useRouter();
   const query = useSearchParams();
 
@@ -134,13 +136,13 @@ export function TasksView({
               type="search"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              placeholder="Search tasks by name or description..."
+              placeholder={ui.searchTasks}
               className="flex-1 min-w-0 border-none outline-none bg-transparent placeholder:text-slate-400"
             />
             {searchInput && (
               <button
                 onClick={() => setSearchInput("")}
-                aria-label="Clear search"
+                aria-label={ui.clearSearch}
                 className="shrink-0 text-lg text-slate-400 hover:text-slate-600"
               >
                 <MdClose />
@@ -155,7 +157,7 @@ export function TasksView({
             className="inline-flex items-center gap-2 rounded border border-primary bg-primary px-3 py-2 text-xs text-white hover:bg-primary-dark transition-colors"
           >
             <MdAdd className="text-lg" />
-            <span>Add task</span>
+            <span>{ui.addTask}</span>
           </button>
         )}
       </div>
@@ -169,13 +171,13 @@ export function TasksView({
           {paginatedTasks.length === 0 ? (
             <div className="rounded-xl border border-slate-200 bg-white p-8 text-center">
               <MdTaskAlt className="mx-auto h-16 w-16 text-slate-200" />
-              <p className="mt-4 font-semibold">No tasks</p>
+              <p className="mt-4 font-semibold">{ui.noTasks}</p>
               <p className="mt-1 text-sm text-slate-500">
                 {searchText
-                  ? "We couldn't find any tasks matching your search."
+                  ? ui.noTasksMatchingSearch
                   : activeTab === "Todo"
-                    ? "No todo tasks found."
-                    : "No tasks have been created."}
+                    ? ui.noTodoTasks
+                    : ui.noTasksCreated}
               </p>
             </div>
           ) : (
@@ -206,9 +208,9 @@ export function TasksView({
 
       {!!deleteTarget && (
         <ConfirmDialog
-          title="Delete Task"
-          description="Are you sure you want to delete this task? This action cannot be undone."
-          confirmText="Delete Task"
+          title={ui.deleteTask}
+          description={ui.deleteTaskConfirm}
+          confirmText={ui.deleteTask}
           onConfirm={confirmDelete}
           onClose={() => setDeleteTarget(null)}
           destructive={true}

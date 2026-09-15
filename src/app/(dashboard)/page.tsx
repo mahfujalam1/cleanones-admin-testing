@@ -1,5 +1,5 @@
 "use client";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { MdAccessTime, MdAdd, MdArrowForward, MdBusiness, MdCall, MdCalendarToday, MdCheckCircle, MdChevronRight, MdClose, MdLocationOn, MdPeople, MdReportProblem, MdUploadFile, MdWarningAmber } from "react-icons/md";
@@ -76,12 +76,20 @@ export default function DashboardPage() {
     status: liveTab === "all" ? undefined : liveTab,
   });
 
+  // The API's greeting is built from the server clock, so the time of day is taken from the
+  // viewer's own timezone instead and re-checked each minute in case a boundary passes.
+  const [greetingHour, setGreetingHour] = useState(() => new Date().getHours());
+  useEffect(() => {
+    const id = setInterval(() => setGreetingHour(new Date().getHours()), 60_000);
+    return () => clearInterval(id);
+  }, []);
+
   const shifts: InProgressShift[] = shiftsRes?.shifts ?? [];
   // `?? []` would be a fresh array each render and re-run every memo that depends on it.
   const todayLiveShifts = useMemo(() => todayShiftsRes?.result ?? [], [todayShiftsRes]);
 
   const safeOverview: DashboardOverview = overview || {
-    greeting: t.dashboard.goodMorning,
+    greeting: "",
     subtitle_date: new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }),
     attention_banner: {
       people_need_attention_count: 0,
@@ -225,16 +233,15 @@ export default function DashboardPage() {
   const displayLiveRows = liveOperationsRows.slice(0, 6);
 
   const translateGreeting = (greeting: string) => {
-    if (!greeting) return "";
-    let str = greeting;
-    if (str.startsWith("Good morning")) {
-      str = str.replace("Good morning", t.dashboard.goodMorning);
-    } else if (str.startsWith("Good afternoon")) {
-      str = str.replace("Good afternoon", t.dashboard.goodAfternoon);
-    } else if (str.startsWith("Good evening")) {
-      str = str.replace("Good evening", t.dashboard.goodEvening);
-    }
-    return str;
+    const localGreeting =
+      greetingHour < 12
+        ? t.dashboard.goodMorning
+        : greetingHour < 17
+          ? t.dashboard.goodAfternoon
+          : t.dashboard.goodEvening;
+    // Whatever the API put after its own "Good …" (the manager's name, say) is kept.
+    const match = greeting.match(/^Good (?:morning|afternoon|evening)(.*)$/i);
+    return match ? `${localGreeting}${match[1]}` : localGreeting;
   };
 
   if (loadingOverview && !overview) {

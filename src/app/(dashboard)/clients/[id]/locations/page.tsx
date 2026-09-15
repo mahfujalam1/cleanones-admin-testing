@@ -19,6 +19,7 @@ import {
 } from "@/redux/api/endpoints/locations.api";
 import { apiError } from "@/redux/api/apiError";
 import { getLocale, localizePath } from "@/lib/locale";
+import { getUiTranslation } from "@/lib/translations";
 
 const LIMIT = 9;
 
@@ -26,6 +27,7 @@ export default function ClientLocationsPage({ params }: { params: Promise<{ id: 
   const { id } = use(params);
   const router = useRouter();
   const locale = getLocale(usePathname());
+  const ui = getUiTranslation(getLocale(usePathname()));
 
   const [search, setSearch] = useState("");
   const searchTerm = useDebouncedValue(search.trim());
@@ -73,7 +75,7 @@ export default function ClientLocationsPage({ params }: { params: Promise<{ id: 
       onClick={() => setCreating(true)}
       className="inline-flex shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-2xs transition-all hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary/20 active:scale-[0.98]"
     >
-      <MdAdd className="text-lg" /> Add location
+      <MdAdd className="text-lg" /> {ui.addLocation}
     </button>
   );
 
@@ -81,14 +83,14 @@ export default function ClientLocationsPage({ params }: { params: Promise<{ id: 
     <div className="space-y-4 pb-10">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">
-          <h2 className="text-base font-bold text-slate-900">Locations</h2>
+          <h2 className="text-base font-bold text-slate-900">{ui.locations}</h2>
           <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-bold text-slate-600">{total}</span>
         </div>
         {addButton}
       </div>
 
       <div className="rounded-xl border border-slate-200 bg-white p-2.5 shadow-2xs">
-        <SearchInput value={search} onChange={setSearch} placeholder="Search locations by name or address" />
+        <SearchInput value={search} onChange={setSearch} placeholder={ui.searchLocationsByNameOrAddress} />
       </div>
 
       {message && <ErrorNotice message={message} />}
@@ -98,9 +100,9 @@ export default function ClientLocationsPage({ params }: { params: Promise<{ id: 
       ) : locations.length === 0 ? (
         <EmptyState
           icon={<MdPlace />}
-          title="No locations yet"
+          title={ui.noLocationsYet}
           description={
-            searchTerm ? "No location matches that search." : "Add the first location for this client."
+            searchTerm ? ui.noLocationMatchesSearch : ui.addFirstLocation
           }
           action={searchTerm ? undefined : addButton}
         />
@@ -131,9 +133,9 @@ export default function ClientLocationsPage({ params }: { params: Promise<{ id: 
 
       {deleteTarget && (
         <ConfirmDialog
-          title="Delete location?"
+          title={ui.deleteLocation}
           description={`Are you sure you want to delete ${deleteTarget.name}? This action cannot be undone.`}
-          confirmText="Delete"
+          confirmText={ui.delete}
           loading={deleting}
           onConfirm={() => void confirmDelete()}
           onClose={() => !deleting && setDeleteTarget(null)}

@@ -1,13 +1,13 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { MdInfoOutline } from "react-icons/md";
 import type { Socket } from "socket.io-client";
 import { useAppSelector } from "@/redux/hooks";
 import { decodeJwt } from "@/lib/auth/jwt";
 import { tokenStore } from "@/lib/auth/tokenStore";
 import {
   useGetMyChatsQuery,
+  useGetChatMembersQuery,
   useGetChatMessagesQuery,
   useDeleteChatMessageMutation,
   type ChatItem,
@@ -25,24 +25,31 @@ import {
 } from "@/lib/socket/chatSocket";
 import { RenameGroupModal } from "@/components/chat/RenameGroupModal";
 import { ChatMembersPanel } from "@/components/chat/ChatMembersPanel";
+import { markChatSeen } from "@/lib/chat-unread";
 import { ChatSidebar, type ChatTab } from "@/components/chat/ChatSidebar";
 import { ChatHeader } from "@/components/chat/ChatHeader";
 import { ChatMessageList } from "@/components/chat/ChatMessageList";
 import { ChatMessageInput } from "@/components/chat/ChatMessageInput";
+import { usePathname } from "next/navigation";
+import { getLocale } from "@/lib/locale";
+import { getUiTranslation } from "@/lib/translations";
 import { DeleteMessageModal } from "@/components/chat/DeleteMessageModal";
 import { uploadConversationFiles, deleteUploadedFiles } from "@/services/actions/files";
 
 export default function ChatPage() {
+  const ui = getUiTranslation(getLocale(usePathname()));
   const user = useAppSelector((state) => state.auth.user);
   const [activeTab, setActiveTab] = useState<ChatTab>("all");
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  // Below `lg` there is only room for one pane, so the list and the open conversation
+  // take turns instead of being squeezed side by side.
+  const [mobilePane, setMobilePane] = useState<"list" | "chat">("list");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState("");
   const [typingUser, setTypingUser] = useState("");
   const [sending, setSending] = useState(false);
   const [onlineProfileIds, setOnlineProfileIds] = useState<Set<string>>(new Set());
-  const [showRightPanel, setShowRightPanel] = useState(true);
 
   // Modals & Action States
   const [renamingChat, setRenamingChat] = useState<ChatItem | null>(null);
@@ -87,6 +94,13 @@ export default function ChatPage() {
     }
   }, [rawChats, selectedId]);
 
+  // Anything rendered in the open conversation counts as read, including messages that land
+  // over the socket while it is on screen.
+  useEffect(() => {
+    if (!selectedId) return;
+    markChatSeen(selectedId, messages[messages.length - 1]?.createdAt);
+  }, [selectedId, messages]);
+
   const selectedChat = useMemo(
     () => rawChats.find((c: ChatItem) => c._id === selectedId) || null,
     [rawChats, selectedId]
@@ -122,6 +136,36 @@ export default function ChatPage() {
    * The socket broadcast and the send acknowledgement both carry the saved message, so
    * whichever arrives second must not append it again.
    */
+  /**
+   * Messages carry `sender` as a bare id, so the display name is resolved from the chat's
+   * member list - the same source the Details panel uses.
+   */
+  const { data: chatMembers } = useGetChatMembersQuery(selectedId!, { skip: !selectedId });
+
+  const senderNames = useMemo(() => {
+    const map = new Map<string, string>();
+    // A message's `sender` is the auth user id, while a member's `_id` is its client/worker
+    // profile id. Both are registered so the lookup hits whichever the payload carries.
+    const remember = (name: string, ...ids: Array<string | undefined>) => {
+      for (const id of ids) if (id) map.set(id, name);
+    };
+
+    const client = chatMembers?.client ?? selectedChat?.client;
+    if (client) {
+      remember(
+        client.user?.full_name || client.name || client.company_name || "Client",
+        client._id,
+        client.user?._id,
+      );
+    }
+
+    for (const worker of chatMembers?.workers ?? selectedChat?.workers ?? []) {
+      if (!worker) continue;
+      remember(worker.user?.full_name || worker.name || "Worker", worker._id, worker.user?._id);
+    }
+    return map;
+  }, [chatMembers, selectedChat]);
+
   const appendMessage = useCallback((message: ChatMessage) => {
     setMessages((prev) => (prev.some((m) => m._id === message._id) ? prev : [...prev, message]));
   }, []);
@@ -210,7 +254,7 @@ export default function ChatPage() {
   }, [currentUserId, refetchChats, appendMessage]);
 
   // Handle switching active chat room in Socket.IO
-  const handleSelectChat = (chat: ChatItem) => {
+  const selectChat = (chat: ChatItem) => {
     if (selectedId === chat._id) return;
     if (socketRef.current && selectedId) {
       leaveChatGroup(socketRef.current, selectedId);
@@ -220,6 +264,13 @@ export default function ChatPage() {
     if (socketRef.current) {
       joinChatGroup(socketRef.current, chat._id);
     }
+  };
+
+  // Tapping a row opens the conversation; on a phone that also swaps which pane is shown,
+  // even when the row was already the selected one.
+  const handleSelectChat = (chat: ChatItem) => {
+    selectChat(chat);
+    setMobilePane("chat");
   };
 
   const tabCounts = useMemo(
@@ -236,7 +287,7 @@ export default function ChatPage() {
     setActiveTab(tab);
     const tabChats = tab === "all" ? rawChats : rawChats.filter((c: ChatItem) => c.type === tab);
     if (tabChats.length > 0 && (!selectedId || !tabChats.some((c: ChatItem) => c._id === selectedId))) {
-      handleSelectChat(tabChats[0]);
+      selectChat(tabChats[0]);
     }
   };
 
@@ -401,30 +452,14 @@ export default function ChatPage() {
   );
 
   return (
-    <div className="flex h-[calc(100dvh-6.5rem)] min-h-[580px] flex-col gap-3">
+    <div className="flex h-[calc(100dvh-6.5rem)] min-h-[460px] flex-col gap-3 sm:min-h-[580px]">
       {/* Page Header */}
       <header className="flex items-center justify-between">
         <div>
-          <h1 className="text-lg font-bold text-slate-900">Conversations & Team Chat</h1>
+          <h1 className="text-lg font-bold text-slate-900">{ui.conversationsTeamChat}</h1>
           <p className="text-xs text-slate-500">
-            Realtime messaging with clients, cleaning teams, and managers.
+            {ui.realtimeMessaging}
           </p>
-        </div>
-        <div className="flex items-center gap-2">
-          {selectedChat && (
-            <button
-              type="button"
-              onClick={() => setShowRightPanel((prev) => !prev)}
-              className={`flex h-9 items-center gap-1.5 rounded-lg border px-3 text-xs font-semibold transition-colors cursor-pointer ${
-                showRightPanel
-                  ? "border-primary bg-sky-50 text-primary"
-                  : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
-              }`}
-            >
-              <MdInfoOutline className="text-base" />
-              <span className="hidden sm:inline">Details</span>
-            </button>
-          )}
         </div>
       </header>
 
@@ -432,6 +467,7 @@ export default function ChatPage() {
       <div className="grid min-h-0 flex-1 overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-xs lg:grid-cols-[300px_minmax(0,1fr)] xl:grid-cols-[310px_minmax(0,1fr)_270px]">
         {/* Left Sidebar: Tabs, Search & Chat List */}
         <ChatSidebar
+          className={mobilePane === "chat" ? "hidden lg:flex" : "flex"}
           activeTab={activeTab}
           tabCounts={tabCounts}
           query={query}
@@ -445,7 +481,9 @@ export default function ChatPage() {
         />
 
         {/* Center Pane: Active Chat Messages & Composer */}
-        <section className="flex min-h-0 flex-col bg-white">
+        <section
+          className={`min-h-0 flex-col bg-white ${mobilePane === "chat" ? "flex" : "hidden lg:flex"}`}
+        >
           {selectedChat ? (
             <>
               {/* Active Chat Header */}
@@ -453,6 +491,7 @@ export default function ChatPage() {
                 chat={selectedChat}
                 isOnline={isChatOnline(selectedChat)}
                 onRename={() => setRenamingChat(selectedChat)}
+                onBack={() => setMobilePane("list")}
               />
 
               {/* Messages Scroll Area */}
@@ -462,6 +501,7 @@ export default function ChatPage() {
                 currentUserId={currentUserId}
                 authUserId={user?.id}
                 typingUser={typingUser}
+                senderNames={senderNames}
                 onRequestDeleteMessage={setDeletingMsg}
               />
 
@@ -483,7 +523,7 @@ export default function ChatPage() {
         </section>
 
         {/* Right Sidebar: Chat Details & Participants */}
-        {showRightPanel && selectedChat && (
+        {selectedChat && (
           <aside className="hidden min-h-0 overflow-y-auto border-l border-slate-200/90 bg-white xl:block">
             <ChatMembersPanel chat={selectedChat} onlineProfileIds={onlineProfileIds} />
           </aside>

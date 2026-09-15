@@ -6,6 +6,7 @@ import { MdAdd, MdBusinessCenter } from "react-icons/md";
 import { ClientCard } from "@/components/clients/ClientCard";
 import { ClientForm } from "@/components/clients/ClientForm";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
+import { getUiTranslation } from "@/lib/translations";
 import { BackendPagination } from "@/components/shared/BackendPagination";
 import { CardGridSkeleton, EmptyState, ErrorNotice, SearchInput } from "@/components/shared/ListStates";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
@@ -23,6 +24,7 @@ const LIMIT = 9;
 export default function ClientsPage() {
   const locale = getLocale(usePathname());
   const t = getDashboardTranslation(locale);
+  const ui = getUiTranslation(locale);
 
   const [search, setSearch] = useState("");
   const searchTerm = useDebouncedValue(search.trim());
@@ -85,7 +87,7 @@ export default function ClientsPage() {
               <h1 className="truncate text-lg font-bold leading-tight text-slate-900">{t.clients.title}</h1>
               <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-bold text-slate-600">{total}</span>
             </div>
-            <p className="truncate text-xs text-slate-500">Client accounts, their locations and contracts.</p>
+            <p className="truncate text-xs text-slate-500">{ui.clientAccountsSubtitle}</p>
           </div>
         </div>
         {addButton}
@@ -141,9 +143,9 @@ export default function ClientsPage() {
 
       {deleteTarget && (
         <ConfirmDialog
-          title="Delete client?"
+          title={ui.deleteClient}
           description={`${deleteTarget.name} will be deactivated and their login blocked.`}
-          confirmText="Delete"
+          confirmText={ui.delete}
           loading={deleting}
           onConfirm={() => void confirmDelete()}
           onClose={() => !deleting && setDeleteTarget(null)}

@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { MdAccessTime, MdLocationOn, MdOutlineClose, MdTag, MdPerson, MdBusinessCenter, MdEventNote, MdCamera, MdChecklist, MdDeleteOutline } from 'react-icons/md';
 import { TbDoor, TbUsers, TbClipboardList } from 'react-icons/tb';
-import { Shift, planIdFromShift } from './types';
+import { Shift, formatTime12, planIdFromShift } from './types';
 import { deleteRosterShift, getRosterShift } from '@/services/actions/roster';
 import { getCleaningPlan, type PlanDetails } from '@/services/actions/cleaningPlans';
 import { DetailSkeleton } from '@/components/shared/SkeletonLoader';
@@ -127,7 +127,7 @@ export function ShiftModal({ shift, onClose, onDeleted }: ShiftModalProps) {
                   hint={details?.location_address ?? undefined}
                 />
                 <Fact icon={<MdEventNote />} label="Date" value={details?.date || shift.date} />
-                <Fact icon={<MdAccessTime />} label="Time" value={details?.time_range || `${shift.startTime} – ${shift.endTime}`} />
+                <Fact icon={<MdAccessTime />} label="Time" value={details?.time_range || `${formatTime12(shift.startTime)} – ${formatTime12(shift.endTime)}`} />
                 <Fact icon={<MdTag />} label="Shift ID" value={shift.id} />
               </div>
 

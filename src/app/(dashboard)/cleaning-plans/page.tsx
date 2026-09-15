@@ -23,6 +23,7 @@ import {
 } from "@/redux/api/endpoints/cleaningPlans.api";
 import { apiError } from "@/redux/api/apiError";
 import { getLocale, localizePath } from "@/lib/locale";
+import { getUiTranslation } from "@/lib/translations";
 
 const LIMIT = 12;
 const PICKER_LIMIT = 100;
@@ -30,6 +31,7 @@ const PICKER_LIMIT = 100;
 function CleaningPlansView() {
   const router = useRouter();
   const locale = getLocale(usePathname());
+  const ui = getUiTranslation(getLocale(usePathname()));
   const query = useSearchParams();
 
   const clientId = query.get("client") ?? "";
@@ -119,23 +121,23 @@ function CleaningPlansView() {
     <div className="space-y-6 pb-16">
       <header className="min-w-0">
         <div className="flex items-center gap-2">
-          <h1 className="text-xl font-bold text-slate-900">Cleaning Plans</h1>
+          <h1 className="text-xl font-bold text-slate-900">{ui.cleaningPlansTitle}</h1>
           <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">
             {total}
           </span>
         </div>
-        <p className="mt-1 text-xs text-slate-500">Scheduled cleaning plans across every client location.</p>
+        <p className="mt-1 text-xs text-slate-500">{ui.cleaningPlansSubtitle}</p>
       </header>
 
       <div className="grid gap-2 rounded-xl bg-white p-2 ring-1 ring-slate-200/70 md:grid-cols-2 xl:grid-cols-[1.4fr_1fr_1fr_auto]">
-        <SearchInput value={search} onChange={setSearch} placeholder="Search cleaning plans…" />
+        <SearchInput value={search} onChange={setSearch} placeholder={ui.searchCleaningPlans} />
 
         <Select
           value={clientId}
           onValueChange={(value) => applyScope({ client: value })}
-          placeholder="All clients"
+          placeholder={ui.allClients}
           options={[
-            { value: "", label: "All clients" },
+            { value: "", label: ui.allClients },
             ...(clientPage?.result ?? []).map((client) => ({
               value: client._id,
               label: clientLabel(client),
@@ -146,15 +148,15 @@ function CleaningPlansView() {
         <Select
           value={locationId}
           onValueChange={(value) => applyScope({ client: clientId, location: value })}
-          placeholder="All locations"
+          placeholder={ui.allLocationsFilter}
           options={[
-            { value: "", label: "All locations" },
+            { value: "", label: ui.allLocationsFilter },
             ...locations.map((location) => ({ value: location._id, label: location.name })),
           ]}
         />
 
         <Button className="md:col-span-2 xl:col-span-1" onClick={() => setFormTarget("new")}>
-          <MdAdd className="text-base" /> Add cleaning plan
+          <MdAdd className="text-base" /> {ui.addCleaningPlan}
         </Button>
       </div>
 
@@ -165,11 +167,11 @@ function CleaningPlansView() {
       ) : plans.length === 0 ? (
         <div className="rounded-xl bg-white px-4 py-20 text-center ring-1 ring-slate-200/70">
           <MdOutlineAssignment className="mx-auto text-5xl text-slate-200" />
-          <p className="mt-4 text-sm font-semibold text-slate-900">No cleaning plans</p>
+          <p className="mt-4 text-sm font-semibold text-slate-900">{ui.noCleaningPlans}</p>
           <p className="mx-auto mt-1 max-w-sm text-xs leading-relaxed text-slate-500">
             {searchTerm || clientId || locationId
-              ? "Nothing matches these filters."
-              : "No cleaning plans have been scheduled yet."}
+              ? ui.nothingMatchesFilters
+              : ui.noPlansScheduled}
           </p>
         </div>
       ) : (
@@ -247,7 +249,7 @@ function CleaningPlansView() {
         <ConfirmDialog
           title="Delete cleaning plan?"
           description={`${deleteTarget.title} will be removed.`}
-          confirmText="Delete"
+          confirmText={ui.delete}
           loading={deleting}
           onConfirm={() => void confirmDelete()}
           onClose={() => !deleting && setDeleteTarget(null)}

@@ -1,6 +1,6 @@
 import React from "react";
 import { MdLocationOn } from "react-icons/md";
-import { Shift } from "./types";
+import { Shift, formatHour12, formatTime12 } from "./types";
 
 interface DayViewProps {
   currentDate: Date;
@@ -9,8 +9,8 @@ interface DayViewProps {
   onShiftClick: (shift: Shift) => void;
 }
 
-const START_HOUR = 5;
-const END_HOUR = 20;
+const START_HOUR = 0;
+const END_HOUR = 24;
 const HOUR_WIDTH = 96;
 const EMPLOYEE_WIDTH = 220;
 /** Narrowest a shift bar may be drawn — enough for "08:15-09:00" to stay inside it. */
@@ -41,7 +41,7 @@ export function DayView({ currentDate, shifts, teamMembers, onShiftClick }: DayV
         <div className="sticky top-0 z-30 flex h-12 border-b border-slate-200 bg-white">
           <div className="sticky left-0 z-40 flex shrink-0 items-center border-r border-slate-200 bg-white px-4 text-[10px] font-semibold uppercase tracking-wider text-slate-400" style={{ width: EMPLOYEE_WIDTH }}>Team member</div>
           <div className="relative" style={{ width: (END_HOUR - START_HOUR) * HOUR_WIDTH }}>
-            {hours.slice(0, -1).map((hour, index) => <div key={hour} className="absolute top-0 flex h-12 items-center border-r border-slate-200 pl-2 text-[11px] font-medium text-slate-500" style={{ left: index * HOUR_WIDTH, width: HOUR_WIDTH }}>{String(hour).padStart(2, "0")}:00</div>)}
+            {hours.slice(0, -1).map((hour, index) => <div key={hour} className="absolute top-0 flex h-12 items-center border-r border-slate-200 pl-2 text-[11px] font-medium text-slate-500" style={{ left: index * HOUR_WIDTH, width: HOUR_WIDTH }}>{formatHour12(hour)}</div>)}
           </div>
         </div>
 
@@ -58,17 +58,20 @@ export function DayView({ currentDate, shifts, teamMembers, onShiftClick }: DayV
                 {hours.slice(0, -1).map((hour, index) => <span key={`${hour}-half`} className="absolute inset-y-0 border-r border-dashed border-slate-100" style={{ left: index * HOUR_WIDTH + HOUR_WIDTH / 2 }} />)}
                 {employeeShifts.map((shift, shiftIndex) => {
                   const left = timeToPosition(shift.startTime);
-                  const span = timeToPosition(shift.endTime) - left;
+                  // An end earlier than the start means the shift runs past midnight, so it is
+                  // drawn to the end of the day rather than collapsing to a negative width.
+                  const rawSpan = timeToPosition(shift.endTime) - left;
+                  const span = rawSpan > 0 ? rawSpan : (END_HOUR - START_HOUR) * HOUR_WIDTH - left;
                   // A 30-minute shift is only ~48px wide, far too narrow for its own label, so the
                   // bar is floored at a width that always fits "08:15-09:00". It then reads a little
                   // wider than the slot it occupies, which is the trade that keeps the text inside.
                   const width = Math.max(span, MIN_SHIFT_WIDTH);
                   const color = colors[(rowIndex + shiftIndex) % colors.length];
                   const showLocation = span >= 150;
-                  return <button key={shift.id ? `${shift.id}-${shiftIndex}` : `shift-${rowIndex}-${shiftIndex}`} onClick={() => onShiftClick(shift)} title={`${shift.workerName}: ${shift.startTime}–${shift.endTime} · ${shift.location}`} className={`absolute top-3.5 flex h-[46px] items-center overflow-hidden rounded border border-white/25 text-left text-white transition-[filter,transform] hover:z-10 hover:brightness-95 active:scale-[.995] ${showLocation ? "px-3" : "justify-center px-2"}`} style={{ left, width, backgroundColor: color }}>
+                  return <button key={shift.id ? `${shift.id}-${shiftIndex}` : `shift-${rowIndex}-${shiftIndex}`} onClick={() => onShiftClick(shift)} title={`${shift.workerName}: ${formatTime12(shift.startTime)}–${formatTime12(shift.endTime)} · ${shift.location}`} className={`absolute top-3.5 flex h-[46px] items-center overflow-hidden rounded border border-white/25 text-left text-white transition-[filter,transform] hover:z-10 hover:brightness-95 active:scale-[.995] ${showLocation ? "px-3" : "justify-center px-2"}`} style={{ left, width, backgroundColor: color }}>
                     {showLocation ? <>
-                      <span className="flex min-w-0 flex-1 items-center gap-2"><b className="shrink-0 text-xs tabular-nums">{shift.startTime}</b><span className="h-5 w-px shrink-0 bg-white/25" /><span className="min-w-0 truncate text-[11px] font-medium"><MdLocationOn className="mr-1 inline text-sm text-white/80" />{shift.location}</span></span><b className="ml-2 shrink-0 text-xs tabular-nums">{shift.endTime}</b>
-                    </> : <b className="truncate text-[11px] font-semibold tabular-nums">{shift.startTime}–{shift.endTime}</b>}
+                      <span className="flex min-w-0 flex-1 items-center gap-2"><b className="shrink-0 text-xs tabular-nums">{formatTime12(shift.startTime)}</b><span className="h-5 w-px shrink-0 bg-white/25" /><span className="min-w-0 truncate text-[11px] font-medium"><MdLocationOn className="mr-1 inline text-sm text-white/80" />{shift.location}</span></span><b className="ml-2 shrink-0 text-xs tabular-nums">{formatTime12(shift.endTime)}</b>
+                    </> : <b className="truncate text-[11px] font-semibold tabular-nums">{formatTime12(shift.startTime)}–{formatTime12(shift.endTime)}</b>}
                   </button>;
                 })}
               </div>
@@ -83,6 +86,7 @@ export function DayView({ currentDate, shifts, teamMembers, onShiftClick }: DayV
 }
 
 function timeToPosition(time: string) { const [hours, minutes] = time.split(":").map(Number); return ((hours - START_HOUR) + minutes / 60) * HOUR_WIDTH; }
-function durationHours(shift: Shift) { return (timeToMinutes(shift.endTime) - timeToMinutes(shift.startTime)) / 60; }
+/** A shift ending before it starts has run past midnight, so a day is added. */
+function durationHours(shift: Shift) { const span = timeToMinutes(shift.endTime) - timeToMinutes(shift.startTime); return (span >= 0 ? span : span + 24 * 60) / 60; }
 function timeToMinutes(time: string) { const [hours, minutes] = time.split(":").map(Number); return hours * 60 + minutes; }
 function toDateKey(date: Date) { const year = date.getFullYear(); const month = String(date.getMonth() + 1).padStart(2, "0"); const day = String(date.getDate()).padStart(2, "0"); return `${year}-${month}-${day}`; }

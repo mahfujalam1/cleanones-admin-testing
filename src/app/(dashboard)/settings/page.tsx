@@ -17,13 +17,14 @@ import { useChangePasswordMutation } from "@/redux/api/endpoints/auth.api";
 import { apiError } from "@/redux/api/apiError";
 import { MIN_PASSWORD_LENGTH } from "@/lib/auth/password";
 import { getLocale, localizePath } from "@/lib/locale";
-import { getDashboardTranslation } from "@/lib/translations";
+import { getDashboardTranslation, getUiTranslation } from "@/lib/translations";
 import { useModalJump } from "@/hooks/useModalJump";
 
 export default function SettingsPage() {
   const pathname = usePathname();
   const locale = getLocale(pathname);
   const t = getDashboardTranslation(locale);
+  const ui = getUiTranslation(locale);
 
   // Change Password state
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
@@ -106,14 +107,14 @@ export default function SettingsPage() {
       {/* Account & Security Section */}
       <section>
         <h2 className="mb-3 flex h-7 items-center text-lg font-bold leading-none text-slate-950">
-          Account & Security
+          {ui.accountSecurity}
         </h2>
         <div className="dashboard-card overflow-hidden">
           <SettingsRow
             icon={<MdVpnKey />}
             iconClassName="bg-[#e0f2fe] text-[#0ea5e9]"
             title={t.settings.changePassword}
-            subtitle="Update your password to keep your account secure"
+            subtitle={ui.changePasswordSubtitle}
             onClick={() => {
               resetPasswordForm();
               setIsPasswordModalOpen(true);
@@ -146,15 +147,15 @@ export default function SettingsPage() {
             href="/settings/legal/about-us"
             icon={<MdInfoOutline />}
             iconClassName="bg-[#dcfce7] text-[#16a34a]"
-            title="About Us"
-            subtitle="Describe the company shown to clients and workers"
+            title={ui.aboutUs}
+            subtitle={ui.aboutUsRowSubtitle}
           />
           <SettingsRow
             href="/settings/faqs"
             icon={<MdLiveHelp />}
             iconClassName="bg-[#fef3c7] text-[#d97706]"
-            title="Frequently Asked Questions (FAQs)"
-            subtitle="Manage automated questions and answers for help"
+            title={ui.faqTitle}
+            subtitle={ui.faqSubtitle}
           />
         </div>
       </section>

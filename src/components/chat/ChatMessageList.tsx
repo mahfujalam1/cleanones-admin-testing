@@ -16,6 +16,8 @@ interface ChatMessageListProps {
   currentUserId?: string;
   authUserId?: string;
   typingUser?: string;
+  /** Sender id -> display name, resolved from the chat's member list. */
+  senderNames?: Map<string, string>;
   onRequestDeleteMessage: (msg: ChatMessage) => void;
 }
 
@@ -25,6 +27,7 @@ export function ChatMessageList({
   currentUserId,
   authUserId,
   typingUser,
+  senderNames,
   onRequestDeleteMessage,
 }: ChatMessageListProps) {
   const ui = getUiTranslation(getLocale(usePathname()));
@@ -63,13 +66,13 @@ export function ChatMessageList({
               (Boolean(authUserId) && senderId === authUserId);
 
             const senderName =
-              typeof message.sender === "object" && message.sender.full_name
-                ? message.sender.full_name
-                : message.sender_role === "manager"
+              (typeof message.sender === "object" && message.sender.full_name) ||
+              (senderId && senderNames?.get(senderId)) ||
+              (message.sender_role === "manager"
                 ? "Manager"
                 : message.sender_role === "client"
                 ? "Client"
-                : "Worker";
+                : "Worker");
 
             const dateKey = new Date(message.createdAt || "").toDateString();
             const prevDateKey =

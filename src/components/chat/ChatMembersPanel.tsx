@@ -1,6 +1,9 @@
 "use client";
 
 import React from "react";
+import { usePathname } from "next/navigation";
+import { getLocale } from "@/lib/locale";
+import { getUiTranslation } from "@/lib/translations";
 import {
   MdBusiness,
   MdEngineering,
@@ -27,6 +30,7 @@ export function ChatMembersPanel({
   chat: ChatItem;
   onlineProfileIds: Set<string>;
 }) {
+  const ui = getUiTranslation(getLocale(usePathname()));
   const { data: members, isFetching } = useGetChatMembersQuery(chat._id);
 
   const client = members?.client ?? chat.client;
@@ -185,10 +189,10 @@ export function ChatMembersPanel({
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-xs font-medium text-slate-800">
-                System Managers
+                {ui.systemManagers}
               </p>
               <p className="text-[10px] text-slate-400">
-                Managers have system-wide visibility and access
+                {ui.systemManagersNote}
               </p>
             </div>
           </div>

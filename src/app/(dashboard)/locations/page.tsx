@@ -6,6 +6,7 @@ import { MdAdd } from "react-icons/md";
 import { LocationCard } from "@/components/locations/LocationCard";
 import { LocationForm } from "@/components/locations/LocationForm";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
+import { getUiTranslation } from "@/lib/translations";
 import { BackendPagination } from "@/components/shared/BackendPagination";
 import { CardGridSkeleton, ErrorNotice, SearchInput } from "@/components/shared/ListStates";
 import { Select } from "@/components/ui/select";
@@ -27,6 +28,7 @@ const LIMIT = 16;
 function LocationsView() {
   const router = useRouter();
   const locale = getLocale(usePathname());
+  const ui = getUiTranslation(locale);
   const clientId = useSearchParams().get("client") ?? "";
 
   const [search, setSearch] = useState("");
@@ -79,7 +81,7 @@ function LocationsView() {
       <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <h1 className="text-xl font-bold text-slate-900">Locations</h1>
+            <h1 className="text-xl font-bold text-slate-900">{ui.locations}</h1>
             <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">
               {total}
             </span>
@@ -87,7 +89,7 @@ function LocationsView() {
           <p className="mt-1 text-xs text-slate-500">
             {selectedClient
               ? `Locations for ${clientLabel(selectedClient)}`
-              : "Client locations. Open one to manage its rooms."}
+              : ui.locationsSubtitle}
           </p>
         </div>
       </header>
@@ -95,14 +97,14 @@ function LocationsView() {
       {/* Controls take only the width they need and sit left; stretching them across a wide
           screen makes a two-field toolbar look like a form. */}
       <div className="grid gap-2 rounded-xl bg-white p-2 ring-1 ring-slate-200/70 md:grid-cols-2 xl:grid-cols-[1.4fr_1fr_auto]">
-        <SearchInput value={search} onChange={setSearch} placeholder="Search locations…" />
+        <SearchInput value={search} onChange={setSearch} placeholder={ui.searchLocations} />
 
         <Select
           value={clientId}
           onValueChange={chooseClient}
-          placeholder="All clients"
+          placeholder={ui.allClients}
           options={[
-            { value: "", label: "All clients" },
+            { value: "", label: ui.allClients },
             ...(clientPage?.result ?? []).map((client) => ({
               value: client._id,
               label: clientLabel(client),
@@ -111,7 +113,7 @@ function LocationsView() {
         />
 
         <Button onClick={addLocation} className="md:col-span-2 xl:col-span-1">
-          <MdAdd className="text-base" /> Add location
+          <MdAdd className="text-base" /> {ui.addLocation}
         </Button>
       </div>
 
@@ -121,15 +123,15 @@ function LocationsView() {
         <CardGridSkeleton />
       ) : locations.length === 0 ? (
         <div className="py-24 text-center">
-          <p className="text-base font-medium text-slate-900">No locations found</p>
+          <p className="text-base font-medium text-slate-900">{ui.noLocationsFound}</p>
           <p className="mx-auto mt-1.5 max-w-sm text-sm leading-relaxed text-slate-500">
             {searchTerm
-              ? "Nothing matches that search. Try a different name or address."
-              : "Add a location to start setting up its rooms and tasks."}
+              ? ui.nothingMatchesSearch
+              : ui.addLocationHint}
           </p>
           {!searchTerm && (
             <Button variant="secondary" onClick={addLocation} className="mt-5">
-              <MdAdd className="text-base" /> Add location
+              <MdAdd className="text-base" /> {ui.addLocation}
             </Button>
           )}
         </div>
@@ -170,9 +172,9 @@ function LocationsView() {
 
       {deleteTarget && (
         <ConfirmDialog
-          title="Delete location?"
+          title={ui.deleteLocation}
           description={`Are you sure you want to delete ${deleteTarget.name}? This action cannot be undone.`}
-          confirmText="Delete"
+          confirmText={ui.delete}
           loading={deleting}
           onConfirm={() => void confirmDelete()}
           onClose={() => !deleting && setDeleteTarget(null)}

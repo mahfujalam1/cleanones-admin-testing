@@ -205,7 +205,7 @@ export default function EscalationsPage() {
             </span>
           </div>
           <p className="mt-1 text-xs text-slate-500">
-            Review, track, and resolve operational issues reported by on-site cleaning staff.
+            {ui.escalationsSubtitle}
           </p>
         </div>
 
@@ -305,7 +305,7 @@ export default function EscalationsPage() {
           <p className="mt-1 text-xs text-slate-500">
             {search || statusFilter || severityFilter
               ? "Try adjusting your search query or filters."
-              : "No escalations have been reported by cleaning staff yet."}
+              : "{ui.noEscalationsYet}"}
           </p>
         </div>
       ) : (

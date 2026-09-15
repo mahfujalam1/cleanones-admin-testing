@@ -25,6 +25,7 @@ import { BackendPagination } from "@/components/shared/BackendPagination";
 import { usePathname, useRouter } from "next/navigation";
 import { getLocale, localizePath } from "@/lib/locale";
 import { getDashboardTranslation } from "@/lib/translations";
+import { getUiTranslation } from "@/lib/translations";
 
 const formatShiftTime = (dateTimeStr?: string) => {
   if (!dateTimeStr) return "--:--";
@@ -80,6 +81,7 @@ export default function LiveStatusPage() {
   const pathname = usePathname();
   const locale = getLocale(pathname);
   const router = useRouter();
+  const ui = getUiTranslation(getLocale(usePathname()));
   /** Which row has its quick-actions menu open. */
   const [menuFor, setMenuFor] = useState("");
 
@@ -104,10 +106,10 @@ export default function LiveStatusPage() {
   }, [search, statusFilter]);
 
   const filterTabs = [
-    { value: "", label: "All" },
-    { value: "inprogress", label: "Inprogress" },
-    { value: "upcoming", label: "Upcoming" },
-    { value: "complete", label: "Complete" },
+    { value: "", label: ui.all },
+    { value: "inprogress", label: ui.inProgress },
+    { value: "upcoming", label: ui.upcoming },
+    { value: "complete", label: ui.completed },
   ];
 
   // 1. Fetch Today's Live Shift Metadata
@@ -294,12 +296,12 @@ export default function LiveStatusPage() {
         </span>
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <h1 className="truncate text-lg font-bold leading-tight text-slate-900">Today&apos;s Live Shifts</h1>
+            <h1 className="truncate text-lg font-bold leading-tight text-slate-900">{ui.todaysLiveShifts}</h1>
             <span className="rounded-full bg-sky-50 px-2.5 py-0.5 text-[10px] font-bold text-sky-700 border border-sky-200/60 uppercase tracking-wide">
-              Live Today
+              {ui.liveToday}
             </span>
           </div>
-          <p className="truncate text-xs text-slate-500">Live check-in status for every shift running today.</p>
+          <p className="truncate text-xs text-slate-500">{ui.liveCheckInStatus}</p>
         </div>
       </div>
 
@@ -308,27 +310,27 @@ export default function LiveStatusPage() {
         <StatCard
           icon={<TbActivity />}
           value={counts.total}
-          label="Total Shift"
+          label={ui.totalShift}
           tone="bg-slate-100 text-slate-700"
         />
         <StatCard
           icon={<TbClock />}
           value={counts.inprogress}
-          label="Inprogress"
+          label={ui.inProgress}
           tone="bg-amber-50 text-amber-600"
           accent="text-amber-700"
         />
         <StatCard
           icon={<TbCalendarStats />}
           value={counts.upcoming}
-          label="Upcoming"
+          label={ui.upcoming}
           tone="bg-blue-50 text-blue-600"
           accent="text-blue-700"
         />
         <StatCard
           icon={<TbCircleCheck />}
           value={counts.complete}
-          label="Complete"
+          label={ui.completed}
           tone="bg-emerald-50 text-emerald-600"
           accent="text-emerald-700"
         />
@@ -347,7 +349,7 @@ export default function LiveStatusPage() {
           {search && (
             <button
               type="button"
-              aria-label="Clear search"
+              aria-label={ui.clearSearch}
               onClick={() => setSearch("")}
               className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer rounded p-0.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
             >
@@ -391,7 +393,7 @@ export default function LiveStatusPage() {
           </div>
           <h3 className="text-base font-bold text-slate-900">{t.shiftMonitoring.noLiveShifts}</h3>
           <p className="mt-1 max-w-sm text-xs leading-relaxed text-slate-500">
-            {search || statusFilter ? t.common.adjustFilters : "Nothing is running at the moment."}
+            {search || statusFilter ? t.common.adjustFilters : ui.nothingIsRunning}
           </p>
         </div>
       ) : (
@@ -499,7 +501,7 @@ export default function LiveStatusPage() {
                     <div className="relative shrink-0">
                       <button
                         type="button"
-                        aria-label="Quick actions"
+                        aria-label={ui.quickActions}
                         aria-expanded={menuFor === item.id}
                         onClick={(event) => {
                           // The row itself opens the worker modal, so the menu must not bubble.
@@ -531,21 +533,21 @@ export default function LiveStatusPage() {
                               onClick={() => openPlanAction(item.plan_id as string, "edit")}
                               className="flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-left text-xs font-medium text-slate-700 transition-colors hover:bg-slate-50"
                             >
-                              <MdModeEditOutline className="text-base text-slate-400" /> Edit plan
+                              <MdModeEditOutline className="text-base text-slate-400" /> {ui.editPlan}
                             </button>
                             <button
                               type="button"
                               onClick={() => openPlanAction(item.plan_id as string, "assign")}
                               className="flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-left text-xs font-medium text-slate-700 transition-colors hover:bg-slate-50"
                             >
-                              <MdOutlineGroupAdd className="text-base text-slate-400" /> Reassign workers
+                              <MdOutlineGroupAdd className="text-base text-slate-400" /> {ui.reassignWorkers}
                             </button>
                             <button
                               type="button"
                               onClick={() => openPlanAction(item.plan_id as string, "delete")}
                               className="flex w-full cursor-pointer items-center gap-2 border-t border-slate-100 px-3 py-2 text-left text-xs font-medium text-red-600 transition-colors hover:bg-red-50"
                             >
-                              <MdDeleteOutline className="text-base" /> Delete plan
+                              <MdDeleteOutline className="text-base" /> {ui.deletePlan}
                             </button>
                           </div>
                         </>

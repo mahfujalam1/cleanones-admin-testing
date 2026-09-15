@@ -12,12 +12,6 @@ import {
 } from "react-icons/md";
 import { clientLabel, type Client } from "@/redux/api/endpoints/clients.api";
 
-const TONES = {
-  Active: "bg-emerald-50 text-emerald-700 ring-emerald-200",
-  Pending: "bg-amber-50 text-amber-700 ring-amber-200",
-  Inactive: "bg-slate-100 text-slate-600 ring-slate-200",
-} as const;
-
 function initials(name: string) {
   const words = name.trim().split(/\s+/).filter(Boolean);
   if (words.length === 0) return "?";
@@ -87,16 +81,7 @@ export function ClientCard({
           </dl>
         </div>
 
-        <div className="mt-4 flex items-center justify-between gap-2 border-t border-slate-100 pt-3">
-          {client.contract_status ? (
-            <span
-              className={`rounded-md px-2 py-0.5 text-[11px] font-semibold ring-1 ring-inset ${TONES[client.contract_status] ?? TONES.Inactive}`}
-            >
-              {client.contract_status}
-            </span>
-          ) : (
-            <span className="text-[11px] text-slate-400">No contract status</span>
-          )}
+        <div className="mt-4 flex items-center justify-end gap-2 border-t border-slate-100 pt-3">
           <MdArrowForward className="text-sm text-slate-400 transition-all group-hover:translate-x-0.5 group-hover:text-primary" />
         </div>
       </Link>

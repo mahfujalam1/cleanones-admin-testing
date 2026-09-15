@@ -6,6 +6,7 @@ import { ContentSkeleton } from "@/components/shared/SkeletonLoader";
 import type { ReportTimeframe } from "@/services/actions/reports";
 import { useGetShiftReportQuery } from "@/redux/api/reportsApi";
 import { getLocale } from "@/lib/locale";
+import { getUiTranslation } from "@/lib/translations";
 import { getDashboardTranslation } from "@/lib/translations";
 import type { ReportRange } from "@/components/reports/types";
 import { ReportHeader } from "@/components/reports/ReportHeader";
@@ -20,6 +21,7 @@ const ranges: ReportRange[] = ["Week", "Month", "Year"];
 export default function ReportsPage() {
   const pathname = usePathname();
   const locale = getLocale(pathname);
+  const ui = getUiTranslation(getLocale(usePathname()));
   const t = getDashboardTranslation(locale);
 
   const [activeRange, setActiveRange] = useState<ReportRange>("Month");
@@ -76,7 +78,7 @@ export default function ReportsPage() {
       ];
 
   const qualityChartTitle = issueStatus
-    ? "Issue Reports Status Breakdown"
+    ? ui.issueStatusBreakdown
     : t.reports.photoQualityDistribution;
 
   const totalShifts = report?.summary?.total_shift ?? report?.total_shifts ?? 0;
@@ -99,7 +101,7 @@ export default function ReportsPage() {
         exporting={exporting}
         onRangeChange={setActiveRange}
         onExportPdf={handleGeneratePdf}
-        exportLabel="Generate PDF"
+        exportLabel={ui.generatePdf}
       />
 
       {error && (
@@ -126,9 +128,9 @@ export default function ReportsPage() {
             photosApproved={report?.total_photos_approved}
             labels={{
               totalShifts: t.reports.totalShifts,
-              escalations: t.reports.escalations || "Issue Reports",
-              resolvedIssues: "Resolved Issues",
-              pendingIssues: "Open Issues",
+              escalations: t.reports.escalations || ui.issueReports,
+              resolvedIssues: ui.resolvedIssues,
+              pendingIssues: ui.openIssues,
               totalPhotosApproved: t.reports.totalPhotosApproved,
             }}
           />

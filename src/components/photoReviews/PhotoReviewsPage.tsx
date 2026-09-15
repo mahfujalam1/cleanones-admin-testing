@@ -7,6 +7,7 @@ import { getLocale } from "@/lib/locale";
 import { getDashboardTranslation } from "@/lib/translations";
 import { TableSkeleton } from "@/components/shared/SkeletonLoader";
 import { BackendPagination } from "@/components/shared/BackendPagination";
+import { getUiTranslation } from "@/lib/translations";
 import { apiError } from "@/redux/api/apiError";
 import {
   useGetShiftPhotoReviewsQuery,
@@ -29,6 +30,7 @@ export function PhotoReviewsPage() {
   const pathname = usePathname();
   const locale = getLocale(pathname);
   const t = getDashboardTranslation(locale);
+  const ui = getUiTranslation(locale);
 
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -51,10 +53,10 @@ export function PhotoReviewsPage() {
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const tableHeaders = [
-    "Task",
+    ui.task,
     t.extraServices.room,
     t.extraServices.location,
-    "Cleaning plan",
+    ui.cleaningPlanColumn,
     t.roster.date,
     t.common.duration,
     t.common.photos,
@@ -79,7 +81,7 @@ export function PhotoReviewsPage() {
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <input
             type="text"
-            placeholder="Search by task, room, location or plan…"
+            placeholder={ui.searchByTaskRoomLocation}
             value={search}
             onChange={(event) => {
               setSearch(event.target.value);

@@ -20,6 +20,8 @@ import { shiftMonitoringApi } from '@/redux/api/shiftMonitoringApi';
 import { reportsApi } from '@/redux/api/reportsApi';
 import { getDashboardTranslation } from '@/lib/translations';
 import { getStoredManagerAccess, routeIsAllowed } from '@/lib/access-control';
+import { useUnseenChatCount } from '@/lib/chat-unread';
+import { CountBadge } from '@/components/shared/CountBadge';
 
 const prefetchRoutes = process.env.NODE_ENV === 'production';
 
@@ -28,6 +30,7 @@ export default function Sidebar() {
   const locale = getLocale(pathname);
   const routePath = stripLocale(pathname);
   const t = getDashboardTranslation(locale);
+  const unseenChats = useUnseenChatCount();
 
   const prefetchDashboard = dashboardApi.usePrefetch('getDashboardOverview');
   const prefetchShiftMonitoring = shiftMonitoringApi.usePrefetch('getLiveStatus');
@@ -41,13 +44,13 @@ export default function Sidebar() {
     else if (href === '/reports') prefetchReports('month');
   };
 
-  const mainLinks = [
+  const mainLinks: Array<{ name: string; href: string; icon: React.ComponentType<{ className?: string }>; badge?: number }> = [
     { name: t.nav.dashboard, href: '/', icon: MdDashboard },
     { name: t.nav.roster, href: '/roster', icon: MdCalendarToday },
     { name: t.nav.shiftMonitoring, href: '/shift-monitoring', icon: MdAccessTime },
     { name: t.nav.workers, href: '/workers', icon: MdPeople },
     { name: t.nav.clients, href: '/clients', icon: MdBusinessCenter },
-    { name: t.nav.chat, href: '/chat', icon: MdChatBubbleOutline },
+    { name: t.nav.chat, href: '/chat', icon: MdChatBubbleOutline, badge: unseenChats },
     { name: t.nav.locations, href: '/locations', icon: MdLocationOn },
     { name: t.nav.rooms, href: '/rooms', icon: MdMeetingRoom },
     { name: t.nav.cleaningPlans, href: '/cleaning-plans', icon: MdChecklist },
@@ -82,7 +85,7 @@ export default function Sidebar() {
       <button
         type="button"
         aria-label="Close navigation"
-        className={`fixed inset-0 z-40 bg-black/50 transition-opacity duration-500 ease-out lg:hidden ${mobileSidebarOpen ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'}`}
+        className={`fixed inset-0 z-[55] bg-black/50 transition-opacity duration-500 ease-out lg:hidden ${mobileSidebarOpen ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'}`}
         onClick={() => dispatch(closeMobileSidebar())}
       />
 
@@ -90,7 +93,7 @@ export default function Sidebar() {
         data-mobile-open={mobileSidebarOpen}
         className={`
           mobile-sidebar-panel
-          fixed inset-y-0 left-0 z-50 flex h-dvh shrink-0 flex-col overflow-visible border-r border-sidebar-border bg-sidebar text-sidebar-foreground lg:static lg:z-20 lg:h-full
+          fixed inset-y-0 left-0 z-[60] flex h-dvh shrink-0 flex-col overflow-visible border-r border-sidebar-border bg-sidebar text-sidebar-foreground lg:static lg:z-20 lg:h-full
           will-change-transform transition-[width] duration-300 ease-out
           ${collapsed ? 'w-64 lg:w-16' : 'w-64'}
           ${mobileSidebarOpen ? 'pointer-events-auto' : 'pointer-events-none lg:pointer-events-auto'}
@@ -131,8 +134,16 @@ export default function Sidebar() {
                     : 'text-sidebar-foreground hover:bg-[#f2f9fc] hover:text-foreground'
                     }`}
                 >
-                  <span className="flex items-center gap-2.5">
-                    <link.icon className={`text-base ${isActive ? 'text-primary' : 'text-sidebar-foreground'}`} />
+                  <span className="flex min-w-0 items-center gap-2.5">
+                    {/* The badge rides the icon so it stays visible in the collapsed rail. */}
+                    <span className="relative shrink-0">
+                      <link.icon className={`text-base ${isActive ? 'text-primary' : 'text-sidebar-foreground'}`} />
+                      <CountBadge
+                        count={link.badge ?? 0}
+                        label="unread conversations"
+                        className="absolute -right-2 -top-2"
+                      />
+                    </span>
                     <span className={collapsed ? 'lg:hidden' : 'block'}>{link.name}</span>
                   </span>
                   {isActive && <span className={`h-1.5 w-1.5 rounded-full bg-primary ${collapsed ? 'lg:hidden' : 'block'}`} aria-hidden="true" />}

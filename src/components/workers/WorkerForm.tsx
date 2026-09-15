@@ -2,9 +2,8 @@
 
 import { useId, useState } from "react";
 import { FormModal } from "@/components/shared/FormModal";
-import { CheckboxField, DateField, FieldLabel, SelectField, TextField } from "@/components/shared/Field";
+import { FieldLabel, SelectField, TextField } from "@/components/shared/Field";
 import { PlaceSearchSelect } from "@/components/ui/place-search";
-import { todayIso } from "@/components/ui/date-picker";
 import { WorkerLanguagesSelector } from "./WorkerLanguagesSelector";
 import { apiError } from "@/redux/api/apiError";
 import { MIN_PASSWORD_LENGTH } from "@/lib/auth/password";
@@ -69,9 +68,6 @@ function WeeklyAvailability({
   );
 }
 
-/** `2026-09-15T10:59:06.893Z` -> `2026-09-15`, which is what a date input wants. */
-const toDateInput = (value?: string) => (value ? value.slice(0, 10) : "");
-
 export function WorkerForm({ worker, onClose }: { worker?: Worker; onClose: () => void }) {
   const isEdit = worker !== undefined;
   const locationId = useId();
@@ -86,17 +82,6 @@ export function WorkerForm({ worker, onClose }: { worker?: Worker; onClose: () =
   const [workingDays, setWorkingDays] = useState<WorkingDay[]>(worker?.working_days ?? []);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-
-  // The rest of the documented create-worker payload.
-  const [address, setAddress] = useState(worker?.address ?? "");
-  const [position, setPosition] = useState(worker?.position ?? "");
-  const [nationality, setNationality] = useState(worker?.nationality ?? "");
-  const [dob, setDob] = useState(toDateInput(worker?.dob));
-  const [nationalId, setNationalId] = useState(worker?.national_id ?? "");
-  const [idCardFront, setIdCardFront] = useState(worker?.id_card_front ?? "");
-  const [idCardBack, setIdCardBack] = useState(worker?.id_card_back ?? "");
-  const [contractPdf, setContractPdf] = useState(worker?.employee_contract_pdf ?? "");
-  const [agreed, setAgreed] = useState(worker?.isagree_condition ?? false);
 
   const [error, setError] = useState("");
 
@@ -124,16 +109,6 @@ export function WorkerForm({ worker, onClose }: { worker?: Worker; onClose: () =
       languages,
       // Stripped for freelancers by `withWorkingDays` in the endpoint.
       working_days: workingDays.length ? workingDays : undefined,
-      address: address.trim() || undefined,
-      position: position.trim() || undefined,
-      nationality: nationality.trim() || undefined,
-      // The API stores a timestamp; a date input gives `YYYY-MM-DD`.
-      dob: dob ? new Date(dob).toISOString() : undefined,
-      national_id: nationalId.trim() || undefined,
-      id_card_front: idCardFront.trim() || undefined,
-      id_card_back: idCardBack.trim() || undefined,
-      employee_contract_pdf: contractPdf.trim() || undefined,
-      isagree_condition: agreed,
     };
 
     try {
@@ -222,33 +197,6 @@ export function WorkerForm({ worker, onClose }: { worker?: Worker; onClose: () =
           />
         </div>
       )}
-
-      <details className="border-t border-slate-100 pt-4">
-        <summary className="cursor-pointer list-none text-xs font-semibold text-slate-600 hover:text-slate-900">
-          More details
-        </summary>
-        <div className="mt-4 space-y-4">
-          <TextField label="Address" value={address} onChange={setAddress} />
-          <div className="grid gap-4 sm:grid-cols-2">
-            <TextField label="Position" value={position} onChange={setPosition} />
-            <TextField label="Nationality" value={nationality} onChange={setNationality} />
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <DateField label="Date of birth" value={dob} onChange={setDob} max={todayIso()} />
-            <TextField label="National ID" value={nationalId} onChange={setNationalId} />
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <TextField label="ID card front" value={idCardFront} onChange={setIdCardFront} placeholder="https://…" />
-            <TextField label="ID card back" value={idCardBack} onChange={setIdCardBack} placeholder="https://…" />
-          </div>
-          <TextField label="Contract PDF" value={contractPdf} onChange={setContractPdf} placeholder="https://…" />
-          <p className="text-[11px] text-slate-400">
-            Documents are stored as links — the API takes a URL, not a file upload.
-          </p>
-          <CheckboxField label="Terms and conditions accepted" checked={agreed} onChange={setAgreed} />
-        </div>
-      </details>
-
     </FormModal>
   );
 }

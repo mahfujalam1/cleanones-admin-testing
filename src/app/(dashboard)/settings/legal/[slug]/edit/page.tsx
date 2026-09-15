@@ -3,7 +3,10 @@
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MdArrowBack, MdCheckCircle, MdHistory, MdSave, MdWarningAmber } from "react-icons/md";
-import { isLegalSlug, legalDocuments, legalStorageKey } from "@/lib/legal-content";
+import { isLegalSlug, legalDocuments, legalLabelKeys, legalStorageKey } from "@/lib/legal-content";
+import { getLocale } from "@/lib/locale";
+import { getUiTranslation } from "@/lib/translations";
+import { usePathname } from "next/navigation";
 import { RichTextEditor } from "@/components/legal/RichTextEditor";
 import { getLegalDocument, saveLegalDocument } from "@/services/actions/legal";
 
@@ -28,6 +31,8 @@ export default function EditLegalDocumentPage() {
   const slug = params.slug;
   const valid = isLegalSlug(slug);
   const fallback = valid ? legalDocuments[slug] : null;
+  const ui = getUiTranslation(getLocale(usePathname()));
+  const labels = valid ? legalLabelKeys[slug] : null;
 
   const [content, setContent] = useState("");
   /** Empty until the document has been created; that is what picks POST add vs PATCH edit. */
@@ -113,7 +118,7 @@ export default function EditLegalDocumentPage() {
   const update = useCallback(async () => {
     if (saving || loading || !valid) return;
     if (documentStats(content).empty) {
-      setError("The document is empty.");
+      setError(ui.documentIsEmpty);
       return;
     }
     setSaving(true);
@@ -130,7 +135,7 @@ export default function EditLegalDocumentPage() {
       if (storageKey) localStorage.removeItem(storageKey);
     } catch {}
     router.push(`/settings/legal/${slug}`);
-  }, [content, documentId, loading, router, saving, slug, storageKey, valid]);
+  }, [content, documentId, loading, router, saving, slug, storageKey, valid, ui.documentIsEmpty]);
 
   // Ctrl/Cmd+S publishes, the way every other document editor behaves.
   useEffect(() => {
@@ -145,7 +150,7 @@ export default function EditLegalDocumentPage() {
   }, [update]);
 
   const leave = () => {
-    if (dirty && !window.confirm("Leave without publishing your changes?")) return;
+    if (dirty && !window.confirm(ui.leaveWithoutPublishing)) return;
     router.push(`/settings/legal/${slug}`);
   };
 
@@ -159,20 +164,20 @@ export default function EditLegalDocumentPage() {
             onClick={leave}
             className="mb-2 inline-flex cursor-pointer items-center gap-1 text-[11px] font-semibold text-slate-500 transition-colors hover:text-sky-600"
           >
-            <MdArrowBack /> Back to document
+            <MdArrowBack /> {ui.backToDocument}
           </button>
-          <h1 className="text-xl font-semibold text-slate-800">Edit {fallback.title}</h1>
-          <p className="mt-1 text-xs text-slate-500">{fallback.subtitle}</p>
+          <h1 className="text-xl font-semibold text-slate-800">{ui.editDocument} — {labels ? ui[labels.title] : ""}</h1>
+          <p className="mt-1 text-xs text-slate-500">{labels ? ui[labels.subtitle] : ""}</p>
         </div>
 
         <div className="flex shrink-0 items-center gap-2">
           {dirty ? (
             <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[11px] font-semibold text-amber-700">
-              <MdWarningAmber className="text-sm" /> Unsaved changes
+              <MdWarningAmber className="text-sm" /> {ui.unsavedChanges}
             </span>
           ) : (
             <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-700">
-              <MdCheckCircle className="text-sm" /> Published version
+              <MdCheckCircle className="text-sm" /> {ui.publishedVersion}
             </span>
           )}
         </div>
@@ -182,7 +187,7 @@ export default function EditLegalDocumentPage() {
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-sky-200 bg-sky-50 px-4 py-3 text-xs text-sky-900">
           <span className="inline-flex items-center gap-2">
             <MdHistory className="text-base text-sky-600" />
-            An unpublished draft from {formatTime(recoverable.savedAt)} was found on this device.
+            {ui.draftFound} ({formatTime(recoverable.savedAt)})
           </span>
           <div className="flex gap-2">
             <button
@@ -194,7 +199,7 @@ export default function EditLegalDocumentPage() {
               }}
               className="cursor-pointer rounded border border-sky-200 bg-white px-3 py-1 font-semibold text-sky-700 transition-colors hover:bg-sky-100/60"
             >
-              Discard
+              {ui.discard}
             </button>
             <button
               onClick={() => {
@@ -206,7 +211,7 @@ export default function EditLegalDocumentPage() {
               }}
               className="cursor-pointer rounded bg-sky-600 px-3 py-1 font-semibold text-white transition-colors hover:bg-sky-700"
             >
-              Restore draft
+              {ui.restoreDraft}
             </button>
           </div>
         </div>
@@ -237,11 +242,11 @@ export default function EditLegalDocumentPage() {
 
         <div className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-500">
-            <span className="font-semibold text-slate-700">{stats.words.toLocaleString()} words</span>
+            <span className="font-semibold text-slate-700">{stats.words.toLocaleString()} {ui.words}</span>
             <span className="text-slate-300">•</span>
-            <span>{stats.characters.toLocaleString()} characters</span>
+            <span>{stats.characters.toLocaleString()} {ui.characters}</span>
             <span className="text-slate-300">•</span>
-            <span>~{stats.minutes} min read</span>
+            <span>~{stats.minutes} {ui.minRead}</span>
             {draftSavedAt > 0 && dirty && (
               <>
                 <span className="text-slate-300">•</span>
@@ -255,7 +260,7 @@ export default function EditLegalDocumentPage() {
               onClick={leave}
               className="h-9 cursor-pointer rounded-lg border border-slate-200 px-4 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-50"
             >
-              Cancel
+              {ui.cancel}
             </button>
             <button
               onClick={() => void update()}
@@ -263,7 +268,7 @@ export default function EditLegalDocumentPage() {
               title="Ctrl + S"
               className="flex h-9 cursor-pointer items-center gap-1.5 rounded-lg bg-sky-500 px-4 text-xs font-semibold text-white transition-colors hover:bg-sky-600 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              <MdSave /> {saving ? "Publishing…" : "Publish changes"}
+              <MdSave /> {saving ? ui.publishing : ui.publishChanges}
             </button>
           </div>
         </div>

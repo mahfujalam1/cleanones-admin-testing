@@ -2,6 +2,9 @@
 
 import React from "react";
 import { TbClipboardCheck } from "react-icons/tb";
+import { usePathname } from "next/navigation";
+import { getLocale } from "@/lib/locale";
+import { getUiTranslation } from "@/lib/translations";
 
 interface ReportBlueprintHeaderProps {
   rangeLabel: string;
@@ -9,6 +12,7 @@ interface ReportBlueprintHeaderProps {
 }
 
 export function ReportBlueprintHeader({ rangeLabel, dateRange }: ReportBlueprintHeaderProps) {
+  const ui = getUiTranslation(getLocale(usePathname()));
   const currentDate = new Date().toLocaleDateString("en-US", {
     year: "numeric",
     month: "long",
@@ -24,7 +28,7 @@ export function ReportBlueprintHeader({ rangeLabel, dateRange }: ReportBlueprint
         <div>
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-base font-bold text-slate-900">
-              CleanOnes Quality Control & Performance Report
+              {ui.reportTitle}
             </h1>
             <span className="rounded-full bg-sky-100 px-2.5 py-0.5 text-[11px] font-bold text-sky-800">
               {rangeLabel}
@@ -34,14 +38,14 @@ export function ReportBlueprintHeader({ rangeLabel, dateRange }: ReportBlueprint
             )}
           </div>
           <p className="text-xs text-slate-500">
-            Automated operational metrics, shift trends, and quality analysis blueprint.
+            {ui.reportSubtitle}
           </p>
         </div>
       </div>
 
       <div className="text-left sm:text-right text-xs text-slate-500 shrink-0">
-        <p className="font-semibold text-slate-700">CleanOnes Operations</p>
-        <p className="text-[11px] text-slate-400">Generated: {currentDate}</p>
+        <p className="font-semibold text-slate-700">{ui.cleanOnesOperations}</p>
+        <p className="text-[11px] text-slate-400">{ui.generated}: {currentDate}</p>
       </div>
     </div>
   );

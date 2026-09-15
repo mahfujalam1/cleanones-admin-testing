@@ -5,10 +5,14 @@ import { MdBusiness, MdEngineering, MdGroups, MdSearch } from "react-icons/md";
 import { DetailSkeleton } from "@/components/shared/SkeletonLoader";
 import type { ChatItem } from "@/redux/api/endpoints/chat.api";
 import { formatMessageTime } from "./chatUtils";
+import { usePathname } from "next/navigation";
+import { getLocale } from "@/lib/locale";
+import { getUiTranslation } from "@/lib/translations";
 
 export type ChatTab = "all" | "group" | "client" | "worker";
 
 interface ChatSidebarProps {
+  className?: string;
   activeTab: ChatTab;
   tabCounts: { all: number; group: number; client: number; worker: number };
   query: string;
@@ -22,6 +26,7 @@ interface ChatSidebarProps {
 }
 
 export function ChatSidebar({
+  className = "flex",
   activeTab,
   tabCounts,
   query,
@@ -33,21 +38,22 @@ export function ChatSidebar({
   onSelectChat,
   isChatOnline,
 }: ChatSidebarProps) {
+  const ui = getUiTranslation(getLocale(usePathname()));
   return (
-    <aside className="flex min-h-0 flex-col border-r border-slate-200/90">
+    <aside className={`min-h-0 flex-col lg:border-r lg:border-slate-200/90 ${className}`}>
       {/* Segmented Tabs: All, Group, Clients, Workers */}
       <div className="p-2.5 border-b border-slate-100 bg-white">
         <div className="grid grid-cols-4 gap-1 rounded-lg border border-slate-200 bg-slate-50/80 p-1">
           <button
             type="button"
             onClick={() => onTabChange("all")}
-            className={`flex items-center justify-center gap-1 rounded-md py-1.5 text-xs font-semibold transition-all cursor-pointer ${
+            className={`flex min-w-0 items-center justify-center gap-1 rounded-md px-1 py-1.5 text-xs font-semibold transition-all cursor-pointer ${
               activeTab === "all"
                 ? "bg-white text-primary shadow-xs border border-slate-200/80 font-bold"
                 : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
             }`}
           >
-            <span>All</span>
+            <span className="truncate">{ui.all}</span>
             {tabCounts.all > 0 && (
               <span
                 className={`text-[10px] px-1 py-0.2 rounded-full font-bold ${
@@ -62,13 +68,13 @@ export function ChatSidebar({
           <button
             type="button"
             onClick={() => onTabChange("group")}
-            className={`flex items-center justify-center gap-1 rounded-md py-1.5 text-xs font-semibold transition-all cursor-pointer ${
+            className={`flex min-w-0 items-center justify-center gap-1 rounded-md px-1 py-1.5 text-xs font-semibold transition-all cursor-pointer ${
               activeTab === "group"
                 ? "bg-white text-primary shadow-xs border border-slate-200/80 font-bold"
                 : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
             }`}
           >
-            <span>Groups</span>
+            <span className="truncate">{ui.groups}</span>
             {tabCounts.group > 0 && (
               <span
                 className={`text-[10px] px-1 py-0.2 rounded-full font-bold ${
@@ -83,13 +89,13 @@ export function ChatSidebar({
           <button
             type="button"
             onClick={() => onTabChange("client")}
-            className={`flex items-center justify-center gap-1 rounded-md py-1.5 text-xs font-semibold transition-all cursor-pointer ${
+            className={`flex min-w-0 items-center justify-center gap-1 rounded-md px-1 py-1.5 text-xs font-semibold transition-all cursor-pointer ${
               activeTab === "client"
                 ? "bg-white text-primary shadow-xs border border-slate-200/80 font-bold"
                 : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
             }`}
           >
-            <span>Clients</span>
+            <span className="truncate">{ui.clients}</span>
             {tabCounts.client > 0 && (
               <span
                 className={`text-[10px] px-1 py-0.2 rounded-full font-bold ${
@@ -104,13 +110,13 @@ export function ChatSidebar({
           <button
             type="button"
             onClick={() => onTabChange("worker")}
-            className={`flex items-center justify-center gap-1 rounded-md py-1.5 text-xs font-semibold transition-all cursor-pointer ${
+            className={`flex min-w-0 items-center justify-center gap-1 rounded-md px-1 py-1.5 text-xs font-semibold transition-all cursor-pointer ${
               activeTab === "worker"
                 ? "bg-white text-primary shadow-xs border border-slate-200/80 font-bold"
                 : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
             }`}
           >
-            <span>Workers</span>
+            <span className="truncate">{ui.workers}</span>
             {tabCounts.worker > 0 && (
               <span
                 className={`text-[10px] px-1 py-0.2 rounded-full font-bold ${
@@ -131,7 +137,7 @@ export function ChatSidebar({
           <input
             value={query}
             onChange={(e) => onQueryChange(e.target.value)}
-            placeholder="Search conversations..."
+            placeholder={ui.searchConversations}
             className="h-8.5 w-full rounded-lg border border-slate-200 bg-slate-50/60 pl-9 pr-3 text-xs text-slate-800 placeholder:text-slate-400 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
           />
         </div>

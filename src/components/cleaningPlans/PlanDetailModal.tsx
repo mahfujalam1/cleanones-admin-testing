@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import {
   MdDeleteOutline,
   MdModeEditOutline,
+  MdCheckCircle,
   MdOutlineAssignment,
   MdOutlineBusinessCenter,
   MdOutlineClose,
@@ -37,6 +38,21 @@ const formatDateTime = (value?: string) => {
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return value;
   return `${parsed.toLocaleDateString()} · ${parsed.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
+};
+
+/**
+ * The end of the visit, derived the way the roster does it: the start plus the plan's
+ * estimated duration. `end_date` is the date the plan repeats until, not a finish time, so it
+ * is only used when there is no duration to work from.
+ */
+const formatPlanEnd = (start?: string, minutes?: number, endDate?: string) => {
+  if (start && minutes) {
+    const parsed = new Date(start);
+    if (!Number.isNaN(parsed.getTime())) {
+      return formatDateTime(new Date(parsed.getTime() + minutes * 60_000).toISOString());
+    }
+  }
+  return formatDate(endDate);
 };
 
 const formatDate = (value?: string) => {
@@ -155,7 +171,7 @@ function PlanBody({ plan, onAssign }: { plan: CleaningPlan; onAssign?: (plan: Cl
                 {formatDateTime(plan.date_time)}
               </Detail>
               <Detail icon={<MdOutlineSchedule />} label="Ends">
-                {formatDate(plan.end_date)}
+                {formatPlanEnd(plan.date_time, plan.max_estimated_duration, plan.end_date)}
               </Detail>
             </div>
 
@@ -244,13 +260,23 @@ function PlanBody({ plan, onAssign }: { plan: CleaningPlan; onAssign?: (plan: Cl
                   <li key={task._id} className="rounded-lg border border-slate-200 p-3">
                     <div className="flex items-start justify-between gap-3">
                       <p className="min-w-0 flex-1 truncate text-sm font-medium text-slate-800">{task.name}</p>
-                      <span
-                        className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${
-                          task.is_completed ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500"
-                        }`}
-                      >
-                        {task.is_completed ? "Done" : "Pending"}
-                      </span>
+                      <div className="flex shrink-0 items-center gap-1.5">
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                            task.is_completed ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500"
+                          }`}
+                        >
+                          {task.is_completed ? "Completed" : "Incomplete"}
+                        </span>
+                        {/* An approved task is marked with a tick beside its completion badge. */}
+                        {task.status === "Approved" && (
+                          <MdCheckCircle
+                            aria-label="Approved"
+                            title="Approved"
+                            className="text-base text-emerald-600"
+                          />
+                        )}
+                      </div>
                     </div>
 
                     <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-400">

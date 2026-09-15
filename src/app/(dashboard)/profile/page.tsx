@@ -13,7 +13,6 @@ import {
   MdUpdate,
   MdVerifiedUser,
 } from "react-icons/md";
-import { DatePicker, todayIso } from "@/components/ui/date-picker";
 import {
   getMyProfile,
   updateUserProfile,
@@ -37,7 +36,6 @@ export default function ProfilePage() {
   const [formData, setFormData] = useState({
     full_name: "",
     phone: "",
-    dateOfBirth: "",
   });
 
   const [loading, setLoading] = useState(true);
@@ -141,7 +139,6 @@ export default function ProfilePage() {
         setFormData({
           full_name: (d.name || d.full_name || "") as string,
           phone: (d.phone || "") as string,
-          dateOfBirth: d.dateOfBirth ? String(d.dateOfBirth).slice(0, 10) : "",
         });
 
         syncUser(d);
@@ -168,7 +165,6 @@ export default function ProfilePage() {
     const result = await updateUserProfile({
       name: formData.full_name,
       phone: formData.phone,
-      dateOfBirth: formData.dateOfBirth || undefined,
     });
 
     setSaving(false);
@@ -183,7 +179,6 @@ export default function ProfilePage() {
     setFormData({
       full_name: (updated.name || updated.full_name || "") as string,
       phone: (updated.phone || "") as string,
-      dateOfBirth: updated.dateOfBirth ? String(updated.dateOfBirth).slice(0, 10) : "",
     });
 
     syncUser(updated);
@@ -201,8 +196,7 @@ export default function ProfilePage() {
 
   const isDirty = profile
     ? formData.full_name !== (profile.name || profile.full_name || "") ||
-      formData.phone !== (profile.phone || "") ||
-      formData.dateOfBirth !== (profile.dateOfBirth ? String(profile.dateOfBirth).slice(0, 10) : "")
+      formData.phone !== (profile.phone || "")
     : false;
 
   const roleTitle = (profile?.role || authUser?.role || "Manager")
@@ -344,7 +338,7 @@ export default function ProfilePage() {
               <span className="mt-1 block text-[11px] text-slate-400">{ui.emailCannotChange}</span>
             </label>
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4">
               <label className="block">
                 <span className="mb-1.5 block text-xs font-semibold text-slate-700">{ui.phoneNumber}</span>
                 <div className="relative">
@@ -358,18 +352,6 @@ export default function ProfilePage() {
                   <MdPhone className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-base text-slate-400" />
                 </div>
               </label>
-
-              <div>
-                <span className="mb-1.5 block text-xs font-semibold text-slate-700">{ui.dateOfBirth}</span>
-                <DatePicker
-                  value={formData.dateOfBirth}
-                  onValueChange={(value) => setFormData((prev) => ({ ...prev, dateOfBirth: value }))}
-                  placeholder={ui.selectDateOfBirth}
-                  // Nobody was born tomorrow.
-                  max={todayIso()}
-                  clearable
-                />
-              </div>
             </div>
 
           </div>

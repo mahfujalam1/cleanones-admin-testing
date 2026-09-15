@@ -43,6 +43,8 @@ export type ChatItem = {
     company_name?: string;
     primary_contact_name?: string;
     user?: {
+      /** The auth user id - this is what `ChatMessage.sender` refers to. */
+      _id?: string;
       full_name?: string;
       profile_photo?: string | null;
     };
@@ -54,6 +56,8 @@ export type ChatItem = {
     email?: string;
     phone?: string;
     user?: {
+      /** The auth user id - this is what `ChatMessage.sender` refers to. */
+      _id?: string;
       full_name?: string;
       profile_photo?: string | null;
     };
@@ -83,7 +87,7 @@ export type ChatMembersResponse = {
     phone?: string;
     company_name?: string;
     primary_contact_name?: string;
-    user?: { full_name?: string; profile_photo?: string | null };
+    user?: { _id?: string; full_name?: string; profile_photo?: string | null };
   } | null;
   workers?: Array<{
     _id: string;
@@ -91,7 +95,7 @@ export type ChatMembersResponse = {
     email?: string;
     phone?: string;
     worker_type?: string;
-    user?: { full_name?: string; profile_photo?: string | null };
+    user?: { _id?: string; full_name?: string; profile_photo?: string | null };
   }>;
   managers?: "all" | string;
   display_name?: string | null;
