@@ -45,6 +45,9 @@ export default function ChatPage() {
   // Below `lg` there is only room for one pane, so the list and the open conversation
   // take turns instead of being squeezed side by side.
   const [mobilePane, setMobilePane] = useState<"list" | "chat">("list");
+  // Realtime delivery can be unavailable while the rest of the page works, so say so
+  // rather than letting the conversation look merely quiet.
+  const [realtimeDown, setRealtimeDown] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState("");
   const [typingUser, setTypingUser] = useState("");
@@ -175,9 +178,15 @@ export default function ChatPage() {
     let activeSocket: Socket | null = null;
 
     void getChatSocket().then((sock) => {
-      if (!sock) return;
+      if (!sock) {
+        setRealtimeDown(true);
+        return;
+      }
       activeSocket = sock;
       socketRef.current = sock;
+      setRealtimeDown(!sock.connected);
+      sock.on("connect", () => setRealtimeDown(false));
+      sock.on("connect_error", () => setRealtimeDown(true));
 
       // Online status tracking
       sock.on("onlineUser", (payload: { onlineUsers?: string[] } | string[]) => {
@@ -462,6 +471,14 @@ export default function ChatPage() {
           </p>
         </div>
       </header>
+
+      {realtimeDown && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+          <b className="font-semibold">Live messaging is offline.</b>{" "}
+          Could not reach the chat server. Messages already sent are still shown, but new ones
+          will not arrive until the connection is back.
+        </div>
+      )}
 
       {/* Main Container */}
       <div className="grid min-h-0 flex-1 overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-xs lg:grid-cols-[300px_minmax(0,1fr)] xl:grid-cols-[310px_minmax(0,1fr)_270px]">
