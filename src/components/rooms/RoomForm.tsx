@@ -21,11 +21,20 @@ import {
 import { refId, refDoc } from "@/redux/api/types";
 
 export function RoomForm({
+  clientId,
   locationId,
+  lockScope = false,
   room,
   onClose,
 }: {
+  /** The client that owns `locationId`. Scoped callers know it, so the form need not derive it. */
+  clientId?: string;
   locationId?: string;
+  /**
+   * Opened from inside a client's location, where both are already decided by the page: the two
+   * selects show them but stay read-only, so a room can never be filed under another client.
+   */
+  lockScope?: boolean;
   room?: Room;
   onClose: () => void;
 }) {
@@ -39,29 +48,29 @@ export function RoomForm({
   const [name, setName] = useState(room?.name ?? "");
   const [roomType, setRoomType] = useState(room?.room_type ?? "");
   const [cleaningType, setCleaningType] = useState<PlanType | "">(room?.cleaning_type ?? "");
-  const [selectedClientId, setSelectedClientId] = useState("");
+  const [selectedClientId, setSelectedClientId] = useState(clientId ?? "");
   const [selectedLocationId, setSelectedLocationId] = useState(
     locationId || (room ? refId(room.location) : "")
   );
   const [error, setError] = useState("");
 
-  // Initialize Client and Location when locations load or when editing
+  // Derive the client from the location once the catalog lands. A scoped caller already passed
+  // `clientId`, so this only fills the gap for the global Rooms page and for editing.
   useEffect(() => {
-    if (allLocations.length === 0) return;
+    if (clientId || allLocations.length === 0) return;
     const targetLocId = selectedLocationId || locationId || (room ? refId(room.location) : "");
-    if (targetLocId) {
-      const loc = allLocations.find((l) => l._id === targetLocId);
-      if (loc) {
-        setSelectedLocationId(loc._id);
-        const cId = refId(loc.client);
-        if (cId && !selectedClientId) {
-          setSelectedClientId(cId);
-        }
-      }
+    if (!targetLocId) return;
+    const loc = allLocations.find((l) => l._id === targetLocId);
+    if (!loc) return;
+    setSelectedLocationId(loc._id);
+    const cId = refId(loc.client);
+    if (cId && !selectedClientId) {
+      setSelectedClientId(cId);
     }
-  }, [allLocations, locationId, room]);
+  }, [allLocations, clientId, locationId, room]);
 
   const handleClientChange = (cId: string) => {
+    if (lockScope) return;
     setSelectedClientId(cId);
     setSelectedLocationId("");
   };
@@ -71,19 +80,44 @@ export function RoomForm({
     return allLocations.filter((loc) => refId(loc.client) === selectedClientId);
   }, [allLocations, selectedClientId]);
 
+  /** The location behind `selectedLocationId`, whichever client it belongs to. */
+  const selectedLocation = useMemo(
+    () => allLocations.find((loc) => loc._id === selectedLocationId),
+    [allLocations, selectedLocationId],
+  );
+
   const clientOptions = useMemo(() => {
-    return (clientsData?.result ?? []).map((client) => ({
+    const options = (clientsData?.result ?? []).map((client) => ({
       value: client._id,
       label: clientLabel(client),
     }));
-  }, [clientsData]);
+    // The lookup only covers the first page of clients, so a scoped client can be missing from it.
+    // Without this the locked select would render blank on the very client we are standing in.
+    if (selectedClientId && !options.some((option) => option.value === selectedClientId)) {
+      const populated = selectedLocation ? refDoc(selectedLocation.client) : null;
+      options.push({
+        value: selectedClientId,
+        label: populated ? clientLabel(populated) : "Current client",
+      });
+    }
+    return options;
+  }, [clientsData, selectedClientId, selectedLocation]);
 
   const locationOptions = useMemo(() => {
-    return clientLocations.map((loc) => ({
+    const options = clientLocations.map((loc) => ({
       value: loc._id,
       label: loc.name,
     }));
-  }, [clientLocations]);
+    // Same guard as above: until the catalog resolves the client, `clientLocations` is empty and
+    // the already-chosen location would otherwise have no option to display.
+    if (selectedLocationId && !options.some((option) => option.value === selectedLocationId)) {
+      options.push({
+        value: selectedLocationId,
+        label: selectedLocation?.name ?? "Current location",
+      });
+    }
+    return options;
+  }, [clientLocations, selectedLocationId, selectedLocation]);
 
   const [createRoom, { isLoading: creating }] = useCreateRoomMutation();
   const [updateRoom, { isLoading: updating }] = useUpdateRoomMutation();
@@ -146,6 +180,7 @@ export function RoomForm({
           options={clientOptions}
           onChange={handleClientChange}
           required
+          disabled={lockScope}
           placeholder="Select Client"
         />
 
@@ -155,6 +190,7 @@ export function RoomForm({
           options={locationOptions}
           onChange={setSelectedLocationId}
           required
+          disabled={lockScope}
           placeholder={selectedClientId ? "Select Location" : "Select Client first"}
         />
       </div>

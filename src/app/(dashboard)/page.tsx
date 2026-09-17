@@ -2,10 +2,16 @@
 import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { MdAccessTime, MdAdd, MdArrowForward, MdBusiness, MdCall, MdCalendarToday, MdCheckCircle, MdChevronRight, MdClose, MdLocationOn, MdPeople, MdReportProblem, MdUploadFile, MdWarningAmber } from "react-icons/md";
+import { WorkerDetailModal } from "@/components/workers/WorkerDetailModal";
+import { useGetWorkerListQuery } from "@/redux/api/endpoints/workers.api";
+import { MdAccessTime, MdAdd, MdArrowForward, MdBusiness, MdCalendarToday, MdCheckCircle, MdChevronRight, MdLocationOn, MdPeople, MdReportProblem, MdUploadFile, MdWarningAmber } from "react-icons/md";
 import { CardGridSkeleton, DetailSkeleton } from "@/components/shared/SkeletonLoader";
 import { useGetDashboardOverviewQuery, useGetInProgressShiftsQuery } from "@/redux/api/dashboardApi";
-import { useGetTodayLiveShiftMetaQuery, useGetTodayLiveShiftsQuery } from "@/redux/api/shiftsApi";
+import {
+  useGetTodayLiveShiftMetaQuery,
+  useGetTodayLiveShiftsQuery,
+  useGetWorkerAttendanceListQuery,
+} from "@/redux/api/shiftsApi";
 import type { DashboardOverview, InProgressShift } from "@/services/actions/dashboard";
 import { getLocale } from "@/lib/locale";
 import { getDashboardTranslation, getUiTranslation } from "@/lib/translations";
@@ -57,16 +63,13 @@ export default function DashboardPage() {
     "all" | "upcoming" | "in_progress" | "completed" | "cancelled"
   >("all");
   const [actionsOpen, setActionsOpen] = useState(false);
-  const [selectedLateWorker, setSelectedLateWorker] = useState<{
-    worker_name: string;
-    late_duration_text: string;
-    phone_number: string;
-    delay_reason?: string;
-  } | null>(null);
+  const [detailWorkerId, setDetailWorkerId] = useState<string | null>(null);
 
   const { data: overview, isLoading: loadingOverview } = useGetDashboardOverviewQuery(filter || undefined);
   const { data: shiftsRes } = useGetInProgressShiftsQuery();
   const { data: todayLiveMeta } = useGetTodayLiveShiftMetaQuery();
+  // Names the late workers the meta only counts.
+  const { data: attendanceToday } = useGetWorkerAttendanceListQuery({ period: "today" });
   // The Live Operations tabs are sent to the API as `status`, so each tab is its own request
   // rather than a slice of one cached list.
   const { data: todayShiftsRes, isFetching: fetchingLiveShifts } = useGetTodayLiveShiftsQuery({
@@ -112,6 +115,7 @@ export default function DashboardPage() {
   };
 
   const attentionPills = uniqueBy(safeOverview.attention_banner.call_pills, (item) => item.worker_id);
+
   // `badge_text` and `banner_subtitle` are deliberately unused: the overview builds them from
   // its own `people_need_attention_count`, which can be 0 while the live meta reports a late
   // worker — that mismatch is what printed "All on time" above a late worker.
@@ -126,7 +130,55 @@ export default function DashboardPage() {
     const status = normalizeStatus(item.checkin_status || "");
     return status.includes("late") || status.includes("show") || status.includes("missing");
   });
+  /**
+   * Three endpoints each know about late workers and none of them knows about all of them:
+   * the overview returns call pills, the in-progress feed flags check-in status, and the live
+   * shift list carries attendance per assigned worker. They are merged and de-duplicated by
+   * worker id so the banner shows one chip per person, whichever source spotted them.
+   */
+  const lateWorkers = useMemo(() => {
+    const found = new Map<string, { id: string; name: string; detail: string }>();
+    const remember = (id?: string, name?: string, detail?: string) => {
+      if (!id || found.has(id)) return;
+      found.set(id, { id, name: name || "", detail: detail || "" });
+    };
+
+    (attendanceToday ?? [])
+      .filter((row) => row.late_days > 0)
+      .forEach((row) => remember(row.worker_id, row.name, t.dashboard.late));
+    attentionPills.forEach((pill) => remember(pill.worker_id, pill.worker_name, pill.late_duration_text));
+    fallingBehind.forEach((shift) => remember(shift.worker_id, shift.worker_name, shift.checkin_status));
+    todayLiveShifts.forEach((shift) =>
+      (shift.assigned_workers ?? []).forEach((worker) => {
+        const status = normalizeStatus(worker.attendance_status || worker.status || "");
+        if (status.includes("late") || status.includes("show") || status.includes("missing")) {
+          remember(worker.worker_id, worker.name, worker.attendance_status || worker.status);
+        }
+      }),
+    );
+
+    return Array.from(found.values());
+  }, [attendanceToday, attentionPills, fallingBehind, todayLiveShifts, t]);
+
   const cards = safeOverview.summary_cards;
+  /**
+   * A late worker's id here is not guaranteed to be the id `/worker/single-worker/:id` expects
+   * — depending on the source it can be the linked user id instead. The roster is matched
+   * against both, so the details modal always opens on the right person.
+   */
+  const { data: workerRoster } = useGetWorkerListQuery(
+    { page: 1, limit: 200 },
+    { skip: lateWorkers.length === 0 },
+  );
+
+  const openWorkerDetails = (workerId: string) => {
+    const match = (workerRoster?.result ?? []).find(
+      (worker) => worker._id === workerId || worker.user === workerId,
+    );
+    setDetailWorkerId(match?._id ?? workerId);
+  };
+
+
 
   /**
    * The banner used to trust `people_need_attention_count` alone, while the Late Workers card
@@ -141,6 +193,7 @@ export default function DashboardPage() {
     lateWorkerCount,
     attentionPills.length,
     fallingBehind.length,
+    lateWorkers.length,
   );
 
   const liveOperationsRows = useMemo(() => {
@@ -289,25 +342,29 @@ export default function DashboardPage() {
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            {attentionPills.length > 0 ? (
-              attentionPills.map((item) => (
+            {lateWorkers.length > 0 ? (
+              // One chip per late worker; opening it shows the same profile the Workers page does.
+              lateWorkers.map((worker) => (
                 <button
-                  key={item.worker_id}
-                  onClick={() => setSelectedLateWorker({
-                    worker_name: item.worker_name,
-                    late_duration_text: item.late_duration_text,
-                    phone_number: item.phone_number,
-                  })}
-                  title={item.worker_name}
-                  className="flex items-center gap-2 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50 transition-colors shadow-2xs cursor-pointer"
+                  key={worker.id}
+                  type="button"
+                  onClick={() => openWorkerDetails(worker.id)}
+                  title={`${worker.name || ui.worker}${worker.detail ? ` — ${worker.detail}` : ""}`}
+                  className="flex cursor-pointer items-center gap-2 rounded-md border border-red-300 bg-white px-2.5 py-1.5 text-left shadow-2xs transition-colors hover:border-red-400 hover:bg-red-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500"
                 >
-                  <img src="/avatar-placeholder.svg" alt={item.worker_name} className="h-6 w-6 rounded-full" />
-                  <span>{item.late_duration_text}</span>
-                  <MdCall className="text-sm" />
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-red-100 text-[10px] font-bold text-red-700">
+                    {initialsOf(worker.name)}
+                  </span>
+                  <span className="min-w-0">
+                    <b className="block max-w-[140px] truncate text-xs font-semibold text-red-900">
+                      {worker.name || ui.worker}
+                    </b>
+                    <small className="block text-[10px] text-red-600">{worker.detail || t.dashboard.late}</small>
+                  </span>
                 </button>
               ))
             ) : needAttentionCount > 0 ? (
-              // No pills came back, but something is late — never claim the schedule is clean.
+              // A count arrived without any worker attached to it — never claim the schedule is clean.
               <span className="text-xs font-medium text-red-700 bg-red-50 border border-red-200/80 rounded-lg px-3 py-1.5">
                 {lateWorkerCount || needAttentionCount} {ui.lateWorkers}
               </span>
@@ -544,43 +601,19 @@ export default function DashboardPage() {
         <MdArrowForward className="ml-auto text-slate-400" />
       </Link>
 
-      {/* Attendance Alert Modal */}
-      {selectedLateWorker && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4 animate-in fade-in">
-          <div className="w-full max-w-sm rounded-xl bg-white p-5 shadow-2xl border border-slate-200 animate-in zoom-in-95">
-            <div className="flex items-center justify-between pb-2">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-red-500">
-                {t.dashboard.attendanceAlert}
-              </span>
-              <button
-                type="button"
-                onClick={() => setSelectedLateWorker(null)}
-                className="text-slate-400 hover:text-slate-600 p-1 rounded-md cursor-pointer transition-colors"
-              >
-                <MdClose className="text-lg" />
-              </button>
-            </div>
-            <h3 className="text-base font-bold text-slate-900 mb-3">{selectedLateWorker.worker_name}</h3>
-            <div className="rounded-lg bg-red-50 p-4 text-red-700 border border-red-100 mb-4">
-              <b className="block text-sm font-bold">{selectedLateWorker.late_duration_text || t.dashboard.late}</b>
-              {selectedLateWorker.delay_reason && (
-                <p className="text-xs text-red-600 mt-1">Reason: {selectedLateWorker.delay_reason}</p>
-              )}
-            </div>
-            <div className="flex items-center">
-              <a
-                href={`tel:${selectedLateWorker.phone_number}`}
-                className="w-full flex items-center justify-center gap-1.5 h-10 rounded-lg border border-emerald-600 text-emerald-700 text-xs font-semibold hover:bg-emerald-50 transition-colors"
-              >
-                <MdCall className="text-sm" />
-                {t.dashboard.callEmployee}
-              </a>
-            </div>
-          </div>
-        </div>
+      {detailWorkerId && (
+        <WorkerDetailModal workerId={detailWorkerId} onClose={() => setDetailWorkerId(null)} />
       )}
     </div>
   );
+}
+
+/** Two letters for the chip avatar: first and last word of the name. */
+function initialsOf(name: string) {
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return "?";
+  if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
+  return `${words[0][0]}${words[words.length - 1][0]}`.toUpperCase();
 }
 
 function Metric({ icon, value, label, tone }: { icon: React.ReactNode; value: number; label: string; tone: string }) {

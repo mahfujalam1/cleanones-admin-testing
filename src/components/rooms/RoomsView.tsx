@@ -200,17 +200,22 @@ export function RoomsView({
         onPageChange={setPage}
         itemLabel="rooms"
       />
-      {/* No location yet means the form asks for client and location itself. */}
+      {/* Inside a client's location both are fixed by the page; on the global Rooms list the
+          form asks for them itself. */}
       {creating && (
         <RoomForm
+          clientId={scopedClientId}
           locationId={createLocation || ""}
+          lockScope={Boolean(scopedLocationId)}
           onClose={() => setCreating(false)}
         />
       )}
       {edit && (
         <RoomForm
           room={edit}
+          clientId={scopedClientId}
           locationId={refId(edit.location)}
+          lockScope={Boolean(scopedLocationId)}
           onClose={() => setEdit(null)}
         />
       )}

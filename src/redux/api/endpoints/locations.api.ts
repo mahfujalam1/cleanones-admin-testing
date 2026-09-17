@@ -3,7 +3,7 @@ import { listQuery, type GeoPoint, type ListParams, type Paginated, type Ref } f
 import { tagTypes } from "../../tagTypes";
 import type { Client } from "./clients.api";
 
-export const LOCATION_TYPES = ["Office", "Hotel", "School", "Hospital", "Other"] as const;
+export const LOCATION_TYPES = ["Hotel", "School", "Hospital", "Office", "Other"] as const;
 export type LocationType = (typeof LOCATION_TYPES)[number];
 
 export type Location = {
@@ -12,10 +12,12 @@ export type Location = {
   name: string;
   address: string;
   /**
-   * NOT YET IN THE API. The documented create/update schemas accept neither `type` nor
-   * `description`, so a Zod schema that strips unknown keys will silently drop both and they will
-   * read back as undefined. The UI collects and sends them; persisting them needs these two
-   * fields added to the location model and its validation.
+   * `type` IS validated by the API. Its enum is currently `'Hotel' | 'School' | 'Hospital' |
+   * 'Other'` — "Office" is offered here by product decision but the API rejects it with an
+   * invalid-enum error until it is added to the backend enum too. `description` is still not in
+   * the documented create/update schemas, so a Zod schema that strips unknown keys drops it and
+   * it reads back as undefined; persisting it needs the field added to the location model and
+   * its validation.
    *
    * The country is not collected separately — the address picked from Google Places already
    * carries it.

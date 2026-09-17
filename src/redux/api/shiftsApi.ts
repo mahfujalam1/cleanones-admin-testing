@@ -51,8 +51,34 @@ export const shiftsApi = baseApi.injectEndpoints({
       },
       providesTags: ["shifts" as never, "shiftMonitoring" as never],
     }),
+    /**
+     * One row per active worker for the period, carrying `late_days`. The live-shift meta only
+     * reports how many workers were late, never who — this is the endpoint that names them.
+     */
+    getWorkerAttendanceList: builder.query<
+      WorkerAttendanceListItem[],
+      { period?: "today" | "weekly" | "monthly"; search?: string; type?: "all" | "Employee" | "Freelancer" } | void
+    >({
+      query: (params) => {
+        const q = new URLSearchParams({ period: params?.period ?? "today" });
+        if (params?.search) q.set("search", params.search);
+        if (params?.type && params.type !== "all") q.set("type", params.type);
+        return `/shift/attendance-list?${q.toString()}`;
+      },
+      providesTags: ["shifts" as never, "shiftMonitoring" as never],
+    }),
   }),
 });
+
+export type WorkerAttendanceListItem = {
+  worker_id: string;
+  name: string;
+  worker_type: "Employee" | "Freelancer";
+  hours_worked: number;
+  total_shifts: number;
+  /** Check-ins after the shift's scheduled start. No grace period is applied server-side. */
+  late_days: number;
+};
 
 export type TodayLiveShiftMeta = {
   today_total_shift?: number;
@@ -163,4 +189,5 @@ export const {
   useGetSingleLiveShiftQuery,
   useGetWorkerPerformanceQuery,
   useGetShiftAttendanceSummaryQuery,
+  useGetWorkerAttendanceListQuery,
 } = shiftsApi;

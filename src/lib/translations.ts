@@ -1458,10 +1458,12 @@ export type UiDict = {
   workersNeedAttention: string;
   lateWorkerSubtitle: string;
   lateWorkersSubtitle: string;
+  viewWorkerDetails: string;
 };
 
 export const uiTranslations: Record<string, UiDict> = {
   en: {
+    viewWorkerDetails: "View details",
     attentionRequired: "Attention required",
     workerNeedsAttention: "worker needs attention",
     workersNeedAttention: "workers need attention",
@@ -1754,6 +1756,7 @@ export const uiTranslations: Record<string, UiDict> = {
     noDataFound: "No data found",
   },
   nl: {
+    viewWorkerDetails: "Details bekijken",
     attentionRequired: "Aandacht vereist",
     workerNeedsAttention: "medewerker heeft aandacht nodig",
     workersNeedAttention: "medewerkers hebben aandacht nodig",
@@ -2046,6 +2049,7 @@ export const uiTranslations: Record<string, UiDict> = {
     noDataFound: "Geen gegevens gevonden",
   },
   pl: {
+    viewWorkerDetails: "Zobacz szczegóły",
     attentionRequired: "Wymagana uwaga",
     workerNeedsAttention: "pracownik wymaga uwagi",
     workersNeedAttention: "pracowników wymaga uwagi",
@@ -2338,6 +2342,7 @@ export const uiTranslations: Record<string, UiDict> = {
     noDataFound: "Nie znaleziono danych",
   },
   uk: {
+    viewWorkerDetails: "Переглянути деталі",
     attentionRequired: "Потрібна увага",
     workerNeedsAttention: "працівник потребує уваги",
     workersNeedAttention: "працівників потребують уваги",
@@ -2630,6 +2635,7 @@ export const uiTranslations: Record<string, UiDict> = {
     noDataFound: "Даних не знайдено",
   },
   pt: {
+    viewWorkerDetails: "Ver detalhes",
     attentionRequired: "Atenção necessária",
     workerNeedsAttention: "trabalhador precisa de atenção",
     workersNeedAttention: "trabalhadores precisam de atenção",
@@ -2922,6 +2928,7 @@ export const uiTranslations: Record<string, UiDict> = {
     noDataFound: "Nenhum dado encontrado",
   },
   ar: {
+    viewWorkerDetails: "عرض التفاصيل",
     attentionRequired: "يتطلب انتباهًا",
     workerNeedsAttention: "عامل يحتاج إلى انتباه",
     workersNeedAttention: "عمال يحتاجون إلى انتباه",
@@ -3214,6 +3221,7 @@ export const uiTranslations: Record<string, UiDict> = {
     noDataFound: "لا توجد بيانات",
   },
   fr: {
+    viewWorkerDetails: "Voir les détails",
     attentionRequired: "Attention requise",
     workerNeedsAttention: "employé demande votre attention",
     workersNeedAttention: "employés demandent votre attention",
@@ -3506,6 +3514,7 @@ export const uiTranslations: Record<string, UiDict> = {
     noDataFound: "Aucune donnée trouvée",
   },
   es: {
+    viewWorkerDetails: "Ver detalles",
     attentionRequired: "Atención requerida",
     workerNeedsAttention: "trabajador necesita atención",
     workersNeedAttention: "trabajadores necesitan atención",
