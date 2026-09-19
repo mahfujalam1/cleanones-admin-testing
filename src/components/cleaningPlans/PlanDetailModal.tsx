@@ -1,8 +1,9 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import {
+  MdChevronLeft,
   MdDeleteOutline,
   MdModeEditOutline,
   MdCheckCircle,
@@ -27,11 +28,19 @@ import type { Worker } from "@/redux/api/endpoints/workers.api";
 import { workerName } from "@/redux/api/endpoints/workers.api";
 import {
   planCounts,
+  planWorkDurationMinutes,
   useGetCleaningPlanQuery,
-  useGetEligibleWorkersQuery,
   type CleaningPlan,
 } from "@/redux/api/endpoints/cleaningPlans.api";
 import { useModalJump } from "@/hooks/useModalJump";
+import {
+  AssignWorkersPanel,
+  formatAssignDateLabel,
+  type ShiftAssignTarget,
+} from "@/components/cleaningPlans/AssignWorkersModal";
+import type { PlanRosterAssignedWorker, PlanShiftDetail } from "@/redux/api/rosterApi";
+import { useGetPlanShiftQuery } from "@/redux/api/rosterApi";
+import { canStaff, formatClock, roundedEndFromStart, statusLabel } from "@/components/shift-management/planShift";
 
 const formatDateTime = (value?: string) => {
   if (!value) return null;
@@ -41,19 +50,28 @@ const formatDateTime = (value?: string) => {
 };
 
 /**
- * The end of the visit, derived the way the roster does it: the start plus the plan's
- * estimated duration. `end_date` is the date the plan repeats until, not a finish time, so it
- * is only used when there is no duration to work from.
+ * Finish time is start plus the plan's total duration, then rounded up to a :00/:30 slot.
+ * `end_date` is the date the plan repeats until, not a finish time, so it is only used
+ * when there is no duration to work from.
  */
 const formatPlanEnd = (start?: string, minutes?: number, endDate?: string) => {
   if (start && minutes) {
     const parsed = new Date(start);
     if (!Number.isNaN(parsed.getTime())) {
-      return formatDateTime(new Date(parsed.getTime() + minutes * 60_000).toISOString());
+      const rounded = roundedEndFromStart(parsed, minutes);
+      if (rounded) return formatDateTime(rounded.toISOString());
     }
   }
   return formatDate(endDate);
 };
+
+function computedEndIso(start?: string | null, durationMinutes?: number, date?: string) {
+  if (!start || !durationMinutes || durationMinutes <= 0) return undefined;
+  const parsed = /^\d{2}:\d{2}$/.test(start) && date
+    ? new Date(`${date}T${start}:00`)
+    : new Date(start);
+  return roundedEndFromStart(parsed, durationMinutes)?.toISOString();
+}
 
 const formatDate = (value?: string) => {
   if (!value) return null;
@@ -114,7 +132,15 @@ function initials(name: string) {
   return `${words[0][0]}${words[words.length - 1][0]}`.toUpperCase();
 }
 
-function PlanBody({ plan, onAssign }: { plan: CleaningPlan; onAssign?: (plan: CleaningPlan) => void }) {
+function PlanBody({
+  plan,
+  assignedWorkers,
+  shiftSchedule,
+}: {
+  plan: CleaningPlan;
+  assignedWorkers?: PlanRosterAssignedWorker[];
+  shiftSchedule?: { date?: string; startTime?: string | null; endTime?: string | null };
+}) {
   const { data: clientPage } = useGetClientsQuery(CLIENT_LOOKUP_ARGS);
   const populatedClient = refDoc<Client>(plan.client);
   const client =
@@ -144,20 +170,41 @@ function PlanBody({ plan, onAssign }: { plan: CleaningPlan; onAssign?: (plan: Cl
   const totalTasksDisplay =
     allRoomTasks.length > 0 ? allRoomTasks.length + (tasks.length || counts.tasks) : (tasks.length || counts.tasks);
 
+  const crew = assignedWorkers
+    ? assignedWorkers
+        .filter((worker) => worker.worker_id || worker.name)
+        .map((worker) => ({
+          id: worker.worker_id || worker.name,
+          name: worker.name,
+          role: worker.role,
+          conflict: false,
+        }))
+    : (plan.assigned_workers ?? []).map((assignment, index) => {
+        const worker = refDoc<Worker>(assignment.worker);
+        return {
+          id: `${refId(assignment.worker)}-${index}`,
+          name: worker ? workerName(worker) : refId(assignment.worker),
+          role: assignment.role,
+          conflict: Boolean(assignment.assigned_with_conflict),
+        };
+      });
+
+  const durationMinutes = planWorkDurationMinutes(plan);
+
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Tile
           icon={<MdOutlineSchedule />}
-          value={plan.max_estimated_duration ? `${plan.max_estimated_duration}m` : "—"}
-          label="Duration"
+          value={durationMinutes > 0 ? `${durationMinutes}m` : "—"}
+          label="Total duration"
         />
         <Tile icon={<MdOutlineMeetingRoom />} value={rooms.length || counts.rooms} label="Rooms" />
         <Tile icon={<MdOutlineAssignment />} value={totalTasksDisplay} label="Tasks" />
         <Tile icon={<MdOutlinePhotoCamera />} value={totalPhotos} label="Photos" />
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
+      <div className={`grid gap-4 ${assignedWorkers || crew.length > 0 ? "lg:grid-cols-[1.4fr_1fr]" : ""}`}>
         <div className="space-y-4">
           <Panel title="Client & location">
             <div className="grid gap-4 sm:grid-cols-2">
@@ -167,11 +214,12 @@ function PlanBody({ plan, onAssign }: { plan: CleaningPlan; onAssign?: (plan: Cl
               <Detail icon={<MdOutlinePlace />} label="Location">
                 {locationName}
               </Detail>
-              <Detail icon={<MdOutlineSchedule />} label="Starts">
-                {formatDateTime(plan.date_time)}
+              <Detail icon={<MdOutlineSchedule />} label="Start time">
+                {formatClock(shiftSchedule?.startTime) || formatDateTime(plan.date_time)}
               </Detail>
-              <Detail icon={<MdOutlineSchedule />} label="Ends">
-                {formatPlanEnd(plan.date_time, plan.max_estimated_duration, plan.end_date)}
+              <Detail icon={<MdOutlineSchedule />} label="End time">
+                {formatClock(shiftSchedule?.endTime)
+                  || formatPlanEnd(shiftSchedule?.startTime || plan.date_time, durationMinutes, plan.end_date)}
               </Detail>
             </div>
 
@@ -316,48 +364,226 @@ function PlanBody({ plan, onAssign }: { plan: CleaningPlan; onAssign?: (plan: Cl
           </Panel>
         </div>
 
-        <Panel
-          title={`Assigned workers (${counts.workers})`}
-          action={
-            onAssign && (
-              <button
-                type="button"
-                onClick={() => onAssign(plan)}
-                className="cursor-pointer text-[11px] font-semibold text-primary hover:underline"
-              >
-                Edit
-              </button>
-            )
-          }
-        >
-          {(plan.assigned_workers ?? []).length === 0 ? (
-            <p className="text-xs text-slate-400">Nobody assigned yet.</p>
+        {(assignedWorkers || (plan.assigned_workers ?? []).length > 0) && (
+        <Panel title={`Assigned workers (${crew.length})`}>
+          {crew.length === 0 ? (
+            <p className="text-xs text-slate-400">Nobody assigned yet. Staff each due date from Shift Management.</p>
           ) : (
             <ul className="space-y-2.5">
-              {(plan.assigned_workers ?? []).map((assignment, index) => {
-                const worker = refDoc<Worker>(assignment.worker);
-                const name = worker ? workerName(worker) : refId(assignment.worker);
-                return (
-                  <li key={`${refId(assignment.worker)}-${index}`} className="flex items-center gap-3">
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-100 text-[11px] font-semibold text-slate-500 ring-1 ring-slate-200">
-                      {initials(name)}
+              {crew.map((assignment) => (
+                <li key={assignment.id} className="flex items-center gap-3">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-100 text-[11px] font-semibold text-slate-500 ring-1 ring-slate-200">
+                    {initials(assignment.name)}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-slate-800">{assignment.name}</p>
+                    <p className="truncate text-xs text-slate-400">{assignment.role || "Worker"}</p>
+                  </div>
+                  {assignment.conflict && (
+                    <span
+                      title="This worker is already booked at that time"
+                      className="shrink-0 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700"
+                    >
+                      Conflict
                     </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium text-slate-800">{name}</p>
-                      <p className="truncate text-xs text-slate-400">{assignment.role || "Worker"}</p>
-                    </div>
-                    {assignment.assigned_with_conflict && (
-                      <span
-                        title="This worker is already booked at that time"
-                        className="shrink-0 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700"
-                      >
-                        Conflict
-                      </span>
-                    )}
-                  </li>
-                );
-              })}
+                  )}
+                </li>
+              ))}
             </ul>
+          )}
+        </Panel>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ShiftBody({
+  shift,
+  schedule,
+  onManage,
+  manageLabel,
+}: {
+  shift: PlanShiftDetail;
+  schedule: { date?: string; startTime?: string | null; endTime?: string | null };
+  onManage?: () => void;
+  manageLabel?: string;
+}) {
+  const rooms = shift.room_items ?? [];
+  const tasks = shift.task_items ?? [];
+  const extraTasks = tasks.filter((task) => !task.room_id || !rooms.some((room) => room.id === task.room_id));
+  const photoCount = tasks.reduce((total, task) => {
+    const required = task.photo_requirements?.length ?? 0;
+    if (required > 0) return total + required;
+    return total + (task.is_photo_required ? 1 : 0);
+  }, 0);
+  const crew = (shift.assigned_workers ?? [])
+    .filter((worker) => worker.worker_id || worker.name)
+    .map((worker) => ({
+      id: worker.worker_id || worker.name,
+      name: worker.name,
+      role: worker.role,
+    }));
+  const durationMinutes = shift.duration_minutes ?? 0;
+  const locationName = shift.location_name;
+  const clientName = shift.client_name || locationName;
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <Tile
+          icon={<MdOutlineSchedule />}
+          value={durationMinutes > 0 ? `${durationMinutes}m` : "—"}
+          label="Total duration"
+        />
+        <Tile icon={<MdOutlineMeetingRoom />} value={rooms.length || shift.rooms?.total || 0} label="Rooms" />
+        <Tile icon={<MdOutlineAssignment />} value={tasks.length || shift.tasks?.total || 0} label="Tasks" />
+        <Tile icon={<MdOutlinePhotoCamera />} value={photoCount} label="Photos" />
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
+        <div className="space-y-4">
+          <Panel title="Client & location">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Detail icon={<MdOutlineBusinessCenter />} label="Client">
+                {clientName}
+              </Detail>
+              <Detail icon={<MdOutlinePlace />} label="Location">
+                {locationName}
+              </Detail>
+              <Detail icon={<MdOutlineSchedule />} label="Start time">
+                {formatClock(schedule.startTime)}
+              </Detail>
+              <Detail icon={<MdOutlineSchedule />} label="End time">
+                {formatClock(schedule.endTime)
+                  || formatPlanEnd(schedule.startTime ?? undefined, durationMinutes)}
+              </Detail>
+            </div>
+
+            {shift.description && (
+              <div className="mt-4 border-t border-slate-100 pt-4">
+                <p className="text-[11px] uppercase tracking-wide text-slate-400">Description</p>
+                <p className="mt-1 whitespace-pre-line text-sm leading-relaxed text-slate-600">
+                  {shift.description}
+                </p>
+              </div>
+            )}
+          </Panel>
+
+          <Panel title={`Rooms (${rooms.length})`}>
+            {rooms.length === 0 ? (
+              <p className="text-xs text-slate-400">No rooms on this shift.</p>
+            ) : (
+              <ul className="space-y-3">
+                {rooms.map((room) => {
+                  const roomTasks = tasks.filter((task) => task.room_id === room.id);
+                  return (
+                    <li
+                      key={room.id || room.name}
+                      className="space-y-2.5 rounded-xl border border-slate-200/80 bg-slate-50/50 p-3 transition-colors hover:border-slate-300"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex min-w-0 items-center gap-2.5">
+                          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-sky-50 text-base text-sky-600 ring-1 ring-sky-100">
+                            <MdOutlineMeetingRoom />
+                          </span>
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-semibold text-slate-900">{room.name}</p>
+                            {room.room_type && <p className="text-xs text-slate-500">{room.room_type}</p>}
+                          </div>
+                        </div>
+                        {roomTasks.length > 0 && (
+                          <span className="shrink-0 rounded-full border border-sky-100 bg-sky-50 px-2.5 py-0.5 text-[11px] font-semibold text-sky-700">
+                            {roomTasks.length} {roomTasks.length === 1 ? "task" : "tasks"}
+                          </span>
+                        )}
+                      </div>
+                      {roomTasks.length > 0 && (
+                        <div className="mt-2 space-y-1.5 border-t border-slate-200/60 pt-2">
+                          {roomTasks.map((task) => (
+                            <div
+                              key={task.id || task.name}
+                              className="flex items-center justify-between gap-2 rounded-lg bg-white px-2.5 py-1.5 text-xs text-slate-700 ring-1 ring-slate-200/60"
+                            >
+                              <span className="truncate font-medium">{task.name}</span>
+                              <div className="flex shrink-0 items-center gap-2 text-[10px] text-slate-500">
+                                {typeof task.duration_minutes === "number" && task.duration_minutes > 0 && (
+                                  <span>{task.duration_minutes}m</span>
+                                )}
+                                {task.is_photo_required && (
+                                  <span className="flex items-center gap-0.5 font-medium text-amber-600">
+                                    <MdOutlinePhotoCamera /> Photo
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </Panel>
+
+          {extraTasks.length > 0 && (
+            <Panel title={`Additional tasks (${extraTasks.length})`}>
+              <ul className="space-y-2.5">
+                {extraTasks.map((task) => (
+                  <li key={task.id || task.name} className="rounded-lg border border-slate-200 p-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <p className="min-w-0 flex-1 truncate text-sm font-medium text-slate-800">{task.name}</p>
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                          task.is_completed ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500"
+                        }`}
+                      >
+                        {task.is_completed ? "Completed" : "Incomplete"}
+                      </span>
+                    </div>
+                    <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-400">
+                      {typeof task.duration_minutes === "number" && <span>{task.duration_minutes} min</span>}
+                      {task.is_photo_required && (
+                        <span className="inline-flex items-center gap-1 text-amber-600">
+                          <MdOutlinePhotoCamera className="text-xs" />
+                          {task.photo_requirements?.length
+                            ? `${task.photo_requirements.length} photos`
+                            : "Photo required"}
+                        </span>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </Panel>
+          )}
+        </div>
+
+        <Panel title={`Assigned workers (${crew.length})`}>
+          {crew.length === 0 ? (
+            <p className="text-xs text-slate-400">Nobody assigned yet. Staff each due date from Shift Management.</p>
+          ) : (
+            <ul className="space-y-2.5">
+              {crew.map((assignment) => (
+                <li key={assignment.id} className="flex items-center gap-3">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-100 text-[11px] font-semibold text-slate-500 ring-1 ring-slate-200">
+                    {initials(assignment.name)}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-slate-800">{assignment.name}</p>
+                    <p className="truncate text-xs text-slate-400">{assignment.role || "Worker"}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+          {onManage && (
+            <div className="mt-3 flex justify-center">
+              <Button size="sm" onClick={onManage}>
+                <MdOutlineGroupAdd className="text-sm" /> {manageLabel ?? "Assign workers"}
+              </Button>
+            </div>
           )}
         </Panel>
       </div>
@@ -367,20 +593,89 @@ function PlanBody({ plan, onAssign }: { plan: CleaningPlan; onAssign?: (plan: Cl
 
 export function PlanDetailModal({
   planId,
+  shiftDate,
   onClose,
   onEdit,
   onDelete,
   onAssign,
+  assignTarget,
+  assignedWorkers,
+  shiftSchedule,
+  onAssigned,
 }: {
   planId: string;
+  shiftDate?: string;
   onClose: () => void;
   onEdit?: (plan: CleaningPlan) => void;
   onDelete?: (plan: CleaningPlan) => void;
   onAssign?: (plan: CleaningPlan) => void;
+  assignTarget?: ShiftAssignTarget;
+  assignedWorkers?: PlanRosterAssignedWorker[];
+  shiftSchedule?: { date?: string; startTime?: string | null; endTime?: string | null };
+  onAssigned?: () => void;
 }) {
-  const { data: plan, isLoading, error } = useGetCleaningPlanQuery(planId);
+  const fromShift = Boolean(shiftDate);
+  const { data: plan, isLoading: planLoading, error: planError } = useGetCleaningPlanQuery(planId, {
+    skip: fromShift,
+  });
+  const { data: planShift, isLoading: shiftLoading, error: shiftError } = useGetPlanShiftQuery(
+    { planId, date: shiftDate ?? "" },
+    { skip: !shiftDate },
+  );
+  const isLoading = fromShift ? shiftLoading : planLoading;
+  const error = fromShift ? shiftError : planError;
   const active = plan?.is_active ?? plan?.status === "active";
+  const shiftStatus = statusLabel(planShift?.status);
   const { triggerJump, jumpClassName } = useModalJump();
+  const [step, setStep] = useState<"details" | "assign">("details");
+  const assigning = step === "assign";
+  const liveWorkers = planShift?.assigned_workers ?? assignedWorkers ?? assignTarget?.assignedWorkers;
+  const startTime = planShift?.start_time ?? shiftSchedule?.startTime ?? assignTarget?.startTime;
+  const durationMinutes =
+    planShift?.duration_minutes || assignTarget?.durationMinutes || (plan ? planWorkDurationMinutes(plan) : 0);
+  const liveSchedule = {
+    date: shiftDate ?? planShift?.date ?? shiftSchedule?.date ?? assignTarget?.date,
+    startTime,
+    endTime:
+      computedEndIso(startTime, durationMinutes, shiftDate ?? planShift?.date ?? shiftSchedule?.date ?? assignTarget?.date)
+      ?? (durationMinutes ? undefined : planShift?.end_time ?? shiftSchedule?.endTime ?? assignTarget?.endTime),
+  };
+  const liveAssignTarget = (assignTarget || shiftDate)
+    ? {
+        planId,
+        date: liveSchedule.date ?? shiftDate ?? assignTarget?.date ?? "",
+        planTitle: assignTarget?.planTitle ?? planShift?.plan_title ?? plan?.title,
+        locationName: assignTarget?.locationName ?? planShift?.location_name,
+        startTime: liveSchedule.startTime ?? undefined,
+        endTime: liveSchedule.endTime ?? undefined,
+        durationMinutes: durationMinutes || undefined,
+        assignedWorkers: liveWorkers,
+      }
+    : undefined;
+  const staffable = planShift ? canStaff(planShift) : Boolean(assignTarget) || Boolean(onAssign);
+  const canAssign = Boolean(staffable && (liveAssignTarget || onAssign));
+  const title = assignTarget?.planTitle || planShift?.plan_title || planShift?.location_name || plan?.title || "Cleaning plan";
+  const crewCount = (liveWorkers ?? []).length;
+  const isStaffed = crewCount > 0;
+  const schedule = liveSchedule;
+  const scheduleLabel = [
+    schedule.date ? formatAssignDateLabel(schedule.date) : "",
+    formatClock(schedule.startTime) && formatClock(schedule.endTime)
+      ? `${formatClock(schedule.startTime)} – ${formatClock(schedule.endTime)}`
+      : formatClock(schedule.startTime) || formatClock(schedule.endTime),
+  ].filter(Boolean).join(" · ");
+
+  useEffect(() => {
+    setStep("details");
+  }, [planId, shiftDate]);
+
+  const goAssign = () => {
+    if (liveAssignTarget) {
+      setStep("assign");
+      return;
+    }
+    if (plan) onAssign?.(plan);
+  };
 
   if (typeof document === "undefined") return null;
 
@@ -399,48 +694,61 @@ export function PlanDetailModal({
       <div
         role="dialog"
         aria-modal="true"
-        aria-label="Cleaning plan"
-        className={`flex max-h-[88vh] w-full max-w-4xl flex-col rounded-xl bg-slate-50 shadow-2xl animate-in fade-in zoom-in-95 duration-200 ${jumpClassName}`}
+        aria-label={assigning ? "Assign workers" : "Cleaning plan"}
+        className={`flex w-full max-w-4xl flex-col overflow-hidden rounded-xl bg-slate-50 shadow-2xl animate-in fade-in zoom-in-95 duration-200 ${liveAssignTarget ? "h-[88vh]" : "max-h-[88vh]"} ${jumpClassName}`}
       >
         <header className="flex items-start justify-between gap-4 border-b border-slate-200 bg-white px-5 py-4">
           <div className="flex min-w-0 items-start gap-3">
-            <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-50 text-lg text-slate-400 ring-1 ring-slate-200/70">
-              <MdOutlineAssignment />
-            </span>
+            {assigning ? (
+              <button
+                type="button"
+                onClick={() => setStep("details")}
+                aria-label="Back to plan details"
+                className="mt-0.5 flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-lg bg-slate-50 text-lg text-slate-500 ring-1 ring-slate-200/70 transition-colors hover:bg-slate-100 hover:text-slate-800"
+              >
+                <MdChevronLeft />
+              </button>
+            ) : (
+              <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-50 text-lg text-slate-400 ring-1 ring-slate-200/70">
+                <MdOutlineAssignment />
+              </span>
+            )}
             <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <h2 className="truncate text-base font-semibold text-slate-900">
-                  {plan?.title ?? "Cleaning plan"}
+                  {assigning ? (isStaffed ? "Manage workers" : "Assign workers") : title}
                 </h2>
-                {plan && (
+                {!assigning && (fromShift ? Boolean(shiftStatus) : Boolean(plan)) && (
                   <span
                     className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${
-                      active ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500"
+                      fromShift
+                        ? "bg-emerald-50 text-emerald-700"
+                        : active
+                          ? "bg-emerald-50 text-emerald-700"
+                          : "bg-slate-100 text-slate-500"
                     }`}
                   >
-                    {active ? "Active" : "Inactive"}
+                    {fromShift ? shiftStatus : active ? "Active" : "Inactive"}
                   </span>
                 )}
               </div>
               <p className="mt-0.5 truncate text-xs text-slate-500">
-                {formatDateTime(plan?.date_time)}
-                {plan?.end_date ? ` → ${formatDate(plan.end_date)}` : ""}
+                {assigning && liveAssignTarget
+                  ? [plan?.title ?? liveAssignTarget.planTitle, liveAssignTarget.locationName, formatAssignDateLabel(liveAssignTarget.date)]
+                      .filter(Boolean)
+                      .join(" · ")
+                  : scheduleLabel || (fromShift ? "" : `${formatDateTime(plan?.date_time) ?? ""}${plan?.end_date ? ` → ${formatDate(plan.end_date)}` : ""}`)}
               </p>
             </div>
           </div>
 
           <div className="flex shrink-0 items-center gap-1.5">
-            {plan && onAssign && (
-              <Button size="sm" onClick={() => onAssign(plan)}>
-                <MdOutlineGroupAdd className="text-sm" /> Assign workers
-              </Button>
-            )}
-            {plan && onEdit && (
+            {plan && onEdit && !assigning && (
               <Button variant="secondary" size="sm" onClick={() => onEdit(plan)}>
                 <MdModeEditOutline className="text-sm" /> Edit
               </Button>
             )}
-            {plan && onDelete && (
+            {plan && onDelete && !assigning && (
               <button
                 type="button"
                 aria-label="Delete plan"
@@ -461,21 +769,62 @@ export function PlanDetailModal({
           </div>
         </header>
 
-        <div className="min-h-0 flex-1 overflow-y-auto p-5">
-          {isLoading ? (
-            <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-                {Array.from({ length: 4 }, (_, index) => (
-                  <div key={index} className="h-16 animate-pulse rounded-xl bg-white" />
-                ))}
+        <div className="relative min-h-0 flex-1 overflow-hidden">
+          <div
+            className="flex h-full w-[200%] transition-transform duration-300 ease-out"
+            style={{ transform: assigning ? "translateX(-50%)" : "translateX(0)" }}
+          >
+            <div className="flex h-full w-1/2 flex-col">
+              <div className="min-h-0 flex-1 overflow-y-auto p-5">
+                {isLoading ? (
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                      {Array.from({ length: 4 }, (_, index) => (
+                        <div key={index} className="h-16 animate-pulse rounded-xl bg-white" />
+                      ))}
+                    </div>
+                    <div className="h-64 animate-pulse rounded-xl bg-white" />
+                  </div>
+                ) : error ? (
+                  <ErrorNotice message={apiError(error)} />
+                ) : fromShift && planShift ? (
+                  <ShiftBody
+                    shift={planShift}
+                    schedule={schedule}
+                    onManage={canAssign ? goAssign : undefined}
+                    manageLabel={isStaffed ? "Manage workers" : "Assign workers"}
+                  />
+                ) : plan ? (
+                  <PlanBody
+                    plan={plan}
+                    assignedWorkers={liveWorkers}
+                    shiftSchedule={schedule}
+                  />
+                ) : null}
               </div>
-              <div className="h-64 animate-pulse rounded-xl bg-white" />
+              {!fromShift && plan && canAssign && (
+                <div className="flex shrink-0 justify-end border-t border-slate-200 bg-white px-5 py-3">
+                  <Button size="sm" onClick={goAssign}>
+                    <MdOutlineGroupAdd className="text-sm" /> {isStaffed ? "Manage workers" : "Assign workers"}
+                  </Button>
+                </div>
+              )}
             </div>
-          ) : error ? (
-            <ErrorNotice message={apiError(error)} />
-          ) : plan ? (
-            <PlanBody plan={plan} onAssign={onAssign} />
-          ) : null}
+            <div className="flex h-full w-1/2 flex-col overflow-hidden bg-white">
+              {canAssign && liveAssignTarget ? (
+                <AssignWorkersPanel
+                  target={liveAssignTarget}
+                  embedded
+                  active={assigning}
+                  onCancel={() => setStep("details")}
+                  onSaved={() => {
+                    onAssigned?.();
+                    onClose();
+                  }}
+                />
+              ) : null}
+            </div>
+          </div>
         </div>
       </div>
     </div>,
