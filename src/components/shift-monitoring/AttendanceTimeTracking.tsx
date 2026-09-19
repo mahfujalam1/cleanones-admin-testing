@@ -4,7 +4,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { MdSearch, MdClose, MdFilterList } from 'react-icons/md';
 import { TbClock, TbCalendarStats, TbAlertTriangle, TbCircleCheck } from 'react-icons/tb';
 import { WorkerInfo } from './types';
-import { type AttendanceWorker, type Period } from '@/services/actions/shiftMonitoring';
+import type { AttendanceWorker, Period } from '@/redux/api/shiftsApi';
 import { useGetShiftAttendanceSummaryQuery } from '@/redux/api/shiftsApi';
 import { useGetWorkerListQuery, workerName } from '@/redux/api/endpoints/workers.api';
 import { BackendPagination } from '@/components/shared/BackendPagination';

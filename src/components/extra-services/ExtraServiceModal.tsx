@@ -16,7 +16,6 @@ import type { ExtraServiceModalProps } from "./types";
 import { useModalJump } from "@/hooks/useModalJump";
 import { getCleaningPlan, type PlanDetails } from "@/services/actions/cleaningPlans";
 import { type ExtraServiceRequest, type ExtraServiceTaskDetail } from "@/services/actions/extraServices";
-import { getLocationCleaningPlans } from "@/services/actions/locations";
 import { statusColor } from "./ExtraServiceCard";
 import {
   additionalTaskStatus,
@@ -29,6 +28,7 @@ import {
   clientLabel,
   type Client,
 } from "@/redux/api/endpoints/clients.api";
+import { useLazyGetCleaningPlanListQuery } from "@/redux/api/endpoints/cleaningPlans.api";
 import { ExtraServicePlanSection } from "./ExtraServicePlanSection";
 import { ExtraServiceActionFooter } from "./ExtraServiceActionFooter";
 import { getLocale } from "@/lib/locale";
@@ -100,6 +100,7 @@ export function ExtraServiceModal({ request, onClose, onDone, onError }: ExtraSe
 
   // Read all clients for full account card information
   const { data: clientsData } = useGetClientsQuery(CLIENT_LOOKUP_ARGS);
+  const [fetchCleaningPlans] = useLazyGetCleaningPlanListQuery();
 
   useEffect(() => {
     let active = true;
@@ -109,9 +110,11 @@ export function ExtraServiceModal({ request, onClose, onDone, onError }: ExtraSe
       const locationId = typeof request.location_id === "string" ? request.location_id : (request.location_id as any)?._id;
 
       if (!currentPlanId && locationId) {
-        const locPlansRes = await getLocationCleaningPlans(locationId);
-        if (active && locPlansRes.success && locPlansRes.data.plans?.length) {
-          currentPlanId = locPlansRes.data.plans[0].plan_id;
+        try {
+          const page = await fetchCleaningPlans({ location: locationId, limit: 1 }, true).unwrap();
+          if (active) currentPlanId = page.result[0]?._id ?? "";
+        } catch {
+          // No plan for this location; the section below renders its empty state.
         }
       }
 
@@ -131,7 +134,7 @@ export function ExtraServiceModal({ request, onClose, onDone, onError }: ExtraSe
     return () => {
       active = false;
     };
-  }, [request.id, request.planId, request.location_id, request.isCleaningPlanTask, taskPlanObj?._id]);
+  }, [fetchCleaningPlans, request.id, request.planId, request.location_id, request.isCleaningPlanTask, taskPlanObj?._id]);
 
   // Resolve matching client for the Client Card display
   const targetClientId =

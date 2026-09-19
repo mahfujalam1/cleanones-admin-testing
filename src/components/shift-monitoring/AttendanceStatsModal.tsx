@@ -7,7 +7,7 @@ import { TbClock, TbCalendarStats, TbHourglass, TbAlertTriangle, TbChartBar, TbT
 import { useRouter } from 'next/navigation';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { WorkerInfo } from './types';
-import { getWorkerAttendanceStats, type Period } from '@/services/actions/shiftMonitoring';
+import type { Period } from '@/redux/api/shiftsApi';
 import { DetailSkeleton } from '@/components/shared/SkeletonLoader';
 import { useModalJump } from '@/hooks/useModalJump';
 import { apiError } from '@/redux/api/apiError';
@@ -21,41 +21,12 @@ interface AttendanceStatsModalProps {
 
 export function AttendanceStatsModal({ worker, onClose, period = 'monthly' }: AttendanceStatsModalProps) {
   const router = useRouter();
-  const [stats, setStats] = useState<{
-    hours_worked: string;
-    completed_shifts: number;
-    avg_shift_duration: string;
-    late_checkins: number;
-    weekly_hours_trend: Array<{ week_label: string; hours: number }>;
-    monthly_hours_trend: Array<{ month_label: string; hours: number }>;
-  } | null>(null);
-
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const { triggerJump, jumpClassName } = useModalJump();
 
-  useEffect(() => {
-    let active = true;
-    setLoading(true);
-    void getWorkerAttendanceStats(String(worker.id), period).then((result) => {
-      if (!active) return;
-      setLoading(false);
-      if (result.success) {
-        setStats(result.data);
-        setError('');
-      } else {
-        setError(result.error);
-      }
-    });
-    return () => {
-      active = false;
-    };
-  }, [worker.id, period]);
-
   /**
-   * The headline figures come from /shift/attendance-summary/:workerId for the chosen period;
-   * the worker-stats call above is kept only for the weekly and monthly trend series, which
-   * the summary route does not carry.
+   * The headline figures come from /shift/attendance-summary/:workerId for the chosen period.
+   * The weekly and monthly trend series have no endpoint in the current API, so those charts
+   * stay empty until one lands.
    */
   const {
     data: summary,
@@ -66,22 +37,16 @@ export function AttendanceStatsModal({ worker, onClose, period = 'monthly' }: At
     { skip: !worker.id }
   );
 
-  const hoursWorked = summary ? `${summary.total_hours}h` : stats?.hours_worked ?? '0h';
-  const completedShifts = summary?.completed_shifts ?? stats?.completed_shifts ?? 0;
-  const lateCheckIns = summary?.late_check_ins ?? stats?.late_checkins ?? 0;
+  const hoursWorked = summary ? `${summary.total_hours}h` : '0h';
+  const completedShifts = summary?.completed_shifts ?? 0;
+  const lateCheckIns = summary?.late_check_ins ?? 0;
   const avgDuration =
     summary && summary.completed_shifts > 0
       ? `${(summary.total_hours / summary.completed_shifts).toFixed(1)}h`
-      : stats?.avg_shift_duration ?? '0h';
+      : '0h';
 
-  const weeklyData = (stats?.weekly_hours_trend ?? []).map((item) => ({
-    name: item.week_label,
-    hours: item.hours,
-  }));
-  const monthlyData = (stats?.monthly_hours_trend ?? []).map((item) => ({
-    name: item.month_label,
-    hours: item.hours,
-  }));
+  const weeklyData: Array<{ name: string; hours: number }> = [];
+  const monthlyData: Array<{ name: string; hours: number }> = [];
 
   // Handle escape key
   useEffect(() => {

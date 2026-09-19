@@ -3,7 +3,6 @@ import React, { useEffect, useState } from 'react';
 import { MdAccessTime, MdLocationOn, MdOutlineClose, MdTag, MdPerson, MdBusinessCenter, MdEventNote, MdCamera, MdChecklist, MdDeleteOutline } from 'react-icons/md';
 import { TbDoor, TbUsers, TbClipboardList } from 'react-icons/tb';
 import { Shift, formatTime12, planIdFromShift } from './types';
-import { deleteRosterShift, getRosterShift } from '@/services/actions/roster';
 import { getCleaningPlan, type PlanDetails } from '@/services/actions/cleaningPlans';
 import { DetailSkeleton } from '@/components/shared/SkeletonLoader';
 import { useModalJump } from '@/hooks/useModalJump';
@@ -11,51 +10,17 @@ import { useModalJump } from '@/hooks/useModalJump';
 interface ShiftModalProps {
   shift: Shift;
   onClose: () => void;
-  onDeleted?: (id: string) => void;
 }
-
-type ShiftDetails = {
-  worker_name: string;
-  worker_profile_photo?: string | null;
-  assignment_label: string;
-  location_name: string;
-  location_address?: string | null;
-  client_name?: string;
-  date?: string;
-  time_range?: string;
-  status?: string;
-};
 
 const titleCase = (value?: string) =>
   value ? value.replaceAll('_', ' ').split(' ').map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') : '';
 
-export function ShiftModal({ shift, onClose, onDeleted }: ShiftModalProps) {
+export function ShiftModal({ shift, onClose }: ShiftModalProps) {
   const planId = planIdFromShift(shift.id);
-  const [details, setDetails] = useState<ShiftDetails | null>(null);
   const [plan, setPlan] = useState<PlanDetails | null>(null);
   const [planLoading, setPlanLoading] = useState(false);
   const [error, setError] = useState('');
-  const [confirmDelete, setConfirmDelete] = useState(false);
-  const [deleting, setDeleting] = useState(false);
   const { triggerJump, jumpClassName } = useModalJump();
-
-  const handleDelete = async () => {
-    setDeleting(true);
-    setError('');
-    const result = await deleteRosterShift(shift.id);
-    setDeleting(false);
-    if (!result.success) {
-      setConfirmDelete(false);
-      setError(result.error);
-      return;
-    }
-    onDeleted?.(shift.id);
-    onClose();
-  };
-
-  useEffect(() => {
-    void getRosterShift(shift.id).then((result) => result.success ? setDetails(result.data) : setError(result.error));
-  }, [shift.id]);
 
   useEffect(() => {
     if (!planId) return;
@@ -82,7 +47,7 @@ export function ShiftModal({ shift, onClose, onDeleted }: ShiftModalProps) {
     <div
       className="modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4"
       onMouseDown={(e) => {
-        if (e.target === e.currentTarget && !deleting) {
+        if (e.target === e.currentTarget) {
           triggerJump();
         }
       }}
@@ -97,14 +62,14 @@ export function ShiftModal({ shift, onClose, onDeleted }: ShiftModalProps) {
             <div className="mb-1 flex items-center gap-2">
               <span className={`h-2 w-2 rounded-full ${getAccentColor(shift.theme)}`} />
               <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Shift details</span>
-              {details?.status && (
+              {shift.status && (
                 <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold capitalize text-slate-600">
-                  {titleCase(details.status)}
+                  {titleCase(shift.status)}
                 </span>
               )}
             </div>
-            <h3 className="truncate text-base font-semibold text-slate-800">{plan?.title || details?.worker_name || shift.workerName}</h3>
-            <p className="mt-0.5 text-xs text-slate-500">{details?.assignment_label ?? 'Scheduled assignment'}</p>
+            <h3 className="truncate text-base font-semibold text-slate-800">{plan?.title || shift.workerName}</h3>
+            <p className="mt-0.5 text-xs text-slate-500">{'Scheduled assignment'}</p>
           </div>
           <button onClick={onClose} aria-label="Close shift details" className="flex h-8 w-8 shrink-0 items-center justify-center rounded text-slate-400 transition-colors hover:bg-gray-100 hover:text-slate-700 cursor-pointer">
             <MdOutlineClose className="text-lg" />
@@ -112,22 +77,21 @@ export function ShiftModal({ shift, onClose, onDeleted }: ShiftModalProps) {
         </header>
 
         <div className="min-h-0 flex-1 overflow-y-auto p-5">
-          {!details && !error ? <DetailSkeleton blocks={4} /> : (
+          {(
             <div className="space-y-5">
               {error && <p className="rounded bg-red-50 p-2 text-xs text-red-700">{error}</p>}
 
               {/* Shift facts */}
               <div className="grid gap-2 sm:grid-cols-2">
-                <Fact icon={<MdBusinessCenter />} label="Client" value={plan?.company_name || details?.client_name} />
-                <Fact icon={<MdPerson />} label="Worker" value={details?.worker_name ?? shift.workerName} />
+                <Fact icon={<MdBusinessCenter />} label="Client" value={plan?.company_name} />
+                <Fact icon={<MdPerson />} label="Worker" value={shift.workerName} />
                 <Fact
                   icon={<MdLocationOn />}
                   label="Location"
-                  value={details?.location_name ?? shift.location}
-                  hint={details?.location_address ?? undefined}
+                  value={shift.location}
                 />
-                <Fact icon={<MdEventNote />} label="Date" value={details?.date || shift.date} />
-                <Fact icon={<MdAccessTime />} label="Time" value={details?.time_range || `${formatTime12(shift.startTime)} – ${formatTime12(shift.endTime)}`} />
+                <Fact icon={<MdEventNote />} label="Date" value={shift.date} />
+                <Fact icon={<MdAccessTime />} label="Time" value={`${formatTime12(shift.startTime)} – ${formatTime12(shift.endTime)}`} />
                 <Fact icon={<MdTag />} label="Shift ID" value={shift.id} />
               </div>
 
@@ -243,13 +207,6 @@ export function ShiftModal({ shift, onClose, onDeleted }: ShiftModalProps) {
 
         <footer className="flex shrink-0 flex-wrap items-center justify-end gap-2 border-t px-5 py-3">
           <button
-            onClick={() => setConfirmDelete(true)}
-            className="mr-auto flex items-center gap-1.5 rounded border border-red-200 bg-white px-3 py-2 text-xs font-semibold text-red-600 transition-colors hover:bg-red-50 cursor-pointer"
-          >
-            <MdDeleteOutline className="text-sm" /> Delete shift
-          </button>
-
-          <button
             onClick={onClose}
             className="rounded border border-gray-300 bg-white px-4 py-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-gray-50 cursor-pointer"
           >
@@ -258,32 +215,6 @@ export function ShiftModal({ shift, onClose, onDeleted }: ShiftModalProps) {
         </footer>
       </div>
 
-      {confirmDelete && (
-        <div className="modal-backdrop fixed inset-0 z-[80] flex items-center justify-center p-4" onMouseDown={() => !deleting && setConfirmDelete(false)}>
-          <div className="w-full max-w-sm rounded-md border border-gray-200 bg-white p-5" onMouseDown={(event) => event.stopPropagation()}>
-            <h4 className="text-sm font-bold text-slate-900">Delete this shift?</h4>
-            <p className="mt-2 text-xs leading-5 text-slate-500">
-              This shift is removed from the roster. This cannot be undone.
-            </p>
-            <div className="mt-5 flex justify-end gap-2">
-              <button
-                disabled={deleting}
-                onClick={() => setConfirmDelete(false)}
-                className="rounded border border-gray-300 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-gray-50 cursor-pointer disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                disabled={deleting}
-                onClick={() => void handleDelete()}
-                className="rounded bg-red-600 px-4 py-2 text-xs font-semibold text-white hover:bg-red-700 cursor-pointer disabled:opacity-60"
-              >
-                {deleting ? 'Deleting...' : 'Delete'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

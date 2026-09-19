@@ -14,11 +14,12 @@ import {
   MdVerifiedUser,
 } from "react-icons/md";
 import {
-  getMyProfile,
-  updateUserProfile,
-  uploadProfilePhoto,
+  useGetUserProfileQuery,
+  useUpdateUserProfileMutation,
+  useUploadProfilePhotoMutation,
   type UserProfile,
-} from "@/services/actions/profile";
+} from "@/redux/api/endpoints/user.api";
+import { apiError } from "@/redux/api/apiError";
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import { toDashboardRole } from "@/lib/auth/session";
 import { setUser } from "@/redux/slices/auth.slice";
@@ -38,12 +39,13 @@ export default function ProfilePage() {
     phone: "",
   });
 
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
-  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [photoPreview, setPhotoPreview] = useState("");
   const photoInputRef = useRef<HTMLInputElement>(null);
+
+  const { data: loadedProfile, isLoading: loading, error: loadError } = useGetUserProfileQuery();
+  const [updateUserProfile, { isLoading: saving }] = useUpdateUserProfileMutation();
+  const [uploadProfilePhoto, { isLoading: uploadingPhoto }] = useUploadProfilePhotoMutation();
 
   // `syncUser` dispatches `setUser`, so reading `authUser` from the closure would give the
   // callback a new identity on every dispatch and re-run the effect below forever. The ref
@@ -87,70 +89,41 @@ export default function ProfilePage() {
 
     const preview = URL.createObjectURL(file);
     setPhotoPreview(preview);
-    setUploadingPhoto(true);
     setMessage(null);
 
-    const result = await uploadProfilePhoto(
-      file,
-      profile?.profile_image || profile?.profile_photo || authUser?.profilePhoto
-    );
-    setUploadingPhoto(false);
+    try {
+      const { profile_photo: uploaded } = await uploadProfilePhoto({
+        file,
+        currentPhotoUrl: profile?.profile_image || profile?.profile_photo || authUser?.profilePhoto,
+      }).unwrap();
 
-    if (!result.success) {
-      URL.revokeObjectURL(preview);
-      setPhotoPreview("");
-      setMessage({ type: "error", text: result.error || "Failed to upload profile photo" });
-      return;
-    }
-
-    const uploaded = result.data?.profile_photo || "";
-    if (uploaded) {
       setProfile((current) =>
         current ? { ...current, profile_image: uploaded, profile_photo: uploaded } : current
       );
-      if (profile) {
-        syncUser({ ...profile, profile_image: uploaded, profile_photo: uploaded });
-      } else {
-        syncUser({ profile_image: uploaded, profile_photo: uploaded });
-      }
+      syncUser({ ...(profile ?? {}), profile_image: uploaded, profile_photo: uploaded });
+      setMessage({ type: "success", text: "Profile photo updated successfully!" });
+    } catch (cause) {
+      setMessage({ type: "error", text: apiError(cause) || "Failed to upload profile photo" });
+    } finally {
       URL.revokeObjectURL(preview);
       setPhotoPreview("");
-    } else {
-      const refreshed = await getMyProfile();
-      if (refreshed.success && refreshed.data) {
-        setProfile(refreshed.data);
-        syncUser(refreshed.data);
-        URL.revokeObjectURL(preview);
-        setPhotoPreview("");
-      }
     }
-    setMessage({ type: "success", text: "Profile photo updated successfully!" });
   };
 
   useEffect(() => {
-    let isMounted = true;
-
-    void getMyProfile().then((result) => {
-      if (!isMounted) return;
-      setLoading(false);
-      if (result.success && result.data) {
-        const d = result.data;
-        setProfile(d);
-        setFormData({
-          full_name: (d.name || d.full_name || "") as string,
-          phone: (d.phone || "") as string,
-        });
-
-        syncUser(d);
-      } else if (!result.success) {
-        setMessage({ type: "error", text: result.error || "Failed to load profile information" });
-      }
+    if (!loadedProfile) return;
+    setProfile(loadedProfile);
+    setFormData({
+      full_name: (loadedProfile.name || loadedProfile.full_name || "") as string,
+      phone: (loadedProfile.phone || "") as string,
     });
+    syncUser(loadedProfile);
+  }, [loadedProfile, syncUser]);
 
-    return () => {
-      isMounted = false;
-    };
-  }, [syncUser]);
+  useEffect(() => {
+    if (!loadError) return;
+    setMessage({ type: "error", text: apiError(loadError) || "Failed to load profile information" });
+  }, [loadError]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -159,31 +132,24 @@ export default function ProfilePage() {
       return;
     }
 
-    setSaving(true);
     setMessage(null);
 
-    const result = await updateUserProfile({
-      name: formData.full_name,
-      phone: formData.phone,
-    });
+    try {
+      const updated = await updateUserProfile({
+        name: formData.full_name,
+        phone: formData.phone,
+      }).unwrap();
 
-    setSaving(false);
-
-    if (!result.success) {
-      setMessage({ type: "error", text: result.error || "Failed to update profile" });
-      return;
+      setProfile(updated);
+      setFormData({
+        full_name: (updated.name || updated.full_name || "") as string,
+        phone: (updated.phone || "") as string,
+      });
+      syncUser(updated);
+      setMessage({ type: "success", text: "Profile information updated successfully!" });
+    } catch (cause) {
+      setMessage({ type: "error", text: apiError(cause) || "Failed to update profile" });
     }
-
-    const updated = result.data;
-    setProfile(updated);
-    setFormData({
-      full_name: (updated.name || updated.full_name || "") as string,
-      phone: (updated.phone || "") as string,
-    });
-
-    syncUser(updated);
-
-    setMessage({ type: "success", text: "Profile information updated successfully!" });
   };
 
   if (loading) {

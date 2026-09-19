@@ -1,5 +1,18 @@
 import { baseApi } from "./baseApi";
-import type { RosterShift } from "@/services/actions/roster";
+
+export type RosterShift = {
+  shift_id: string;
+  client_id: string;
+  client_name: string;
+  location_id: string;
+  location_name: string;
+  start_time: string;
+  end_time: string;
+  duration_hours: number;
+  status: string;
+  shift_notes?: string;
+  rooms_count?: number;
+};
 
 export type ShiftRosterOccurrence = {
   shift_id: string;

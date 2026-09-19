@@ -1,6 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { WorkerInfo } from './types';
-import { getAttendanceTracking, type AttendanceWorker } from '@/services/actions/shiftMonitoring';
+import {
+  useGetWorkerAttendanceListQuery,
+  type WorkerAttendanceListItem,
+} from '@/redux/api/shiftsApi';
 import { CardGridSkeleton } from '@/components/shared/SkeletonLoader';
 
 interface Props {
@@ -9,8 +12,8 @@ interface Props {
 }
 
 export function EmployeeStatistics({ onWorkerSelect, selectedWorkerId }: Props) {
-  const [workers, setWorkers] = useState<WorkerInfo[]>([]); const [loading, setLoading] = useState(true);
-  useEffect(() => { void getAttendanceTracking({ period: 'monthly' }).then((result) => { setLoading(false); if (result.success) setWorkers(result.data.workers.map(mapWorker)); }); }, []);
+  const { data: attendance = [], isLoading: loading } = useGetWorkerAttendanceListQuery({ period: 'monthly' });
+  const workers: WorkerInfo[] = attendance.map(mapWorker);
   return (
     <div className="flex flex-col h-full animate-in fade-in duration-300">
       <div className="mb-6">
@@ -62,4 +65,4 @@ export function EmployeeStatistics({ onWorkerSelect, selectedWorkerId }: Props) 
   );
 }
 
-function mapWorker(item: AttendanceWorker): WorkerInfo { return { id: item.worker_id, initials: '', name: item.worker_name, role: item.worker_type.toLowerCase() === 'freelancer' ? 'Freelancer' : 'Employee', shiftId: '', location: '', checkIn: '', status: 'On Time', color: 'bg-sky-500', statusColor: 'text-sky-500', hoursWorked: item.hours_worked_numeric, totalShifts: item.total_shifts, lateDays: item.late_days, avgDuration: '0h' }; }
+function mapWorker(item: WorkerAttendanceListItem): WorkerInfo { return { id: item.worker_id, initials: '', name: item.name, role: item.worker_type.toLowerCase() === 'freelancer' ? 'Freelancer' : 'Employee', shiftId: '', location: '', checkIn: '', status: 'On Time', color: 'bg-sky-500', statusColor: 'text-sky-500', hoursWorked: item.hours_worked, totalShifts: item.total_shifts, lateDays: item.late_days, avgDuration: '0h' }; }

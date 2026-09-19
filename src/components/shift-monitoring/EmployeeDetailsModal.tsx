@@ -6,7 +6,7 @@ import { MdOutlineClose, MdArrowForward, MdLocationOn } from 'react-icons/md';
 import { TbClock, TbCalendarStats, TbHourglass, TbUserPlus, TbPencil } from 'react-icons/tb';
 import { useRouter } from 'next/navigation';
 import { WorkerInfo } from './types';
-import { getLiveWorkerDetails, getWorkerStats, type Period } from '@/services/actions/shiftMonitoring';
+import { useGetShiftAttendanceSummaryQuery, type Period } from '@/redux/api/shiftsApi';
 import { DetailSkeleton } from '@/components/shared/SkeletonLoader';
 import { planIdFromShift } from '@/components/roster/types';
 import { PlanForm } from '@/components/cleaningPlans/PlanForm';
@@ -43,9 +43,6 @@ const statusTone = (status: string) => {
 export function EmployeeDetailsModal({ worker, onClose, onChanged }: EmployeeDetailsModalProps) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<'Today' | 'Weekly' | 'Monthly'>('Today');
-  const [details, setDetails] = useState<{ hours_worked: string; shifts_count: number; avg_duration: string; shift_details: { check_in: string; check_out: string; duration: string; status: string } } | null>(null);
-  const [rows, setRows] = useState<Array<{ date: string; checkIn: string; checkOut: string; scheduled: string; hours: string }>>([]);
-  const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [assigning, setAssigning] = useState(false);
   const { triggerJump, jumpClassName } = useModalJump();
@@ -57,26 +54,24 @@ export function EmployeeDetailsModal({ worker, onClose, onChanged }: EmployeeDet
   // cleaning-plan caches invalidate on save instead of needing a page reload.
   const { data: planRecord } = useGetCleaningPlanQuery(planId, { skip: !planId });
 
-  useEffect(() => {
-    setLoading(true);
-    const period = activeTab.toLowerCase() as Period;
-    void Promise.all([
-      getLiveWorkerDetails(String(worker.id), period),
-      getWorkerStats(String(worker.id), period),
-    ]).then(([live, stats]) => {
-      setLoading(false);
-      if (live.success) setDetails(live.data);
-      if (stats.success) {
-        setRows(stats.data.shifts.map((shift) => ({
-          date: shift.date,
-          checkIn: formatTime(shift.checkin_time),
-          checkOut: formatTime(shift.checkout_time),
-          scheduled: `${shift.start_time} – ${shift.end_time}`,
-          hours: `${shift.duration_hours}h`,
-        })));
-      }
-    });
-  }, [worker.id, activeTab]);
+  const period = activeTab.toLowerCase() as Period;
+  const { data: summary, isLoading: loading } = useGetShiftAttendanceSummaryQuery(
+    { workerId: String(worker.id), period },
+    { skip: !worker.id },
+  );
+
+  const hoursWorked = summary ? `${summary.total_hours}h` : '0h';
+  const shiftsCount = summary?.completed_shifts ?? 0;
+  const avgDuration =
+    summary && summary.completed_shifts > 0
+      ? `${(summary.total_hours / summary.completed_shifts).toFixed(1)}h`
+      : '0h';
+
+  /**
+   * The per-shift breakdown and the live check-in/check-out pair have no endpoint in the
+   * current API, so those stay blank until one lands.
+   */
+  const rows: Array<{ date: string; checkIn: string; checkOut: string; scheduled: string; hours: string }> = [];
 
   useEffect(() => {
     const handleEsc = (event: KeyboardEvent) => {
@@ -149,9 +144,9 @@ export function EmployeeDetailsModal({ worker, onClose, onChanged }: EmployeeDet
             <div className="space-y-4">
               {/* Summary */}
               <div className="grid grid-cols-3 gap-3">
-                <Stat icon={<TbClock />} value={details?.hours_worked ?? '0h'} label="Hours worked" />
-                <Stat icon={<TbCalendarStats />} value={String(details?.shifts_count ?? 0)} label="Shifts" />
-                <Stat icon={<TbHourglass />} value={details?.avg_duration ?? '0h'} label="Avg duration" />
+                <Stat icon={<TbClock />} value={hoursWorked} label="Hours worked" />
+                <Stat icon={<TbCalendarStats />} value={String(shiftsCount)} label="Shifts" />
+                <Stat icon={<TbHourglass />} value={avgDuration} label="Avg duration" />
               </div>
 
               {activeTab === 'Today' ? (
@@ -160,13 +155,13 @@ export function EmployeeDetailsModal({ worker, onClose, onChanged }: EmployeeDet
                     Shift details
                   </h4>
                   <dl className="divide-y divide-slate-100 text-sm">
-                    <Row label="Check-in" value={formatTime(details?.shift_details.check_in)} />
+                    <Row label="Check-in" value={formatTime(undefined)} />
                     <Row
                       label="Check-out"
-                      value={details?.shift_details.check_out ? formatTime(details.shift_details.check_out) : 'Still on shift'}
-                      tone={details?.shift_details.check_out ? undefined : 'text-amber-600'}
+                      value={'Still on shift'}
+                      tone={'text-amber-600'}
                     />
-                    <Row label="Duration" value={details?.shift_details.duration ?? '0h'} tone="text-primary" />
+                    <Row label="Duration" value={'0h'} tone="text-primary" />
                     <Row label="Status" value={worker.status} />
                   </dl>
                 </section>

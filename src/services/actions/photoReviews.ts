@@ -1,2 +1,0 @@
-import { authenticated } from "./auth";
-export type PhotoReviewApi = { review_id: string; shift_id: string; cleaner: { worker_id: string; name: string; profile_picture: string }; client: { client_id: string; name: string }; location: { location_id: string; name: string }; room: { room_id: string; name: string }; photo_url?: string; before_photo_url?: string; after_photo_url?: string; photo_name: string; ai_score: number; ai_confidence: string; ai_feature_breakdown?: Record<string, number>; status: string; rejection_reason: string; date_submitted: string };

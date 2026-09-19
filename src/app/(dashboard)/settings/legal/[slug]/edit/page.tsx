@@ -8,7 +8,12 @@ import { getLocale } from "@/lib/locale";
 import { getUiTranslation } from "@/lib/translations";
 import { usePathname } from "next/navigation";
 import { RichTextEditor } from "@/components/legal/RichTextEditor";
-import { getLegalDocument, saveLegalDocument } from "@/services/actions/legal";
+import { skipToken } from "@reduxjs/toolkit/query";
+import {
+  useGetLegalDocumentQuery,
+  useSaveLegalDocumentMutation,
+} from "@/redux/api/endpoints/legal.api";
+import { apiError } from "@/redux/api/apiError";
 
 /** Rich text in, readable numbers out. */
 function documentStats(html: string) {
@@ -37,8 +42,6 @@ export default function EditLegalDocumentPage() {
   const [content, setContent] = useState("");
   /** Empty until the document has been created; that is what picks POST add vs PATCH edit. */
   const [documentId, setDocumentId] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [dirty, setDirty] = useState(false);
   const [draftSavedAt, setDraftSavedAt] = useState(0);
@@ -50,40 +53,38 @@ export default function EditLegalDocumentPage() {
   const publishedRef = useRef("");
   const storageKey = valid ? legalStorageKey(slug) : "";
 
-  useEffect(() => {
-    if (!valid) return;
-    let active = true;
-    setLoading(true);
-    void getLegalDocument(slug).then((result) => {
-      if (!active) return;
-      setLoading(false);
-      if (!result.success) {
-        setError(result.error);
-        return;
-      }
-      setContent(result.data.content);
-      setDocumentId(result.data.id);
-      publishedRef.current = result.data.content;
+  const {
+    data: document,
+    isLoading: loading,
+    error: loadError,
+  } = useGetLegalDocumentQuery(valid ? slug : skipToken);
+  const [saveLegalDocument, { isLoading: saving }] = useSaveLegalDocumentMutation();
 
-      // A local draft that differs from the published text means the last session never saved.
-      try {
-        const stored = storageKey ? localStorage.getItem(storageKey) : null;
-        if (stored) {
-          const draft = JSON.parse(stored) as { html?: string; savedAt?: number };
-          if (draft.html && draft.html !== result.data.content) {
-            setRecoverable({ html: draft.html, savedAt: draft.savedAt ?? 0 });
-          } else if (storageKey) {
-            localStorage.removeItem(storageKey);
-          }
+  useEffect(() => {
+    if (loadError) setError(apiError(loadError));
+  }, [loadError]);
+
+  useEffect(() => {
+    if (!document) return;
+    setContent(document.content);
+    setDocumentId(document.id);
+    publishedRef.current = document.content;
+
+    // A local draft that differs from the published text means the last session never saved.
+    try {
+      const stored = storageKey ? localStorage.getItem(storageKey) : null;
+      if (stored) {
+        const draft = JSON.parse(stored) as { html?: string; savedAt?: number };
+        if (draft.html && draft.html !== document.content) {
+          setRecoverable({ html: draft.html, savedAt: draft.savedAt ?? 0 });
+        } else if (storageKey) {
+          localStorage.removeItem(storageKey);
         }
-      } catch {
-        // A malformed or unavailable store is not worth failing the page over.
       }
-    });
-    return () => {
-      active = false;
-    };
-  }, [slug, valid, storageKey]);
+    } catch {
+      // A malformed or unavailable store is not worth failing the page over.
+    }
+  }, [document, storageKey]);
 
   const onEditorChange = useCallback((html: string) => {
     setContent(html);
@@ -121,12 +122,11 @@ export default function EditLegalDocumentPage() {
       setError(ui.documentIsEmpty);
       return;
     }
-    setSaving(true);
     setError("");
-    const result = await saveLegalDocument(slug, { id: documentId || undefined, content });
-    setSaving(false);
-    if (!result.success) {
-      setError(result.error);
+    try {
+      await saveLegalDocument({ slug, id: documentId || undefined, content }).unwrap();
+    } catch (cause) {
+      setError(apiError(cause));
       return;
     }
     publishedRef.current = content;
@@ -135,7 +135,7 @@ export default function EditLegalDocumentPage() {
       if (storageKey) localStorage.removeItem(storageKey);
     } catch {}
     router.push(`/settings/legal/${slug}`);
-  }, [content, documentId, loading, router, saving, slug, storageKey, valid, ui.documentIsEmpty]);
+  }, [content, documentId, loading, router, saveLegalDocument, saving, slug, storageKey, valid, ui.documentIsEmpty]);
 
   // Ctrl/Cmd+S publishes, the way every other document editor behaves.
   useEffect(() => {

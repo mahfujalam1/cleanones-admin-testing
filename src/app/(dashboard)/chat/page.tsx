@@ -34,7 +34,10 @@ import { usePathname } from "next/navigation";
 import { getLocale } from "@/lib/locale";
 import { getUiTranslation } from "@/lib/translations";
 import { DeleteMessageModal } from "@/components/chat/DeleteMessageModal";
-import { uploadConversationFiles, deleteUploadedFiles } from "@/services/actions/files";
+import {
+  useUploadConversationFilesMutation,
+  useDeleteUploadedFilesMutation,
+} from "@/redux/api/endpoints/files.api";
 
 export default function ChatPage() {
   const ui = getUiTranslation(getLocale(usePathname()));
@@ -377,15 +380,11 @@ export default function ChatPage() {
 
     setSending(true);
     try {
-      const uploadRes = await uploadConversationFiles(formData);
-      if (!uploadRes.success) {
-        console.error("Failed to upload conversation file:", uploadRes.error);
-        return;
-      }
+      const uploaded = await uploadConversationFiles(formData).unwrap();
 
       const uploadedUrl = isPdf
-        ? uploadRes.data.pdfs[0] || uploadRes.data.images[0]
-        : uploadRes.data.images[0] || uploadRes.data.pdfs[0];
+        ? uploaded.pdfs[0] || uploaded.images[0]
+        : uploaded.images[0] || uploaded.pdfs[0];
 
       if (!uploadedUrl) {
         console.error("No URL returned from file upload");
@@ -413,6 +412,8 @@ export default function ChatPage() {
 
   // 9. Soft-delete message (Manager has override permission)
   const [deleteChatMsgMutation] = useDeleteChatMessageMutation();
+  const [uploadConversationFiles] = useUploadConversationFilesMutation();
+  const [deleteUploadedFiles] = useDeleteUploadedFilesMutation();
 
   const handleConfirmDelete = async () => {
     if (!deletingMsg) return;
@@ -431,7 +432,7 @@ export default function ChatPage() {
       if (deletingMsg.attachments && deletingMsg.attachments.length > 0) {
         const urls = deletingMsg.attachments.map((a) => a.url).filter(Boolean);
         if (urls.length > 0) {
-          void deleteUploadedFiles(urls).catch(() => {});
+          void deleteUploadedFiles({ files: urls }).unwrap().catch(() => {});
         }
       }
 

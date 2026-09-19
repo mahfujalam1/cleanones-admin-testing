@@ -316,7 +316,7 @@ export function RosterCalendar() {
 
       {/* Shifts created straight on the roster have no plan behind them */}
       {selectedShift && !selectedPlanId && (
-        <ShiftModal shift={selectedShift} onClose={() => setSelectedShift(null)} onDeleted={() => refetchCurrent()} />
+        <ShiftModal shift={selectedShift} onClose={() => setSelectedShift(null)} />
       )}
 
     </div>

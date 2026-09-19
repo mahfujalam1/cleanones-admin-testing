@@ -144,40 +144,8 @@ const json = (value: unknown) => ({
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(value),
 });
-export async function getCleaningPlans(
-    input: {
-        clientId?: string;
-        locationId?: string;
-        roomId?: string;
-        workerId?: string;
-        search?: string;
-        page?: number;
-        limit?: number;
-    } = {},
-) {
-    const query = new URLSearchParams({
-        page: String(input.page ?? 1),
-        limit: String(input.limit ?? 100),
-    });
-    Object.entries({
-        client_id: input.clientId,
-        location_id: input.locationId,
-        room_id: input.roomId,
-        worker_id: input.workerId,
-        search: input.search,
-    }).forEach(([key, value]) => {
-        if (value) query.set(key, value);
-    });
-    return authenticated<{
-        total_count: number;
-        page: number;
-        limit: number;
-        has_more: boolean;
-        plans: PlanSummary[];
-    }>(`/manager/cleaning-plans?${query}`, { method: "GET" });
-}
 /**
- * `/manager/cleaning-plans/{id}` is gone from the backend — it answers 404 — so this reads the
+ * Reads the plan from
  * plan from `/cleaning-plan/single-cleaning-plan/{id}` and reshapes it into `PlanDetails`.
  *
  * The new payload is the leaner document model: it has no shift scheduling fields
@@ -402,40 +370,4 @@ function toPlanDetails(plan: SingleCleaningPlan): PlanDetails {
         working_days: [],
         shift_notes: plan.note ?? plan.description ?? "",
     };
-}
-export async function deleteCleaningPlan(planId: string) {
-    return authenticated<string>(
-        `/manager/cleaning-plans/${encodeURIComponent(planId)}`,
-        { method: "DELETE" },
-    );
-}
-export async function assignPlanWorkers(
-    planId: string,
-    workers: WorkerAssignment[],
-    action: "append" | "replace" = "append",
-    force = false,
-) {
-    const assigned_workers = workers.map(w => ({
-        worker: w.worker_id,
-        role: w.position === "teamleader" ? "Team leader" : w.position === "co_leader" ? "Co-leader" : "Standard worker"
-    }));
-    return authenticated<PlanDetails>(
-        `/cleaning-plan/${encodeURIComponent(planId)}/assign-workers`,
-        { method: "PATCH", ...json({ assigned_workers, force }) },
-    );
-}
-
-export async function approveAdditionalTask(planId: string, taskId: string) {
-    return authenticated<PlanDetails>(
-        `/manager/cleaning-plans/${encodeURIComponent(planId)}/additional-tasks/${encodeURIComponent(taskId)}/approve`,
-        { method: "POST" }
-    );
-}
-
-export async function rejectAdditionalTask(planId: string, taskId: string, reason?: string) {
-    const text = reason || "Service requested is outside operational scope.";
-    return authenticated<PlanDetails>(
-        `/manager/cleaning-plans/${encodeURIComponent(planId)}/additional-tasks/${encodeURIComponent(taskId)}/reject`,
-        { method: "POST", ...json({ reason: text, rejection_reason: text }) }
-    );
 }

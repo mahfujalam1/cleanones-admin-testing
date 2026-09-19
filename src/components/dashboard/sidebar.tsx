@@ -14,9 +14,8 @@ import {
   MdHelpOutline
 } from 'react-icons/md';
 import { MdMeetingRoom, MdChecklist, MdAdminPanelSettings } from 'react-icons/md';
-import { dashboardApi } from '@/redux/api/dashboardApi';
 import { notificationsApi } from '@/redux/api/endpoints/notifications.api';
-import { shiftMonitoringApi } from '@/redux/api/shiftMonitoringApi';
+import { shiftsApi } from '@/redux/api/shiftsApi';
 import { reportsApi } from '@/redux/api/reportsApi';
 import { getDashboardTranslation } from '@/lib/translations';
 import { getStoredManagerAccess, routeIsAllowed } from '@/lib/access-control';
@@ -32,14 +31,12 @@ export default function Sidebar() {
   const t = getDashboardTranslation(locale);
   const unseenChats = useUnseenChatCount();
 
-  const prefetchDashboard = dashboardApi.usePrefetch('getDashboardOverview');
-  const prefetchShiftMonitoring = shiftMonitoringApi.usePrefetch('getLiveStatus');
+  const prefetchTodayShifts = shiftsApi.usePrefetch('getTodayLiveShifts');
   const prefetchNotifications = notificationsApi.usePrefetch('getNotifications');
   const prefetchReports = reportsApi.usePrefetch('getShiftReport');
 
   const handleLinkHover = (href: string) => {
-    if (href === '/') prefetchDashboard();
-    else if (href === '/shift-monitoring') prefetchShiftMonitoring({});
+    if (href === '/shift-monitoring') prefetchTodayShifts({ limit: 100 });
     else if (href === '/notifications') prefetchNotifications({ page: 1, limit: 20 });
     else if (href === '/reports') prefetchReports('month');
   };
@@ -62,10 +59,6 @@ export default function Sidebar() {
     { name: t.nav.escalations, href: '/escalations', icon: MdWarning },
     { name: t.nav.reports, href: '/reports', icon: MdAssessment },
     { name: t.nav.notifications, href: '/notifications', icon: MdNotifications },
-    // Points straight at the working FAQ page — `/get-help` itself calls a
-    // `/manager/suggested-questions` endpoint that doesn't exist in the backend at all (only
-    // `/manager/faqs` does, which `/get-help/faqs` correctly uses), so every manager clicking
-    // this nav item previously landed on a page whose data query 404s on load.
     { name: t.nav.getHelp || 'Get Help', href: '/get-help', icon: MdHelpOutline },
     { name: t.nav.settings, href: '/settings', icon: MdSettings },
   ];

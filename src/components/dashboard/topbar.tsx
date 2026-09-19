@@ -22,26 +22,27 @@ import {
 } from "react-icons/md";
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import { setSignOutModalOpen, toggleMobileSidebar } from "@/redux/slices/ui.slice";
-import { getFaqs, type Faq } from "@/services/actions/manager";
 import { useModalJump } from "@/hooks/useModalJump";
 import {
   useGetNotificationsQuery,
   useSeeNotificationsMutation,
   type NotificationItem,
 } from "@/redux/api/endpoints/notifications.api";
+import { useGetManageFaqsQuery } from "@/redux/api/manageFaqApi";
+import type { ManageFaq } from "@/services/actions/faqs";
 import { resolveNotificationRoute } from "@/lib/notification-routes";
 import { CountBadge } from "@/components/shared/CountBadge";
 import { DetailSkeleton } from "@/components/shared/SkeletonLoader";
 
 const prefetchRoutes = process.env.NODE_ENV === 'production';
 
-const faqs = [
+const fallbackFaqs: ManageFaq[] = [
   "How do I assign a shift to a cleaner?",
   "How do I review and approve photos?",
   "What happens when a GPS alert is triggered?",
   "How do I add a new client or location?",
   "How do I change my password?",
-];
+].map((question, index) => ({ _id: String(index), question, answer: "" }));
 
 import { getDashboardTranslation } from "@/lib/translations";
 
@@ -445,11 +446,9 @@ function ProfileMenu({ locale, onHelp, onSignOut }: { locale: string; onHelp: ()
 function HelpCenterModal({ onClose }: { onClose: () => void }) {
   const ui = getUiTranslation(getLocale(usePathname()));
   const [chatOpen, setChatOpen] = useState(false);
-  const [apiFaqs, setApiFaqs] = useState<Faq[]>([]);
   const [openFaq, setOpenFaq] = useState<string | null>(null);
   const { triggerJump, jumpClassName } = useModalJump();
-
-  useEffect(() => { void getFaqs().then((result) => { if (result.success) setApiFaqs([...result.data].sort((a, b) => a.serial_no - b.serial_no)); }); }, []);
+  const { data: apiFaqs = [] } = useGetManageFaqsQuery();
 
   return (
     <div
@@ -524,7 +523,7 @@ function HelpCenterModal({ onClose }: { onClose: () => void }) {
             {ui.faq}
           </h3>
           <div className="mt-3 space-y-2">
-            {(apiFaqs.length ? apiFaqs : faqs.map((question, index) => ({ _id: String(index), question, answer: "", serial_no: index, createdAt: "", updatedAt: "" }))).map((faq) => (
+            {(apiFaqs.length ? apiFaqs : fallbackFaqs).map((faq) => (
               <div key={faq._id} className="rounded border border-gray-200 bg-white">
                 <button type="button" onClick={() => setOpenFaq((current) => current === faq._id ? null : faq._id)} className="flex w-full items-center justify-between px-4 py-3 text-left text-sm font-medium text-slate-950 transition-colors hover:bg-gray-50">{faq.question}<MdChevronRight className={`text-xl text-slate-400 transition-transform ${openFaq === faq._id ? "rotate-90" : ""}`} /></button>
                 {openFaq === faq._id && faq.answer && <p className="border-t border-gray-100 px-4 py-3 text-xs leading-5 text-slate-600">{faq.answer}</p>}

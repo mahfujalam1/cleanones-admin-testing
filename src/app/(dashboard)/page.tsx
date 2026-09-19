@@ -6,17 +6,60 @@ import { WorkerDetailModal } from "@/components/workers/WorkerDetailModal";
 import { useGetWorkerListQuery } from "@/redux/api/endpoints/workers.api";
 import { MdAccessTime, MdAdd, MdArrowForward, MdBusiness, MdCalendarToday, MdCheckCircle, MdChevronRight, MdLocationOn, MdPeople, MdReportProblem, MdUploadFile, MdWarningAmber } from "react-icons/md";
 import { CardGridSkeleton, DetailSkeleton } from "@/components/shared/SkeletonLoader";
-import { useGetDashboardOverviewQuery, useGetInProgressShiftsQuery } from "@/redux/api/dashboardApi";
 import {
   useGetTodayLiveShiftMetaQuery,
   useGetTodayLiveShiftsQuery,
   useGetWorkerAttendanceListQuery,
 } from "@/redux/api/shiftsApi";
-import type { DashboardOverview, InProgressShift } from "@/services/actions/dashboard";
 import { getLocale } from "@/lib/locale";
 import { getDashboardTranslation, getUiTranslation } from "@/lib/translations";
 
 const normalizeStatus = (value: string) => value.toLowerCase().replaceAll(" ", "_");
+/**
+ * Shapes the dashboard's zero state is built from. The current API has no endpoint that fills
+ * them, so these lists stay empty until one lands.
+ */
+type AttentionPill = {
+  worker_id: string;
+  worker_name: string;
+  late_duration_text: string;
+  phone_number: string;
+};
+
+type LiveOperationsClient = {
+  client_id: string;
+  client_company_name: string;
+  location_id: string;
+  location_name: string;
+  roster_count_text: string;
+  workers: Array<{
+    worker_id: string;
+    name: string;
+    profile_picture: string;
+    shift_time_range: string;
+    delay_reason: string;
+    status: string;
+    status_badge_label: string;
+    can_call: boolean;
+    phone_number: string;
+  }>;
+};
+
+type FallingBehindShift = {
+  shift_id: string;
+  worker_id: string;
+  worker_name: string;
+  worker_profile_picture: string;
+  location_id: string;
+  location_name: string;
+  worker_checkin_time: string;
+  shift_start_time: string;
+  shift_end_time: string;
+  progress: number;
+  progress_percentage: string;
+  checkin_status: string;
+};
+
 const uniqueBy = <T,>(items: T[], getKey: (item: T) => string) => {
   const seen = new Set<string>();
   return items.filter((item) => {
@@ -58,15 +101,12 @@ export default function DashboardPage() {
   const t = getDashboardTranslation(locale);
   const ui = getUiTranslation(locale);
 
-  const [filter, setFilter] = useState("");
   const [liveTab, setLiveTab] = useState<
     "all" | "upcoming" | "in_progress" | "completed" | "cancelled"
   >("all");
   const [actionsOpen, setActionsOpen] = useState(false);
   const [detailWorkerId, setDetailWorkerId] = useState<string | null>(null);
 
-  const { data: overview, isLoading: loadingOverview } = useGetDashboardOverviewQuery(filter || undefined);
-  const { data: shiftsRes } = useGetInProgressShiftsQuery();
   const { data: todayLiveMeta } = useGetTodayLiveShiftMetaQuery();
   // Names the late workers the meta only counts.
   const { data: attendanceToday } = useGetWorkerAttendanceListQuery({ period: "today" });
@@ -87,18 +127,21 @@ export default function DashboardPage() {
     return () => clearInterval(id);
   }, []);
 
-  const shifts: InProgressShift[] = shiftsRes?.shifts ?? [];
   // `?? []` would be a fresh array each render and re-run every memo that depends on it.
   const todayLiveShifts = useMemo(() => todayShiftsRes?.result ?? [], [todayShiftsRes]);
 
-  const safeOverview: DashboardOverview = overview || {
+  /**
+   * The dashboard overview route was dropped from the backend and the current API has no
+   * replacement for it, so the page renders its own zero state until one lands.
+   */
+  const safeOverview = {
     greeting: "",
     subtitle_date: new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }),
     attention_banner: {
       people_need_attention_count: 0,
       badge_text: t.dashboard.allOnTime,
       banner_subtitle: t.dashboard.noWorkersRequireAttention,
-      call_pills: [],
+      call_pills: [] as AttentionPill[],
     },
     summary_cards: {
       active_shifts_count: 0,
@@ -106,7 +149,7 @@ export default function DashboardPage() {
       late_no_show_count: 0,
       reviews_pending_count: 0,
     },
-    live_operations_by_client: [],
+    live_operations_by_client: [] as LiveOperationsClient[],
     open_escalations_banner: {
       open_escalations_count: 0,
       subtitle: t.dashboard.allEscalationsResolved,
@@ -126,10 +169,7 @@ export default function DashboardPage() {
   // Only workers who need attention belong here. The old "progress under 80%" rule matched
   // almost everyone mid-shift, so a site with 200 people on shift filled this whole section;
   // the complete schedule is what Roster is for.
-  const fallingBehind = uniqueBy(shifts, (item) => `${item.shift_id}-${item.worker_id}`).filter((item) => {
-    const status = normalizeStatus(item.checkin_status || "");
-    return status.includes("late") || status.includes("show") || status.includes("missing");
-  });
+  const fallingBehind: FallingBehindShift[] = [];
   /**
    * Three endpoints each know about late workers and none of them knows about all of them:
    * the overview returns call pills, the in-progress feed flags check-in status, and the live
@@ -263,26 +303,8 @@ export default function DashboardPage() {
       return rows;
     }
 
-    return shifts.map((item) => {
-      const st = normalizeStatus(item.checkin_status || "");
-      let status: "on_time" | "late" | "missing" = "on_time";
-      if (st.includes("late")) status = "late";
-      else if (st.includes("missing") || st.includes("show")) status = "missing";
-
-      const progress = Math.min(100, Math.max(0, Number.parseFloat(item.progress_percentage) || item.progress || 0));
-
-      return {
-        id: `${item.shift_id}-${item.worker_id}`,
-        worker_name: item.worker_name,
-        initials: getInitials(item.worker_name),
-        profile_picture: item.worker_profile_picture,
-        location_name: item.location_name,
-        check_in_time: item.worker_checkin_time ? formatTimeToHHMM(item.worker_checkin_time) : "---",
-        progress,
-        status,
-      };
-    });
-  }, [todayLiveShifts, shifts]);
+    return [];
+  }, [todayLiveShifts]);
 
   // The tabs are shift lifecycle statuses and the row badge is check-in punctuality, so there
   // is nothing to re-filter here — the request itself is already scoped by `status`.
@@ -299,16 +321,6 @@ export default function DashboardPage() {
     const match = greeting.match(/^Good (?:morning|afternoon|evening)(.*)$/i);
     return match ? `${localGreeting}${match[1]}` : localGreeting;
   };
-
-  if (loadingOverview && !overview) {
-    return (
-      <div className="space-y-5">
-        <DetailSkeleton blocks={2} />
-        <CardGridSkeleton cards={4} />
-        <DetailSkeleton blocks={7} />
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6 pb-10">

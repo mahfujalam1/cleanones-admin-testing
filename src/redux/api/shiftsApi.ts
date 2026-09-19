@@ -1,5 +1,18 @@
 import { baseApi } from "./baseApi";
 
+export type Period = "today" | "weekly" | "monthly";
+
+export type AttendanceWorker = {
+  worker_id: string;
+  worker_name: string;
+  profile_picture: string;
+  worker_type: string;
+  hours_worked: string;
+  hours_worked_numeric: number;
+  total_shifts: number;
+  late_days: number;
+};
+
 export const shiftsApi = baseApi.injectEndpoints({
   overrideExisting: true,
   endpoints: (builder) => ({

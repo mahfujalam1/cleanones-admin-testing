@@ -1,11 +1,10 @@
 "use client";
 
-import { use, useEffect, useState } from 'react';
+import { use, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { MdArrowBack, MdAccessTime, MdOutlineCalendarMonth } from 'react-icons/md';
 import { TbClock, TbCalendarStats, TbAlertTriangle, TbUserOff, TbCheck } from 'react-icons/tb';
 import { TableSkeleton } from '@/components/shared/SkeletonLoader';
-import { getWorkerDailyActivity } from '@/services/actions/shiftMonitoring';
 
 type Activity = {
   worker_name: string;
@@ -56,27 +55,13 @@ export default function WorkerHistoryPage({ params }: { params: Promise<{ worker
   const router = useRouter();
   const { workerId } = use(params);
   const [month, setMonth] = useState(new Date().toISOString().slice(0, 7));
-  const [data, setData] = useState<Activity | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    let active = true;
-    setLoading(true);
-    void getWorkerDailyActivity(workerId, month).then((result) => {
-      if (!active) return;
-      setLoading(false);
-      if (!result.success) {
-        setError(result.error);
-        return;
-      }
-      setError('');
-      setData(result.data);
-    });
-    return () => {
-      active = false;
-    };
-  }, [workerId, month]);
+  /**
+   * The per-day activity route was dropped from the backend and the current API has no
+   * replacement, so the page renders its zero state until one lands.
+   */
+  const data = null as Activity | null;
+  const loading = false;
+  const error = '';
 
   return (
     <div className="space-y-6 pb-12 animate-in fade-in duration-300">

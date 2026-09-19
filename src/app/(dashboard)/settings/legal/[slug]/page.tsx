@@ -8,7 +8,9 @@ import { isLegalSlug, legalDocuments, legalLabelKeys } from "@/lib/legal-content
 import { getLocale } from "@/lib/locale";
 import { getUiTranslation } from "@/lib/translations";
 import { usePathname } from "next/navigation";
-import { getLegalDocument } from "@/services/actions/legal";
+import { skipToken } from "@reduxjs/toolkit/query";
+import { useGetLegalDocumentQuery } from "@/redux/api/endpoints/legal.api";
+import { apiError } from "@/redux/api/apiError";
 import { DetailSkeleton } from "@/components/shared/SkeletonLoader";
 
 const formatUpdated = (value?: string) => {
@@ -27,28 +29,15 @@ export default function LegalDocumentPage() {
 
   // `/manage/*` stores only the body text, so the heading always comes from the app's own copy.
   const title = labels ? ui[labels.title] : "";
-  const [content, setContent] = useState("");
-  const [updated, setUpdated] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const {
+    data: document,
+    isLoading: loading,
+    error: loadError,
+  } = useGetLegalDocumentQuery(valid ? slug : skipToken);
 
-  useEffect(() => {
-    if (!valid) return;
-    let active = true;
-    setLoading(true);
-    void getLegalDocument(slug).then((result) => {
-      if (!active) return;
-      setLoading(false);
-      if (result.success) {
-        setContent(result.data.content);
-        setUpdated(result.data.updatedAt);
-        setError("");
-      } else {
-        setError(result.error);
-      }
-    });
-    return () => { active = false; };
-  }, [slug, valid]);
+  const content = document?.content ?? "";
+  const updated = document?.updatedAt ?? "";
+  const error = loadError ? apiError(loadError) : "";
 
   if (!fallback || !valid) return <div className="rounded border border-slate-200 bg-white p-6"><h1 className="text-lg font-semibold text-slate-800">{ui.noDataFound}</h1><Link href="/settings" className="mt-3 inline-block text-xs font-semibold text-sky-600">Back to settings</Link></div>;
 

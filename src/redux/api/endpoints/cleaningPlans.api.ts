@@ -184,6 +184,7 @@ export const cleaningPlansApi = baseApi.injectEndpoints({
 
 export const {
   useGetCleaningPlanListQuery,
+  useLazyGetCleaningPlanListQuery,
   useGetCleaningPlanQuery,
   useCreateCleaningPlanMutation,
   useUpdateCleaningPlanMutation,

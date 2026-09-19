@@ -1,5 +1,12 @@
 import { baseApi } from "../baseApi";
-import type { UploadConversationFilesResponse } from "@/services/actions/files";
+
+export type UploadConversationFilesResponse = {
+  images: string[];
+  videos: string[];
+  pdfs: string[];
+};
+
+const asUrlList = (value: unknown): string[] => (Array.isArray(value) ? (value as string[]) : []);
 
 export const filesApi = baseApi.injectEndpoints({
   overrideExisting: true,
@@ -10,6 +17,11 @@ export const filesApi = baseApi.injectEndpoints({
         method: "POST",
         body,
       }),
+      transformResponse: (response: Partial<UploadConversationFilesResponse> | null) => ({
+        images: asUrlList(response?.images),
+        videos: asUrlList(response?.videos),
+        pdfs: asUrlList(response?.pdfs),
+      }),
     }),
     deleteUploadedFiles: builder.mutation<null, { files: string[] }>({
       query: (body) => ({
@@ -17,11 +29,9 @@ export const filesApi = baseApi.injectEndpoints({
         method: "POST",
         body,
       }),
+      transformResponse: () => null,
     }),
   }),
 });
 
-export const {
-  useUploadConversationFilesMutation,
-  useDeleteUploadedFilesMutation,
-} = filesApi;
+export const { useUploadConversationFilesMutation, useDeleteUploadedFilesMutation } = filesApi;

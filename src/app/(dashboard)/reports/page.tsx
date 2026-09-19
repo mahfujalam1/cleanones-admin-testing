@@ -3,7 +3,7 @@
 import React, { useState, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { ContentSkeleton } from "@/components/shared/SkeletonLoader";
-import type { ReportTimeframe } from "@/services/actions/reports";
+import type { ReportTimeframe } from "@/redux/api/reportsApi";
 import { useGetShiftReportQuery } from "@/redux/api/reportsApi";
 import { getLocale } from "@/lib/locale";
 import { getUiTranslation } from "@/lib/translations";
@@ -57,7 +57,7 @@ export default function ReportsPage() {
     }
   };
 
-  const shiftTrendData = (report?.shift_trends ?? []).map((item: any) => ({
+  const shiftTrendData = (report?.shift_trends ?? []).map((item) => ({
     label: item.label !== undefined && item.label !== null ? String(item.label) : (item.date ? String(item.date).slice(8, 10) : ""),
     count: Number(item.total_shift ?? item.count ?? 0),
   }));

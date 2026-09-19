@@ -4,7 +4,6 @@ import React, { useState } from "react";
 import { usePathname } from "next/navigation";
 import { MdCheck, MdClose } from "react-icons/md";
 import type { UnifiedServiceRequest } from "./types";
-import { approveAdditionalTask, rejectAdditionalTask } from "@/services/actions/cleaningPlans";
 import {
   useApproveAdditionalTaskMutation,
   useUpdateAdditionalTaskMutation,
@@ -380,21 +379,14 @@ export function ExtraServiceActionFooter({
 
     let approveSuccess = false;
 
-    // Rows sourced from /additional-task use the decision endpoint, which takes the task id
-    // alone. The plan-scoped route below still serves rows read off a plan's pending list.
-    if (request.rawAdditionalTask && taskIds.length > 0) {
-      for (const tId of taskIds) {
-        try {
-          await approveAdditional({ id: tId, status: "Approved" }).unwrap();
-          approveSuccess = true;
-        } catch {
-          // Keep going; a partial success is still reported below.
-        }
-      }
-    } else if (planId && taskIds.length > 0) {
-      for (const tId of taskIds) {
-        const res = await approveAdditionalTask(planId, tId);
-        if (res.success) approveSuccess = true;
+    // The decision endpoint takes the task id alone, whether the row came from
+    // /additional-task or off a plan's pending list.
+    for (const tId of taskIds) {
+      try {
+        await approveAdditional({ id: tId, status: "Approved" }).unwrap();
+        approveSuccess = true;
+      } catch {
+        // Keep going; a partial success is still reported below.
       }
     }
 
@@ -434,19 +426,12 @@ export function ExtraServiceActionFooter({
     let rejectSuccess = false;
 
     // The decision endpoint takes the reason, so it rides along with the rejection.
-    if (request.rawAdditionalTask && taskIds.length > 0) {
-      for (const tId of taskIds) {
-        try {
-          await approveAdditional({ id: tId, status: "Rejected", reject_reason: reason }).unwrap();
-          rejectSuccess = true;
-        } catch {
-          // Keep going; a partial success is still reported below.
-        }
-      }
-    } else if (planId && taskIds.length > 0) {
-      for (const tId of taskIds) {
-        const res = await rejectAdditionalTask(planId, tId, reason);
-        if (res.success) rejectSuccess = true;
+    for (const tId of taskIds) {
+      try {
+        await approveAdditional({ id: tId, status: "Rejected", reject_reason: reason }).unwrap();
+        rejectSuccess = true;
+      } catch {
+        // Keep going; a partial success is still reported below.
       }
     }
 

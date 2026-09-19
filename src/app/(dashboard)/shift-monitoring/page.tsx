@@ -13,8 +13,6 @@ import {
   MdSearch,
 } from "react-icons/md";
 import { TbActivity, TbClock, TbCalendarStats, TbCircleCheck } from "react-icons/tb";
-import { type LiveWorker } from "@/services/actions/shiftMonitoring";
-import { useGetLiveStatusQuery } from "@/redux/api/shiftMonitoringApi";
 import {
   useGetTodayLiveShiftMetaQuery,
   useGetTodayLiveShiftsQuery,
@@ -134,26 +132,15 @@ export default function LiveStatusPage() {
     limit: 100,
   });
 
-  // 3. Existing live status fallback query
-  const {
-    data: statusRes,
-    isFetching: loadingStatus,
-    refetch: refetchStatus,
-  } = useGetLiveStatusQuery({
-    search: search.trim() || undefined,
-  });
-
-  const rawLiveItems = statusRes?.items ?? [];
   const todayShifts = todayShiftsRes?.result ?? [];
 
   // Refetch all endpoints
   const refetchAll = () => {
     void refetchMeta();
     void refetchTodayShifts();
-    void refetchStatus();
   };
 
-  // KPI Counters: prioritize /shift/today-live-shift-meta
+  // KPI Counters: prioritize /shift/today-live-shift-meta, otherwise count the list itself.
   const counts = useMemo(() => {
     if (todayMeta) {
       return {
@@ -164,40 +151,18 @@ export default function LiveStatusPage() {
       };
     }
 
-    const res = statusRes as any;
-    const total =
-      res?.total_shifts_count ?? rawLiveItems.length;
+    const statusOf = (shift: (typeof todayShifts)[number]) => (shift.status || "").toLowerCase();
 
-    const inprogress =
-      res?.inprogress_count ??
-      res?.in_progress_count ??
-      rawLiveItems.filter((i) => {
-            const st = (i.status || "").toLowerCase();
-            return (
-              st.includes("progress") ||
-              st.includes("ontime") ||
-              st.includes("late") ||
-          (i.progress_percentage > 0 && i.progress_percentage < 100)
-        );
-      }).length;
-
-    const upcoming =
-      res?.upcoming_count ??
-      rawLiveItems.filter((i) => {
-        const st = (i.status || "").toLowerCase();
-        return st.includes("upcoming") || st.includes("scheduled") || (!i.checkin_time && !i.checkout_time);
-      }).length;
-
-    const complete =
-      res?.completed_count ??
-      res?.complete_count ??
-      rawLiveItems.filter((i) => {
-        const st = (i.status || "").toLowerCase();
-        return st.includes("complete") || Boolean(i.checkout_time) || i.progress_percentage === 100;
-      }).length;
-
-    return { total, inprogress, upcoming, complete };
-  }, [todayMeta, statusRes, rawLiveItems]);
+    return {
+      total: todayShifts.length,
+      inprogress: todayShifts.filter((shift) => statusOf(shift).includes("progress")).length,
+      upcoming: todayShifts.filter((shift) => {
+        const st = statusOf(shift);
+        return st.includes("upcoming") || st.includes("pending") || st.includes("scheduled");
+      }).length,
+      complete: todayShifts.filter((shift) => statusOf(shift).includes("complete")).length,
+    };
+  }, [todayMeta, todayShifts]);
 
   // Unified items for display
   const unifiedItems: UnifiedLiveShift[] = useMemo(() => {
@@ -221,25 +186,8 @@ export default function LiveStatusPage() {
       }));
     }
 
-    // Fallback to live-status items if today-live-shifts returned 0
-    return rawLiveItems.map((i) => ({
-      id: `${i.worker_id}-${i.shift_id}`,
-      shift_id: i.shift_id,
-      worker_name: i.worker_name,
-      worker_type: i.worker_type,
-      worker_id: i.worker_id,
-      profile_picture: i.profile_picture || i.profile_photo,
-      client_name: i.client_name,
-      location_name: i.location_name,
-      plan_title: i.shift_name,
-      plan_id: (i as { cleaning_plan_id?: string; plan_id?: string }).cleaning_plan_id ?? (i as { plan_id?: string }).plan_id,
-      start_time: i.shift_start_time ? `${i.shift_start_time}${i.shift_end_time ? `–${i.shift_end_time}` : ""}` : "--:--",
-      duration_text: i.hours_worked_display,
-      status: i.status,
-      progress: Math.min(100, Math.max(0, i.progress_percentage ?? 0)),
-      rawItem: i,
-    }));
-  }, [todayShifts, rawLiveItems]);
+    return [];
+  }, [todayShifts]);
 
   // Client-side search and status filter
   const filteredItems = useMemo(() => {
@@ -285,7 +233,7 @@ export default function LiveStatusPage() {
     return filteredItems.slice((page - 1) * LIMIT, page * LIMIT);
   }, [filteredItems, page]);
 
-  const loading = loadingTodayShifts && loadingStatus;
+  const loading = loadingTodayShifts;
 
   return (
     <div className="space-y-4 pb-10">
