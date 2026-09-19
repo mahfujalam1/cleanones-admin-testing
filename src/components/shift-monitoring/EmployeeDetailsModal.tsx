@@ -238,9 +238,14 @@ export function EmployeeDetailsModal({ worker, onClose, onChanged }: EmployeeDet
         />
       )}
 
-      {assigning && planRecord && (
+      {assigning && planId && (
         <AssignWorkersModal
-          plan={planRecord}
+          target={{
+            planId,
+            date: new Date().toISOString().slice(0, 10),
+            planTitle: planRecord?.title,
+            locationName: worker.location,
+          }}
           onClose={() => { setAssigning(false); onChanged?.(); }}
         />
       )}

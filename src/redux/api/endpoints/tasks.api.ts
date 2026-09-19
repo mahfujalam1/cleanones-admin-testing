@@ -13,6 +13,8 @@ export type PhotoRequirement = {
   title: string;
   photo_url?: string | null;
   is_uploaded?: boolean;
+  description?: string;
+  reference_image_url?: string;
 };
 
 export type Task = {
@@ -46,6 +48,8 @@ export type CreateTaskInput = {
   days_of_week?: WeekDay[];
   days_of_month?: number[];
   is_active?: boolean;
+  description?: string;
+  reference_image_url?: string;
 };
 
 export type UpdateTaskInput = Partial<Omit<CreateTaskInput, "room">>;
@@ -87,6 +91,26 @@ export function withSchedule<T extends ScheduleFields>(input: T): T {
   return body;
 }
 
+/** The API expects these strings on every write; the form never collects them. */
+function withEmptyPhotoStrings<T extends {
+  description?: string | null;
+  reference_image_url?: string | null;
+  photo_requirements?: PhotoRequirement[];
+}>(input: T): T {
+  return {
+    ...input,
+    description: input.description ?? "",
+    reference_image_url: input.reference_image_url ?? "",
+    photo_requirements: input.photo_requirements?.map((photo) => ({
+      title: photo.title,
+      photo_url: photo.photo_url ?? "",
+      is_uploaded: Boolean(photo.is_uploaded),
+      description: photo.description ?? "",
+      reference_image_url: photo.reference_image_url ?? "",
+    })),
+  };
+}
+
 export const tasksApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     /** Tasks are only listed per room; a room must be chosen before this can run. */
@@ -105,7 +129,11 @@ export const tasksApi = baseApi.injectEndpoints({
     }),
 
     createTask: builder.mutation<Task, CreateTaskInput>({
-      query: (body) => ({ url: "/task/create-task", method: "POST", body: withSchedule(body) }),
+      query: (body) => ({
+        url: "/task/create-task",
+        method: "POST",
+        body: withEmptyPhotoStrings(withSchedule(body)),
+      }),
       invalidatesTags: (_result, _error, { room }) => [
         { type: tagTypes.tasks, id: `ROOM-${room}` },
         // The room's task count changes with it.
@@ -117,7 +145,7 @@ export const tasksApi = baseApi.injectEndpoints({
       query: ({ id, body }) => ({
         url: `/task/update-task/${encodeURIComponent(id)}`,
         method: "PATCH",
-        body: withSchedule(body),
+        body: withEmptyPhotoStrings(withSchedule(body)),
       }),
       invalidatesTags: (_result, _error, { id, roomId }) => [
         { type: tagTypes.tasks, id },
