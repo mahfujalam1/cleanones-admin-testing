@@ -10,7 +10,7 @@ export interface DashboardTranslationDict {
     restartReset: string; otpSent: string; verifyCode: string; resendCode: string;
   };
   nav: {
-    dashboard: string; roster: string; shiftMonitoring: string; workers: string;
+    dashboard: string; roster: string; shiftManagement: string; shiftMonitoring: string; workers: string;
     clients: string; chat: string; locations: string; rooms: string; cleaningPlans: string;
     extraServices: string; qualityControl: string; photoReviews: string;
     escalations: string; reports: string; notifications: string; getHelp: string; settings: string;
@@ -140,7 +140,7 @@ export const getPlaceholderTranslation = (locale: string | string[] | undefined)
 export const translations: Record<string, DashboardTranslationDict> = {
   en: {
     nav: {
-      dashboard: "Dashboard", roster: "Roster", shiftMonitoring: "Shift Monitoring", workers: "Workers",
+      dashboard: "Dashboard", roster: "Roster", shiftManagement: "Shift Management", shiftMonitoring: "Shift Monitoring", workers: "Workers",
       clients: "Clients", chat: "Chat", locations: "Locations", rooms: "Rooms", cleaningPlans: "Cleaning Plans",
       extraServices: "Extra Services", qualityControl: "Quality Control", photoReviews: "Photo Reviews",
       escalations: "Escalations", reports: "Reports", notifications: "Notifications", getHelp: "Get Help", settings: "Settings",
@@ -262,7 +262,7 @@ export const translations: Record<string, DashboardTranslationDict> = {
   },
   nl: {
     nav: {
-      dashboard: "Dashboard", roster: "Rooster", shiftMonitoring: "Dienstbewaking", workers: "Medewerkers",
+      dashboard: "Dashboard", roster: "Rooster", shiftManagement: "Ploegenbeheer", shiftMonitoring: "Dienstbewaking", workers: "Medewerkers",
       clients: "Klanten", chat: "Chat", locations: "Locaties", rooms: "Kamers", cleaningPlans: "Schoonmaakplannen",
       extraServices: "Extra Services", qualityControl: "Kwaliteitscontrole", photoReviews: "Fotobeoordelingen",
       escalations: "Escalaties", reports: "Rapporten", notifications: "Meldingen", getHelp: "Hulp Krijgen", settings: "Instellingen",
@@ -384,7 +384,7 @@ export const translations: Record<string, DashboardTranslationDict> = {
   },
   pl: {
     nav: {
-      dashboard: "Pulpit", roster: "Grafik", shiftMonitoring: "Monitorowanie Zmian", workers: "Pracownicy",
+      dashboard: "Pulpit", roster: "Grafik", shiftManagement: "Zarządzanie zmianami", shiftMonitoring: "Monitorowanie Zmian", workers: "Pracownicy",
       clients: "Klienci", chat: "Czat", locations: "Lokalizacje", rooms: "Pokoje", cleaningPlans: "Plany Sprzątania",
       extraServices: "Usługi Dodatkowe", qualityControl: "Kontrola Jakości", photoReviews: "Recenzje Zdjęć",
       escalations: "Eskalacje", reports: "Raporty", notifications: "Powiadomienia", getHelp: "Pomoc", settings: "Ustawienia",
@@ -506,7 +506,7 @@ export const translations: Record<string, DashboardTranslationDict> = {
   },
   uk: {
     nav: {
-      dashboard: "Панель управління", roster: "Графік", shiftMonitoring: "Моніторинг Змін", workers: "Працівники",
+      dashboard: "Панель управління", roster: "Графік", shiftManagement: "Управління змінами", shiftMonitoring: "Моніторинг Змін", workers: "Працівники",
       clients: "Клієнти", chat: "Чат", locations: "Локації", rooms: "Кімнати", cleaningPlans: "Плани Прибирання",
       extraServices: "Додаткові Послуги", qualityControl: "Контроль Якості", photoReviews: "Фотозвіти",
       escalations: "Ескалації", reports: "Звіти", notifications: "Сповіщення", getHelp: "Допомога", settings: "Налаштування",
@@ -628,7 +628,7 @@ export const translations: Record<string, DashboardTranslationDict> = {
   },
   pt: {
     nav: {
-      dashboard: "Painel", roster: "Escala", shiftMonitoring: "Monitorização de Turnos", workers: "Trabalhadores",
+      dashboard: "Painel", roster: "Escala", shiftManagement: "Gestão de Turnos", shiftMonitoring: "Monitorização de Turnos", workers: "Trabalhadores",
       clients: "Clientes", chat: "Chat", locations: "Localizações", rooms: "Divisões", cleaningPlans: "Planos de Limpeza",
       extraServices: "Serviços Extra", qualityControl: "Controlo de Qualidade", photoReviews: "Avaliações de Fotos",
       escalations: "Escalações", reports: "Relatórios", notifications: "Notificações", getHelp: "Obter Ajuda", settings: "Definições",
@@ -750,7 +750,7 @@ export const translations: Record<string, DashboardTranslationDict> = {
   },
   ar: {
     nav: {
-      dashboard: "لوحة التحكم", roster: "جدول العمل", shiftMonitoring: "مراقبة الورديات", workers: "العمال",
+      dashboard: "لوحة التحكم", roster: "جدول العمل", shiftManagement: "إدارة الورديات", shiftMonitoring: "مراقبة الورديات", workers: "العمال",
       clients: "العملاء", chat: "المحادثة", locations: "المواقع", rooms: "الغرف", cleaningPlans: "خطط التنظيف",
       extraServices: "خدمات إضافية", qualityControl: "مراقبة الجودة", photoReviews: "مراجعات الصور",
       escalations: "التصعيدات", reports: "التقارير", notifications: "الإشعارات", getHelp: "الحصول على المساعدة", settings: "الإعدادات",
@@ -872,7 +872,7 @@ export const translations: Record<string, DashboardTranslationDict> = {
   },
   fr: {
     nav: {
-      dashboard: "Tableau de Bord", roster: "Planning", shiftMonitoring: "Suivi des Shifts", workers: "Employés",
+      dashboard: "Tableau de Bord", roster: "Planning", shiftManagement: "Gestion des shifts", shiftMonitoring: "Suivi des Shifts", workers: "Employés",
       clients: "Clients", chat: "Chat", locations: "Emplacements", rooms: "Pièces", cleaningPlans: "Plans de Nettoyage",
       extraServices: "Services Extras", qualityControl: "Contrôle Qualité", photoReviews: "Revues Photos",
       escalations: "Escalades", reports: "Rapports", notifications: "Notifications", getHelp: "Obtenir de l'Aide", settings: "Paramètres",
@@ -994,7 +994,7 @@ export const translations: Record<string, DashboardTranslationDict> = {
   },
   es: {
     nav: {
-      dashboard: "Tablero", roster: "Turnos", shiftMonitoring: "Monitoreo de Turnos", workers: "Trabajadores",
+      dashboard: "Tablero", roster: "Turnos", shiftManagement: "Gestión de turnos", shiftMonitoring: "Monitoreo de Turnos", workers: "Trabajadores",
       clients: "Clientes", chat: "Chat", locations: "Ubicaciones", rooms: "Habitaciones", cleaningPlans: "Planes de Limpieza",
       extraServices: "Servicios Extras", qualityControl: "Control de Calidad", photoReviews: "Revisiones de Fotos",
       escalations: "Escalaciones", reports: "Reportes", notifications: "Notificaciones", getHelp: "Obtener Ayuda", settings: "Ajustes",

@@ -11,8 +11,8 @@ const ShiftModal = dynamic(() => import('./ShiftModal').then((mod) => mod.ShiftM
 import { Shift, ShiftTheme, planIdFromShift } from './types';
 import { PlanDetailModal } from '@/components/cleaningPlans/PlanDetailModal';
 import { PlanForm } from '@/components/cleaningPlans/PlanForm';
-import { AssignWorkersModal } from '@/components/cleaningPlans/AssignWorkersModal';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
+import { canReassign } from '@/components/shift-management/planShift';
 import {
   useDeleteCleaningPlanMutation,
   type CleaningPlan,
@@ -36,7 +36,6 @@ export function RosterCalendar() {
   const [page, setPage] = useState(1);
   const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
   const [editingPlan, setEditingPlan] = useState<CleaningPlan | null>(null);
-  const [assigningPlan, setAssigningPlan] = useState<CleaningPlan | null>(null);
   const [deletingPlan, setDeletingPlan] = useState<CleaningPlan | null>(null);
   const [error, setError] = useState('');
   const [deletePlan, { isLoading: removingPlan }] = useDeleteCleaningPlanMutation();
@@ -117,10 +116,12 @@ export function RosterCalendar() {
           allShifts.push({
             id: shiftId,
             workerName: worker.name,
+            workerId: worker.worker_id,
             location: occ.location_name || 'Location',
             date: cleanDate,
             startTime: formatTimeToHHMM(occ.start_time),
             endTime: formatTimeToHHMM(occ.end_time),
+            startAt: occ.start_time,
             theme: themes[themeIdx++ % themes.length],
             planId: occ.plan_id,
             status: occ.status,
@@ -144,6 +145,31 @@ export function RosterCalendar() {
     };
   }, [rosterRes]);
 
+  const selectedShiftWorkers = useMemo(() => {
+    if (!selectedPlanId || !selectedShift) return [];
+    const seen = new Set<string>();
+    return shifts
+      .filter((item) => item.planId === selectedPlanId && item.date === selectedShift.date)
+      .map((item) => ({
+        worker_id: item.workerId || item.workerName,
+        name: item.workerName,
+      }))
+      .filter((item) => {
+        if (!item.worker_id || seen.has(item.worker_id)) return false;
+        seen.add(item.worker_id);
+        return true;
+      });
+  }, [selectedPlanId, selectedShift, shifts]);
+
+  const canAssignSelected = Boolean(
+    selectedShift &&
+    canReassign({
+      startTime: selectedShift.startAt || selectedShift.startTime,
+      date: selectedShift.date,
+      status: selectedShift.status,
+    }),
+  );
+
   const handlePrev = () => {
     const newDate = new Date(currentDate);
     if (view === 'Week') newDate.setDate(newDate.getDate() - 7);
@@ -166,7 +192,6 @@ export function RosterCalendar() {
     setCurrentDate(new Date());
     setPage(1);
   };
-
 
   const formatDateRange = () => {
     if (view === 'Month') {
@@ -268,10 +293,23 @@ export function RosterCalendar() {
         />
       </div>
 
-      {/* Plan-backed shift: the Cleaning Plans modals, reused as-is */}
       {selectedPlanId && (
         <PlanDetailModal
           planId={selectedPlanId}
+          assignTarget={canAssignSelected ? {
+            planId: selectedPlanId,
+            date: selectedShift?.date || formatYYYYMMDD(new Date()),
+            locationName: selectedShift?.location,
+            startTime: selectedShift?.startTime,
+            endTime: selectedShift?.endTime,
+            assignedWorkers: selectedShiftWorkers,
+          } : undefined}
+          assignedWorkers={selectedShiftWorkers}
+          shiftSchedule={{
+            date: selectedShift?.date,
+            startTime: selectedShift?.startAt || selectedShift?.startTime,
+            endTime: selectedShift?.endTime,
+          }}
           onClose={() => setSelectedShift(null)}
           onEdit={(plan) => {
             setSelectedShift(null);
@@ -281,9 +319,8 @@ export function RosterCalendar() {
             setSelectedShift(null);
             setDeletingPlan(plan);
           }}
-          onAssign={(plan) => {
-            setSelectedShift(null);
-            setAssigningPlan(plan);
+          onAssigned={() => {
+            void refetchCurrent();
           }}
         />
       )}
@@ -293,13 +330,6 @@ export function RosterCalendar() {
           key={editingPlan._id}
           plan={editingPlan}
           onClose={() => { setEditingPlan(null); void refetchCurrent(); }}
-        />
-      )}
-
-      {assigningPlan && (
-        <AssignWorkersModal
-          plan={assigningPlan}
-          onClose={() => { setAssigningPlan(null); void refetchCurrent(); }}
         />
       )}
 
@@ -314,7 +344,6 @@ export function RosterCalendar() {
         />
       )}
 
-      {/* Shifts created straight on the roster have no plan behind them */}
       {selectedShift && !selectedPlanId && (
         <ShiftModal shift={selectedShift} onClose={() => setSelectedShift(null)} />
       )}

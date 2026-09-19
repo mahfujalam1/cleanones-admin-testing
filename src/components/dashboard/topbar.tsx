@@ -97,6 +97,7 @@ export default function Topbar() {
       locations: t.nav.locations,
       rooms: t.nav.rooms,
       "cleaning-plans": t.nav.cleaningPlans,
+      "shift-management": t.nav.shiftManagement,
       "extra-services": t.nav.extraServices,
       "photo-reviews": t.nav.photoReviews,
       escalations: t.nav.escalations,

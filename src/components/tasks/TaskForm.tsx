@@ -46,7 +46,7 @@ export function TaskForm({
   const [photoRequirements, setPhotoRequirements] = useState<PhotoRequirement[]>(
     task?.photo_requirements?.length
       ? task.photo_requirements
-      : [{ title: "", photo_url: null, is_uploaded: false }]
+      : [{ title: "", photo_url: "", is_uploaded: false }]
   );
   const [requiredPhotoCount, setRequiredPhotoCount] = useState(
     task?.required_photo_count?.toString() ?? ""
@@ -69,7 +69,13 @@ export function TaskForm({
       duration_minutes: duration.trim() ? Number(duration) : undefined,
       is_photo_required: photoRequired,
       photo_requirements: photoRequired
-        ? namedPhotoRequirements.map((r) => ({ ...r, title: r.title.trim() }))
+        ? namedPhotoRequirements.map((r) => ({
+            title: r.title.trim(),
+            photo_url: "",
+            is_uploaded: false,
+            description: "",
+            reference_image_url: "",
+          }))
         : undefined,
       required_photo_count: photoRequired && requiredPhotoCount.trim()
         ? Number(requiredPhotoCount)
@@ -297,7 +303,7 @@ export function TaskForm({
               <button
                 type="button"
                 onClick={() => {
-                  setPhotoRequirements([...photoRequirements, { title: "", photo_url: null, is_uploaded: false }]);
+                  setPhotoRequirements([...photoRequirements, { title: "", photo_url: "", is_uploaded: false }]);
                   setError("");
                 }}
                 className="text-sm font-semibold text-primary hover:text-sky-600"

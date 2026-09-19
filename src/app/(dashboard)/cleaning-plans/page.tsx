@@ -6,7 +6,6 @@ import { MdAdd, MdOutlineAssignment } from "react-icons/md";
 import { PlanCard } from "@/components/cleaningPlans/PlanCard";
 import { PlanForm } from "@/components/cleaningPlans/PlanForm";
 import { PlanDetailModal } from "@/components/cleaningPlans/PlanDetailModal";
-import { AssignWorkersModal } from "@/components/cleaningPlans/AssignWorkersModal";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { BackendPagination } from "@/components/shared/BackendPagination";
 import { CardGridSkeleton, ErrorNotice, SearchInput } from "@/components/shared/ListStates";
@@ -50,7 +49,6 @@ function CleaningPlansView() {
   const [deleteTarget, setDeleteTarget] = useState<CleaningPlan | null>(null);
   const [justCreated, setJustCreated] = useState<CleaningPlan | null>(null);
   const [viewTarget, setViewTarget] = useState<CleaningPlan | null>(null);
-  const [assignTarget, setAssignTarget] = useState<CleaningPlan | null>(null);
   const [actionError, setActionError] = useState("");
 
   useEffect(() => setPage(1), [searchTerm, clientId, locationId]);
@@ -60,7 +58,6 @@ function CleaningPlansView() {
   useEffect(() => {
     if (!deepLinkPlan) return;
     if (deepLinkAction === "edit") setFormTarget(deepLinkPlan);
-    else if (deepLinkAction === "assign") setAssignTarget(deepLinkPlan);
     else if (deepLinkAction === "delete") setDeleteTarget(deepLinkPlan);
     else setViewTarget(deepLinkPlan);
     // Drop the params, so closing the modal does not immediately reopen it.
@@ -183,7 +180,6 @@ function CleaningPlansView() {
               onSelect={setViewTarget}
               onEdit={setFormTarget}
               onDelete={setDeleteTarget}
-              onAssign={setAssignTarget}
             />
           ))}
         </div>
@@ -209,12 +205,7 @@ function CleaningPlansView() {
             setViewTarget(null);
             setDeleteTarget(plan);
           }}
-          onAssign={setAssignTarget}
         />
-      )}
-
-      {assignTarget && (
-        <AssignWorkersModal plan={assignTarget} onClose={() => setAssignTarget(null)} />
       )}
 
       {formTarget && (
