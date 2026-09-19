@@ -2,9 +2,8 @@
 import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { WorkerDetailModal } from "@/components/workers/WorkerDetailModal";
 import { useGetWorkerListQuery } from "@/redux/api/endpoints/workers.api";
-import { MdAccessTime, MdAdd, MdArrowForward, MdBusiness, MdCalendarToday, MdCheckCircle, MdChevronRight, MdLocationOn, MdPeople, MdReportProblem, MdUploadFile, MdWarningAmber } from "react-icons/md";
+import { MdAccessTime, MdAdd, MdArrowForward, MdBusiness, MdCalendarToday, MdCheckCircle, MdChevronRight, MdLocationOn, MdPeople, MdPhone, MdReportProblem, MdUploadFile, MdWarningAmber } from "react-icons/md";
 import { CardGridSkeleton, DetailSkeleton } from "@/components/shared/SkeletonLoader";
 import {
   useGetTodayLiveShiftMetaQuery,
@@ -95,6 +94,103 @@ function formatTimeToHHMM(value?: string): string {
   return value.slice(0, 5);
 }
 
+function formatLateDuration(start?: string, checkIn?: string): string {
+  if (!start) return "Late";
+  const from = new Date(start);
+  if (Number.isNaN(from.getTime())) return "Late";
+  const until = checkIn ? new Date(checkIn) : new Date();
+  if (Number.isNaN(until.getTime()) || until.getTime() <= from.getTime()) return "Late";
+  const totalMinutes = Math.floor((until.getTime() - from.getTime()) / 60_000);
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  if (hours > 0 && minutes > 0) return `${hours}h ${minutes}m late`;
+  if (hours > 0) return `${hours}h late`;
+  return `${minutes}m late`;
+}
+
+function dialHref(phone?: string) {
+  const digits = phone?.replace(/[^\d+]/g, "");
+  return digits ? `tel:${digits}` : "";
+}
+
+type LateWorkerChip = {
+  id: string;
+  name: string;
+  detail: string;
+  phone?: string;
+  photo?: string;
+};
+
+/** Merge late workers from attendance, overview pills, and live-shift status. */
+function collectLateWorkers(
+  attendanceToday: Array<{ worker_id: string; name: string; late_days: number }> | undefined,
+  pills: AttentionPill[],
+  behind: FallingBehindShift[],
+  liveShifts: Array<{
+    date_time?: string;
+    date?: string;
+    assigned_workers?: Array<{
+      worker_id: string;
+      name: string;
+      attendance_status?: string;
+      status?: string;
+      check_in_time?: string;
+      checkin_time?: string;
+      profile_picture?: string;
+      profile_photo?: string;
+      phone?: string;
+      phone_number?: string;
+    }>;
+  }>,
+  lateLabel: string,
+): LateWorkerChip[] {
+  const found = new Map<string, LateWorkerChip>();
+  const remember = (
+    id?: string,
+    name?: string,
+    detail?: string,
+    extra?: { phone?: string; photo?: string },
+  ) => {
+    if (!id) return;
+    const prev = found.get(id);
+    found.set(id, {
+      id,
+      name: name || prev?.name || "",
+      detail: detail || prev?.detail || lateLabel,
+      phone: extra?.phone || prev?.phone,
+      photo: extra?.photo || prev?.photo,
+    });
+  };
+
+  (attendanceToday ?? [])
+    .filter((row) => row.late_days > 0)
+    .forEach((row) => remember(row.worker_id, row.name, lateLabel));
+  pills.forEach((pill) =>
+    remember(pill.worker_id, pill.worker_name, pill.late_duration_text, { phone: pill.phone_number }),
+  );
+  behind.forEach((shift) =>
+    remember(shift.worker_id, shift.worker_name, shift.checkin_status, { photo: shift.worker_profile_picture }),
+  );
+  liveShifts.forEach((shift) =>
+    (shift.assigned_workers ?? []).forEach((worker) => {
+      const status = normalizeStatus(worker.attendance_status || worker.status || "");
+      if (status.includes("late") || status.includes("show") || status.includes("missing")) {
+        remember(
+          worker.worker_id,
+          worker.name,
+          formatLateDuration(shift.date_time || shift.date, worker.check_in_time || worker.checkin_time),
+          {
+            phone: worker.phone || worker.phone_number,
+            photo: worker.profile_picture || worker.profile_photo,
+          },
+        );
+      }
+    }),
+  );
+
+  return Array.from(found.values());
+}
+
 export default function DashboardPage() {
   const pathname = usePathname();
   const locale = getLocale(pathname);
@@ -105,7 +201,6 @@ export default function DashboardPage() {
     "all" | "upcoming" | "in_progress" | "completed" | "cancelled"
   >("all");
   const [actionsOpen, setActionsOpen] = useState(false);
-  const [detailWorkerId, setDetailWorkerId] = useState<string | null>(null);
 
   const { data: todayLiveMeta } = useGetTodayLiveShiftMetaQuery();
   // Names the late workers the meta only counts.
@@ -118,6 +213,11 @@ export default function DashboardPage() {
     sort: "-date_time",
     status: liveTab === "all" ? undefined : liveTab,
   });
+  const { data: todayAllShiftsRes } = useGetTodayLiveShiftsQuery({
+    limit: 100,
+    page: 1,
+    sort: "-date_time",
+  });
 
   // The API's greeting is built from the server clock, so the time of day is taken from the
   // viewer's own timezone instead and re-checked each minute in case a boundary passes.
@@ -129,6 +229,7 @@ export default function DashboardPage() {
 
   // `?? []` would be a fresh array each render and re-run every memo that depends on it.
   const todayLiveShifts = useMemo(() => todayShiftsRes?.result ?? [], [todayShiftsRes]);
+  const todayAllShifts = useMemo(() => todayAllShiftsRes?.result ?? [], [todayAllShiftsRes]);
 
   /**
    * The dashboard overview route was dropped from the backend and the current API has no
@@ -176,47 +277,34 @@ export default function DashboardPage() {
    * shift list carries attendance per assigned worker. They are merged and de-duplicated by
    * worker id so the banner shows one chip per person, whichever source spotted them.
    */
-  const lateWorkers = useMemo(() => {
-    const found = new Map<string, { id: string; name: string; detail: string }>();
-    const remember = (id?: string, name?: string, detail?: string) => {
-      if (!id || found.has(id)) return;
-      found.set(id, { id, name: name || "", detail: detail || "" });
-    };
-
-    (attendanceToday ?? [])
-      .filter((row) => row.late_days > 0)
-      .forEach((row) => remember(row.worker_id, row.name, t.dashboard.late));
-    attentionPills.forEach((pill) => remember(pill.worker_id, pill.worker_name, pill.late_duration_text));
-    fallingBehind.forEach((shift) => remember(shift.worker_id, shift.worker_name, shift.checkin_status));
-    todayLiveShifts.forEach((shift) =>
-      (shift.assigned_workers ?? []).forEach((worker) => {
-        const status = normalizeStatus(worker.attendance_status || worker.status || "");
-        if (status.includes("late") || status.includes("show") || status.includes("missing")) {
-          remember(worker.worker_id, worker.name, worker.attendance_status || worker.status);
-        }
-      }),
-    );
-
-    return Array.from(found.values());
-  }, [attendanceToday, attentionPills, fallingBehind, todayLiveShifts, t]);
+  const lateWorkers = collectLateWorkers(
+    attendanceToday,
+    attentionPills,
+    fallingBehind,
+    todayAllShifts,
+    t.dashboard.late,
+  );
 
   const cards = safeOverview.summary_cards;
   /**
-   * A late worker's id here is not guaranteed to be the id `/worker/single-worker/:id` expects
-   * — depending on the source it can be the linked user id instead. The roster is matched
-   * against both, so the details modal always opens on the right person.
+   * The roster fills in phone numbers so the call button can open Chrome's dialer.
    */
   const { data: workerRoster } = useGetWorkerListQuery(
     { page: 1, limit: 200 },
     { skip: lateWorkers.length === 0 },
   );
 
-  const openWorkerDetails = (workerId: string) => {
+  const lateCallPills = lateWorkers.map((worker) => {
     const match = (workerRoster?.result ?? []).find(
-      (worker) => worker._id === workerId || worker.user === workerId,
+      (item) => item._id === worker.id || item.user === worker.id,
     );
-    setDetailWorkerId(match?._id ?? workerId);
-  };
+    return {
+      ...worker,
+      name: worker.name || match?.name || "",
+      phone: worker.phone || match?.phone,
+      photo: worker.photo || match?.profile_photo,
+    };
+  });
 
 
 
@@ -333,55 +421,75 @@ export default function DashboardPage() {
       </header>
 
       {/* Red Attention Banner */}
-      <section className={`rounded-xl border p-4 ${needAttentionCount > 0 ? "border-red-200 bg-red-50/70" : "border-slate-200 bg-white"}`}>
+      <section className={`rounded-xl border p-4 ${needAttentionCount > 0 ? "border-red-200 bg-red-50/80" : "border-slate-200 bg-white"}`}>
         <div className="flex flex-wrap items-center gap-4">
-          <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-white ${needAttentionCount > 0 ? "bg-red-500 shadow-xs" : "bg-emerald-500"}`}>
+          <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${needAttentionCount > 0 ? "bg-red-100 text-red-500" : "bg-emerald-100 text-emerald-600"}`}>
             {needAttentionCount > 0 ? <MdWarningAmber className="text-2xl" /> : <MdCheckCircle className="text-2xl" />}
           </span>
-          <div className="flex-1 min-w-48">
+          <div className="min-w-48 flex-1">
             <div className="flex flex-wrap items-center gap-2">
               <h2 className={`font-bold ${needAttentionCount > 0 ? "text-red-950" : "text-slate-900"}`}>
-                {needAttentionCount} {needAttentionCount === 1 ? ui.workerNeedsAttention : ui.workersNeedAttention}
+                {needAttentionCount} {t.dashboard.peopleNeedAttention}
               </h2>
-              <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold ${needAttentionCount > 0 ? "bg-red-100 text-red-700" : "bg-emerald-100 text-emerald-700"}`}>
-                {needAttentionCount > 0 ? ui.attentionRequired : t.dashboard.allOnTime}
+              <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold ${needAttentionCount > 0 ? "bg-red-100 text-red-600" : "bg-emerald-100 text-emerald-700"}`}>
+                {needAttentionCount > 0 ? `${needAttentionCount} ${t.dashboard.late.toLowerCase()}` : t.dashboard.allOnTime}
               </span>
             </div>
-            <p className={`text-xs sm:text-sm mt-0.5 ${needAttentionCount > 0 ? "text-red-700" : "text-slate-500"}`}>
+            <p className={`mt-0.5 text-xs sm:text-sm ${needAttentionCount > 0 ? "text-red-600" : "text-slate-500"}`}>
               {needAttentionCount > 0
-                ? `${needAttentionCount} ${needAttentionCount === 1 ? ui.lateWorkerSubtitle : ui.lateWorkersSubtitle}`
+                ? "Contact them now or arrange a replacement."
                 : t.dashboard.noWorkersRequireAttention}
             </p>
           </div>
-          <div className="flex flex-wrap gap-2">
-            {lateWorkers.length > 0 ? (
-              // One chip per late worker; opening it shows the same profile the Workers page does.
-              lateWorkers.map((worker) => (
-                <button
-                  key={worker.id}
-                  type="button"
-                  onClick={() => openWorkerDetails(worker.id)}
-                  title={`${worker.name || ui.worker}${worker.detail ? ` — ${worker.detail}` : ""}`}
-                  className="flex cursor-pointer items-center gap-2 rounded-md border border-red-300 bg-white px-2.5 py-1.5 text-left shadow-2xs transition-colors hover:border-red-400 hover:bg-red-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500"
-                >
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-red-100 text-[10px] font-bold text-red-700">
-                    {initialsOf(worker.name)}
-                  </span>
-                  <span className="min-w-0">
-                    <b className="block max-w-[140px] truncate text-xs font-semibold text-red-900">
-                      {worker.name || ui.worker}
-                    </b>
-                    <small className="block text-[10px] text-red-600">{worker.detail || t.dashboard.late}</small>
-                  </span>
-                </button>
-              ))
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            {lateCallPills.length > 0 ? (
+              lateCallPills.map((worker) => {
+                const callUrl = dialHref(worker.phone);
+                return (
+                  <div
+                    key={worker.id}
+                    className="flex items-center gap-2 rounded-full border border-red-100 bg-white py-1 pl-1 pr-1 shadow-2xs"
+                  >
+                    {worker.photo ? (
+                      <img
+                        src={worker.photo}
+                        alt=""
+                        className="h-8 w-8 rounded-full object-cover"
+                      />
+                    ) : (
+                      <span className="flex h-8 w-8 items-center justify-center rounded-full bg-sky-100 text-sm text-sky-600">
+                        <MdPeople />
+                      </span>
+                    )}
+                    <span className="max-w-[140px] truncate px-1 text-xs font-semibold text-slate-700">
+                      {worker.detail || t.dashboard.late}
+                    </span>
+                    {callUrl ? (
+                      <a
+                        href={callUrl}
+                        aria-label={`${t.dashboard.callEmployee} ${worker.name || ""}`.trim()}
+                        title={worker.phone}
+                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sky-50 text-sky-600 transition-colors hover:bg-sky-100"
+                      >
+                        <MdPhone className="text-base" />
+                      </a>
+                    ) : (
+                      <span
+                        title="No phone number"
+                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-50 text-slate-300"
+                      >
+                        <MdPhone className="text-base" />
+                      </span>
+                    )}
+                  </div>
+                );
+              })
             ) : needAttentionCount > 0 ? (
-              // A count arrived without any worker attached to it — never claim the schedule is clean.
-              <span className="text-xs font-medium text-red-700 bg-red-50 border border-red-200/80 rounded-lg px-3 py-1.5">
+              <span className="rounded-lg border border-red-200/80 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-700">
                 {lateWorkerCount || needAttentionCount} {ui.lateWorkers}
               </span>
             ) : (
-              <span className="text-xs text-emerald-700 font-medium bg-emerald-50 border border-emerald-200/80 rounded-lg px-3 py-1.5">
+              <span className="rounded-lg border border-emerald-200/80 bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700">
                 {t.dashboard.allShiftsOnSchedule}
               </span>
             )}
@@ -612,20 +720,8 @@ export default function DashboardPage() {
         </div>
         <MdArrowForward className="ml-auto text-slate-400" />
       </Link>
-
-      {detailWorkerId && (
-        <WorkerDetailModal workerId={detailWorkerId} onClose={() => setDetailWorkerId(null)} />
-      )}
     </div>
   );
-}
-
-/** Two letters for the chip avatar: first and last word of the name. */
-function initialsOf(name: string) {
-  const words = name.trim().split(/\s+/).filter(Boolean);
-  if (words.length === 0) return "?";
-  if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
-  return `${words[0][0]}${words[words.length - 1][0]}`.toUpperCase();
 }
 
 function Metric({ icon, value, label, tone }: { icon: React.ReactNode; value: number; label: string; tone: string }) {
