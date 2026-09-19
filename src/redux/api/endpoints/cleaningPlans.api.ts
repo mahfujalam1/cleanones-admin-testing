@@ -1,5 +1,5 @@
 import { baseApi } from "../baseApi";
-import { listQuery, type ListParams, type Paginated, type Ref } from "../types";
+import { listQuery, refDoc, type ListParams, type Paginated, type Ref } from "../types";
 import { tagTypes } from "../../tagTypes";
 import type { Client } from "./clients.api";
 import type { Location } from "./locations.api";
@@ -30,6 +30,10 @@ export type CleaningPlan = {
   date_time?: string;
   end_date?: string;
   max_estimated_duration?: number;
+  total_duration?: number;
+  total_task_duration?: number;
+  total_additional_task_duration?: number;
+  total_tasks?: number;
   status?: PlanStatus;
   is_active?: boolean;
   manager?: string;
@@ -57,6 +61,26 @@ export function planCounts(plan: CleaningPlan) {
   };
 }
 
+/** Room-task minutes plus additional-task minutes. Prefers the API total when present. */
+export function planWorkDurationMinutes(plan: CleaningPlan): number {
+  if (typeof plan.total_duration === "number" && plan.total_duration > 0) return plan.total_duration;
+  const rooms = (plan.rooms ?? []).map((room) => refDoc<Room>(room)).filter(Boolean) as Room[];
+  const roomMinutes = rooms.reduce(
+    (sum, room) => sum + (room.tasks ?? []).reduce((taskSum, task) => taskSum + (task.duration_minutes ?? 0), 0),
+    0,
+  );
+  const extra = (plan.additional_tasks ?? [])
+    .map((task) => refDoc<AdditionalTask>(task))
+    .filter(Boolean) as AdditionalTask[];
+  const extraMinutes = extra.reduce((sum, task) => sum + (task.duration_minutes ?? 0), 0);
+  const total = roomMinutes + extraMinutes;
+  if (total > 0) return total;
+  if (typeof plan.total_task_duration === "number" || typeof plan.total_additional_task_duration === "number") {
+    return (plan.total_task_duration ?? 0) + (plan.total_additional_task_duration ?? 0);
+  }
+  return plan.max_estimated_duration ?? 0;
+}
+
 /**
  * List filters.
  *
@@ -79,8 +103,6 @@ const ROUTES = {
   create: "/cleaning-plan/create-cleaning-plan",
   single: (id: string) => `/cleaning-plan/single-cleaning-plan/${encodeURIComponent(id)}`,
   update: (id: string) => `/cleaning-plan/update-cleaning-plan/${encodeURIComponent(id)}`,
-  eligibleWorkers: (id: string) => `/cleaning-plan/${encodeURIComponent(id)}/eligible-workers`,
-  assignWorkers: (id: string) => `/cleaning-plan/${encodeURIComponent(id)}/assign-workers`,
   remove: (id: string) => `/cleaning-plan/delete-cleaning-plan/${encodeURIComponent(id)}`,
 };
 
@@ -89,12 +111,9 @@ export type CreatePlanInput = {
   client: string;
   location: string;
   rooms: string[];
-  /** Start of the plan: the date and the start time together, as one timestamp. */
-  date_time: string;
-  /** Optional — a plan with no end date runs open-ended. */
-  end_date?: string;
   description?: string;
   note?: string;
+  status?: PlanStatus;
 };
 
 export type UpdatePlanInput = Partial<CreatePlanInput>;
@@ -105,14 +124,6 @@ export type EligibleWorker = {
   is_conflict?: boolean;
   conflict_reason?: string;
   conflicting_plan_id?: string;
-};
-
-export type AssignWorkersInput = {
-  id: string;
-  /** Replaces the whole list — anyone left out is unassigned. */
-  assigned_workers: Array<{ worker: string; role?: string }>;
-  /** Saves conflicting assignments anyway, flagged `assigned_with_conflict` for audit. */
-  force?: boolean;
 };
 
 /** `double_booked` → "Double booked", so a raw reason code never reaches the screen. */
@@ -142,7 +153,10 @@ export const cleaningPlansApi = baseApi.injectEndpoints({
 
     createCleaningPlan: builder.mutation<CleaningPlan, CreatePlanInput>({
       query: (body) => ({ url: ROUTES.create, method: "POST", body }),
-      invalidatesTags: [{ type: tagTypes.cleaningPlans, id: "LIST" }],
+      invalidatesTags: [
+        { type: tagTypes.cleaningPlans, id: "LIST" },
+        { type: tagTypes.roster, id: "LIST" },
+      ],
     }),
 
     updateCleaningPlan: builder.mutation<CleaningPlan, { id: string; body: UpdatePlanInput }>({
@@ -150,25 +164,7 @@ export const cleaningPlansApi = baseApi.injectEndpoints({
       invalidatesTags: (_result, _error, { id }) => [
         { type: tagTypes.cleaningPlans, id },
         { type: tagTypes.cleaningPlans, id: "LIST" },
-      ],
-    }),
-
-    /** Already excludes deleted, blocked and inactive workers, so the list needs no filtering. */
-    getEligibleWorkers: builder.query<EligibleWorker[], string>({
-      query: (id) => ROUTES.eligibleWorkers(id),
-      providesTags: (_response, _error, id) => [{ type: tagTypes.cleaningPlans, id: `WORKERS-${id}` }],
-    }),
-
-    assignWorkers: builder.mutation<CleaningPlan, AssignWorkersInput>({
-      query: ({ id, assigned_workers, force }) => ({
-        url: `${ROUTES.assignWorkers(id)}${force ? "?force=true" : ""}`,
-        method: "PATCH",
-        body: { assigned_workers, force: Boolean(force) },
-      }),
-      invalidatesTags: (_result, _error, { id }) => [
-        { type: tagTypes.cleaningPlans, id },
-        { type: tagTypes.cleaningPlans, id: `WORKERS-${id}` },
-        { type: tagTypes.cleaningPlans, id: "LIST" },
+        { type: tagTypes.roster, id: "LIST" },
       ],
     }),
 
@@ -177,6 +173,7 @@ export const cleaningPlansApi = baseApi.injectEndpoints({
       invalidatesTags: (_result, _error, id) => [
         { type: tagTypes.cleaningPlans, id },
         { type: tagTypes.cleaningPlans, id: "LIST" },
+        { type: tagTypes.roster, id: "LIST" },
       ],
     }),
   }),
@@ -189,6 +186,4 @@ export const {
   useCreateCleaningPlanMutation,
   useUpdateCleaningPlanMutation,
   useDeleteCleaningPlanMutation,
-  useGetEligibleWorkersQuery,
-  useAssignWorkersMutation,
 } = cleaningPlansApi;

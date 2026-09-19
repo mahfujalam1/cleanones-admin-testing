@@ -8,20 +8,11 @@ import {
   MdOutlineGroupAdd,
   MdOutlineMeetingRoom,
   MdOutlinePlace,
-  MdOutlineSchedule,
 } from "react-icons/md";
 import { planCounts, type CleaningPlan } from "@/redux/api/endpoints/cleaningPlans.api";
 import { refDoc, refId } from "@/redux/api/types";
 import { clientLabel, CLIENT_LOOKUP_ARGS, useGetClientsQuery, type Client } from "@/redux/api/endpoints/clients.api";
 import type { Location } from "@/redux/api/endpoints/locations.api";
-
-/** "14/09/2026 · 08:00" — the date and start time, which is how a plan is recognised. */
-function formatStart(value?: string) {
-  if (!value) return null;
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return value;
-  return `${parsed.toLocaleDateString()} · ${parsed.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
-}
 
 function MetaLine({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {
   if (!children) return null;
@@ -109,7 +100,6 @@ export function PlanCard({
 
           <div className="mt-3 space-y-1">
             <MetaLine icon={<MdOutlinePlace />}>{location?.name}</MetaLine>
-            <MetaLine icon={<MdOutlineSchedule />}>{formatStart(plan.date_time)}</MetaLine>
             <MetaLine icon={<MdOutlineMeetingRoom />}>
               {counts.rooms ? `${counts.rooms} ${counts.rooms === 1 ? "room" : "rooms"}` : null}
             </MetaLine>
@@ -118,13 +108,12 @@ export function PlanCard({
 
         {/* Fixed stat strip: every card ends on the same line and the numbers a manager scans for
             sit in the same place on each one. */}
-        <div className="grid grid-cols-3 divide-x divide-slate-100 border-t border-slate-100 bg-slate-50/60">
+        <div className="grid grid-cols-2 divide-x divide-slate-100 border-t border-slate-100 bg-slate-50/60">
           <Stat
             value={plan.max_estimated_duration ? `${plan.max_estimated_duration}m` : "—"}
             label="Duration"
           />
           <Stat value={counts.tasks} label="Tasks" />
-          <Stat value={counts.workers} label="Workers" />
         </div>
 
         {onAssign && (

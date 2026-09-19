@@ -20,11 +20,23 @@ const capitalise = (value: string) => value[0].toUpperCase() + value.slice(1);
 function scheduleLabel(task: Task): string {
   const frequency = capitalise(task.frequency_type);
   if (task.frequency_type === "daily") return "Every day";
-  if (task.frequency_type === "weekly") {
-    const days = (task.days_of_week ?? []).map((d) => DAY_LABELS[d]).join(", ");
-    return days ? `Weekly on ${days}` : "Weekly";
+  if (task.frequency_type === "weekly" && task.days_of_week?.length) {
+    return `${frequency} · ${task.days_of_week.map((day) => DAY_LABELS[day]).join(", ")}`;
+  }
+  if (task.frequency_type === "monthly" && task.days_of_month?.length) {
+    return `${frequency} · ${[...task.days_of_month].sort((a, b) => a - b).join(", ")}`;
   }
   return frequency;
+}
+
+function scheduleDates(task: Task): string[] {
+  if (task.frequency_type === "weekly") {
+    return (task.days_of_week ?? []).map((day) => DAY_LABELS[day]);
+  }
+  if (task.frequency_type === "monthly") {
+    return [...(task.days_of_month ?? [])].sort((a, b) => a - b).map(String);
+  }
+  return [];
 }
 
 export function TaskViewModal({ task, onClose }: { task: Task; onClose: () => void }) {
@@ -78,12 +90,30 @@ export function TaskViewModal({ task, onClose }: { task: Task; onClose: () => vo
             </span>
             <div className="min-w-0 flex-1">
               <h3 className="truncate text-base font-bold text-slate-900">{task.name}</h3>
-              <p className="mt-1 flex items-center gap-1.5 truncate text-sm text-slate-500">
-                <MdSchedule className="shrink-0 text-slate-400" />
-                {scheduleLabel(task)}
+              <p className="mt-1 flex items-start gap-1.5 text-sm text-slate-500">
+                <MdSchedule className="mt-0.5 shrink-0 text-slate-400" />
+                <span>{scheduleLabel(task)}</span>
               </p>
             </div>
           </div>
+
+          {scheduleDates(task).length > 0 && (
+            <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                {task.frequency_type === "weekly" ? "Days" : "Dates"}
+              </p>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {scheduleDates(task).map((value) => (
+                  <span
+                    key={value}
+                    className="rounded-md bg-white px-2 py-0.5 text-xs font-medium text-slate-700 ring-1 ring-slate-200"
+                  >
+                    {value}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">

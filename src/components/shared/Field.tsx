@@ -102,15 +102,17 @@ export function SelectField<T extends string>({
   required,
   disabled,
   placeholder,
+  scrollToValue,
 }: {
   label: string;
   value: T | "";
   /** Either bare values (shown as-is) or `{ value, label }` pairs. */
-  options: ReadonlyArray<T | { value: T; label: string }>;
+  options: ReadonlyArray<T | { value: T; label: string; disabled?: boolean }>;
   onChange: (value: T) => void;
   required?: boolean;
   disabled?: boolean;
   placeholder?: string;
+  scrollToValue?: string;
 }) {
   const id = useId();
   const items = options.map((option) =>
@@ -127,6 +129,7 @@ export function SelectField<T extends string>({
         disabled={disabled}
         placeholder={placeholder ?? `Select ${label.toLowerCase()}`}
         onValueChange={(next) => onChange(next as T)}
+        scrollToValue={scrollToValue}
       />
     </div>
   );

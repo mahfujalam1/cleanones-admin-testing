@@ -37,10 +37,12 @@ export type ShiftTheme = 'blue' | 'pink' | 'orange' | 'purple' | 'green' | 'teal
 export interface Shift {
   id: string;
   workerName: string;
+  workerId?: string;
   location: string;
   date: string; // YYYY-MM-DD
   startTime: string; // HH:MM (24-hour)
   endTime: string; // HH:MM (24-hour)
+  startAt?: string;
   theme: ShiftTheme;
   planId?: string;
   status?: string;

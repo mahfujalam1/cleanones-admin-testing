@@ -13,7 +13,7 @@ import {
   MdChevronLeft, MdChevronRight, MdLogout, MdChatBubbleOutline,
   MdHelpOutline
 } from 'react-icons/md';
-import { MdMeetingRoom, MdChecklist, MdAdminPanelSettings } from 'react-icons/md';
+import { MdMeetingRoom, MdChecklist, MdAdminPanelSettings, MdEventNote } from 'react-icons/md';
 import { notificationsApi } from '@/redux/api/endpoints/notifications.api';
 import { shiftsApi } from '@/redux/api/shiftsApi';
 import { reportsApi } from '@/redux/api/reportsApi';
@@ -45,13 +45,14 @@ export default function Sidebar() {
     { name: t.nav.dashboard, href: '/', icon: MdDashboard },
     { name: t.nav.roster, href: '/roster', icon: MdCalendarToday },
     { name: t.nav.shiftMonitoring, href: '/shift-monitoring', icon: MdAccessTime },
+    { name: t.nav.cleaningPlans, href: '/cleaning-plans', icon: MdChecklist },
+    { name: t.nav.shiftManagement, href: '/shift-management', icon: MdEventNote },
+    { name: t.nav.extraServices, href: '/extra-services', icon: MdBusinessCenter },
     { name: t.nav.workers, href: '/workers', icon: MdPeople },
     { name: t.nav.clients, href: '/clients', icon: MdBusinessCenter },
     { name: t.nav.chat, href: '/chat', icon: MdChatBubbleOutline, badge: unseenChats },
     { name: t.nav.locations, href: '/locations', icon: MdLocationOn },
     { name: t.nav.rooms, href: '/rooms', icon: MdMeetingRoom },
-    { name: t.nav.cleaningPlans, href: '/cleaning-plans', icon: MdChecklist },
-    { name: t.nav.extraServices, href: '/extra-services', icon: MdBusinessCenter },
   ];
 
   const qcLinks = [

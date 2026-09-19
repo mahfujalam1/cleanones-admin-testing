@@ -9,6 +9,7 @@ const dashboardSections = new Set([
   "locations",
   "rooms",
   "cleaning-plans",
+  "shift-management",
   "extra-services",
   "photo-reviews",
   "escalations",
@@ -25,7 +26,7 @@ const routeByType: Record<string, string> = {
   escalation_resolved: "/escalations",
   new_message: "/chat",
   extra_service_request: "/extra-services",
-  shift_reminder: "/roster",
+  shift_reminder: "/shift-management",
   shift_started: "/shift-monitoring",
   shift_completed: "/shift-monitoring",
 };
