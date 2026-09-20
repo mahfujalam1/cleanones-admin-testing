@@ -29,7 +29,7 @@ const nextConfig: NextConfig = {
     if (!backendUrl) return [];
     return [
       {
-        source: "/api/proxy/:path*",
+        source: "/api/v1/proxy/:path*",
         destination: `${backendUrl}${API_PREFIX}/:path*`,
       },
       // Socket.IO handshake and long-polling, relayed through this origin. The browser talks
