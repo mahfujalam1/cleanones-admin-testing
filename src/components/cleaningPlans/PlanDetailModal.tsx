@@ -40,7 +40,13 @@ import {
 } from "@/components/cleaningPlans/AssignWorkersModal";
 import type { PlanRosterAssignedWorker, PlanShiftDetail } from "@/redux/api/rosterApi";
 import { useGetPlanShiftQuery } from "@/redux/api/rosterApi";
-import { canStaff, formatClock, roundedEndFromStart, statusLabel } from "@/components/shift-management/planShift";
+import {
+  canStaff,
+  endFromStart,
+  formatClock,
+  hasShiftStarted,
+  statusLabel,
+} from "@/components/shift-management/planShift";
 
 const formatDateTime = (value?: string) => {
   if (!value) return null;
@@ -50,7 +56,7 @@ const formatDateTime = (value?: string) => {
 };
 
 /**
- * Finish time is start plus the plan's total duration, then rounded up to a :00/:30 slot.
+ * Finish time is the start plus the plan's exact total task duration.
  * `end_date` is the date the plan repeats until, not a finish time, so it is only used
  * when there is no duration to work from.
  */
@@ -58,8 +64,8 @@ const formatPlanEnd = (start?: string, minutes?: number, endDate?: string) => {
   if (start && minutes) {
     const parsed = new Date(start);
     if (!Number.isNaN(parsed.getTime())) {
-      const rounded = roundedEndFromStart(parsed, minutes);
-      if (rounded) return formatDateTime(rounded.toISOString());
+      const end = endFromStart(parsed, minutes);
+      if (end) return formatDateTime(end.toISOString());
     }
   }
   return formatDate(endDate);
@@ -70,7 +76,7 @@ function computedEndIso(start?: string | null, durationMinutes?: number, date?: 
   const parsed = /^\d{2}:\d{2}$/.test(start) && date
     ? new Date(`${date}T${start}:00`)
     : new Date(start);
-  return roundedEndFromStart(parsed, durationMinutes)?.toISOString();
+  return endFromStart(parsed, durationMinutes)?.toISOString();
 }
 
 const formatDate = (value?: string) => {
@@ -596,6 +602,7 @@ export function PlanDetailModal({
   shiftDate,
   onClose,
   onEdit,
+  onEditShiftPlan,
   onDelete,
   onAssign,
   assignTarget,
@@ -607,6 +614,7 @@ export function PlanDetailModal({
   shiftDate?: string;
   onClose: () => void;
   onEdit?: (plan: CleaningPlan) => void;
+  onEditShiftPlan?: (planId: string) => void;
   onDelete?: (plan: CleaningPlan) => void;
   onAssign?: (plan: CleaningPlan) => void;
   assignTarget?: ShiftAssignTarget;
@@ -658,6 +666,12 @@ export function PlanDetailModal({
   const crewCount = (liveWorkers ?? []).length;
   const isStaffed = crewCount > 0;
   const schedule = liveSchedule;
+  const canEditShiftPlan = Boolean(
+    fromShift
+      && onEditShiftPlan
+      && !isStaffed
+      && !hasShiftStarted(schedule.startTime, schedule.date),
+  );
   const scheduleLabel = [
     schedule.date ? formatAssignDateLabel(schedule.date) : "",
     formatClock(schedule.startTime) && formatClock(schedule.endTime)
@@ -743,6 +757,11 @@ export function PlanDetailModal({
           </div>
 
           <div className="flex shrink-0 items-center gap-1.5">
+            {canEditShiftPlan && !assigning && (
+              <Button variant="secondary" size="sm" onClick={() => onEditShiftPlan?.(planId)}>
+                <MdModeEditOutline className="text-sm" /> Edit plan
+              </Button>
+            )}
             {plan && onEdit && !assigning && (
               <Button variant="secondary" size="sm" onClick={() => onEdit(plan)}>
                 <MdModeEditOutline className="text-sm" /> Edit

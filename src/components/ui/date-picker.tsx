@@ -38,6 +38,7 @@ export function DatePicker({
   min,
   max,
   disabled = false,
+  iconOnly = false,
 }: {
   value: string;
   onValueChange: (value: string) => void;
@@ -46,6 +47,7 @@ export function DatePicker({
   min?: string;
   max?: string;
   disabled?: boolean;
+  iconOnly?: boolean;
 }) {
   const selected = parse(value);
   const [open, setOpen] = useState(false);
@@ -95,11 +97,18 @@ export function DatePicker({
     <Popover.Root open={open} onOpenChange={(next) => !disabled && setOpen(next)}>
       <Popover.Trigger
         disabled={disabled}
-        className="flex h-10 w-full cursor-pointer items-center justify-between rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition hover:border-slate-400 focus:border-primary focus:ring-1 focus:ring-primary disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-50 disabled:text-slate-400"
+        aria-label={iconOnly ? "Choose date" : undefined}
+        className={
+          iconOnly
+            ? "flex h-8 w-8 cursor-pointer items-center justify-center rounded-md border border-slate-200 bg-white text-slate-500 outline-none transition hover:bg-slate-50 focus:border-primary focus:ring-1 focus:ring-primary disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-300"
+            : "flex h-10 w-full cursor-pointer items-center justify-between rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none transition hover:border-slate-400 focus:border-primary focus:ring-1 focus:ring-primary disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-50 disabled:text-slate-400"
+        }
       >
-        <span className={selected ? "" : "text-slate-400"}>
-          {selected ? selected.toLocaleDateString("en-GB") : placeholder}
-        </span>
+        {!iconOnly && (
+          <span className={selected ? "" : "text-slate-400"}>
+            {selected ? selected.toLocaleDateString("en-GB") : placeholder}
+          </span>
+        )}
         <CalendarDays className="h-4 w-4 text-slate-400" />
       </Popover.Trigger>
 

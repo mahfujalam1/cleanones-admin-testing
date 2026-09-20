@@ -1,4 +1,4 @@
-import { roundedEndFromStart } from "@/components/shift-management/planShift";
+import { endFromStart } from "@/components/shift-management/planShift";
 import { baseApi } from "./baseApi";
 import { tagTypes } from "../tagTypes";
 import type { Worker } from "./endpoints/workers.api";
@@ -236,7 +236,7 @@ export function normalizePlanShift(raw: unknown): PlanShiftDetail {
   const startRaw = nested.start_time ?? nested.date_time ?? data.start_time ?? data.date_time;
   const duration = Number(nested.duration_minutes ?? data.duration_minutes ?? 0);
   const start = startRaw ? new Date(String(startRaw)) : null;
-  const roundedEnd = start ? roundedEndFromStart(start, duration) : null;
+  const calculatedEnd = start ? endFromStart(start, duration) : null;
   const planRef = nested.cleaning_plan ?? nested.plan_id ?? data.cleaning_plan ?? data.plan_id;
   const roomItems = normalizeRoomItems(nested.rooms ?? data.rooms);
   const taskItems = normalizeTaskItems(nested.tasks ?? data.tasks);
@@ -246,7 +246,7 @@ export function normalizePlanShift(raw: unknown): PlanShiftDetail {
     is_virtual: Boolean(nested.is_virtual ?? data.is_virtual),
     status: nested.status != null ? String(nested.status) : data.status != null ? String(data.status) : undefined,
     start_time: startRaw != null ? String(startRaw) : null,
-    end_time: roundedEnd?.toISOString() ?? ((nested.end_time ?? data.end_time) as string | null | undefined),
+    end_time: calculatedEnd?.toISOString() ?? ((nested.end_time ?? data.end_time) as string | null | undefined),
     duration_minutes: duration || undefined,
     rooms: asCounts(nested.rooms ?? data.rooms) ?? (roomItems.length ? { total: roomItems.length, completed: 0 } : undefined),
     tasks: asCounts(nested.tasks ?? data.tasks) ?? (taskItems.length ? { total: taskItems.length, completed: 0 } : undefined),

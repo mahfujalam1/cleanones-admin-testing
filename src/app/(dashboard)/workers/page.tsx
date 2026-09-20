@@ -11,6 +11,7 @@ import { BackendPagination } from "@/components/shared/BackendPagination";
 import { ErrorNotice, SearchInput } from "@/components/shared/ListStates";
 import { TableSkeleton } from "@/components/shared/SkeletonLoader";
 import { Select } from "@/components/ui/select";
+import { SlidingTabs } from "@/components/ui/sliding-tabs";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import {
   workerName,
@@ -115,21 +116,12 @@ export default function WorkersPage() {
           <SearchInput value={search} onChange={setSearch} placeholder={t.workers.searchPlaceholder} />
         </div>
 
-        <div className="flex max-w-full overflow-x-auto rounded-md bg-slate-100 p-0.5 text-xs">
-          {typeFilters.map((filter) => (
-            <button
-              key={filter.value || "all"}
-              onClick={() => setWorkerType(filter.value)}
-              className={`shrink-0 cursor-pointer whitespace-nowrap rounded-md px-3 py-1.5 font-semibold transition-all ${
-                workerType === filter.value
-                  ? "bg-white text-slate-900 shadow-2xs"
-                  : "text-slate-500 hover:text-slate-800"
-              }`}
-            >
-              {filter.label}
-            </button>
-          ))}
-        </div>
+        <SlidingTabs
+          compact
+          value={workerType}
+          options={typeFilters.map((filter) => ({ value: filter.value, label: filter.label }))}
+          onValueChange={(next) => setWorkerType(next as WorkerType | "")}
+        />
 
         <div className="ml-auto w-full sm:w-48">
           <Select
@@ -143,6 +135,7 @@ export default function WorkersPage() {
 
       {message && <ErrorNotice message={message} />}
 
+      <div key={workerType || "all"} className="animate-in fade-in slide-in-from-bottom-1 duration-300">
       {isFetching ? (
         <TableSkeleton />
       ) : (
@@ -153,6 +146,7 @@ export default function WorkersPage() {
           onDeleteWorker={setDeleteTarget}
         />
       )}
+      </div>
 
       <BackendPagination
         page={page}

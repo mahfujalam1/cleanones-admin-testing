@@ -10,6 +10,7 @@ import { useGetWorkerListQuery, workerName } from '@/redux/api/endpoints/workers
 import { BackendPagination } from '@/components/shared/BackendPagination';
 import { Select } from '@/components/ui/select';
 import { TableSkeleton } from '@/components/shared/SkeletonLoader';
+import { SlidingTabs } from '@/components/ui/sliding-tabs';
 
 export type TimeRange = 'Today' | 'Weekly' | 'Monthly';
 type SortOption = 'hours' | 'shifts' | 'late' | 'name';
@@ -197,21 +198,14 @@ export function AttendanceTimeTracking({ onWorkerSelect, selectedWorkerId, timeR
         </div>
 
         {/* Time Period Selector */}
-        <div className="flex items-center rounded-xl border border-slate-200/80 bg-slate-100/90 p-1 text-xs font-semibold shadow-2xs">
-          {(['Today', 'Weekly', 'Monthly'] as const).map((tr) => (
-            <button
-              key={tr}
-              onClick={() => onTimeRangeChange(tr)}
-              className={`cursor-pointer rounded-lg px-3.5 py-1.5 transition-all ${
-                timeRange === tr
-                  ? 'bg-primary text-white shadow-xs font-semibold'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-              }`}
-            >
-              {tr}
-            </button>
-          ))}
-        </div>
+        <SlidingTabs
+          value={timeRange}
+          options={(['Today', 'Weekly', 'Monthly'] as const).map((range) => ({
+            value: range,
+            label: range,
+          }))}
+          onValueChange={(next) => onTimeRangeChange(next as TimeRange)}
+        />
       </div>
 
       {/* Top 3 KPI Summary Cards */}
@@ -309,21 +303,15 @@ export function AttendanceTimeTracking({ onWorkerSelect, selectedWorkerId, timeR
           </div>
 
           {/* Role Filter Pills */}
-          <div className="flex items-center rounded-xl border border-slate-200/80 bg-slate-100/90 p-1 text-xs font-semibold">
-            {(['All', 'Employee', 'Freelancer'] as const).map((r) => (
-              <button
-                key={r}
-                onClick={() => setRoleFilter(r)}
-                className={`cursor-pointer rounded-lg px-3 py-1.5 transition-all ${
-                  roleFilter === r
-                    ? 'bg-white text-primary shadow-2xs font-semibold'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                {r}
-              </button>
-            ))}
-          </div>
+          <SlidingTabs
+            compact
+            value={roleFilter}
+            options={(['All', 'Employee', 'Freelancer'] as const).map((role) => ({
+              value: role,
+              label: role,
+            }))}
+            onValueChange={(next) => setRoleFilter(next as typeof roleFilter)}
+          />
         </div>
 
         {/* Sort Dropdown */}

@@ -3,6 +3,7 @@
 import React from "react";
 import { MdBusiness, MdEngineering, MdGroups, MdSearch } from "react-icons/md";
 import { DetailSkeleton } from "@/components/shared/SkeletonLoader";
+import { SlidingTabs } from "@/components/ui/sliding-tabs";
 import type { ChatItem } from "@/redux/api/endpoints/chat.api";
 import { formatMessageTime } from "./chatUtils";
 import { usePathname } from "next/navigation";
@@ -43,91 +44,18 @@ export function ChatSidebar({
     <aside className={`min-h-0 flex-col lg:border-r lg:border-slate-200/90 ${className}`}>
       {/* Segmented Tabs: All, Group, Clients, Workers */}
       <div className="p-2.5 border-b border-slate-100 bg-white">
-        <div className="grid grid-cols-4 gap-1 rounded-lg border border-slate-200 bg-slate-50/80 p-1">
-          <button
-            type="button"
-            onClick={() => onTabChange("all")}
-            className={`flex min-w-0 items-center justify-center gap-1 rounded-md px-1 py-1.5 text-xs font-semibold transition-all cursor-pointer ${
-              activeTab === "all"
-                ? "bg-white text-primary shadow-xs border border-slate-200/80 font-bold"
-                : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
-            }`}
-          >
-            <span className="truncate">{ui.all}</span>
-            {tabCounts.all > 0 && (
-              <span
-                className={`text-[10px] px-1 py-0.2 rounded-full font-bold ${
-                  activeTab === "all" ? "bg-sky-50 text-primary" : "text-slate-400"
-                }`}
-              >
-                {tabCounts.all}
-              </span>
-            )}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => onTabChange("group")}
-            className={`flex min-w-0 items-center justify-center gap-1 rounded-md px-1 py-1.5 text-xs font-semibold transition-all cursor-pointer ${
-              activeTab === "group"
-                ? "bg-white text-primary shadow-xs border border-slate-200/80 font-bold"
-                : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
-            }`}
-          >
-            <span className="truncate">{ui.groups}</span>
-            {tabCounts.group > 0 && (
-              <span
-                className={`text-[10px] px-1 py-0.2 rounded-full font-bold ${
-                  activeTab === "group" ? "bg-sky-50 text-primary" : "text-slate-400"
-                }`}
-              >
-                {tabCounts.group}
-              </span>
-            )}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => onTabChange("client")}
-            className={`flex min-w-0 items-center justify-center gap-1 rounded-md px-1 py-1.5 text-xs font-semibold transition-all cursor-pointer ${
-              activeTab === "client"
-                ? "bg-white text-primary shadow-xs border border-slate-200/80 font-bold"
-                : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
-            }`}
-          >
-            <span className="truncate">{ui.clients}</span>
-            {tabCounts.client > 0 && (
-              <span
-                className={`text-[10px] px-1 py-0.2 rounded-full font-bold ${
-                  activeTab === "client" ? "bg-sky-50 text-primary" : "text-slate-400"
-                }`}
-              >
-                {tabCounts.client}
-              </span>
-            )}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => onTabChange("worker")}
-            className={`flex min-w-0 items-center justify-center gap-1 rounded-md px-1 py-1.5 text-xs font-semibold transition-all cursor-pointer ${
-              activeTab === "worker"
-                ? "bg-white text-primary shadow-xs border border-slate-200/80 font-bold"
-                : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
-            }`}
-          >
-            <span className="truncate">{ui.workers}</span>
-            {tabCounts.worker > 0 && (
-              <span
-                className={`text-[10px] px-1 py-0.2 rounded-full font-bold ${
-                  activeTab === "worker" ? "bg-sky-50 text-primary" : "text-slate-400"
-                }`}
-              >
-                {tabCounts.worker}
-              </span>
-            )}
-          </button>
-        </div>
+        <SlidingTabs
+          compact
+          value={activeTab}
+          className="scrollbar-tiny w-full"
+          options={[
+            { value: "all", label: ui.all, count: tabCounts.all || undefined },
+            { value: "group", label: ui.groups, count: tabCounts.group || undefined },
+            { value: "client", label: ui.clients, count: tabCounts.client || undefined },
+            { value: "worker", label: ui.workers, count: tabCounts.worker || undefined },
+          ]}
+          onValueChange={(next) => onTabChange(next as ChatTab)}
+        />
       </div>
 
       {/* Search */}
@@ -144,7 +72,7 @@ export function ChatSidebar({
       </div>
 
       {/* Chat List */}
-      <div className="min-h-0 flex-1 overflow-y-auto p-2 space-y-1">
+      <div key={activeTab} className="scrollbar-tiny min-h-0 flex-1 animate-in space-y-1 overflow-y-auto p-2 fade-in slide-in-from-bottom-1 duration-300">
         {loading ? (
           <DetailSkeleton blocks={6} />
         ) : chats.length > 0 ? (

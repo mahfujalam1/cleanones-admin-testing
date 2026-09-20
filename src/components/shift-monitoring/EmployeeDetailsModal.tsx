@@ -13,6 +13,7 @@ import { PlanForm } from '@/components/cleaningPlans/PlanForm';
 import { AssignWorkersModal } from '@/components/cleaningPlans/AssignWorkersModal';
 import { useGetCleaningPlanQuery } from '@/redux/api/endpoints/cleaningPlans.api';
 import { useModalJump } from '@/hooks/useModalJump';
+import { SlidingTabs } from '@/components/ui/sliding-tabs';
 
 interface EmployeeDetailsModalProps {
   worker: WorkerInfo;
@@ -124,22 +125,20 @@ export function EmployeeDetailsModal({ worker, onClose, onChanged }: EmployeeDet
         </header>
 
         {/* Period tabs */}
-        <div className="flex shrink-0 gap-1 border-b border-slate-200 px-5 pt-3">
-          {(['Today', 'Weekly', 'Monthly'] as const).map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`cursor-pointer border-b-2 px-4 pb-2.5 text-xs font-semibold transition-colors ${activeTab === tab
-                ? 'border-primary text-primary'
-                : 'border-transparent text-slate-400 hover:text-slate-600'
-                }`}
-            >
-              {tab}
-            </button>
-          ))}
+        <div className="shrink-0 border-b border-slate-200 px-5 py-3">
+          <SlidingTabs
+            compact
+            value={activeTab}
+            className="w-fit"
+            options={(['Today', 'Weekly', 'Monthly'] as const).map((period) => ({
+              value: period,
+              label: period,
+            }))}
+            onValueChange={(next) => setActiveTab(next as typeof activeTab)}
+          />
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto p-5">
+        <div key={activeTab} className="min-h-0 flex-1 animate-in overflow-y-auto p-5 fade-in slide-in-from-bottom-1 duration-300">
           {loading ? <DetailSkeleton blocks={5} /> : (
             <div className="space-y-4">
               {/* Summary */}

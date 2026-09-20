@@ -13,6 +13,7 @@ import {
 import { useGetShiftAttendanceSummaryQuery } from "@/redux/api/shiftsApi";
 import { apiError } from "@/redux/api/apiError";
 import { workerName, type Worker } from "@/redux/api/endpoints/workers.api";
+import { SlidingTabs } from "@/components/ui/sliding-tabs";
 
 interface AttendanceTabProps {
   worker: Worker;
@@ -96,26 +97,15 @@ export function AttendanceTab({ worker }: AttendanceTabProps) {
 
         <div className="flex items-center gap-1.5 ml-auto">
           {/* Period Segmented Control */}
-          <div className="flex items-center rounded-lg border border-slate-200 bg-white p-0.5 text-xs shadow-2xs">
-            {(["today", "weekly", "monthly"] as const).map((p) => {
-              const active = period === p;
-              const label = p.charAt(0).toUpperCase() + p.slice(1);
-              return (
-                <button
-                  key={p}
-                  type="button"
-                  onClick={() => setPeriod(p)}
-                  className={`cursor-pointer rounded-md px-2.5 py-1 text-xs font-semibold capitalize transition-colors ${
-                    active
-                      ? "bg-sky-500 text-white shadow-xs"
-                      : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
-                  }`}
-                >
-                  {label}
-                </button>
-              );
-            })}
-          </div>
+          <SlidingTabs
+            compact
+            value={period}
+            options={(["today", "weekly", "monthly"] as const).map((value) => ({
+              value,
+              label: value.charAt(0).toUpperCase() + value.slice(1),
+            }))}
+            onValueChange={(next) => setPeriod(next as Period)}
+          />
 
           {/* Refresh Button */}
           <button

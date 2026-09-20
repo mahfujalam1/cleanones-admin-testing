@@ -3,12 +3,7 @@ import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useGetWorkerListQuery } from "@/redux/api/endpoints/workers.api";
-<<<<<<< HEAD
-import { MdAccessTime, MdArrowForward, MdCalendarToday, MdCheckCircle, MdChevronRight, MdLocationOn, MdReportProblem, MdWarningAmber } from "react-icons/md";
-=======
-import { MdAccessTime, MdAdd, MdArrowForward, MdBusiness, MdCalendarToday, MdCheckCircle, MdChevronRight, MdLocationOn, MdPeople, MdPhone, MdReportProblem, MdUploadFile, MdWarningAmber } from "react-icons/md";
-import { CardGridSkeleton, DetailSkeleton } from "@/components/shared/SkeletonLoader";
->>>>>>> 4114bac733eb8ffda4bb16afd155faf03d64c0b9
+import { MdAccessTime, MdArrowForward, MdCalendarToday, MdCheckCircle, MdChevronRight, MdLocationOn, MdPeople, MdPhone, MdReportProblem, MdWarningAmber } from "react-icons/md";
 import {
   useGetTodayLiveShiftMetaQuery,
   useGetTodayLiveShiftsQuery,
@@ -127,7 +122,7 @@ type LateWorkerChip = {
 function collectLateWorkers(
   attendanceToday: Array<{ worker_id: string; name: string; late_days: number }> | undefined,
   pills: AttentionPill[],
-  behind: FallingBehindShift[],
+  behind: readonly FallingBehindShift[],
   liveShifts: Array<{
     date_time?: string;
     date?: string;
@@ -202,11 +197,6 @@ export default function DashboardPage() {
   const [liveTab, setLiveTab] = useState<
     "all" | "upcoming" | "in_progress" | "completed" | "cancelled"
   >("all");
-<<<<<<< HEAD
-  const [detailWorkerId, setDetailWorkerId] = useState<string | null>(null);
-=======
-  const [actionsOpen, setActionsOpen] = useState(false);
->>>>>>> 4114bac733eb8ffda4bb16afd155faf03d64c0b9
 
   const { data: todayLiveMeta } = useGetTodayLiveShiftMetaQuery();
   // Names the late workers the meta only counts.
@@ -272,37 +262,13 @@ export default function DashboardPage() {
    * shift list carries attendance per assigned worker. They are merged and de-duplicated by
    * worker id so the banner shows one chip per person, whichever source spotted them.
    */
-<<<<<<< HEAD
-  const lateWorkers = (() => {
-    const found = new Map<string, { id: string; name: string; detail: string }>();
-    const remember = (id?: string, name?: string, detail?: string) => {
-      if (!id || found.has(id)) return;
-      found.set(id, { id, name: name || "", detail: detail || "" });
-    };
-
-    (attendanceToday ?? [])
-      .filter((row) => row.late_days > 0)
-      .forEach((row) => remember(row.worker_id, row.name, t.dashboard.late));
-    todayLiveShifts.forEach((shift) =>
-      (shift.assigned_workers ?? []).forEach((worker) => {
-        const status = normalizeStatus(worker.attendance_status || worker.status || "");
-        if (status.includes("late") || status.includes("show") || status.includes("missing")) {
-          remember(worker.worker_id, worker.name, worker.attendance_status || worker.status);
-        }
-      }),
-    );
-
-    return Array.from(found.values());
-  })();
-=======
   const lateWorkers = collectLateWorkers(
     attendanceToday,
-    attentionPills,
+    [...attentionPills],
     fallingBehind,
     todayAllShifts,
     t.dashboard.late,
   );
->>>>>>> 4114bac733eb8ffda4bb16afd155faf03d64c0b9
 
   const cards = safeOverview.summary_cards;
   /**

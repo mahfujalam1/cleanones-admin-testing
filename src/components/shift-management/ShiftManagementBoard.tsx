@@ -1,12 +1,21 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { MdChevronLeft, MdChevronRight, MdEventNote } from "react-icons/md";
+import {
+  MdAccessTime,
+  MdCheckCircle,
+  MdChevronLeft,
+  MdChevronRight,
+  MdEventNote,
+} from "react-icons/md";
 import type { ShiftAssignTarget } from "@/components/cleaningPlans/AssignWorkersModal";
 import { PlanDetailModal } from "@/components/cleaningPlans/PlanDetailModal";
+import { PlanForm } from "@/components/cleaningPlans/PlanForm";
 import { BackendPagination } from "@/components/shared/BackendPagination";
 import { ContentSkeleton } from "@/components/shared/SkeletonLoader";
 import { SearchInput } from "@/components/shared/ListStates";
+import { DatePicker } from "@/components/ui/date-picker";
+import { SlidingTabs } from "@/components/ui/sliding-tabs";
 import { apiError } from "@/redux/api/apiError";
 import {
   useGetPlanRosterQuery,
@@ -17,26 +26,28 @@ import { usePathname } from "next/navigation";
 import { getLocale } from "@/lib/locale";
 import { getDashboardTranslation } from "@/lib/translations";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import type { CleaningPlan } from "@/redux/api/endpoints/cleaningPlans.api";
 import { PlanShiftCell } from "./PlanShiftCell";
-import { canStaff, datesForView, roundedShiftEnd, shiftDateKey, toDateKey } from "./planShift";
+import { canStaff, datesForView, shiftEndFromDuration, shiftDateKey, toDateKey } from "./planShift";
 
 const LIMIT = 10;
-const PLAN_COL = 220;
+const PLAN_COL = 200;
 
 export function ShiftManagementBoard() {
   const locale = getLocale(usePathname());
   const t = getDashboardTranslation(locale);
 
-  const [view, setView] = useState<"day" | "week" | "month">("day");
+  const [view, setView] = useState<"day" | "week" | "month">("week");
   const [currentDate, setCurrentDate] = useState(new Date());
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const searchTerm = useDebouncedValue(search.trim());
   const [viewing, setViewing] = useState<{ planId: string; shift?: PlanRosterShift } | null>(null);
+  const [editingPlan, setEditingPlan] = useState<CleaningPlan | null>(null);
 
   const days = useMemo(() => datesForView(view, currentDate), [view, currentDate]);
   const compact = view === "month";
-  const colWidth = view === "day" ? 360 : view === "week" ? 176 : 96;
+  const colWidth = view === "day" ? 360 : view === "week" ? 170 : 104;
 
   const params: PlanRosterParams = useMemo(() => {
     if (view === "month") {
@@ -60,6 +71,14 @@ export function ShiftManagementBoard() {
 
   const { data, isLoading, error, refetch } = useGetPlanRosterQuery(params);
   const plans = data?.cleaning_plans ?? [];
+  const visibleShifts = plans.flatMap((plan) => plan.shifts ?? []);
+  const scheduledHours = visibleShifts.reduce(
+    (total, shift) => total + (shift.duration_minutes ?? 0) / 60,
+    0,
+  );
+  const unassignedCount = visibleShifts.filter(
+    (shift) => !shift.assigned_workers?.length,
+  ).length;
 
   const handlePrev = () => {
     const next = new Date(currentDate);
@@ -112,44 +131,48 @@ export function ShiftManagementBoard() {
       planTitle: rosterPlan?.plan_title,
       locationName: rosterPlan?.location_name ?? "",
       startTime: viewingShift.start_time ?? undefined,
-      endTime: roundedShiftEnd(viewingShift),
+      endTime: shiftEndFromDuration(viewingShift),
       durationMinutes: viewingShift.duration_minutes,
       assignedWorkers: viewingShift.assigned_workers,
     };
   }, [viewing, viewingShift, plans]);
 
   return (
-    <div className="flex h-full flex-col gap-3">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+    <div className="flex h-full flex-col gap-2">
+      <div className="flex flex-col gap-3 pb-1 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">
           <span className="flex h-8 w-8 items-center justify-center rounded border border-sky-200 bg-sky-50 text-primary">
-            <MdEventNote className="text-base" />
+            <MdEventNote className="text-lg" />
           </span>
           <div>
             <h1 className="text-lg font-semibold tracking-tight text-slate-800">{t.nav.shiftManagement}</h1>
-            <p className="text-xs text-slate-500">Staff each due date. Roster only shows workers after they are assigned here.</p>
+            <p className={`flex items-center gap-1 text-xs ${unassignedCount === 0 ? "text-emerald-600" : "text-amber-600"}`}>
+              <MdCheckCircle />
+              {unassignedCount === 0 ? "All shifts on schedule" : `${unassignedCount} shifts need staffing`}
+            </p>
           </div>
         </div>
-        <div className="flex items-center gap-2 text-xs text-slate-500">
-          <span className="rounded border border-gray-200 bg-white px-2.5 py-1.5">
-            <strong className="font-semibold text-slate-700">{data?.meta.total ?? 0}</strong> plans
+        <div className="flex flex-wrap items-center justify-end gap-1.5">
+          <span className="rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-[10px] text-slate-500">
+            <b className="text-slate-700">{data?.meta.total_shifts ?? visibleShifts.length}</b> shifts
           </span>
-          <span className="rounded border border-gray-200 bg-white px-2.5 py-1.5">
-            <strong className="font-semibold text-slate-700">{data?.meta.total_shifts ?? 0}</strong> due dates
+          <span className="rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-[10px] text-slate-500">
+            <b className="text-slate-700">{scheduledHours.toFixed(1)}h</b> duration
+          </span>
+          <span className="rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-[10px] text-slate-500">
+            <b className="text-slate-700">{data?.meta.total ?? plans.length}</b> plans
           </span>
         </div>
       </div>
 
-      <div className="sticky top-0 z-30 flex flex-col gap-3 rounded border border-gray-200 bg-white p-3 shadow-xs lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex w-full flex-wrap items-center gap-2 lg:w-auto">
-          <button
-            type="button"
-            onClick={() => { setCurrentDate(new Date()); setPage(1); }}
-            className="h-8 rounded border border-gray-300 bg-white px-3 text-xs font-semibold text-slate-700 transition-colors hover:bg-gray-50"
-          >
-            Today
-          </button>
-          <div className="flex shrink-0 overflow-hidden rounded border border-gray-300 bg-white">
+      <div className="sticky top-0 z-30 flex flex-col gap-2 rounded-lg border border-slate-200 bg-white p-2 shadow-2xs lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
+          <span className={`rounded-md px-2.5 py-1 text-[10px] font-semibold ${
+            unassignedCount === 0 ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"
+          }`}>
+            {unassignedCount === 0 ? "On time" : `${unassignedCount} unassigned`}
+          </span>
+          <div className="flex shrink-0 overflow-hidden rounded-md border border-slate-200 bg-white">
             <button type="button" onClick={handlePrev} aria-label="Previous period" className="flex h-8 w-8 items-center justify-center border-r border-gray-300 text-gray-500 hover:bg-gray-50">
               <MdChevronLeft className="text-lg" />
             </button>
@@ -157,25 +180,45 @@ export function ShiftManagementBoard() {
               <MdChevronRight className="text-lg" />
             </button>
           </div>
-          <h2 className="min-w-[190px] truncate text-sm font-semibold text-slate-800">{rangeLabel()}</h2>
+          <span className="min-w-[170px] truncate text-xs font-semibold text-slate-700">{rangeLabel()}</span>
+          <DatePicker
+            value={toDateKey(currentDate)}
+            iconOnly
+            onValueChange={(value) => {
+              const selected = new Date(`${value}T12:00:00`);
+              if (!Number.isNaN(selected.getTime())) {
+                setCurrentDate(selected);
+                setView("day");
+                setPage(1);
+              }
+            }}
+          />
         </div>
 
-        <div className="flex w-full flex-wrap items-center gap-2 lg:w-auto">
-          <div className="w-56">
-            <SearchInput value={search} onChange={(value) => { setSearch(value); setPage(1); }} placeholder="Search plan title…" />
+        <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
+          <div className="w-full sm:w-48">
+            <SearchInput
+              value={search}
+              onChange={(value) => {
+                setSearch(value);
+                setPage(1);
+              }}
+              placeholder="Search plan title…"
+            />
           </div>
-          <div className="flex overflow-x-auto rounded border border-gray-200 bg-gray-50 p-0.5 text-xs font-medium">
-            {(["day", "week", "month"] as const).map((option) => (
-              <button
-                key={option}
-                type="button"
-                onClick={() => { setView(option); setPage(1); }}
-                className={`h-7 rounded px-3 capitalize ${view === option ? "border border-gray-200 bg-white text-primary" : "border border-transparent text-gray-500 hover:text-gray-800"}`}
-              >
-                {option === "day" ? t.roster.dayView : option === "week" ? t.roster.weekView : t.roster.monthView}
-              </button>
-            ))}
-          </div>
+          <SlidingTabs
+            compact
+            value={view}
+            options={[
+              { value: "day", label: t.roster.dayView },
+              { value: "week", label: t.roster.weekView },
+              { value: "month", label: t.roster.monthView },
+            ]}
+            onValueChange={(next) => {
+              setView(next as typeof view);
+              setPage(1);
+            }}
+          />
         </div>
       </div>
 
@@ -184,18 +227,21 @@ export function ShiftManagementBoard() {
         {isLoading ? (
           <ContentSkeleton />
         ) : (
-          <section className="flex h-full min-h-0 flex-col overflow-hidden rounded border border-slate-200 bg-white">
+          <section
+            key={`${view}-${toDateKey(currentDate)}`}
+            className="flex h-full min-h-0 animate-in flex-col overflow-hidden rounded-lg border border-slate-200 bg-white shadow-2xs fade-in slide-in-from-bottom-1 duration-300"
+          >
             <div className="flex min-h-16 shrink-0 items-center justify-between border-b border-sky-600 bg-primary px-5 text-white">
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-[.18em] text-white/75">
-                  {view === "day" ? "Daily" : view === "week" ? "Weekly" : "Monthly"} shift management
+                  {view === "day" ? "Daily" : view === "week" ? "Weekly" : "Monthly"} roster
                 </p>
                 <h2 className="mt-0.5 text-xl font-semibold tracking-tight">{rangeLabel()}</h2>
               </div>
               <div className="hidden items-center gap-4 text-[10px] text-white/75 sm:flex">
-                <span><b className="text-sm text-white">{data?.meta.total ?? 0}</b> plans</span>
+                <span><b className="text-sm text-white">{data?.meta.total_shifts ?? visibleShifts.length}</b> shifts</span>
                 <span className="h-6 w-px bg-white/25" />
-                <span><b className="text-sm text-white">{data?.meta.total_shifts ?? 0}</b> due dates</span>
+                <span><b className="text-sm text-white">{scheduledHours.toFixed(1)}h</b> scheduled</span>
               </div>
             </div>
             <div className="min-h-0 flex-1 overflow-auto">
@@ -209,13 +255,13 @@ export function ShiftManagementBoard() {
                     return (
                       <div
                         key={day.toISOString()}
-                        className={`flex shrink-0 flex-col items-center justify-center border-r border-slate-200 last:border-r-0 ${today ? "bg-sky-50" : "bg-white"}`}
+                        className={`flex shrink-0 flex-col items-center justify-center border-r border-slate-200 last:border-r-0 ${today ? "bg-sky-50/70" : "bg-white"}`}
                         style={{ width: colWidth }}
                       >
-                        <span className={`text-[9px] font-semibold uppercase ${today ? "text-primary" : "text-slate-400"}`}>
+                        <span className={`text-[10px] font-semibold uppercase ${today ? "text-primary" : "text-slate-400"}`}>
                           {day.toLocaleDateString("en-US", { weekday: "short" })}
                         </span>
-                        <b className={`mt-0.5 text-xs ${today ? "text-primary" : "text-slate-700"}`}>
+                        <b className={`mt-0.5 text-xs font-semibold ${today ? "text-primary" : "text-slate-700"}`}>
                           {day.toLocaleDateString("en-GB", { day: "numeric", month: compact ? undefined : "short" })}
                         </b>
                       </div>
@@ -229,7 +275,7 @@ export function ShiftManagementBoard() {
                   plans.map((plan, rowIndex) => (
                     <div
                       key={plan.plan_id}
-                      className={`flex min-h-[88px] border-b border-slate-100 last:border-b-0 ${rowIndex % 2 ? "bg-slate-50/45" : "bg-white"}`}
+                      className={`flex min-h-[104px] border-b border-slate-100 last:border-b-0 ${rowIndex % 2 ? "bg-slate-50/30" : "bg-white"}`}
                     >
                       <button
                         type="button"
@@ -238,11 +284,18 @@ export function ShiftManagementBoard() {
                           const todayShift = (plan.shifts ?? []).find((item) => shiftDateKey(item.date) === key);
                           openPlan(plan.plan_id, todayShift);
                         }}
-                        className={`sticky left-0 z-20 flex shrink-0 flex-col justify-center border-r border-slate-200 px-4 text-left transition-colors hover:bg-sky-50 ${rowIndex % 2 ? "bg-[#fafbfc]" : "bg-white"}`}
+                        className={`sticky left-0 z-20 flex shrink-0 flex-row items-center gap-2.5 border-r border-slate-200 px-3 text-left transition-colors hover:bg-sky-50 ${rowIndex % 2 ? "bg-[#fafbfc]" : "bg-white"}`}
                         style={{ width: PLAN_COL }}
                       >
-                        <b className="block truncate text-xs text-slate-800">{plan.plan_title}</b>
-                        <small className="truncate text-[10px] text-slate-400">{plan.location_name}</small>
+                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-sky-50 text-[9px] font-semibold text-sky-600 ring-1 ring-sky-100">
+                          {plan.plan_title.slice(0, 2).toUpperCase()}
+                        </span>
+                        <span className="min-w-0">
+                          <b className="block truncate text-[11px] font-semibold text-slate-800">{plan.plan_title}</b>
+                          <small className="mt-0.5 block truncate text-[9px] text-slate-400">
+                            {(plan.shifts ?? []).length} shifts this {view === "month" ? "month" : view === "day" ? "day" : "week"}
+                          </small>
+                        </span>
                       </button>
                       {days.map((day) => {
                         const key = toDateKey(day);
@@ -252,6 +305,8 @@ export function ShiftManagementBoard() {
                             <PlanShiftCell
                               shift={shift}
                               compact={compact}
+                              planTitle={plan.plan_title}
+                              locationName={plan.location_name}
                               onView={(item) => openPlan(plan.plan_id, item)}
                             />
                           </div>
@@ -262,10 +317,10 @@ export function ShiftManagementBoard() {
                 )}
               </div>
             </div>
-            <div className="flex shrink-0 flex-wrap items-center gap-3 border-t border-slate-200 bg-slate-50 px-4 py-2 text-[10px] text-slate-500">
-              <span className="flex items-center gap-1.5"><i className="h-2 w-2 rounded-full bg-[#0ea5e9]" /> Unassigned due date</span>
-              <span className="flex items-center gap-1.5"><i className="h-2 w-2 rounded-full bg-[#0284c7]" /> Staffed</span>
-              <span className="flex items-center gap-1.5"><i className="h-2 w-2 rounded-full bg-[#06a7df]" /> Completed</span>
+            <div className="flex shrink-0 flex-wrap items-center gap-3 border-t border-slate-200 bg-slate-50 px-4 py-2 text-[9px] text-slate-400">
+              <span className="flex items-center gap-1.5"><i className="h-2 w-2 rounded-full bg-amber-400" /> Worker not assigned</span>
+              <span className="flex items-center gap-1.5"><i className="h-2 w-2 rounded-full bg-sky-500" /> Staffed</span>
+              <span className="ml-auto hidden items-center gap-1 sm:flex"><MdAccessTime /> Scroll horizontally to compare the full working period.</span>
             </div>
           </section>
         )}
@@ -291,10 +346,30 @@ export function ShiftManagementBoard() {
           shiftSchedule={{
             date: viewingShift ? shiftDateKey(viewingShift.date) : undefined,
             startTime: viewingShift?.start_time,
-            endTime: roundedShiftEnd(viewingShift),
+            endTime: shiftEndFromDuration(viewingShift),
           }}
           onClose={() => setViewing(null)}
+          onEditShiftPlan={(planId) => {
+            const rosterPlan = plans.find((plan) => plan.plan_id === planId);
+            setViewing(null);
+            setEditingPlan({
+              _id: planId,
+              title: rosterPlan?.plan_title ?? "Cleaning plan",
+              client: "",
+              location: "",
+            });
+          }}
           onAssigned={() => {
+            void refetch();
+          }}
+        />
+      )}
+
+      {editingPlan && (
+        <PlanForm
+          plan={editingPlan}
+          onClose={() => {
+            setEditingPlan(null);
             void refetch();
           }}
         />

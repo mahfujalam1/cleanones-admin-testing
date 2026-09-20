@@ -10,6 +10,7 @@ import { InvoicesTab } from "./InvoicesTab";
 import { PerformanceTab } from "./PerformanceTab";
 import { AttendanceTab } from "./AttendanceTab";
 import { useModalJump } from "@/hooks/useModalJump";
+import { SlidingTabs } from "@/components/ui/sliding-tabs";
 
 const TABS = [
   "General",
@@ -200,27 +201,17 @@ export function WorkerDetailModal({
           </button>
         </header>
 
-        <nav className="overflow-x-auto border-b border-slate-100 px-6">
-          <div className="flex min-w-max gap-1">
-            {TABS.map((name) => (
-              <button
-                key={name}
-                type="button"
-                onClick={() => setTab(name)}
-                aria-current={tab === name ? "page" : undefined}
-                className={`cursor-pointer whitespace-nowrap border-b-2 px-3 py-2.5 text-xs transition-colors ${
-                  tab === name
-                    ? "border-primary font-semibold text-primary"
-                    : "border-transparent text-slate-500 hover:text-slate-800"
-                }`}
-              >
-                {name}
-              </button>
-            ))}
-          </div>
+        <nav className="overflow-x-auto border-b border-slate-100 px-6 py-3">
+          <SlidingTabs
+            compact
+            value={tab}
+            className="w-fit"
+            options={TABS.map((name) => ({ value: name, label: name }))}
+            onValueChange={(next) => setTab(next as Tab)}
+          />
         </nav>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
+        <div key={tab} className="min-h-0 flex-1 animate-in overflow-y-auto px-6 py-5 fade-in slide-in-from-bottom-1 duration-300">
           {isLoading ? (
             <div className="space-y-2">
               {Array.from({ length: 8 }, (_, index) => (

@@ -4,6 +4,7 @@ import React from "react";
 import { MdPictureAsPdf } from "react-icons/md";
 import { TbLoader2 } from "react-icons/tb";
 import type { ReportRange } from "./types";
+import { SlidingTabs } from "@/components/ui/sliding-tabs";
 
 interface ReportHeaderProps {
   ranges: ReportRange[];
@@ -27,22 +28,11 @@ export function ReportHeader({
   return (
     <div className="flex items-center justify-between gap-3 no-print">
       {/* Timeframe Selector */}
-      <div className="flex rounded-lg border border-gray-200 bg-white p-1 shadow-xs">
-        {ranges.map((range) => (
-          <button
-            key={range}
-            type="button"
-            onClick={() => onRangeChange(range)}
-            className={`text-xs px-3.5 py-1.5 rounded-md font-semibold transition-all cursor-pointer ${
-              activeRange === range
-                ? "bg-[#0ea5e9] text-white shadow-xs"
-                : "text-gray-600 hover:bg-gray-100"
-            }`}
-          >
-            {rangeLabels[range]}
-          </button>
-        ))}
-      </div>
+      <SlidingTabs
+        value={activeRange}
+        options={ranges.map((range) => ({ value: range, label: rangeLabels[range] }))}
+        onValueChange={(next) => onRangeChange(next as ReportRange)}
+      />
 
       {/* PDF Generate & Download Button */}
       <button

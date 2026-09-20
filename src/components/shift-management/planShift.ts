@@ -63,32 +63,18 @@ export function canStaff(shift?: PlanRosterShift | null) {
   });
 }
 
-/** Schedule slots are :00 and :30, so a raw finish is rounded up to the next half hour. */
-export function roundUpToHalfHour(value: Date) {
-  const totalMinutes =
-    value.getHours() * 60 +
-    value.getMinutes() +
-    (value.getSeconds() > 0 || value.getMilliseconds() > 0 ? 1 : 0);
-  const rounded = Math.ceil(totalMinutes / 30) * 30;
-  const next = new Date(value);
-  next.setHours(Math.floor(rounded / 60), rounded % 60, 0, 0);
-  return next;
-}
-
-export function roundedEndFromStart(start: Date, durationMinutes: number) {
+/** Exact finish: scheduled start plus the plan's total task duration. */
+export function endFromStart(start: Date, durationMinutes: number) {
   if (Number.isNaN(start.getTime()) || durationMinutes <= 0) return null;
-  const raw = new Date(start.getTime() + durationMinutes * 60_000);
-  const rounded = roundUpToHalfHour(raw);
-  if (rounded.getTime() <= start.getTime()) rounded.setMinutes(rounded.getMinutes() + 30);
-  return rounded;
+  return new Date(start.getTime() + durationMinutes * 60_000);
 }
 
-export function roundedShiftEnd(shift?: Pick<PlanRosterShift, "start_time" | "end_time" | "duration_minutes" | "date"> | null) {
+export function shiftEndFromDuration(shift?: Pick<PlanRosterShift, "start_time" | "end_time" | "duration_minutes" | "date"> | null) {
   if (!shift?.start_time || !shift.duration_minutes) return shift?.end_time ?? undefined;
   const parsed = /^\d{2}:\d{2}$/.test(shift.start_time) && shift.date
     ? new Date(`${shiftDateKey(shift.date)}T${shift.start_time}:00`)
     : new Date(shift.start_time);
-  return roundedEndFromStart(parsed, shift.duration_minutes)?.toISOString() ?? shift.end_time ?? undefined;
+  return endFromStart(parsed, shift.duration_minutes)?.toISOString() ?? shift.end_time ?? undefined;
 }
 
 export function formatClock(value?: string | null) {

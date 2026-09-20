@@ -114,7 +114,11 @@ export default function ReportsPage() {
         <ContentSkeleton />
       ) : (
         /* Printable & Capturable Report Blueprint Section */
-        <div ref={blueprintRef} className="space-y-4 bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs">
+        <div
+          key={activeRange}
+          ref={blueprintRef}
+          className="animate-in space-y-4 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs fade-in slide-in-from-bottom-1 duration-300"
+        >
           <ReportBlueprintHeader
             rangeLabel={rangeLabels[activeRange]}
             dateRange={dateRangeStr}

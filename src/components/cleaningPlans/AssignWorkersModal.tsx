@@ -16,7 +16,7 @@ import {
   type PlanRosterAssignedWorker,
 } from "@/redux/api/rosterApi";
 import { useModalJump } from "@/hooks/useModalJump";
-import { roundedEndFromStart } from "@/components/shift-management/planShift";
+import { endFromStart } from "@/components/shift-management/planShift";
 
 /** Roles a worker can hold on a shift. */
 const ROLES = ["Team leader", "Co-leader", "Normal worker"] as const;
@@ -61,8 +61,7 @@ function toTimeSlot(value?: string) {
   if (/^\d{2}:\d{2}$/.test(value)) return value;
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return "";
-  const minutes = parsed.getMinutes() < 30 ? "00" : "30";
-  return `${String(parsed.getHours()).padStart(2, "0")}:${minutes}`;
+  return `${String(parsed.getHours()).padStart(2, "0")}:${String(parsed.getMinutes()).padStart(2, "0")}`;
 }
 
 function timeFromDate(value: Date) {
@@ -81,12 +80,19 @@ function isPastStartSlot(date: string, time: string) {
   return start.getTime() <= Date.now();
 }
 
-function endFromStart(date: string, startTime: string, durationMinutes: number) {
+function calculateEnd(date: string, startTime: string, durationMinutes: number) {
   if (!startTime || durationMinutes <= 0) return { time: "", iso: "" };
   const start = new Date(toTimestamp(date, startTime));
-  const rounded = roundedEndFromStart(start, durationMinutes);
-  if (!rounded) return { time: "", iso: "" };
-  return { time: timeFromDate(rounded), iso: rounded.toISOString() };
+  const end = endFromStart(start, durationMinutes);
+  if (!end) return { time: "", iso: "" };
+  return { time: timeFromDate(end), iso: end.toISOString() };
+}
+
+function timeLabel(value: string) {
+  const [hourText, minute = "00"] = value.split(":");
+  const hour = Number(hourText);
+  const suffix = hour < 12 ? "AM" : "PM";
+  return `${String(hour % 12 || 12).padStart(2, "0")}:${minute} ${suffix}`;
 }
 
 export function formatAssignDateLabel(date: string) {
@@ -125,8 +131,11 @@ export function AssignWorkersPanel({
     skip: !target.planId || Boolean(target.durationMinutes),
   });
   const durationMinutes = target.durationMinutes || (plan ? planWorkDurationMinutes(plan) : 0);
-  const computedEnd = endFromStart(target.date, startTime, durationMinutes);
+  const computedEnd = calculateEnd(target.date, startTime, durationMinutes);
   const endTime = computedEnd.time;
+  const endOptions = endTime && !TIME_SLOTS.some((slot) => slot.value === endTime)
+    ? [...TIME_SLOTS, { value: endTime, label: timeLabel(endTime) }]
+    : TIME_SLOTS;
   const startIso = lockTimes && target.startTime?.includes("T")
     ? new Date(target.startTime).toISOString()
     : toTimestamp(target.date, startTime);
@@ -325,7 +334,7 @@ export function AssignWorkersPanel({
           <SelectField
             label="End time"
             value={endTime}
-            options={TIME_SLOTS}
+            options={endOptions}
             onChange={() => undefined}
             disabled
             placeholder={startTime ? "No task duration on this plan" : "Select a start time first"}
@@ -334,7 +343,7 @@ export function AssignWorkersPanel({
             <p className="mt-1.5 text-[11px] text-slate-400">
               {lockTimes
                 ? "Times are locked for this shift. You can still change workers."
-                : `From ${durationMinutes}m total duration, rounded to a 30-minute slot.`}
+                : `Fixed from the ${durationMinutes}m total duration.`}
             </p>
           ) : lockTimes ? (
             <p className="mt-1.5 text-[11px] text-slate-400">Times are locked for this shift. You can still change workers.</p>

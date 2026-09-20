@@ -19,6 +19,8 @@ import {
 } from '@/redux/api/endpoints/cleaningPlans.api';
 import { ContentSkeleton } from '@/components/shared/SkeletonLoader';
 import { BackendPagination } from '@/components/shared/BackendPagination';
+import { SlidingTabs } from '@/components/ui/sliding-tabs';
+import { DatePicker } from '@/components/ui/date-picker';
 import { useGetShiftRosterQuery, type ShiftRosterParams } from '@/redux/api/rosterApi';
 import { apiError } from '@/redux/api/apiError';
 
@@ -252,34 +254,47 @@ export function RosterCalendar() {
               <MdChevronRight className="text-lg" />
             </button>
           </div>
-          <h2 className="min-w-[190px] truncate text-sm font-semibold text-slate-800 sm:text-base">{formatDateRange()}</h2>
+          <h2 className="min-w-[170px] truncate text-xs font-semibold text-slate-700">{formatDateRange()}</h2>
+          <DatePicker
+            value={formatYYYYMMDD(currentDate)}
+            iconOnly
+            onValueChange={(value) => {
+              const selected = new Date(`${value}T12:00:00`);
+              if (!Number.isNaN(selected.getTime())) {
+                setCurrentDate(selected);
+                setView('Day');
+                setPage(1);
+              }
+            }}
+          />
         </div>
 
         <div className="flex w-full flex-wrap items-center gap-2 lg:w-auto">
-          <div className="flex max-w-full overflow-x-auto rounded border border-gray-200 bg-gray-50 p-0.5 text-xs font-medium">
-            {(['Day', 'Week', 'Month'] as const).map(v => (
-              <button
-                key={v}
-                onClick={() => {
-                  setView(v);
-                  setPage(1);
-                }}
-                className={`h-7 rounded px-3 transition-colors ${view === v ? 'border border-gray-200 bg-white text-primary' : 'border border-transparent text-gray-500 hover:text-gray-800'}`}
-              >
-                {v === 'Day' ? t.roster.dayView : v === 'Week' ? t.roster.weekView : t.roster.monthView}
-              </button>
-            ))}
-          </div>
+          <SlidingTabs
+            compact
+            value={view}
+            options={[
+              { value: 'Day', label: t.roster.dayView },
+              { value: 'Week', label: t.roster.weekView },
+              { value: 'Month', label: t.roster.monthView },
+            ]}
+            onValueChange={(next) => {
+              setView(next as typeof view);
+              setPage(1);
+            }}
+          />
         </div>
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col">
         {displayError && <p className="mb-3 rounded border border-red-200 bg-red-50 p-3 text-xs text-red-700">{displayError}</p>}
-        {loading ? <ContentSkeleton /> : <>
-          {view === 'Day' && <DayView currentDate={currentDate} shifts={shifts} teamMembers={teamMembers} onShiftClick={setSelectedShift} />}
-          {view === 'Week' && <WeekView currentDate={currentDate} shifts={shifts} teamMembers={teamMembers} onShiftClick={setSelectedShift} />}
-          {view === 'Month' && <MonthView currentDate={currentDate} shifts={shifts} teamMembers={teamMembers} onShiftClick={setSelectedShift} />}
-        </>}
+        {loading ? <ContentSkeleton /> : (
+          <div key={view} className="min-h-0 flex-1 animate-in fade-in slide-in-from-bottom-1 duration-300">
+            {view === 'Day' && <DayView currentDate={currentDate} shifts={shifts} teamMembers={teamMembers} onShiftClick={setSelectedShift} />}
+            {view === 'Week' && <WeekView currentDate={currentDate} shifts={shifts} teamMembers={teamMembers} onShiftClick={setSelectedShift} />}
+            {view === 'Month' && <MonthView currentDate={currentDate} shifts={shifts} teamMembers={teamMembers} onShiftClick={setSelectedShift} />}
+          </div>
+        )}
       </div>
 
       <div className="shrink-0 pt-3">

@@ -21,6 +21,7 @@ import {
 import { EmployeeDetailsModal } from "@/components/shift-monitoring/EmployeeDetailsModal";
 import type { WorkerInfo } from "@/components/shift-monitoring/types";
 import { BackendPagination } from "@/components/shared/BackendPagination";
+import { SlidingTabs } from "@/components/ui/sliding-tabs";
 import { usePathname, useRouter } from "next/navigation";
 import { getLocale, localizePath } from "@/lib/locale";
 import { getDashboardTranslation } from "@/lib/translations";
@@ -317,28 +318,15 @@ export default function LiveStatusPage() {
           )}
         </div>
 
-        <div className="flex max-w-full shrink-0 overflow-x-auto rounded-xl border border-slate-200/80 bg-slate-100/90 p-1 text-xs font-semibold">
-          {filterTabs.map((tab) => {
-            const active = statusFilter === tab.value;
-            return (
-              <button
-                key={tab.value || "all"}
-                type="button"
-                onClick={() => setStatusFilter(tab.value)}
-                className={`shrink-0 cursor-pointer whitespace-nowrap rounded-lg px-3.5 py-2 transition-all ${
-                  active
-                    ? "bg-white text-sky-600 shadow-xs font-bold"
-                    : "text-slate-600 hover:text-slate-900"
-                }`}
-              >
-                {tab.label}
-              </button>
-            );
-          })}
-        </div>
+        <SlidingTabs
+          value={statusFilter}
+          options={filterTabs.map((tab) => ({ value: tab.value, label: tab.label }))}
+          onValueChange={(next) => setStatusFilter(next as LiveStatusFilter)}
+        />
       </div>
 
       {/* Shifts List */}
+      <div key={statusFilter || "all"} className="animate-in fade-in slide-in-from-bottom-1 duration-300">
       {loading ? (
         <div className="space-y-3">
           {[1, 2, 3, 4, 5].map((row) => (
@@ -536,6 +524,7 @@ export default function LiveStatusPage() {
           })}
         </div>
       )}
+      </div>
 
       <BackendPagination
         page={page}

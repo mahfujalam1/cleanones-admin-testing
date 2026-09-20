@@ -1,9 +1,9 @@
 "use client";
 
 import React from 'react';
-import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { getLocale, localizePath, stripLocale } from '@/lib/locale';
+import { SlidingTabs } from '@/components/ui/sliding-tabs';
 
 import { getDashboardTranslation } from '@/lib/translations';
 import { getUiTranslation } from "@/lib/translations";
@@ -33,36 +33,27 @@ export default function ShiftMonitoringLayout({ children }: { children: React.Re
       exact: false
     }
   ];
+  const activePath = tabs.find((tab) =>
+    tab.exact ? routePath === tab.path : routePath.startsWith(tab.path),
+  )?.path ?? tabs[0].path;
 
   return (
     <div className="h-full flex flex-col relative">
       {/* Top Navigation Tabs */}
-      <div className="flex border-b border-gray-200 mb-6 gap-6 px-2 flex-shrink-0 overflow-x-auto">
-        {tabs.map(tab => {
-          const isActive = tab.exact
-            ? routePath === tab.path
-            : routePath.startsWith(tab.path);
-
-          return (
-            <Link 
-              key={tab.name}
-              href={localizePath(tab.path, locale)}
-              aria-current={isActive ? 'page' : undefined}
-              className={`mb-2 flex h-9 items-center gap-2 whitespace-nowrap rounded border px-3 text-xs font-semibold transition-colors ${
-                isActive 
-                  ? 'border-sky-200 bg-sky-50 text-primary' 
-                  : 'border-transparent text-gray-500 hover:bg-white hover:text-gray-800'
-              }`}
-            >
-              {tab.icon}
-              {tab.name}
-            </Link>
-          );
-        })}
+      <div className="mb-6 flex-shrink-0 border-b border-gray-200 pb-3">
+        <SlidingTabs
+          value={activePath}
+          className="w-fit"
+          options={tabs.map((tab) => ({
+            value: tab.path,
+            href: localizePath(tab.path, locale),
+            label: <span className="flex items-center gap-2">{tab.icon}{tab.name}</span>,
+          }))}
+        />
       </div>
 
       {/* Tab Content */}
-      <div className="flex-1 overflow-y-auto pb-10">
+      <div key={activePath} className="flex-1 animate-in overflow-y-auto pb-10 fade-in slide-in-from-bottom-1 duration-300">
         {children}
       </div>
     </div>
