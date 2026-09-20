@@ -93,6 +93,12 @@ export default function LiveStatusPage() {
    */
   const openPlanAction = (planId: string, action: "edit" | "assign" | "delete") => {
     setMenuFor("");
+    if (action === "assign") {
+      const today = new Date();
+      const date = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+      router.push(localizePath(`/roster?plan=${encodeURIComponent(planId)}&date=${date}&action=assign`, locale));
+      return;
+    }
     router.push(localizePath(`/cleaning-plans?plan=${encodeURIComponent(planId)}&action=${action}`, locale));
   };
   const t = getDashboardTranslation(locale);

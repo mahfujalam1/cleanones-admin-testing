@@ -7,7 +7,6 @@ import {
   CheckboxField,
   DateField,
   FieldLabel,
-  SelectField,
   TextareaField,
   TextField,
 } from "@/components/shared/Field";
@@ -30,30 +29,10 @@ import {
 import { refDoc, refId } from "@/redux/api/types";
 import { todayIso } from "@/components/ui/date-picker";
 
-/** Half-hour slots; the API stores the start as one timestamp, not a separate time field. */
-const TIME_SLOTS = Array.from({ length: 48 }, (_, index) => {
-  const hours = Math.floor(index / 2);
-  const minutes = index % 2 ? "30" : "00";
-  const value = `${String(hours).padStart(2, "0")}:${minutes}`;
-  const suffix = hours < 12 ? "AM" : "PM";
-  const display = `${String(hours % 12 || 12).padStart(2, "0")}:${minutes} ${suffix}`;
-  return { value, label: display };
-});
-
-const toDateInput = (value?: string) => (value ? value.slice(0, 10) : "");
-
 /** "3 tasks" beside a room, falling back to its type when the count was not sent. */
 const taskLabel = (room: Parameters<typeof roomTaskCount>[0] & { room_type: string }) => {
   const count = roomTaskCount(room);
   return count === null ? room.room_type : `${count} ${count === 1 ? "task" : "tasks"}`;
-};
-
-const toTimeInput = (value?: string) => {
-  if (!value) return "08:00";
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return "08:00";
-  const minutes = parsed.getMinutes() < 30 ? "00" : "30";
-  return `${String(parsed.getHours()).padStart(2, "0")}:${minutes}`;
 };
 
 /** Combines the date and time fields into the single timestamp the API stores. */
@@ -102,9 +81,6 @@ export function PlanForm({ plan, onClose, onCreated }: {
   const [location, setLocation] = useState(() => refId(plan?.location));
   const [rooms, setRooms] = useState<string[]>(() => (plan?.rooms ?? []).map(refId).filter(Boolean));
   const [title, setTitle] = useState(plan?.title ?? "");
-  const [startDate, setStartDate] = useState(toDateInput(plan?.date_time));
-  const [startTime, setStartTime] = useState(toTimeInput(plan?.date_time));
-  const [endDate, setEndDate] = useState(toDateInput(plan?.end_date));
   const [description, setDescription] = useState(plan?.description ?? "");
   const [drafts, setDrafts] = useState<TaskDraft[]>([]);
   const [error, setError] = useState("");
@@ -120,24 +96,10 @@ export function PlanForm({ plan, onClose, onCreated }: {
     if (roomIds.length > 0) {
       setRooms(roomIds);
     }
-    if (singlePlan.date_time) {
-      setStartDate(toDateInput(singlePlan.date_time));
-      setStartTime(toTimeInput(singlePlan.date_time));
-    }
-    if (singlePlan.end_date) {
-      setEndDate(toDateInput(singlePlan.end_date));
-    }
-    if (singlePlan.description || singlePlan.note) {
-      setDescription(singlePlan.description || singlePlan.note || "");
-    }
+    if (singlePlan.description) setDescription(singlePlan.description);
   }, [singlePlan]);
 
-  /**
-   * A plan cannot start in the past, and cannot end before it starts. An existing plan keeps its
-   * own start as the floor, so editing one that began earlier does not fight the calendar.
-   */
-  const earliestStart = isEdit && startDate && startDate < todayIso() ? startDate : todayIso();
-  const earliestEnd = startDate || earliestStart;
+  const taskDateFloor = todayIso();
 
   const { data: roomPage, isFetching: loadingRooms } = useGetRoomsQuery(
     { locationId: location, limit: 100, sort: "name" },
@@ -238,13 +200,8 @@ export function PlanForm({ plan, onClose, onCreated }: {
       setError("Pick at least one room.");
       return;
     }
-    if (!startDate) {
-      setError("Set a start date.");
-      return;
-    }
-    // The end date is optional; it is only checked when one was actually picked.
-    if (endDate && new Date(endDate) < new Date(startDate)) {
-      setError("The end date cannot be before the start date.");
+    if (!title.trim()) {
+      setError("Plan name is required.");
       return;
     }
     if (!description.trim()) {
@@ -290,8 +247,6 @@ export function PlanForm({ plan, onClose, onCreated }: {
       client,
       location,
       rooms,
-      date_time: toTimestamp(startDate, startTime),
-      end_date: endDate ? new Date(endDate).toISOString() : undefined,
       description: description.trim(),
     };
 
@@ -317,11 +272,11 @@ export function PlanForm({ plan, onClose, onCreated }: {
                       title,
                       photo_url: "",
                       is_uploaded: false,
+                      description: "",
+                      reference_image_url: "",
                     }))
                 : [],
-              date_time: draft.date
-                ? toTimestamp(draft.date, startTime || "08:00")
-                : toTimestamp(startDate || todayIso(), startTime || "08:00"),
+              date_time: toTimestamp(draft.date || todayIso(), "08:00"),
             }).unwrap();
           }
         }
@@ -421,35 +376,6 @@ export function PlanForm({ plan, onClose, onCreated }: {
 
           <TextField label="Plan name" value={title} onChange={setTitle} required />
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <DateField
-              label="Start date"
-              value={startDate}
-              onChange={(value) => {
-                setStartDate(value);
-                // An end date that now sits before the start would be invalid, so it is cleared.
-                if (endDate && endDate < value) setEndDate("");
-                setError("");
-              }}
-              required
-              min={earliestStart}
-            />
-            <SelectField
-              label="Start time"
-              value={startTime}
-              options={TIME_SLOTS}
-              onChange={setStartTime}
-              required
-            />
-          </div>
-
-          <div>
-            <DateField label="End date" value={endDate} onChange={setEndDate} min={earliestEnd} />
-            <p className="mt-1.5 text-[11px] text-slate-400">
-              For a single visit, use the same date as the start date.
-            </p>
-          </div>
-
           <TextareaField
             label="Description"
             value={description}
@@ -473,7 +399,7 @@ export function PlanForm({ plan, onClose, onCreated }: {
                 </div>
                 <button
                   type="button"
-                  onClick={() => setDrafts((current) => [...current, newDraft(startDate)])}
+                  onClick={() => setDrafts((current) => [...current, newDraft(taskDateFloor)])}
                   className="inline-flex shrink-0 cursor-pointer items-center gap-1 rounded-lg border border-primary/40 bg-white px-3 py-1.5 text-xs font-semibold text-primary transition-colors hover:bg-sky-50"
                 >
                   <MdAdd className="text-sm" /> Task
@@ -597,8 +523,7 @@ export function PlanForm({ plan, onClose, onCreated }: {
                           current.map((item) => (item.key === draft.key ? { ...item, date: value } : item)),
                         )
                       }
-                      min={earliestEnd}
-                      max={endDate || undefined}
+                      min={taskDateFloor}
                     />
                   </div>
 
