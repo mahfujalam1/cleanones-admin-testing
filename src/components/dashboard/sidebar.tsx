@@ -102,6 +102,7 @@ export default function Sidebar() {
           />
         </div>
 
+
         <button
           type="button"
           onClick={() => dispatch(toggleSidebar())}
