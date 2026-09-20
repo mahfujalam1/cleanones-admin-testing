@@ -5,6 +5,7 @@ export type PhotoAiStatus = "pending" | "passed" | "failed" | "review" | "error"
 export type PhotoAiCheck = {
   item: string;
   passed: boolean | null;
+  note?: string | null;
 };
 
 /** One uploaded photo against a task's photo requirement. AI fields are optional for old records. */

@@ -329,7 +329,6 @@ export function PhotoReviewDetail({
             {photos.map((photo, index) => {
               const url = photo.photo_url ? imgUrl(photo.photo_url) : null;
               const status = apiPhotoStatus(photo);
-              const expandedChecks = photo.ai_status === "failed" || photo.ai_status === "review";
               const managerVerdict = localVerdicts[photo.title] ?? photo.manager_verdict;
               return (
                 <figure
@@ -389,13 +388,13 @@ export function PhotoReviewDetail({
                     ) : null}
 
                     {photo.ai_checks?.length ? (
-                      <details open={expandedChecks} className="group">
-                        <summary className="cursor-pointer list-none text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                      <div>
+                        <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
                           Verification checks
-                        </summary>
-                        <ul className="mt-2 space-y-1.5">
+                        </p>
+                        <ul className="mt-2 space-y-2">
                           {photo.ai_checks.map((check, checkIndex) => (
-                            <li key={`${check.item}-${checkIndex}`} className="flex items-start gap-2 text-[11px] text-slate-600">
+                            <li key={`${check.item}-${checkIndex}`} className="flex items-start gap-2">
                               {check.passed === true ? (
                                 <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-500" />
                               ) : check.passed === false ? (
@@ -403,14 +402,21 @@ export function PhotoReviewDetail({
                               ) : (
                                 <MinusCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-400" />
                               )}
-                              <span>
-                                {check.item}
-                                {check.passed === null ? <em className="ml-1 not-italic text-slate-400">— not visible in photo</em> : null}
-                              </span>
+                              <div className="min-w-0">
+                                <p className="text-[11px] font-medium leading-4 text-slate-700">
+                                  {check.item}
+                                  {check.passed === null ? (
+                                    <em className="ml-1 not-italic font-normal text-slate-400">— not visible in photo</em>
+                                  ) : null}
+                                </p>
+                                {check.note ? (
+                                  <p className="mt-0.5 text-[11px] leading-4 text-slate-500">{check.note}</p>
+                                ) : null}
+                              </div>
                             </li>
                           ))}
                         </ul>
-                      </details>
+                      </div>
                     ) : null}
 
                     {photo.attempt_count != null || photo.ai_confidence != null ? (
