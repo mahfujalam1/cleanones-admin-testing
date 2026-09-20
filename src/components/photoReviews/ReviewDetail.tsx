@@ -1,13 +1,13 @@
 "use client";
 
 import React from "react";
-import { X, Info, Check } from "lucide-react";
+import { X, Info, Check, CheckCircle2, XCircle, MinusCircle, LoaderCircle, AlertTriangle } from "lucide-react";
 import { MdArrowBack } from "react-icons/md";
 import { CleanerAvatar } from "./CleanerAvatar";
 import { PhotoReview } from "./types";
 import { ScoreBar } from "./Aiscorebar";
 import { imgUrl } from "@/utils/baseUrl";
-import type { PhotoReviewTask } from "@/redux/api/photoReviewsApi";
+import type { PhotoReviewTask, UploadedPhoto } from "@/redux/api/photoReviewsApi";
 
 interface ReviewDetailProps {
     review: PhotoReview;
@@ -27,6 +27,16 @@ const SUGGESTION_COLOR: Record<string, string> = {
     Approve: "text-emerald-500",
     Reject: "text-red-500",
     Review: "text-amber-500",
+};
+
+const apiPhotoStatus = (photo: UploadedPhoto) => {
+  if (photo.ai_subject_matches === false) return { label: "Wrong subject", tone: "border-red-200 bg-red-50 text-red-700" };
+  if (photo.audit_sampled) return { label: "Spot check", tone: "border-violet-200 bg-violet-50 text-violet-700" };
+  if (photo.ai_status === "pending") return { label: "Checking…", tone: "border-sky-200 bg-sky-50 text-sky-700" };
+  if (photo.ai_status === "passed") return { label: "Looks good", tone: "border-emerald-200 bg-emerald-50 text-emerald-700" };
+  if (photo.ai_status === "failed") return { label: "Problem found", tone: "border-red-200 bg-red-50 text-red-700" };
+  if (photo.ai_status === "review") return { label: "Needs review", tone: "border-amber-200 bg-amber-50 text-amber-700" };
+  return { label: "Not checked", tone: "border-slate-200 bg-slate-50 text-slate-600" };
 };
 
 export function ReviewDetail({ review, onClose, onApprove, onReject }: ReviewDetailProps) {
@@ -278,11 +288,19 @@ export function PhotoReviewDetail({
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {photos.map((photo, index) => {
               const url = photo.photo_url ? imgUrl(photo.photo_url) : null;
+              const status = apiPhotoStatus(photo);
+              const expandedChecks = photo.ai_status === "failed" || photo.ai_status === "review";
               return (
                 <figure
                   key={`${photo.title}-${index}`}
-                  className="overflow-hidden rounded-lg border border-slate-200 bg-slate-50"
+                  className="overflow-hidden rounded-lg border border-slate-200 bg-white"
                 >
+                  {photo.forced_accept ? (
+                    <div className="flex items-center gap-1.5 border-b border-orange-200 bg-orange-50 px-3 py-2 text-[10px] font-semibold text-orange-700">
+                      <AlertTriangle className="h-3.5 w-3.5" />
+                      Accepted after 3 retries — look closely
+                    </div>
+                  ) : null}
                   {url ? (
                     <a href={url} target="_blank" rel="noreferrer">
                       <img
@@ -296,8 +314,70 @@ export function PhotoReviewDetail({
                       No image
                     </div>
                   )}
-                  <figcaption className="border-t border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700">
-                    {photo.title}
+                  <figcaption className="space-y-3 border-t border-slate-200 p-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <span className="text-xs font-semibold text-slate-700">{photo.title}</span>
+                      <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[9px] font-semibold ${status.tone}`}>
+                        {status.label}
+                      </span>
+                    </div>
+
+                    {photo.ai_status === "pending" ? (
+                      <p className="flex items-center gap-1.5 text-xs text-sky-700">
+                        <LoaderCircle className="h-3.5 w-3.5 animate-spin" /> Automatic check in progress
+                      </p>
+                    ) : null}
+
+                    {photo.ai_status === "error" ? (
+                      <p className="text-xs text-slate-500">Automatic check unavailable. Judge this photo manually.</p>
+                    ) : null}
+
+                    {photo.ai_score != null || photo.ai_reason ? (
+                      <div className="rounded-md bg-slate-50 p-2.5">
+                        {photo.ai_score != null ? (
+                          <p className="text-lg font-bold text-slate-900">
+                            {photo.ai_score}<span className="text-xs font-medium text-slate-400">/100</span>
+                          </p>
+                        ) : null}
+                        {photo.ai_reason ? (
+                          <p className={`text-xs leading-5 ${photo.ai_status === "failed" ? "font-semibold text-red-700" : "text-slate-600"}`}>
+                            {photo.ai_reason}
+                          </p>
+                        ) : null}
+                      </div>
+                    ) : null}
+
+                    {photo.ai_checks?.length ? (
+                      <details open={expandedChecks} className="group">
+                        <summary className="cursor-pointer list-none text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                          Verification checks
+                        </summary>
+                        <ul className="mt-2 space-y-1.5">
+                          {photo.ai_checks.map((check, checkIndex) => (
+                            <li key={`${check.item}-${checkIndex}`} className="flex items-start gap-2 text-[11px] text-slate-600">
+                              {check.passed === true ? (
+                                <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-500" />
+                              ) : check.passed === false ? (
+                                <XCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-red-500" />
+                              ) : (
+                                <MinusCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-400" />
+                              )}
+                              <span>
+                                {check.item}
+                                {check.passed === null ? <em className="ml-1 not-italic text-slate-400">— not visible in photo</em> : null}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      </details>
+                    ) : null}
+
+                    {photo.attempt_count != null || photo.ai_confidence != null ? (
+                      <div className="flex items-center gap-3 border-t border-slate-100 pt-2 text-[10px] text-slate-400">
+                        {photo.attempt_count != null ? <span>{photo.attempt_count} attempt{photo.attempt_count === 1 ? "" : "s"}</span> : null}
+                        {photo.ai_confidence != null ? <span>{Math.round(photo.ai_confidence * 100)}% confidence</span> : null}
+                      </div>
+                    ) : null}
                   </figcaption>
                 </figure>
               );

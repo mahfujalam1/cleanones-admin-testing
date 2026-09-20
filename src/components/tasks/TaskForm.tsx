@@ -45,8 +45,12 @@ export function TaskForm({
   const [photoRequired, setPhotoRequired] = useState(task?.is_photo_required ?? false);
   const [photoRequirements, setPhotoRequirements] = useState<PhotoRequirement[]>(
     task?.photo_requirements?.length
-      ? task.photo_requirements
-      : [{ title: "", photo_url: "", is_uploaded: false }]
+      ? task.photo_requirements.map((requirement) => ({
+          ...requirement,
+          description: requirement.description ?? "",
+          reference_image_url: requirement.reference_image_url ?? "",
+        }))
+      : [{ title: "", description: "", reference_image_url: "", photo_url: "", is_uploaded: false }]
   );
   const [requiredPhotoCount, setRequiredPhotoCount] = useState(
     task?.required_photo_count?.toString() ?? ""
@@ -73,8 +77,8 @@ export function TaskForm({
             title: r.title.trim(),
             photo_url: "",
             is_uploaded: false,
-            description: "",
-            reference_image_url: "",
+            description: r.description?.trim() ?? "",
+            reference_image_url: r.reference_image_url?.trim() ?? "",
           }))
         : undefined,
       required_photo_count: photoRequired && requiredPhotoCount.trim()
@@ -101,6 +105,20 @@ export function TaskForm({
       // dropped silently from the payload.
       if (namedPhotoRequirements.length !== photoRequirements.length) {
         setError("Give every required photo a name, or remove the empty ones.");
+        return;
+      }
+      const invalidReference = photoRequirements.find((requirement) => {
+        const value = requirement.reference_image_url?.trim();
+        if (!value) return false;
+        try {
+          const url = new URL(value);
+          return url.protocol !== "http:" && url.protocol !== "https:";
+        } catch {
+          return true;
+        }
+      });
+      if (invalidReference) {
+        setError(`Enter a valid reference image URL for "${invalidReference.title.trim()}".`);
         return;
       }
       const count = Number(requiredPhotoCount);
@@ -230,35 +248,7 @@ export function TaskForm({
         />
       )}
 
-      <div className="space-y-4 border-t border-slate-100 pt-4">
-        <div className="max-w-xs">
-          <TextField
-            label="Daily random photo count"
-            type="number"
-            value={requiredPhotoCount}
-            onChange={(value) => {
-              setRequiredPhotoCount(value);
-              setError("");
-            }}
-            min={1}
-            max={Math.max(namedPhotoRequirements.length, 1)}
-            placeholder={`1 - ${Math.max(namedPhotoRequirements.length, 1)}`}
-            required={photoRequired}
-            // Meaningless until photos are actually being collected.
-            disabled={!photoRequired}
-          />
-          <p className="mt-1 text-xs text-slate-500">
-            {photoRequired ? (
-              <>
-                How many of the {namedPhotoRequirements.length} photo
-                {namedPhotoRequirements.length === 1 ? "" : "s"} below the worker is asked for each day.
-              </>
-            ) : (
-              <>Turn on &ldquo;Photo required&rdquo; below to set this.</>
-            )}
-          </p>
-        </div>
-
+      <div className="border-t border-slate-100 pt-4">
         <div>
           <CheckboxField
             label="Photo required"
@@ -270,47 +260,135 @@ export function TaskForm({
           />
 
           {photoRequired && (
-            <div className="ml-3 mt-3 space-y-3 border-l-2 border-primary pl-4">
-              {photoRequirements.map((req, index) => (
-                <div key={index} className="flex items-center gap-3">
-                  <div className="flex-1">
-                    <input
-                      type="text"
-                      value={req.title}
-                      onChange={(e) => {
-                        const newReqs = [...photoRequirements];
-                        newReqs[index] = { ...newReqs[index], title: e.target.value };
-                        setPhotoRequirements(newReqs);
-                        setError("");
-                      }}
-                      placeholder="Required photo name"
-                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none transition-all placeholder:text-slate-400 hover:border-slate-300 focus:border-primary focus:ring-1 focus:ring-primary"
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setPhotoRequirements(photoRequirements.filter((_, i) => i !== index));
+            <div className="mt-4 space-y-4 rounded-xl border border-slate-200 bg-slate-50/60 p-4">
+              <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_180px] sm:items-end">
+                <div>
+                  <p className="text-sm font-semibold text-slate-800">Photo instructions</p>
+                  <p className="mt-1 text-xs leading-5 text-slate-500">
+                    Add each photo the worker may be asked to capture. Description and example image are optional.
+                  </p>
+                </div>
+                <div>
+                  <TextField
+                    label="Daily random count"
+                    type="number"
+                    value={requiredPhotoCount}
+                    onChange={(value) => {
+                      setRequiredPhotoCount(value);
                       setError("");
                     }}
-                    className="text-sm font-semibold text-red-500 hover:text-red-600"
-                    disabled={photoRequirements.length === 1}
-                  >
-                    Remove
-                  </button>
+                    min={1}
+                    max={Math.max(namedPhotoRequirements.length, 1)}
+                    placeholder={`1 - ${Math.max(namedPhotoRequirements.length, 1)}`}
+                    required
+                  />
+                </div>
+              </div>
+
+              {photoRequirements.map((req, index) => (
+                <div key={index} className="rounded-lg border border-slate-200 bg-white p-3 shadow-2xs">
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      Required photo {index + 1}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPhotoRequirements(photoRequirements.filter((_, i) => i !== index));
+                        setError("");
+                      }}
+                      className="text-xs font-semibold text-red-500 transition-colors hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-40"
+                      disabled={photoRequirements.length === 1}
+                    >
+                      Remove
+                    </button>
+                  </div>
+
+                  <div className="grid gap-3">
+                    <div>
+                      <label className="mb-1.5 block text-xs font-semibold text-slate-700">
+                        Title <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={req.title}
+                        onChange={(event) => {
+                          const newReqs = [...photoRequirements];
+                          newReqs[index] = { ...newReqs[index], title: event.target.value };
+                          setPhotoRequirements(newReqs);
+                          setError("");
+                        }}
+                        placeholder="e.g. Bathroom after cleaning"
+                        className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm outline-none transition-all placeholder:text-slate-400 hover:border-slate-300 focus:border-primary focus:ring-1 focus:ring-primary"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="mb-1.5 block text-xs font-semibold text-slate-700">
+                        Worker instruction
+                      </label>
+                      <textarea
+                        value={req.description ?? ""}
+                        onChange={(event) => {
+                          const newReqs = [...photoRequirements];
+                          newReqs[index] = { ...newReqs[index], description: event.target.value };
+                          setPhotoRequirements(newReqs);
+                          setError("");
+                        }}
+                        rows={2}
+                        placeholder="Explain what must be visible and where to take the photo from."
+                        className="w-full resize-y rounded-lg border border-slate-200 px-3 py-2 text-sm leading-5 outline-none transition-all placeholder:text-slate-400 hover:border-slate-300 focus:border-primary focus:ring-1 focus:ring-primary"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="mb-1.5 block text-xs font-semibold text-slate-700">
+                        Example image URL
+                      </label>
+                      <div className="flex items-center gap-3">
+                        {req.reference_image_url?.trim() ? (
+                          <img
+                            src={req.reference_image_url}
+                            alt=""
+                            className="h-10 w-10 shrink-0 rounded-md border border-slate-200 bg-slate-50 object-cover"
+                          />
+                        ) : null}
+                        <input
+                          type="url"
+                          value={req.reference_image_url ?? ""}
+                          onChange={(event) => {
+                            const newReqs = [...photoRequirements];
+                            newReqs[index] = { ...newReqs[index], reference_image_url: event.target.value };
+                            setPhotoRequirements(newReqs);
+                            setError("");
+                          }}
+                          placeholder="https://..."
+                          className="h-10 min-w-0 flex-1 rounded-lg border border-slate-200 px-3 text-sm outline-none transition-all placeholder:text-slate-400 hover:border-slate-300 focus:border-primary focus:ring-1 focus:ring-primary"
+                        />
+                      </div>
+                    </div>
+                  </div>
                 </div>
               ))}
               <button
                 type="button"
                 onClick={() => {
-                  setPhotoRequirements([...photoRequirements, { title: "", photo_url: "", is_uploaded: false }]);
+                  setPhotoRequirements([
+                    ...photoRequirements,
+                    {
+                      title: "",
+                      description: "",
+                      reference_image_url: "",
+                      photo_url: "",
+                      is_uploaded: false,
+                    },
+                  ]);
                   setError("");
                 }}
-                className="text-sm font-semibold text-primary hover:text-sky-600"
+                className="inline-flex h-9 items-center justify-center rounded-lg border border-primary/30 bg-white px-3 text-xs font-semibold text-primary transition-colors hover:bg-sky-50"
               >
-                + Add Photo
+                + Add another photo
               </button>
-
             </div>
           )}
         </div>

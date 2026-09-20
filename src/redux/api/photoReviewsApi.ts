@@ -1,7 +1,27 @@
 import { baseApi } from "./baseApi";
 
-/** One uploaded photo against a task's photo requirement. */
-export type UploadedPhoto = { title: string; photo_url: string };
+export type PhotoAiStatus = "pending" | "passed" | "failed" | "review" | "error" | "skipped";
+
+export type PhotoAiCheck = {
+  item: string;
+  passed: boolean | null;
+};
+
+/** One uploaded photo against a task's photo requirement. AI fields are optional for old records. */
+export type UploadedPhoto = {
+  title: string;
+  photo_url: string;
+  ai_status?: PhotoAiStatus | null;
+  ai_score?: number | null;
+  ai_confidence?: number | null;
+  ai_reason?: string | null;
+  ai_checks?: PhotoAiCheck[] | null;
+  ai_subject_matches?: boolean | null;
+  ai_requirement_met?: boolean | null;
+  forced_accept?: boolean;
+  audit_sampled?: boolean;
+  attempt_count?: number | null;
+};
 
 /** A single shift task instance that has photos uploaded against it. */
 export type PhotoReviewTask = {

@@ -159,11 +159,35 @@ export function TaskViewModal({ task, onClose }: { task: Task; onClose: () => vo
               {!task.is_photo_required ? (
                 <p className="text-sm text-slate-500">No photos required for this task.</p>
               ) : task.photo_requirements?.length ? (
-                <ul className="space-y-2">
+                <ul className="space-y-3">
                   {task.photo_requirements.map((req, i) => (
-                    <li key={i} className="flex items-center gap-2 text-sm text-slate-700">
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shrink-0"></span>
-                      {req.title}
+                    <li key={i} className="flex gap-3 rounded-lg border border-slate-100 bg-slate-50/60 p-3">
+                      {req.reference_image_url ? (
+                        <a
+                          href={req.reference_image_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="group relative h-14 w-14 shrink-0 overflow-hidden rounded-md border border-slate-200 bg-white"
+                          title="Open example image"
+                        >
+                          <img
+                            src={req.reference_image_url}
+                            alt={`Example for ${req.title}`}
+                            className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                          />
+                          <span className="absolute inset-x-0 bottom-0 bg-slate-900/65 py-0.5 text-center text-[8px] font-semibold uppercase tracking-wide text-white">
+                            Example
+                          </span>
+                        </a>
+                      ) : (
+                        <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-400" />
+                      )}
+                      <span className="min-w-0">
+                        <b className="block text-sm font-semibold text-slate-800">{req.title}</b>
+                        {req.description ? (
+                          <span className="mt-1 block text-xs leading-5 text-slate-500">{req.description}</span>
+                        ) : null}
+                      </span>
                     </li>
                   ))}
                 </ul>
