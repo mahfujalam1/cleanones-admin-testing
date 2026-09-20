@@ -100,7 +100,7 @@ const baseQueryWithReauth: BaseQueryFn<
 };
 
 export const baseApi = createApi({
-  reducerPath: "api",
+  reducerPath: "api/v1",
   baseQuery: baseQueryWithReauth,
   tagTypes: tagTypeList,
   // Data stays warm for five minutes after its last subscriber leaves, so navigating back to a
