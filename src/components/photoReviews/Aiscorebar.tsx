@@ -28,8 +28,6 @@ export function AIScoreBar({ score, confidence, className = "" }: AIScoreBarProp
     );
 }
 
-const SCORE_ROWS: { key: keyof Pick<ScoreBarProps, never>; label: string }[] = [];
-
 export function ScoreBar({ label, value }: ScoreBarProps) {
     return (
         <div className="flex items-center gap-2">

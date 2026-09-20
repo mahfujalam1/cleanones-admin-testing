@@ -40,6 +40,22 @@ export const refId = <T extends { _id: string }>(ref: Ref<T> | null | undefined)
   return "";
 };
 
+/**
+ * The least a populated reference is guaranteed to carry. Endpoints differ on whether the
+ * display text lives under `name` or `title`, so both are optional here and `refLabel` picks.
+ */
+export type NamedRef = { _id: string; name?: string; title?: string };
+
+/**
+ * Reads the display text off a reference. An unpopulated reference is just its id, which is
+ * returned as-is so callers can still show something rather than an empty cell.
+ */
+export const refLabel = (ref: Ref<NamedRef> | null | undefined): string => {
+  if (typeof ref === "string") return ref;
+  if (ref && typeof ref === "object") return ref.name ?? ref.title ?? "";
+  return "";
+};
+
 /** Reads a populated document, or null when the API returned only an id. */
 export const refDoc = <T extends { _id: string }>(ref: Ref<T> | null | undefined): T | null =>
   ref && typeof ref !== "string" ? ref : null;

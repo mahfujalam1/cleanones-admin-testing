@@ -75,8 +75,6 @@ export default function NotificationsPage() {
 
   const notifications: NotificationItem[] = notifRes?.result ?? [];
   const meta = notifRes?.meta;
-  const totalPages = meta?.totalPage ?? 1;
-  const hasMore = page < totalPages;
   const unreadCount = meta?.unreadCount ?? notifications.filter((item) => !item.isRead).length;
 
   // Opening a notification navigates to its route

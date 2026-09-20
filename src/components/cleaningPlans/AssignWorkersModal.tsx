@@ -7,21 +7,23 @@ import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
 import { SearchInput, ErrorNotice } from "@/components/shared/ListStates";
 import { apiError } from "@/redux/api/apiError";
-import { refId } from "@/redux/api/types";
 import { WORKER_TYPES, workerName, type WorkerType } from "@/redux/api/endpoints/workers.api";
 import {
   conflictLabel,
   useAssignWorkersMutation,
   useGetCleaningPlanQuery,
   useGetEligibleWorkersQuery,
+  type AssignedWorker,
   type CleaningPlan,
 } from "@/redux/api/endpoints/cleaningPlans.api";
+import { refDoc, refId } from "@/redux/api/types";
 import { useModalJump } from "@/hooks/useModalJump";
 
 /** Roles a worker can hold on a plan. */
 const ROLES = ["Team leader", "Co-leader", "Normal worker"] as const;
 
-const DEFAULT_ROLE: (typeof ROLES)[number] = "Normal worker";
+type PlanRole = (typeof ROLES)[number];
+const DEFAULT_ROLE: PlanRole = "Normal worker";
 
 const formatWindow = (plan: CleaningPlan) => {
   if (!plan.date_time) return plan.title;
@@ -38,21 +40,16 @@ function initials(name: string) {
   return `${words[0][0]}${words[words.length - 1][0]}`.toUpperCase();
 }
 
-function getWorkerIdFromAssignment(assignment: any): string {
-  if (!assignment) return "";
-  if (typeof assignment === "string") return assignment;
-  if (typeof assignment.worker === "string") return assignment.worker;
-  if (assignment.worker && typeof assignment.worker === "object") {
-    return assignment.worker._id || assignment.worker.id || assignment.worker.worker_id || assignment.worker.user || "";
-  }
-  return assignment.worker_id || assignment.id || assignment._id || "";
+/** The assignment's worker id, whether the API populated the worker or sent only its id. */
+function getWorkerIdFromAssignment(assignment: AssignedWorker): string {
+  return refId(assignment.worker) || refDoc(assignment.worker)?.user || "";
 }
 
-function getRoleFromAssignment(assignment: any): string {
-  const stored = assignment?.role || assignment?.position;
+function getRoleFromAssignment(assignment: AssignedWorker): PlanRole {
   // Plans saved before this list settled can hold a role that is no longer offered; those
   // fall back to the default rather than leaving the select showing nothing.
-  return ROLES.includes(stored) ? stored : DEFAULT_ROLE;
+  const stored = assignment.role;
+  return ROLES.find((role) => role === stored) ?? DEFAULT_ROLE;
 }
 
 export function AssignWorkersModal({ plan, onClose }: { plan: CleaningPlan; onClose: () => void }) {
@@ -72,16 +69,15 @@ export function AssignWorkersModal({ plan, onClose }: { plan: CleaningPlan; onCl
 
   useEffect(() => {
     if (seeded || !detail) return;
-    const rawList = (detail as any).assigned_workers || (detail as any).workers || [];
-    const assignments = rawList
-      .map((assignment: any) => ({
+    const assignments = (detail.assigned_workers ?? [])
+      .map((assignment) => ({
         id: getWorkerIdFromAssignment(assignment),
         role: getRoleFromAssignment(assignment),
       }))
-      .filter((assignment: any) => assignment.id);
+      .filter((assignment) => assignment.id);
 
-    setPicked(new Set(assignments.map((assignment: any) => assignment.id)));
-    setRoles(Object.fromEntries(assignments.map((assignment: any) => [assignment.id, assignment.role])));
+    setPicked(new Set(assignments.map((assignment) => assignment.id)));
+    setRoles(Object.fromEntries(assignments.map((assignment) => [assignment.id, assignment.role])));
     setSeeded(true);
   }, [detail, seeded]);
 
@@ -159,10 +155,9 @@ export function AssignWorkersModal({ plan, onClose }: { plan: CleaningPlan; onCl
     }
   };
 
-  const chosenConflicts = visible.filter(({ worker, is_conflict }) => {
-    const id = worker._id || (worker as any).id || (worker as any).worker_id;
-    return is_conflict && picked.has(id);
-  });
+  const chosenConflicts = visible.filter(
+    ({ worker, is_conflict }) => is_conflict && picked.has(worker._id),
+  );
   const { triggerJump, jumpClassName } = useModalJump();
 
   if (typeof document === "undefined") return null;
@@ -222,7 +217,7 @@ export function AssignWorkersModal({ plan, onClose }: { plan: CleaningPlan; onCl
             <p className="py-12 text-center text-xs text-slate-400">No eligible workers found</p>
           ) : (
             visible.map(({ worker, is_conflict, conflict_reason }) => {
-              const workerId = worker._id || (worker as any).id || (worker as any).worker_id;
+              const workerId = worker._id;
               const name = workerName(worker);
               const checked = picked.has(workerId);
               const isConflict = Boolean(is_conflict);

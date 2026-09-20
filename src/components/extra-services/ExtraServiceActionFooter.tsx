@@ -318,14 +318,12 @@ interface ExtraServiceActionFooterProps {
   request: UnifiedServiceRequest;
   onDone: () => void;
   onError: (msg: string) => void;
-  onAssignWorkers?: () => void;
 }
 
 export function ExtraServiceActionFooter({
   request,
   onDone,
   onError,
-  onAssignWorkers,
 }: ExtraServiceActionFooterProps) {
   const pathname = usePathname();
   const locale = getLocale(pathname);

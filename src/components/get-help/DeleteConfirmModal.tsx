@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { MdWarning, MdClose } from "react-icons/md";
+import { MdWarning } from "react-icons/md";
 import type { SuggestedQuestion } from "@/services/actions/suggestedQuestions";
 import { usePathname } from "next/navigation";
 import { getLocale } from "@/lib/locale";

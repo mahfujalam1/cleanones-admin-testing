@@ -31,7 +31,7 @@ export function ChatMembersPanel({
   onlineProfileIds: Set<string>;
 }) {
   const ui = getUiTranslation(getLocale(usePathname()));
-  const { data: members, isFetching } = useGetChatMembersQuery(chat._id);
+  const { data: members } = useGetChatMembersQuery(chat._id);
 
   const client = members?.client ?? chat.client;
   const workers = members?.workers ?? chat.workers ?? [];

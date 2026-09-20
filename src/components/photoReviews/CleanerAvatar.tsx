@@ -1,7 +1,5 @@
 interface CleanerAvatarProps {
     name: string;
-    initials: string;
-    avatarColor: string;
     size?: "sm" | "md" | "lg";
     className?: string;
 }
@@ -14,8 +12,6 @@ const SIZE_MAP = {
 
 export function CleanerAvatar({
     name,
-    initials,
-    avatarColor,
     size = "sm",
     className = "",
 }: CleanerAvatarProps) {

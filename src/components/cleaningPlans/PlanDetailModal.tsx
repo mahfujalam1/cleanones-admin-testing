@@ -28,7 +28,6 @@ import { workerName } from "@/redux/api/endpoints/workers.api";
 import {
   planCounts,
   useGetCleaningPlanQuery,
-  useGetEligibleWorkersQuery,
   type CleaningPlan,
 } from "@/redux/api/endpoints/cleaningPlans.api";
 import { useModalJump } from "@/hooks/useModalJump";

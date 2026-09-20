@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState } from 'react';
-import { MdAccessTime, MdLocationOn, MdOutlineClose, MdTag, MdPerson, MdBusinessCenter, MdEventNote, MdCamera, MdChecklist, MdDeleteOutline } from 'react-icons/md';
+import { MdAccessTime, MdLocationOn, MdOutlineClose, MdTag, MdPerson, MdBusinessCenter, MdEventNote, MdCamera, MdChecklist } from 'react-icons/md';
 import { TbDoor, TbUsers, TbClipboardList } from 'react-icons/tb';
 import { Shift, formatTime12, planIdFromShift } from './types';
 import { getCleaningPlan, type PlanDetails } from '@/services/actions/cleaningPlans';
@@ -19,7 +19,6 @@ export function ShiftModal({ shift, onClose }: ShiftModalProps) {
   const planId = planIdFromShift(shift.id);
   const [plan, setPlan] = useState<PlanDetails | null>(null);
   const [planLoading, setPlanLoading] = useState(false);
-  const [error, setError] = useState('');
   const { triggerJump, jumpClassName } = useModalJump();
 
   useEffect(() => {
@@ -79,7 +78,6 @@ export function ShiftModal({ shift, onClose }: ShiftModalProps) {
         <div className="min-h-0 flex-1 overflow-y-auto p-5">
           {(
             <div className="space-y-5">
-              {error && <p className="rounded bg-red-50 p-2 text-xs text-red-700">{error}</p>}
 
               {/* Shift facts */}
               <div className="grid gap-2 sm:grid-cols-2">

@@ -41,19 +41,19 @@ export function ClientCard({
     <div className="group relative h-full">
       <Link
         href={href}
-        className="flex h-full flex-col justify-between rounded-xl border border-slate-200 bg-white p-4 shadow-2xs transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+        className="flex h-full flex-col overflow-hidden rounded-xl bg-white ring-1 ring-slate-200/70 transition-all duration-200 hover:-translate-y-0.5 hover:ring-slate-300 hover:shadow-[0_12px_28px_-18px_rgba(15,23,42,0.45)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
       >
-        <div className="flex-1">
+        <div className="flex-1 p-4">
           <div className="flex items-start gap-3">
             <span
               aria-hidden
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-sky-100 bg-sky-50 text-sm font-bold tracking-wide text-sky-600"
+              className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-50 text-xs font-semibold tracking-wide text-slate-500 ring-1 ring-slate-200/70 transition-colors group-hover:bg-sky-50 group-hover:text-primary group-hover:ring-sky-100"
             >
               {initials(clientLabel(client))}
             </span>
 
-            <div className="min-w-0 flex-1 pr-16">
-              <h3 className="truncate text-[15px] font-bold leading-tight text-slate-900 transition-colors group-hover:text-primary">
+            <div className="min-w-0 flex-1 pr-12">
+              <h3 className="truncate text-sm font-semibold text-slate-900 transition-colors group-hover:text-primary">
                 {clientLabel(client)}
               </h3>
               <p className="mt-1 flex items-center gap-1.5 truncate text-xs text-slate-500">
@@ -81,28 +81,28 @@ export function ClientCard({
           </dl>
         </div>
 
-        <div className="mt-4 flex items-center justify-end gap-2 border-t border-slate-100 pt-3">
+        <div className="flex items-center justify-end border-t border-slate-100 bg-slate-50/60 px-4 py-2.5">
           <MdArrowForward className="text-sm text-slate-400 transition-all group-hover:translate-x-0.5 group-hover:text-primary" />
         </div>
       </Link>
 
       {/* Outside the link so the card itself stays one clickable target. */}
-      <div className="absolute right-3 top-3 flex items-center gap-1 transition-opacity lg:opacity-0 lg:group-hover:opacity-100 lg:group-focus-within:opacity-100">
+      <div className="absolute right-2.5 top-2.5 flex items-center gap-0.5 transition-opacity lg:opacity-0 lg:group-hover:opacity-100 lg:group-focus-within:opacity-100">
         <button
           type="button"
           aria-label={`Edit ${clientLabel(client)}`}
           onClick={() => onEdit(client)}
-          className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-400 transition-colors hover:border-primary/40 hover:bg-sky-50 hover:text-primary"
+          className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md bg-white/90 text-slate-400 ring-1 ring-slate-200 backdrop-blur transition-colors hover:text-slate-800"
         >
-          <MdEdit className="text-base" />
+          <MdEdit className="text-[15px]" />
         </button>
         <button
           type="button"
           aria-label={`Delete ${clientLabel(client)}`}
           onClick={() => onDelete(client)}
-          className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-400 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-600"
+          className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md bg-white/90 text-slate-400 ring-1 ring-slate-200 backdrop-blur transition-colors hover:text-red-600"
         >
-          <MdDelete className="text-base" />
+          <MdDelete className="text-[15px]" />
         </button>
       </div>
     </div>

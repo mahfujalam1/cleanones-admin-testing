@@ -13,7 +13,7 @@ import {
   MdSearch,
   MdSync,
 } from "react-icons/md";
-import { CardGridSkeleton, DetailSkeleton } from "@/components/shared/SkeletonLoader";
+import { CardGridSkeleton } from "@/components/shared/SkeletonLoader";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { BackendPagination } from "@/components/shared/BackendPagination";
 import { Select } from "@/components/ui/select";

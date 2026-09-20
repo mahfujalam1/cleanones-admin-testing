@@ -1,10 +1,12 @@
 import { baseApi } from "../baseApi";
 import { tagTypes } from "../../tagTypes";
+import type { Ref } from "../types";
+import type { CleaningPlan } from "./cleaningPlans.api";
 
-/** A photo the worker must supply when finishing the task. */
 /** The two decisions `/approve-additional-task` accepts. */
 export type AdditionalTaskDecision = "Approved" | "Rejected";
 
+/** A photo the worker must supply when finishing the task. */
 export type PhotoRequirement = {
   title: string;
   photo_url?: string;
@@ -13,7 +15,8 @@ export type PhotoRequirement = {
 
 export type AdditionalTask = {
   _id: string;
-  cleaning_plan_id: string;
+  /** Populated by the list route, a bare id elsewhere — read it through `refId`/`refDoc`. */
+  cleaning_plan_id: Ref<CleaningPlan>;
   name: string;
   description?: string;
   duration_minutes?: number;

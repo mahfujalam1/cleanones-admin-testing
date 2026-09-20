@@ -207,11 +207,7 @@ export function ReviewDetail({ review, onClose, onApprove, onReject }: ReviewDet
 
                         {/* Submitted by */}
                         <div className="pt-3 border-t border-gray-100">
-                            <CleanerAvatar
-                                name={review.cleaner.name}
-                                initials={review.cleaner.initials}
-                                avatarColor={review.cleaner.avatarColor}
-                            />
+                            <CleanerAvatar name={review.cleaner.name} />
                             <p className="text-[11px] text-gray-400 mt-1 ml-9">{review.dateSubmitted}</p>
                         </div>
                     </aside>

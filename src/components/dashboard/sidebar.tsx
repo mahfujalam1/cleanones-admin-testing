@@ -13,7 +13,7 @@ import {
   MdChevronLeft, MdChevronRight, MdLogout, MdChatBubbleOutline,
   MdHelpOutline
 } from 'react-icons/md';
-import { MdMeetingRoom, MdChecklist, MdAdminPanelSettings } from 'react-icons/md';
+import { MdMeetingRoom, MdChecklist } from 'react-icons/md';
 import { notificationsApi } from '@/redux/api/endpoints/notifications.api';
 import { shiftsApi } from '@/redux/api/shiftsApi';
 import { reportsApi } from '@/redux/api/reportsApi';

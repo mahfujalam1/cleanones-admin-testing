@@ -63,7 +63,6 @@ export function PlanCard({
 
   const location = refDoc<Location>(plan.location);
   const counts = planCounts(plan);
-  const active = plan.is_active ?? plan.status === "active";
 
   return (
     <div className="group relative h-full">
@@ -92,17 +91,9 @@ export function PlanCard({
             </span>
 
             <div className="min-w-0 flex-1 pr-12">
-              <div className="flex items-center gap-2">
-                <h3 className="truncate text-sm font-semibold text-slate-900 transition-colors group-hover:text-primary">
-                  {plan.title}
-                </h3>
-                <span
-                  className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium ${active ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500"
-                    }`}
-                >
-                  {active ? "Active" : "Inactive"}
-                </span>
-              </div>
+              <h3 className="truncate text-sm font-semibold text-slate-900 transition-colors group-hover:text-primary">
+                {plan.title}
+              </h3>
               {client && <p className="mt-0.5 truncate text-xs text-slate-500">{clientLabel(client)}</p>}
             </div>
           </div>

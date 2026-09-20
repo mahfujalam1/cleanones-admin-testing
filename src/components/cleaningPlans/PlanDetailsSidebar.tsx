@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import { MdOutlineClose, MdCheck } from 'react-icons/md';
+import { MdOutlineClose } from 'react-icons/md';
 import {
     TbClipboardList,
     TbClock,
@@ -43,7 +43,6 @@ const titleCase = (value?: string) =>
 
 export function PlanDetailSidebar({ plan, onClose, onDelete, onEdit, onAssign }: PlanDetailSidebarProps) {
     const t = getDashboardTranslation(getLocale(usePathname()));
-    const [checked, setChecked] = useState<Set<string>>(new Set());
     const [details, setDetails] = useState<PlanDetails | null>(null);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(true);
@@ -64,15 +63,6 @@ export function PlanDetailSidebar({ plan, onClose, onDelete, onEdit, onAssign }:
     const planRooms = plan.rooms ?? [];
     const additionalTasks = details?.additional_tasks ?? [];
     const workers = details?.workers ?? [];
-
-    const toggleTask = (taskId: string) => {
-        setChecked((prev) => {
-            const next = new Set(prev);
-            if (next.has(taskId)) next.delete(taskId);
-            else next.add(taskId);
-            return next;
-        });
-    };
 
     const formatFrequency = (freq?: string, days?: string[]) => {
         const type = (freq || 'daily').toLowerCase();
@@ -246,7 +236,7 @@ export function PlanDetailSidebar({ plan, onClose, onDelete, onEdit, onAssign }:
                                                 <div>
                                                     <p className="text-[10px] font-medium text-slate-400 uppercase">{t.extraServices.location}</p>
                                                     <p className="text-xs font-semibold text-slate-900">
-                                                        {details?.location_name || details?.location_names?.join(', ') || (details?.locations as any)?.[0]?.location_name || (details?.locations as any)?.[0]?.name || plan.location || 'Default Location'}
+                                                        {details?.location_name || details?.location_names?.join(', ') || details?.locations?.[0]?.location_name || details?.locations?.[0]?.name || plan.location || 'Default Location'}
                                                     </p>
                                                     {details?.repeat_shift && (
                                                         <p className="text-[11px] text-sky-600 font-medium capitalize mt-0.5">

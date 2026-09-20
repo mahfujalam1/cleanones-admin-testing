@@ -29,3 +29,20 @@ export function apiError(error: unknown, fallback = "Something went wrong. Pleas
 
   return fetchError?.trim() || fallback;
 }
+
+/**
+ * Reads the HTTP status off an RTK Query error. Returns undefined for the shapes that carry no
+ * status — a network failure, a serialised throw — so callers can tell "no response" from a 404.
+ */
+export function apiStatus(error: unknown): number | undefined {
+  if (!error || typeof error !== "object") return undefined;
+  const { status } = error as { status?: number | string };
+  return typeof status === "number" ? status : undefined;
+}
+
+/** True when the request came back empty rather than broken, which most lists render as "none yet". */
+export function isNotFound(error: unknown): boolean {
+  if (apiStatus(error) === 404) return true;
+  const message = apiError(error, "").toLowerCase();
+  return message.includes("not found") || message.includes("no data");
+}

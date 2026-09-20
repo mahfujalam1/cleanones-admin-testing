@@ -4,8 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { WorkerDetailModal } from "@/components/workers/WorkerDetailModal";
 import { useGetWorkerListQuery } from "@/redux/api/endpoints/workers.api";
-import { MdAccessTime, MdAdd, MdArrowForward, MdBusiness, MdCalendarToday, MdCheckCircle, MdChevronRight, MdLocationOn, MdPeople, MdReportProblem, MdUploadFile, MdWarningAmber } from "react-icons/md";
-import { CardGridSkeleton, DetailSkeleton } from "@/components/shared/SkeletonLoader";
+import { MdAccessTime, MdArrowForward, MdCalendarToday, MdCheckCircle, MdChevronRight, MdLocationOn, MdReportProblem, MdWarningAmber } from "react-icons/md";
 import {
   useGetTodayLiveShiftMetaQuery,
   useGetTodayLiveShiftsQuery,
@@ -60,15 +59,13 @@ type FallingBehindShift = {
   checkin_status: string;
 };
 
-const uniqueBy = <T,>(items: T[], getKey: (item: T) => string) => {
-  const seen = new Set<string>();
-  return items.filter((item) => {
-    const key = getKey(item);
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
-};
+/**
+ * Permanently empty until the endpoints that used to fill them land. They are module level so
+ * their identity is stable across renders and the memos below do not re-run every time.
+ */
+const NO_ATTENTION_PILLS: readonly AttentionPill[] = [];
+const NO_FALLING_BEHIND: readonly FallingBehindShift[] = [];
+
 
 function getInitials(name: string): string {
   if (!name) return "W";
@@ -104,7 +101,6 @@ export default function DashboardPage() {
   const [liveTab, setLiveTab] = useState<
     "all" | "upcoming" | "in_progress" | "completed" | "cancelled"
   >("all");
-  const [actionsOpen, setActionsOpen] = useState(false);
   const [detailWorkerId, setDetailWorkerId] = useState<string | null>(null);
 
   const { data: todayLiveMeta } = useGetTodayLiveShiftMetaQuery();
@@ -157,26 +153,15 @@ export default function DashboardPage() {
     }
   };
 
-  const attentionPills = uniqueBy(safeOverview.attention_banner.call_pills, (item) => item.worker_id);
-
-  // `badge_text` and `banner_subtitle` are deliberately unused: the overview builds them from
-  // its own `people_need_attention_count`, which can be 0 while the live meta reports a late
-  // worker — that mismatch is what printed "All on time" above a late worker.
-  const liveGroups = uniqueBy(safeOverview.live_operations_by_client, (group) => `${group.client_id}-${group.location_id}`).map((group) => ({
-    ...group,
-    workers: uniqueBy(group.workers, (worker) => worker.worker_id),
-  }));
-  // Only workers who need attention belong here. The old "progress under 80%" rule matched
-  // almost everyone mid-shift, so a site with 200 people on shift filled this whole section;
-  // the complete schedule is what Roster is for.
-  const fallingBehind: FallingBehindShift[] = [];
+  const attentionPills = NO_ATTENTION_PILLS;
+  const fallingBehind = NO_FALLING_BEHIND;
   /**
    * Three endpoints each know about late workers and none of them knows about all of them:
    * the overview returns call pills, the in-progress feed flags check-in status, and the live
    * shift list carries attendance per assigned worker. They are merged and de-duplicated by
    * worker id so the banner shows one chip per person, whichever source spotted them.
    */
-  const lateWorkers = useMemo(() => {
+  const lateWorkers = (() => {
     const found = new Map<string, { id: string; name: string; detail: string }>();
     const remember = (id?: string, name?: string, detail?: string) => {
       if (!id || found.has(id)) return;
@@ -186,8 +171,6 @@ export default function DashboardPage() {
     (attendanceToday ?? [])
       .filter((row) => row.late_days > 0)
       .forEach((row) => remember(row.worker_id, row.name, t.dashboard.late));
-    attentionPills.forEach((pill) => remember(pill.worker_id, pill.worker_name, pill.late_duration_text));
-    fallingBehind.forEach((shift) => remember(shift.worker_id, shift.worker_name, shift.checkin_status));
     todayLiveShifts.forEach((shift) =>
       (shift.assigned_workers ?? []).forEach((worker) => {
         const status = normalizeStatus(worker.attendance_status || worker.status || "");
@@ -198,7 +181,7 @@ export default function DashboardPage() {
     );
 
     return Array.from(found.values());
-  }, [attendanceToday, attentionPills, fallingBehind, todayLiveShifts, t]);
+  })();
 
   const cards = safeOverview.summary_cards;
   /**

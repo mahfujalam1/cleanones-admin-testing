@@ -66,7 +66,7 @@ export function LocationCard({
 
         {/* The footer sits on a tinted strip so every card ends on the same line, however long
             the address above it runs. */}
-        <footer className="flex items-center justify-between gap-3 border-t border-slate-100 bg-slate-50/60 px-4 py-2.5">
+        <footer className="flex items-center gap-3 border-t border-slate-100 bg-slate-50/60 px-4 py-2.5">
           <span className="flex min-w-0 items-center gap-1.5 text-xs text-slate-600">
             <MdOutlineMeetingRoom className="shrink-0 text-sm text-slate-400" />
             {typeof rooms === "number" ? (
@@ -77,18 +77,6 @@ export function LocationCard({
             ) : (
               <span className="truncate text-slate-400">{client ? clientLabel(client) : "—"}</span>
             )}
-          </span>
-
-          <span
-            className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium ${
-              location.is_active ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500"
-            }`}
-          >
-            <span
-              aria-hidden
-              className={`h-1.5 w-1.5 rounded-full ${location.is_active ? "bg-emerald-500" : "bg-slate-400"}`}
-            />
-            {location.is_active ? "Active" : "Inactive"}
           </span>
         </footer>
       </article>

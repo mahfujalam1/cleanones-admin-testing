@@ -16,6 +16,7 @@ import { TbActivity, TbClock, TbCalendarStats, TbCircleCheck } from "react-icons
 import {
   useGetTodayLiveShiftMetaQuery,
   useGetTodayLiveShiftsQuery,
+  type TodayLiveShiftItem,
 } from "@/redux/api/shiftsApi";
 import { EmployeeDetailsModal } from "@/components/shift-monitoring/EmployeeDetailsModal";
 import type { WorkerInfo } from "@/components/shift-monitoring/types";
@@ -53,6 +54,9 @@ const getStatusTone = (st: string) => {
   return { chip: "bg-slate-100 text-slate-700 ring-slate-200", dot: "bg-slate-500", label: st || "Active" };
 };
 
+/** The four states the Live Status tabs can filter by; "" is every shift. */
+type LiveStatusFilter = "" | "inprogress" | "upcoming" | "complete";
+
 type UnifiedLiveShift = {
   id: string;
   shift_id?: string;
@@ -72,7 +76,7 @@ type UnifiedLiveShift = {
   total_room?: number;
   completed_room?: number;
   total_task?: number;
-  rawItem?: any;
+  rawItem?: TodayLiveShiftItem;
 };
 
 export default function LiveStatusPage() {
@@ -95,7 +99,7 @@ export default function LiveStatusPage() {
 
   const [selected, setSelected] = useState<WorkerInfo | null>(null);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"" | "inprogress" | "upcoming" | "complete">("");
+  const [statusFilter, setStatusFilter] = useState<LiveStatusFilter>("");
   const [page, setPage] = useState(1);
   const LIMIT = 10;
 
@@ -103,7 +107,7 @@ export default function LiveStatusPage() {
     setPage(1);
   }, [search, statusFilter]);
 
-  const filterTabs = [
+  const filterTabs: Array<{ value: LiveStatusFilter; label: string }> = [
     { value: "", label: ui.all },
     { value: "inprogress", label: ui.inProgress },
     { value: "upcoming", label: ui.upcoming },
@@ -111,7 +115,7 @@ export default function LiveStatusPage() {
   ];
 
   // 1. Fetch Today's Live Shift Metadata
-  const { data: todayMeta, isFetching: loadingMeta, refetch: refetchMeta } = useGetTodayLiveShiftMetaQuery();
+  const { data: todayMeta, refetch: refetchMeta } = useGetTodayLiveShiftMetaQuery();
 
   // 2. Fetch Today's Live Shifts List
   const statusParam =
@@ -132,7 +136,8 @@ export default function LiveStatusPage() {
     limit: 100,
   });
 
-  const todayShifts = todayShiftsRes?.result ?? [];
+  // `?? []` would be a fresh array each render and re-run every memo that depends on it.
+  const todayShifts = useMemo(() => todayShiftsRes?.result ?? [], [todayShiftsRes]);
 
   // Refetch all endpoints
   const refetchAll = () => {
@@ -313,7 +318,7 @@ export default function LiveStatusPage() {
               <button
                 key={tab.value || "all"}
                 type="button"
-                onClick={() => setStatusFilter(tab.value as any)}
+                onClick={() => setStatusFilter(tab.value)}
                 className={`shrink-0 cursor-pointer whitespace-nowrap rounded-lg px-3.5 py-2 transition-all ${
                   active
                     ? "bg-white text-sky-600 shadow-xs font-bold"

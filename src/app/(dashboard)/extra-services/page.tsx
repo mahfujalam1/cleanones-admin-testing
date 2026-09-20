@@ -10,7 +10,8 @@ import { getUiTranslation } from "@/lib/translations";
 // Clients now come from the new backend; the rest of this page is still on the old one.
 import { CLIENT_LOOKUP_ARGS, clientLabel, useGetClientsQuery } from "@/redux/api/endpoints/clients.api";
 import { additionalTaskStatus, useGetAdditionalTasksQuery } from "@/redux/api/endpoints/additionalTasks.api";
-import { useGetCleaningPlanListQuery } from "@/redux/api/endpoints/cleaningPlans.api";
+import { useGetCleaningPlanListQuery, type CleaningPlan } from "@/redux/api/endpoints/cleaningPlans.api";
+import { refDoc, refId, refLabel } from "@/redux/api/types";
 import { ExtraServiceCard } from "@/components/extra-services/ExtraServiceCard";
 import { ExtraServiceModal } from "@/components/extra-services/ExtraServiceModal";
 import type { UnifiedServiceRequest } from "@/components/extra-services/types";
@@ -68,11 +69,8 @@ export default function ExtraServicesPage() {
 
   /** Additional tasks only reference their plan by id, so names are borrowed from the plan list. */
   const plansById = useMemo(() => {
-    const map = new Map<string, any>();
-    for (const plan of (plansRes?.result ?? []) as any[]) {
-      const id = plan?._id || plan?.id;
-      if (id) map.set(String(id), plan);
-    }
+    const map = new Map<string, CleaningPlan>();
+    for (const plan of plansRes?.result ?? []) map.set(plan._id, plan);
     return map;
   }, [plansRes]);
 
@@ -81,11 +79,12 @@ export default function ExtraServicesPage() {
 
     // Additional tasks, straight from /additional-task/all-additional-tasks
     for (const task of tasksRes?.result ?? []) {
-      const planObj = typeof task.cleaning_plan_id === "object" && task.cleaning_plan_id ? (task.cleaning_plan_id as any) : null;
-      const planIdStr = String(planObj?._id || task.cleaning_plan_id || "");
-      const plan = plansById.get(planIdStr) || planObj;
-      const planClientId = plan?.client_id || (typeof plan?.client === "object" ? plan.client?._id || plan.client?.id : plan?.client);
-      const planClientName = plan?.client_name || (typeof plan?.client === "object" ? plan.client?.name || plan.client?.company_name : plan?.client);
+      // The list route populates the plan; the plan list is the fallback when it sends a bare id.
+      const planIdStr = refId(task.cleaning_plan_id);
+      const plan = plansById.get(planIdStr);
+      const planClient = plan ? refDoc(plan.client) : null;
+      const planClientId = plan ? refId(plan.client) : "";
+      const planClientName = planClient ? clientLabel(planClient) : refLabel(task.cleaning_plan_id);
       if (clientId && planClientId !== clientId) continue;
 
       list.push({
@@ -95,12 +94,12 @@ export default function ExtraServicesPage() {
         title: task.name,
         description: task.description || "",
         status: additionalTaskStatus(task),
-        preferred_date: task.date_time ? task.date_time.slice(0, 10) : plan?.date,
+        preferred_date: task.date_time ? task.date_time.slice(0, 10) : plan?.date_time?.slice(0, 10),
         date_submitted: task.createdAt?.slice(0, 10),
-        client_id: planClientId ? String(planClientId) : undefined,
-        client_name: typeof planClientName === "string" ? planClientName : undefined,
-        location_id: plan?.location_id ? String(plan.location_id) : (typeof plan?.location === "object" ? String(plan.location?._id || plan.location?.id || "") : undefined),
-        location_name: plan?.location_name || (typeof plan?.location === "object" ? plan.location?.name : undefined),
+        client_id: planClientId || undefined,
+        client_name: planClientName || undefined,
+        location_id: plan ? refId(plan.location) || undefined : undefined,
+        location_name: plan ? refLabel(plan.location) || undefined : undefined,
         rawAdditionalTask: task,
         isCleaningPlanTask: true,
       });

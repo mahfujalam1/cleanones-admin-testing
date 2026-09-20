@@ -140,10 +140,6 @@ export type PendingAdditionalTask = {
     reviewed_at?: string;
     rejection_reason?: string;
 };
-const json = (value: unknown) => ({
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(value),
-});
 /**
  * Reads the plan from
  * plan from `/cleaning-plan/single-cleaning-plan/{id}` and reshapes it into `PlanDetails`.

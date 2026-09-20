@@ -134,7 +134,7 @@ export function withWorkingDays<T extends { worker_type?: WorkerType; working_da
   input: T,
 ): T {
   if (input.worker_type === "Employee") return input;
-  const { working_days, ...rest } = input;
+  const { working_days: _omitted, ...rest } = input;
   return rest as T;
 }
 

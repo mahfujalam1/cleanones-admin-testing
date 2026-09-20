@@ -32,7 +32,6 @@ export function TaskCard({
 }: TaskCardProps) {
   const t = getDashboardTranslation(getLocale(usePathname()));
   const p = getPlaceholderTranslation(getLocale(usePathname()));
-  const scheduleType = "fixed_date";
 
   return (
     <div className="space-y-3 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">

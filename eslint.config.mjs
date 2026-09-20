@@ -10,7 +10,12 @@ const eslintConfig = defineConfig([
       "react-hooks/set-state-in-effect": "off",
       "@typescript-eslint/no-explicit-any": "warn",
       "@next/next/no-img-element": "off",
-      "@typescript-eslint/no-unused-vars": "warn",
+      // A leading underscore marks a binding that exists only to be discarded — the rest
+      // pattern that strips a field, a positional arg you have to name to reach the next one.
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        { argsIgnorePattern: "^_", varsIgnorePattern: "^_", caughtErrorsIgnorePattern: "^_" },
+      ],
       "react-hooks/exhaustive-deps": "warn",
     },
   },

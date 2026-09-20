@@ -58,15 +58,11 @@ export function RoomForm({
   // `clientId`, so this only fills the gap for the global Rooms page and for editing.
   useEffect(() => {
     if (clientId || allLocations.length === 0) return;
-    const targetLocId = selectedLocationId || locationId || (room ? refId(room.location) : "");
+    const targetLocId = locationId || (room ? refId(room.location) : "");
     if (!targetLocId) return;
-    const loc = allLocations.find((l) => l._id === targetLocId);
-    if (!loc) return;
-    setSelectedLocationId(loc._id);
-    const cId = refId(loc.client);
-    if (cId && !selectedClientId) {
-      setSelectedClientId(cId);
-    }
+    const loc = allLocations.find((candidate) => candidate._id === targetLocId);
+    const cId = loc ? refId(loc.client) : "";
+    if (cId) setSelectedClientId((current) => current || cId);
   }, [allLocations, clientId, locationId, room]);
 
   const handleClientChange = (cId: string) => {

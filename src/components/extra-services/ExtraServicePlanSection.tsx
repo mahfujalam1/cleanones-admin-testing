@@ -10,7 +10,6 @@ import {
   TbMapPin,
   TbUsers,
   TbCalendar,
-  TbRefresh,
   TbNotes,
 } from "react-icons/tb";
 import type { PlanDetails } from "@/services/actions/cleaningPlans";
@@ -42,10 +41,9 @@ export function ExtraServicePlanSection({ plan, loading, planId }: ExtraServiceP
   }
 
   if (!plan) {
-    const displayId = typeof planId === "object" && planId ? (planId as any).title || (planId as any)._id : planId;
     return (
       <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4 text-center text-xs text-slate-400">
-        {displayId ? `${t.plans.title} (${displayId})` : t.plans.noPlansFound}
+        {planId ? `${t.plans.title} (${planId})` : t.plans.noPlansFound}
       </div>
     );
   }
@@ -62,8 +60,8 @@ export function ExtraServicePlanSection({ plan, loading, planId }: ExtraServiceP
     additionalTasks.reduce((acc, t) => acc + (t.total_photos_required || (t.photo?.length || 0)), 0);
 
   const clientInfo = plan.clients?.[0] || {
-    company_name: plan.company_name || (plan as any).client_name || t.extraServices.client,
-    primary_contact_name: (plan as any).primary_contact_name || "",
+    company_name: plan.company_name || t.extraServices.client,
+    primary_contact_name: "",
   };
 
   const workingDaysSet = new Set((plan.working_days || []).map((d) => d.toLowerCase()));

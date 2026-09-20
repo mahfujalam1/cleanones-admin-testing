@@ -1,16 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { MdAdd, MdTaskAlt, MdSearch, MdClose} from "react-icons/md";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { getLocale, localizePath } from "@/lib/locale";
+import { getLocale } from "@/lib/locale";
 import { getUiTranslation } from "@/lib/translations";
 import { CardGridSkeleton, ErrorNotice } from "@/components/shared/ListStates";
 import { BackendPagination } from "@/components/shared/BackendPagination";
-import { apiError } from "@/redux/api/apiError";
+import { apiError, isNotFound } from "@/redux/api/apiError";
+import { refId } from "@/redux/api/types";
 import {
   useGetTasksQuery,
   useDeleteTaskMutation,
+  type Task,
 } from "@/redux/api/endpoints/tasks.api";
 import { CONTROL_CLASS } from "@/components/shared/Field";
 import TaskCard from "./TaskCard";
@@ -30,7 +32,6 @@ export function TasksView({
   scopedRoomId,
 }: TasksViewProps) {
   const pathname = usePathname();
-  const locale = getLocale(pathname);
   const ui = getUiTranslation(getLocale(usePathname()));
   const router = useRouter();
   const query = useSearchParams();
@@ -45,7 +46,7 @@ export function TasksView({
     setSearchInput(searchText);
   }, [searchText]);
 
-  const createQuery = (override: Record<string, string | undefined | null>) => {
+  const createQuery = useCallback((override: Record<string, string | undefined | null>) => {
     const params = new URLSearchParams();
     if (scopedClientId) params.set("clientId", scopedClientId);
     if (scopedLocationId) params.set("locationId", scopedLocationId);
@@ -59,7 +60,7 @@ export function TasksView({
     if (override.limit !== undefined) params.set("limit", String(override.limit));
     else if (limit) params.set("limit", String(limit));
     return params.toString();
-  };
+  }, [activeTab, limit, page, scopedClientId, scopedLocationId, scopedRoomId, searchText]);
 
   const { data, isLoading, error, refetch } = useGetTasksQuery(
     {
@@ -67,8 +68,7 @@ export function TasksView({
       page,
       limit,
       searchTerm: searchText || undefined,
-      tab: activeTab,
-    } as any,
+    },
     {
       skip: !scopedRoomId,
     }
@@ -76,8 +76,8 @@ export function TasksView({
 
   const [deleteTask] = useDeleteTaskMutation();
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
-  const [taskModalTarget, setTaskModalTarget] = useState<any | "new" | null>(null);
-  const [viewTarget, setViewTarget] = useState<any | null>(null);
+  const [taskModalTarget, setTaskModalTarget] = useState<Task | "new" | null>(null);
+  const [viewTarget, setViewTarget] = useState<Task | null>(null);
 
   const totalTasks = data?.meta?.total || 0;
   const paginatedTasks = data?.result || [];
@@ -86,11 +86,12 @@ export function TasksView({
     if (scopedRoomId) refetch();
   }, [scopedRoomId, refetch]);
 
-  const setTab = (tab: string) => router.push(`${pathname}?${createQuery({ tab, page: "1" })}`);
-  
   // Update the URL only (debounce is handled via local effect)
-  const applySearch = (search: string) => router.push(`${pathname}?${createQuery({ search, page: "1", tab: "All" })}`);
-  
+  const applySearch = useCallback(
+    (search: string) => router.push(`${pathname}?${createQuery({ search, page: "1", tab: "All" })}`),
+    [createQuery, pathname, router],
+  );
+
   useEffect(() => {
     const handler = setTimeout(() => {
       if (searchInput !== searchText) {
@@ -98,7 +99,7 @@ export function TasksView({
       }
     }, 500);
     return () => clearTimeout(handler);
-  }, [searchInput, searchText]);
+  }, [applySearch, searchInput, searchText]);
 
   const setPage = (page: number) => router.push(`${pathname}?${createQuery({ page: String(page) })}`);
 
@@ -111,19 +112,6 @@ export function TasksView({
     } catch {
       // Ignore error, UI will show toast via RTK Query error handler
     }
-  };
-
-  const getTaskLink = (task: { _id: string; location_id: string; room_id: string; name: string }) => {
-    const path = scopedClientId
-      ? `/clients/${scopedClientId}/locations/${task.location_id}/rooms/${task.room_id}/tasks/${task._id}`
-      : `/tasks/${task._id}`;
-    return localizePath(path, locale);
-  };
-
-  const getRoomTitle = (task: { room_name?: string; cleaning_plan?: string }) => {
-    if (task.room_name) return task.room_name;
-    if (task.cleaning_plan) return task.cleaning_plan;
-    return "Unnamed room";
   };
 
   return (
@@ -164,7 +152,7 @@ export function TasksView({
 
       {isLoading ? (
         <CardGridSkeleton />
-      ) : error && !((error as any).status === 404 || apiError(error).toLowerCase().includes("not found") || apiError(error).toLowerCase().includes("no data")) ? (
+      ) : error && !isNotFound(error) ? (
         <ErrorNotice message={apiError(error)} />
       ) : (
         <div className="space-y-4">
@@ -183,7 +171,7 @@ export function TasksView({
           ) : (
             <>
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                {paginatedTasks.map((task: any) => (
+                {paginatedTasks.map((task) => (
                   <TaskCard
                     key={task._id}
                     task={task}
@@ -219,7 +207,7 @@ export function TasksView({
 
       {taskModalTarget && (
         <TaskForm
-          roomId={scopedRoomId || (taskModalTarget !== "new" ? taskModalTarget.room : "")}
+          roomId={scopedRoomId || (taskModalTarget !== "new" ? refId(taskModalTarget.room) : "")}
           task={taskModalTarget === "new" ? undefined : taskModalTarget}
           onClose={() => setTaskModalTarget(null)}
         />

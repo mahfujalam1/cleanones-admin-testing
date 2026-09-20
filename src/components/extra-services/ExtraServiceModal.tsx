@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -29,10 +29,33 @@ import {
   type Client,
 } from "@/redux/api/endpoints/clients.api";
 import { useLazyGetCleaningPlanListQuery } from "@/redux/api/endpoints/cleaningPlans.api";
+import { refDoc, refId, refLabel } from "@/redux/api/types";
 import { ExtraServicePlanSection } from "./ExtraServicePlanSection";
 import { ExtraServiceActionFooter } from "./ExtraServiceActionFooter";
 import { getLocale } from "@/lib/locale";
 import { getDashboardTranslation } from "@/lib/translations";
+
+/** Resolves the account card's client by id first, then by any of its display names. */
+function findClient(
+  clients: Client[] | undefined,
+  clientId: string,
+  clientName: string,
+): Client | undefined {
+  if (!clients) return undefined;
+  if (clientId) {
+    const byId = clients.find((candidate) => candidate._id === clientId);
+    if (byId) return byId;
+  }
+  if (clientName) {
+    const normalised = clientName.trim().toLowerCase();
+    return clients.find((candidate) =>
+      [candidate.name, candidate.company_name, candidate.email].some(
+        (value) => value?.trim().toLowerCase() === normalised,
+      ),
+    );
+  }
+  return undefined;
+}
 
 const TONES = {
   Active: "bg-emerald-50 text-emerald-700 ring-emerald-200",
@@ -69,7 +92,7 @@ export function ExtraServiceModal({ request, onClose, onDone, onError }: ExtraSe
   const t = getDashboardTranslation(getLocale(usePathname()));
   const [plan, setPlan] = useState<PlanDetails | null>(null);
   const [loadingPlan, setLoadingPlan] = useState(false);
-  const [extraDetails, setExtraDetails] = useState<ExtraServiceRequest | null>(null);
+  const [extraDetails] = useState<ExtraServiceRequest | null>(null);
 
   // The row from the list route is only a summary. Re-read the task on its own endpoint so the
   // modal shows the authoritative record — including an approval someone else just made.
@@ -78,24 +101,10 @@ export function ExtraServiceModal({ request, onClose, onDone, onError }: ExtraSe
     skip: !listedTask,
   });
   const taskRecord = fetchedTask ?? listedTask;
-  const task = taskRecord;
 
-  const getPlanId = (p: any): string => {
-    if (!p) return "";
-    if (typeof p === "string") return p;
-    if (typeof p === "object") return p._id || p.id || "";
-    return String(p);
-  };
-
-  const getPlanTitle = (p: any): string => {
-    if (!p) return "";
-    if (typeof p === "string") return p;
-    if (typeof p === "object") return p.title || p.name || p._id || "";
-    return String(p);
-  };
-
-  const taskPlanObj = typeof taskRecord?.cleaning_plan_id === "object" ? (taskRecord.cleaning_plan_id as any) : null;
-  const initialPlanId = getPlanId(request.planId) || getPlanId(taskPlanObj?._id);
+  const taskPlan = refDoc(taskRecord?.cleaning_plan_id);
+  const taskPlanClient = taskPlan ? refDoc(taskPlan.client) : null;
+  const initialPlanId = request.planId || refId(taskRecord?.cleaning_plan_id);
   const [resolvedPlanId, setResolvedPlanId] = useState<string>(initialPlanId);
 
   // Read all clients for full account card information
@@ -106,8 +115,8 @@ export function ExtraServiceModal({ request, onClose, onDone, onError }: ExtraSe
     let active = true;
 
     async function loadData() {
-      let currentPlanId = getPlanId(request.planId) || getPlanId(taskPlanObj?._id);
-      const locationId = typeof request.location_id === "string" ? request.location_id : (request.location_id as any)?._id;
+      let currentPlanId = request.planId || refId(taskRecord?.cleaning_plan_id);
+      const locationId = request.location_id;
 
       if (!currentPlanId && locationId) {
         try {
@@ -134,48 +143,33 @@ export function ExtraServiceModal({ request, onClose, onDone, onError }: ExtraSe
     return () => {
       active = false;
     };
-  }, [fetchCleaningPlans, request.id, request.planId, request.location_id, request.isCleaningPlanTask, taskPlanObj?._id]);
+  }, [fetchCleaningPlans, request.id, request.planId, request.location_id, request.isCleaningPlanTask, taskRecord]);
 
   // Resolve matching client for the Client Card display
   const targetClientId =
-    (typeof request.client_id === "string" ? request.client_id : (request.client_id as any)?._id) ||
+    request.client_id ||
     extraDetails?.client_id ||
     extraDetails?.client?.id ||
     request.rawExtraService?.client_id ||
     request.rawExtraService?.client?.id ||
     plan?.client_id ||
     plan?.clients?.[0]?.client_id ||
-    (typeof taskPlanObj?.client === "object" ? taskPlanObj.client?._id || taskPlanObj.client?.id : taskPlanObj?.client);
+    (taskPlan ? refId(taskPlan.client) : "");
 
   const targetClientName =
-    (typeof request.client_name === "string" ? request.client_name : (request.client_name as any)?.name) ||
+    request.client_name ||
     extraDetails?.client_name ||
     extraDetails?.client?.name ||
     request.rawExtraService?.client_name ||
     request.rawExtraService?.client?.name ||
     plan?.clients?.[0]?.company_name ||
     plan?.client_names?.[0] ||
-    (typeof taskPlanObj?.client === "object" ? taskPlanObj.client?.name || taskPlanObj.client?.company_name : undefined) ||
+    (taskPlanClient ? clientLabel(taskPlanClient) : undefined) ||
     "";
 
   const clientList = clientsData?.result;
-  const matchedClient: Client | undefined = useMemo(() => {
-    if (!clientList) return undefined;
-    if (targetClientId) {
-      const found = clientList.find((c) => c._id === targetClientId);
-      if (found) return found;
-    }
-    if (targetClientName) {
-      const norm = targetClientName.trim().toLowerCase();
-      const found = clientList.find((c) =>
-        (c.name && c.name.trim().toLowerCase() === norm) ||
-        (c.company_name && c.company_name.trim().toLowerCase() === norm) ||
-        (c.email && c.email.trim().toLowerCase() === norm)
-      );
-      if (found) return found;
-    }
-    return undefined;
-  }, [clientList, targetClientId, targetClientName]);
+  // Two cheap `find`s over the cached lookup page; the React Compiler memoizes this for us.
+  const matchedClient: Client | undefined = findClient(clientList, targetClientId, targetClientName);
 
   const clientDisplayName =
     (matchedClient && clientLabel(matchedClient)) ||
@@ -186,19 +180,19 @@ export function ExtraServiceModal({ request, onClose, onDone, onError }: ExtraSe
     matchedClient?.company_name ||
     plan?.company_name ||
     plan?.clients?.[0]?.company_name ||
-    (typeof taskPlanObj?.client === "object" ? taskPlanObj.client?.company_name : "") ||
+    taskPlanClient?.company_name ||
     "";
 
   const clientEmail =
     matchedClient?.email ||
     plan?.clients?.[0]?.email ||
-    (typeof taskPlanObj?.client === "object" ? taskPlanObj.client?.email : "") ||
+    taskPlanClient?.email ||
     "";
 
   const clientPhone =
     matchedClient?.phone ||
     plan?.clients?.[0]?.phone ||
-    (typeof taskPlanObj?.client === "object" ? taskPlanObj.client?.phone : "") ||
+    taskPlanClient?.phone ||
     "";
 
   const licenceExpiry =
@@ -217,7 +211,7 @@ export function ExtraServiceModal({ request, onClose, onDone, onError }: ExtraSe
       : extraDetails?.tasks?.length
         ? extraDetails.tasks
         : request.rawPendingTask
-        ? [request.rawPendingTask as any]
+        ? [request.rawPendingTask as unknown as ExtraServiceTaskDetail]
         : request.rawExtraService?.tasks?.length
           ? request.rawExtraService.tasks
           : [{ name: request.title, description: request.description }]
@@ -230,19 +224,19 @@ export function ExtraServiceModal({ request, onClose, onDone, onError }: ExtraSe
   const planDisplayName: string =
     extraDetails?.plan_name ||
     plan?.title ||
-    getPlanTitle(taskRecord?.cleaning_plan_id) ||
-    getPlanTitle(resolvedPlanId) ||
+    refLabel(taskRecord?.cleaning_plan_id) ||
+    resolvedPlanId ||
     "";
 
   const locationDisplayName: string =
     extraDetails?.location_name ||
-    (typeof request.location_name === "string" ? request.location_name : (request.location_name as any)?.name) ||
-    (typeof taskPlanObj?.location === "object" ? taskPlanObj.location?.name : undefined) ||
+    request.location_name ||
+    (taskPlan ? refLabel(taskPlan.location) : undefined) ||
     "—";
 
   const roomDisplayName: string =
     extraDetails?.room_name ||
-    (typeof request.room_name === "string" ? request.room_name : (request.room_name as any)?.name) ||
+    request.room_name ||
     "";
   const { triggerJump, jumpClassName } = useModalJump();
 
@@ -476,7 +470,7 @@ export function ExtraServiceModal({ request, onClose, onDone, onError }: ExtraSe
         <ExtraServiceActionFooter
           request={{
             ...request,
-            planId: getPlanId(taskRecord?.cleaning_plan_id) || resolvedPlanId,
+            planId: refId(taskRecord?.cleaning_plan_id) || resolvedPlanId,
             status: displayStatus,
             rawAdditionalTask: taskRecord,
             // An /additional-task row stands alone: widening this to the plan's other pending

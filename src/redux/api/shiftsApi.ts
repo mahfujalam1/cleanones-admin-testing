@@ -34,7 +34,7 @@ export const shiftsApi = baseApi.injectEndpoints({
       },
       providesTags: ["shifts" as never, "shiftMonitoring" as never],
     }),
-    getSingleLiveShift: builder.query<any, string>({
+    getSingleLiveShift: builder.query<TodayLiveShiftItem, string>({
       query: (id) => `/shift/single-live-shift/${encodeURIComponent(id)}`,
       providesTags: (_res, _err, id) => [{ type: "shifts" as never, id }],
     }),
@@ -82,6 +82,7 @@ export const shiftsApi = baseApi.injectEndpoints({
     }),
   }),
 });
+
 
 export type WorkerAttendanceListItem = {
   worker_id: string;

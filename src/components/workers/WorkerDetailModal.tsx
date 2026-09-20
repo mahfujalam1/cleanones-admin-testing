@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { MdEdit, MdOpenInNew, MdOutlineClose } from "react-icons/md";
+import { MdEdit, MdOutlineClose } from "react-icons/md";
 import { useGetWorkerQuery, workerName, type Worker, type WorkingDay } from "@/redux/api/endpoints/workers.api";
 import { apiError } from "@/redux/api/apiError";
 import { ErrorNotice } from "@/components/shared/ListStates";
@@ -51,21 +51,6 @@ function Row({ label, value }: { label: string; value?: React.ReactNode }) {
   );
 }
 
-/**
- * Shown on the tabs whose data has no endpoint on the worker API yet. Saying which data is
- * missing beats an empty panel that reads as a bug.
- */
-function AwaitingApi({ what }: { what: string }) {
-  return (
-    <div className="rounded-md border border-dashed border-slate-200 px-4 py-12 text-center">
-      <p className="text-sm font-medium text-slate-600">No {what} to show</p>
-      <p className="mx-auto mt-1 max-w-xs text-xs leading-relaxed text-slate-400">
-        The worker API does not expose {what} yet. This tab fills in once that endpoint exists.
-      </p>
-    </div>
-  );
-}
-
 function GeneralTab({ worker, onEdit }: { worker: Worker; onEdit?: () => void }) {
   return (
     <div className="space-y-5">
@@ -105,57 +90,6 @@ function GeneralTab({ worker, onEdit }: { worker: Worker; onEdit?: () => void })
           value={worker.languages?.length ? worker.languages.join(", ") : undefined}
         />
       </Section>
-    </div>
-  );
-}
-
-function DocumentRow({ label, url }: { label: string; url?: string }) {
-  return (
-    <Row
-      label={label}
-      value={
-        url ? (
-          <a
-            href={url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-primary hover:underline"
-          >
-            Open <MdOpenInNew className="text-[11px]" />
-          </a>
-        ) : undefined
-      }
-    />
-  );
-}
-
-function DocumentsTab({ worker }: { worker: Worker }) {
-  const certificates = worker.certificates ?? [];
-
-  return (
-    <div className="space-y-5">
-      <Section title="Identity">
-        <DocumentRow label="ID card front" url={worker.id_card_front} />
-        <DocumentRow label="ID card back" url={worker.id_card_back} />
-      </Section>
-
-      <Section title="Contract">
-        <DocumentRow label="Employee contract" url={worker.employee_contract_pdf} />
-      </Section>
-
-      <Section title={`Certificates (${certificates.length})`}>
-        {certificates.length === 0 ? (
-          <Row label="Certificates" value={undefined} />
-        ) : (
-          certificates.map((url, index) => (
-            <DocumentRow key={url} label={`Certificate ${index + 1}`} url={url} />
-          ))
-        )}
-      </Section>
-
-      <p className="text-[11px] leading-relaxed text-slate-400">
-        Documents are stored as links. Uploading a file from here needs an upload endpoint.
-      </p>
     </div>
   );
 }

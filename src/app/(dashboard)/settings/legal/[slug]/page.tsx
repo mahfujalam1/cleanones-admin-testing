@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
 import { MdArrowBack, MdEdit } from "react-icons/md";
 import { isLegalSlug, legalDocuments, legalLabelKeys } from "@/lib/legal-content";
 import { getLocale } from "@/lib/locale";

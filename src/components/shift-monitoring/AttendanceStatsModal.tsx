@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { MdOutlineClose, MdAccessTime, MdArrowForward } from 'react-icons/md';
 import { TbClock, TbCalendarStats, TbHourglass, TbAlertTriangle, TbChartBar, TbTrendingUp } from 'react-icons/tb';

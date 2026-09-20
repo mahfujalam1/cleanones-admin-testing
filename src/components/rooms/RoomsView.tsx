@@ -14,7 +14,7 @@ import {
   ErrorNotice,
   SearchInput,
 } from "@/components/shared/ListStates";
-import { useGetRoomCatalogQuery, useGetLocationCatalogQuery } from "@/redux/api/endpoints/catalog.api";
+import { useGetRoomCatalogQuery } from "@/redux/api/endpoints/catalog.api";
 import {
   useDeleteRoomMutation,
   type Room,
@@ -51,10 +51,6 @@ export function RoomsView({
       router.replace(localizePath("/rooms", locale));
     }
   }, [scopedLocationId, router, locale]);
-
-  const { data: allLocations = [] } = useGetLocationCatalogQuery(undefined, {
-    refetchOnMountOrArgChange: false,
-  });
 
   const {
     currentData: rooms = [],

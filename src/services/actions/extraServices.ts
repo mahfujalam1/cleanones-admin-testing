@@ -1,4 +1,3 @@
-import { authenticated, type ActionResult } from "./auth";
 
 export type ExtraServiceWorkerDropdownItem = {
   worker_id: string;
@@ -92,6 +91,4 @@ export type ExtraServiceTaskDetail = {
   duration_minutes?: number | null;
   description?: string | null;
 };
-
-const jsonHeader = (val: unknown) => ({ headers: { "Content-Type": "application/json" }, body: JSON.stringify(val) });
 

@@ -281,10 +281,6 @@ export default function Topbar() {
 
             {profileOpen && (
               <ProfileMenu locale={currentLocale}
-                onHelp={() => {
-                  closeMenus();
-                  setHelpOpen(true);
-                }}
                 onSignOut={() => {
                   closeMenus();
                   dispatch(setSignOutModalOpen(true));
@@ -403,7 +399,7 @@ function NotificationsPopover({
   );
 }
 
-function ProfileMenu({ locale, onHelp, onSignOut }: { locale: string; onHelp: () => void; onSignOut: () => void }) {
+function ProfileMenu({ locale, onSignOut }: { locale: string; onSignOut: () => void }) {
   const ui = getUiTranslation(locale);
   return (
     <div className="shadow absolute right-0 top-10 z-[80] w-44 overflow-hidden rounded border border-gray-200 bg-white py-1">
@@ -423,14 +419,6 @@ function ProfileMenu({ locale, onHelp, onSignOut }: { locale: string; onHelp: ()
         <MdOutlineSettings className="text-base" />
         {ui.settings}
       </Link>
-      {/* <button
-        type="button"
-        onClick={onHelp}
-        className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-slate-800 hover:bg-gray-50"
-      >
-        <MdHelpOutline className="text-base" />
-        Help Center
-      </button> */}
       <button
         type="button"
         onClick={onSignOut}
