@@ -3,7 +3,7 @@ import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useGetWorkerListQuery } from "@/redux/api/endpoints/workers.api";
-import { MdAccessTime, MdArrowForward, MdCalendarToday, MdCheckCircle, MdChevronRight, MdLocationOn, MdPeople, MdPhone, MdReportProblem, MdWarningAmber } from "react-icons/md";
+import { MdAccessTime, MdArrowForward, MdCalendarToday, MdCheckCircle, MdChevronRight, MdClose, MdEmail, MdLocationOn, MdPerson, MdPhone, MdReportProblem, MdWarningAmber } from "react-icons/md";
 import {
   useGetTodayLiveShiftMetaQuery,
   useGetTodayLiveShiftsQuery,
@@ -114,6 +114,7 @@ type LateWorkerChip = {
   id: string;
   name: string;
   detail: string;
+  email?: string;
   phone?: string;
   photo?: string;
 };
@@ -197,6 +198,7 @@ export default function DashboardPage() {
   const [liveTab, setLiveTab] = useState<
     "all" | "upcoming" | "in_progress" | "completed" | "cancelled"
   >("all");
+  const [selectedLateWorker, setSelectedLateWorker] = useState<LateWorkerChip | null>(null);
 
   const { data: todayLiveMeta } = useGetTodayLiveShiftMetaQuery();
   // Names the late workers the meta only counts.
@@ -286,6 +288,7 @@ export default function DashboardPage() {
     return {
       ...worker,
       name: worker.name || match?.name || "",
+      email: match?.email,
       phone: worker.phone || match?.phone,
       photo: worker.photo || match?.profile_photo,
     };
@@ -428,47 +431,29 @@ export default function DashboardPage() {
           </div>
           <div className="flex flex-wrap items-center justify-end gap-2">
             {lateCallPills.length > 0 ? (
-              lateCallPills.map((worker) => {
-                const callUrl = dialHref(worker.phone);
-                return (
-                  <div
+              lateCallPills.map((worker) => (
+                  <button
+                    type="button"
                     key={worker.id}
-                    className="flex items-center gap-2 rounded-full border border-red-100 bg-white py-1 pl-1 pr-1 shadow-2xs"
+                    onClick={() => setSelectedLateWorker(worker)}
+                    aria-label={`View ${worker.name || "late worker"}`}
+                    title={`${worker.name || "Worker"} · ${worker.detail || t.dashboard.late}`}
+                    className="group relative flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border-2 border-white bg-white shadow-sm ring-2 ring-red-100 transition-transform hover:-translate-y-0.5 hover:ring-red-200 focus:outline-none focus:ring-red-300"
                   >
                     {worker.photo ? (
                       <img
                         src={worker.photo}
-                        alt=""
-                        className="h-8 w-8 rounded-full object-cover"
+                        alt={worker.name || "Late worker"}
+                        className="h-full w-full rounded-full object-cover"
                       />
                     ) : (
-                      <span className="flex h-8 w-8 items-center justify-center rounded-full bg-sky-100 text-sm text-sky-600">
-                        <MdPeople />
+                      <span className="flex h-full w-full items-center justify-center rounded-full bg-sky-100 text-[11px] font-bold text-sky-700">
+                        {getInitials(worker.name)}
                       </span>
                     )}
-                    <span className="max-w-[140px] truncate px-1 text-xs font-semibold text-slate-700">
-                      {worker.detail || t.dashboard.late}
-                    </span>
-                    {callUrl ? (
-                      <a
-                        href={callUrl}
-                        aria-label={`${t.dashboard.callEmployee} ${worker.name || ""}`.trim()}
-                        title={worker.phone}
-                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sky-50 text-sky-600 transition-colors hover:bg-sky-100"
-                      >
-                        <MdPhone className="text-base" />
-                      </a>
-                    ) : (
-                      <span
-                        title="No phone number"
-                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-50 text-slate-300"
-                      >
-                        <MdPhone className="text-base" />
-                      </span>
-                    )}
-                  </div>
-                );
-              })
+                    <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-white bg-red-500" />
+                  </button>
+              ))
             ) : needAttentionCount > 0 ? (
               <span className="rounded-lg border border-red-200/80 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-700">
                 {lateWorkerCount || needAttentionCount} {ui.lateWorkers}
@@ -705,6 +690,94 @@ export default function DashboardPage() {
         </div>
         <MdArrowForward className="ml-auto text-slate-400" />
       </Link>
+
+      {selectedLateWorker && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/25 p-4 backdrop-blur-[1px]"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setSelectedLateWorker(null);
+          }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Late worker details"
+            className="w-full max-w-sm overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
+          >
+            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+              <div>
+                <p className="text-sm font-bold text-slate-900">Late worker</p>
+                <p className="mt-0.5 text-xs font-medium text-red-500">{selectedLateWorker.detail || t.dashboard.late}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedLateWorker(null)}
+                aria-label="Close"
+                className="flex h-8 w-8 items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
+              >
+                <MdClose className="text-lg" />
+              </button>
+            </div>
+
+            <div className="p-5">
+              <div className="flex items-center gap-3">
+                {selectedLateWorker.photo ? (
+                  <img
+                    src={selectedLateWorker.photo}
+                    alt={selectedLateWorker.name}
+                    className="h-12 w-12 rounded-full border border-slate-200 object-cover"
+                  />
+                ) : (
+                  <span className="flex h-12 w-12 items-center justify-center rounded-full bg-sky-100 text-sm font-bold text-sky-700">
+                    {getInitials(selectedLateWorker.name)}
+                  </span>
+                )}
+                <div className="min-w-0">
+                  <p className="truncate text-base font-bold text-slate-900">{selectedLateWorker.name || "Worker"}</p>
+                  <p className="text-xs text-slate-500">Employee details</p>
+                </div>
+              </div>
+
+              <div className="mt-5 space-y-2">
+                <div className="flex items-center gap-3 rounded-lg bg-slate-50 px-3 py-2.5">
+                  <MdPerson className="shrink-0 text-slate-400" />
+                  <span className="min-w-0 truncate text-xs font-medium text-slate-700">{selectedLateWorker.name || "Not available"}</span>
+                </div>
+                {selectedLateWorker.email ? (
+                  <div className="flex items-center gap-3 rounded-lg bg-slate-50 px-3 py-2.5">
+                    <MdEmail className="shrink-0 text-slate-400" />
+                    <span className="min-w-0 truncate text-xs font-medium text-slate-700">{selectedLateWorker.email}</span>
+                  </div>
+                ) : null}
+                {selectedLateWorker.phone ? (
+                  <div className="flex items-center gap-3 rounded-lg bg-slate-50 px-3 py-2.5">
+                    <MdPhone className="shrink-0 text-slate-400" />
+                    <span className="text-xs font-medium text-slate-700">{selectedLateWorker.phone}</span>
+                  </div>
+                ) : null}
+              </div>
+
+              {dialHref(selectedLateWorker.phone) ? (
+                <a
+                  href={dialHref(selectedLateWorker.phone)}
+                  className="mt-5 flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-sky-500 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-sky-600"
+                >
+                  <MdPhone className="text-lg" /> Call worker
+                </a>
+              ) : (
+                <button
+                  type="button"
+                  disabled
+                  className="mt-5 flex h-11 w-full cursor-not-allowed items-center justify-center gap-2 rounded-xl bg-slate-100 text-sm font-semibold text-slate-400"
+                >
+                  <MdPhone className="text-lg" /> Phone number unavailable
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

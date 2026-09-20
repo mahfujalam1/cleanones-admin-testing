@@ -32,11 +32,6 @@ const nextConfig: NextConfig = {
         source: "/api/proxy/:path*",
         destination: `${backendUrl}${API_PREFIX}/:path*`,
       },
-      // Socket.IO handshake and long-polling, relayed through this origin. The browser talks
-      // HTTPS to us and we talk HTTP to the backend, which is what keeps a secure page from
-      // blocking an insecure socket as mixed content. Vercel cannot carry a WebSocket upgrade
-      // across a rewrite, so the client pins itself to the polling transport for this path
-      // (see resolveSocketTarget in src/lib/socket/chatSocket.ts).
       {
         source: "/socket.io/:path*",
         destination: `${backendUrl}/socket.io/:path*`,
@@ -56,7 +51,6 @@ const nextConfig: NextConfig = {
           },
         ]
         : []),
-      // Profile photos, ID cards and certificates are served from S3 over HTTPS.
       { protocol: "https", hostname: "cleanones-bucket.s3.eu-central-1.amazonaws.com", pathname: "/**" },
       { protocol: "https", hostname: "*.s3.eu-central-1.amazonaws.com", pathname: "/**" },
       { protocol: "https", hostname: "*.amazonaws.com", pathname: "/**" },
