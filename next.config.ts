@@ -23,7 +23,7 @@ const nextConfig: NextConfig = {
   distDir: process.env.NEXT_DIST_DIR ?? ".next",
   turbopack: {},
   experimental: {
-   staleTimes: { dynamic: 30, static: 180 },
+    staleTimes: { dynamic: 30, static: 180 },
   },
   async rewrites() {
     if (!backendUrl) return [];
@@ -43,7 +43,7 @@ const nextConfig: NextConfig = {
       },
     ];
   },
-  allowedDevOrigins: ["10.10.28.194", "10.10.28.195", "cleanones.vercel.app"],
+  allowedDevOrigins: ["10.10.28.194", "10.10.28.195", "cleanones.vercel.app", "https://cleanones-admin-testing.vercel.app"],
   images: {
     remotePatterns: [
       ...(targetUrl
