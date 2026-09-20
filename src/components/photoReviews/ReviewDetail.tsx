@@ -7,7 +7,12 @@ import { CleanerAvatar } from "./CleanerAvatar";
 import { PhotoReview } from "./types";
 import { ScoreBar } from "./Aiscorebar";
 import { imgUrl } from "@/utils/baseUrl";
-import type { PhotoReviewTask, UploadedPhoto } from "@/redux/api/photoReviewsApi";
+import { apiError } from "@/redux/api/apiError";
+import {
+  useRecordPhotoVerdictMutation,
+  type PhotoReviewTask,
+  type UploadedPhoto,
+} from "@/redux/api/photoReviewsApi";
 
 interface ReviewDetailProps {
     review: PhotoReview;
@@ -241,6 +246,36 @@ export function PhotoReviewDetail({
 }) {
   const photos = task.uploaded_photos ?? [];
   const shiftDate = new Date(task.shift_date);
+  const [recordVerdict, { isLoading: savingVerdict }] = useRecordPhotoVerdictMutation();
+  const [rejectingTitle, setRejectingTitle] = React.useState<string | null>(null);
+  const [managerNote, setManagerNote] = React.useState("");
+  const [decisionError, setDecisionError] = React.useState("");
+  const [decisionSuccess, setDecisionSuccess] = React.useState("");
+  const [localVerdicts, setLocalVerdicts] = React.useState<Record<string, "approved" | "rejected">>({});
+
+  const submitVerdict = async (photo: UploadedPhoto, verdict: "approved" | "rejected") => {
+    if (!task.plan_id || !task.task_id) {
+      setDecisionError("This review is missing the plan or task identifier.");
+      return;
+    }
+    try {
+      setDecisionError("");
+      await recordVerdict({
+        planId: task.plan_id,
+        taskId: task.task_id,
+        date: task.shift_date.slice(0, 10),
+        title: photo.title,
+        verdict,
+        note: verdict === "rejected" ? managerNote.trim() || undefined : undefined,
+      }).unwrap();
+      setLocalVerdicts((current) => ({ ...current, [photo.title]: verdict }));
+      setRejectingTitle(null);
+      setManagerNote("");
+      setDecisionSuccess(`Photo ${verdict} successfully.`);
+    } catch (error) {
+      setDecisionError(apiError(error));
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -282,6 +317,11 @@ export function PhotoReviewDetail({
 
       <section className="rounded-lg border border-slate-200 bg-white p-5">
         <h2 className="mb-3 text-sm font-bold text-slate-900">Uploaded photos</h2>
+        {decisionSuccess ? (
+          <p className="mb-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700">
+            {decisionSuccess}
+          </p>
+        ) : null}
         {photos.length === 0 ? (
           <p className="py-10 text-center text-xs text-slate-400">No photos uploaded for this task.</p>
         ) : (
@@ -290,6 +330,7 @@ export function PhotoReviewDetail({
               const url = photo.photo_url ? imgUrl(photo.photo_url) : null;
               const status = apiPhotoStatus(photo);
               const expandedChecks = photo.ai_status === "failed" || photo.ai_status === "review";
+              const managerVerdict = localVerdicts[photo.title] ?? photo.manager_verdict;
               return (
                 <figure
                   key={`${photo.title}-${index}`}
@@ -376,6 +417,88 @@ export function PhotoReviewDetail({
                       <div className="flex items-center gap-3 border-t border-slate-100 pt-2 text-[10px] text-slate-400">
                         {photo.attempt_count != null ? <span>{photo.attempt_count} attempt{photo.attempt_count === 1 ? "" : "s"}</span> : null}
                         {photo.ai_confidence != null ? <span>{Math.round(photo.ai_confidence * 100)}% confidence</span> : null}
+                      </div>
+                    ) : null}
+
+                    {managerVerdict ? (
+                      <div className={`rounded-md border p-2.5 ${
+                        managerVerdict === "approved"
+                          ? "border-emerald-200 bg-emerald-50"
+                          : "border-red-200 bg-red-50"
+                      }`}>
+                        <p className={`text-xs font-semibold ${
+                          managerVerdict === "approved" ? "text-emerald-700" : "text-red-700"
+                        }`}>
+                          Manager {managerVerdict}
+                        </p>
+                        {photo.manager_note ? <p className="mt-1 text-[11px] text-slate-600">{photo.manager_note}</p> : null}
+                        {photo.manager_verdict_at ? (
+                          <p className="mt-1 text-[10px] text-slate-400">
+                            {new Date(photo.manager_verdict_at).toLocaleString()}
+                          </p>
+                        ) : null}
+                      </div>
+                    ) : photo.auto_accepted ? (
+                      <div className="rounded-md border border-slate-200 bg-slate-50 p-2.5 text-xs font-semibold text-slate-600">
+                        Accepted without review
+                      </div>
+                    ) : task.needs_review ? (
+                      <div className="space-y-2 border-t border-slate-100 pt-3">
+                        {photo.escalated_at ? (
+                          <p className="text-[10px] font-semibold text-orange-600">
+                            Overdue · waiting since {new Date(photo.escalated_at).toLocaleString()}
+                          </p>
+                        ) : null}
+
+                        {rejectingTitle === photo.title ? (
+                          <div className="space-y-2">
+                            <textarea
+                              value={managerNote}
+                              onChange={(event) => setManagerNote(event.target.value)}
+                              rows={2}
+                              placeholder="Reason for rejection"
+                              className="w-full resize-y rounded-lg border border-slate-200 px-3 py-2 text-xs outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                            />
+                            <div className="flex gap-2">
+                              <button
+                                type="button"
+                                onClick={() => void submitVerdict(photo, "rejected")}
+                                disabled={savingVerdict}
+                                className="flex-1 rounded-lg bg-red-600 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
+                              >
+                                Confirm reject
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => { setRejectingTitle(null); setManagerNote(""); setDecisionError(""); }}
+                                disabled={savingVerdict}
+                                className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-2 gap-2">
+                            <button
+                              type="button"
+                              onClick={() => { setManagerNote(""); void submitVerdict(photo, "approved"); }}
+                              disabled={savingVerdict}
+                              className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-emerald-700 disabled:opacity-50"
+                            >
+                              Approve
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => { setRejectingTitle(photo.title); setManagerNote(""); setDecisionError(""); }}
+                              disabled={savingVerdict}
+                              className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-600 transition-colors hover:bg-red-100 disabled:opacity-50"
+                            >
+                              Reject
+                            </button>
+                          </div>
+                        )}
+                        {decisionError ? <p className="text-[11px] font-medium text-red-600">{decisionError}</p> : null}
                       </div>
                     ) : null}
                   </figcaption>

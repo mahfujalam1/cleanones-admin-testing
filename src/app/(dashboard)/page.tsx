@@ -2,8 +2,8 @@
 import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useGetWorkerListQuery } from "@/redux/api/endpoints/workers.api";
-import { MdAccessTime, MdArrowForward, MdCalendarToday, MdCheckCircle, MdChevronRight, MdClose, MdEmail, MdLocationOn, MdPerson, MdPhone, MdReportProblem, MdWarningAmber } from "react-icons/md";
+import { useGetWorkerQuery } from "@/redux/api/endpoints/workers.api";
+import { MdAccessTime, MdAdd, MdArrowForward, MdAssessment, MdBusiness, MdCalendarToday, MdCheckCircle, MdChevronRight, MdClose, MdEmail, MdGroups, MdLocationOn, MdPerson, MdPhone, MdPhotoCamera, MdReportProblem, MdViewWeek, MdWarningAmber } from "react-icons/md";
 import {
   useGetTodayLiveShiftMetaQuery,
   useGetTodayLiveShiftsQuery,
@@ -11,6 +11,7 @@ import {
 } from "@/redux/api/shiftsApi";
 import { getLocale } from "@/lib/locale";
 import { getDashboardTranslation, getUiTranslation } from "@/lib/translations";
+import { apiError } from "@/redux/api/apiError";
 
 const normalizeStatus = (value: string) => value.toLowerCase().replaceAll(" ", "_");
 /**
@@ -98,11 +99,7 @@ function formatLateDuration(start?: string, checkIn?: string): string {
   const until = checkIn ? new Date(checkIn) : new Date();
   if (Number.isNaN(until.getTime()) || until.getTime() <= from.getTime()) return "Late";
   const totalMinutes = Math.floor((until.getTime() - from.getTime()) / 60_000);
-  const hours = Math.floor(totalMinutes / 60);
-  const minutes = totalMinutes % 60;
-  if (hours > 0 && minutes > 0) return `${hours}h ${minutes}m late`;
-  if (hours > 0) return `${hours}h late`;
-  return `${minutes}m late`;
+  return `${totalMinutes}m late`;
 }
 
 function dialHref(phone?: string) {
@@ -172,7 +169,13 @@ function collectLateWorkers(
   liveShifts.forEach((shift) =>
     (shift.assigned_workers ?? []).forEach((worker) => {
       const status = normalizeStatus(worker.attendance_status || worker.status || "");
-      if (status.includes("late") || status.includes("show") || status.includes("missing")) {
+      const scheduledAt = new Date(shift.date_time || shift.date || "");
+      const checkedAt = new Date(worker.check_in_time || worker.checkin_time || "");
+      const checkedInLate =
+        !Number.isNaN(scheduledAt.getTime()) &&
+        !Number.isNaN(checkedAt.getTime()) &&
+        checkedAt.getTime() > scheduledAt.getTime();
+      if (checkedInLate || status.includes("late") || status.includes("show") || status.includes("missing")) {
         remember(
           worker.worker_id,
           worker.name,
@@ -199,6 +202,13 @@ export default function DashboardPage() {
     "all" | "upcoming" | "in_progress" | "completed" | "cancelled"
   >("all");
   const [selectedLateWorker, setSelectedLateWorker] = useState<LateWorkerChip | null>(null);
+  const {
+    data: selectedWorkerDetails,
+    isFetching: loadingWorkerDetails,
+    error: workerDetailsError,
+  } = useGetWorkerQuery(selectedLateWorker?.id ?? "", {
+    skip: !selectedLateWorker?.id,
+  });
 
   const { data: todayLiveMeta } = useGetTodayLiveShiftMetaQuery();
   // Names the late workers the meta only counts.
@@ -273,26 +283,7 @@ export default function DashboardPage() {
   );
 
   const cards = safeOverview.summary_cards;
-  /**
-   * The roster fills in phone numbers so the call button can open Chrome's dialer.
-   */
-  const { data: workerRoster } = useGetWorkerListQuery(
-    { page: 1, limit: 200 },
-    { skip: lateWorkers.length === 0 },
-  );
-
-  const lateCallPills = lateWorkers.map((worker) => {
-    const match = (workerRoster?.result ?? []).find(
-      (item) => item._id === worker.id || item.user === worker.id,
-    );
-    return {
-      ...worker,
-      name: worker.name || match?.name || "",
-      email: match?.email,
-      phone: worker.phone || match?.phone,
-      photo: worker.photo || match?.profile_photo,
-    };
-  });
+  const lateCallPills = lateWorkers;
 
 
 
@@ -398,6 +389,11 @@ export default function DashboardPage() {
     return match ? `${localGreeting}${match[1]}` : localGreeting;
   };
 
+  const modalWorkerName = selectedWorkerDetails?.name || selectedLateWorker?.name || "Worker";
+  const modalWorkerPhone = selectedWorkerDetails?.phone || selectedLateWorker?.phone;
+  const modalWorkerEmail = selectedWorkerDetails?.email || selectedLateWorker?.email;
+  const modalWorkerPhoto = selectedWorkerDetails?.profile_photo || selectedLateWorker?.photo;
+
   return (
     <div className="space-y-6 pb-10">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -438,20 +434,25 @@ export default function DashboardPage() {
                     onClick={() => setSelectedLateWorker(worker)}
                     aria-label={`View ${worker.name || "late worker"}`}
                     title={`${worker.name || "Worker"} · ${worker.detail || t.dashboard.late}`}
-                    className="group relative flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border-2 border-white bg-white shadow-sm ring-2 ring-red-100 transition-transform hover:-translate-y-0.5 hover:ring-red-200 focus:outline-none focus:ring-red-300"
+                    className="group flex h-10 cursor-pointer items-center gap-2 rounded-full border border-red-100 bg-white py-1 pl-3 pr-1 shadow-sm transition-transform hover:-translate-y-0.5 hover:border-red-200 focus:outline-none focus:ring-2 focus:ring-red-200"
                   >
-                    {worker.photo ? (
-                      <img
-                        src={worker.photo}
-                        alt={worker.name || "Late worker"}
-                        className="h-full w-full rounded-full object-cover"
-                      />
-                    ) : (
-                      <span className="flex h-full w-full items-center justify-center rounded-full bg-sky-100 text-[11px] font-bold text-sky-700">
-                        {getInitials(worker.name)}
+                    <span className="max-w-[110px] truncate text-[11px] font-semibold text-red-600">
+                      {worker.detail || t.dashboard.late}
+                    </span>
+                    <span className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full">
+                      {worker.photo ? (
+                        <img
+                          src={worker.photo}
+                          alt={worker.name || "Late worker"}
+                          className="h-full w-full rounded-full object-cover"
+                        />
+                      ) : (
+                        <span className="flex h-full w-full items-center justify-center rounded-full bg-sky-100 text-[10px] font-bold text-sky-700">
+                          {getInitials(worker.name)}
+                        </span>
+                      )}
+                      <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-white bg-red-500" />
                       </span>
-                    )}
-                    <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-white bg-red-500" />
                   </button>
               ))
             ) : needAttentionCount > 0 ? (
@@ -512,38 +513,71 @@ export default function DashboardPage() {
           value={todayLiveMeta?.today_total_shift ?? todayLiveMeta?.total_shift ?? cards.active_shifts_count}
           label={ui.totalShifts}
           tone="bg-blue-50 text-blue-600"
+          href="/shift-monitoring"
         />
         <Metric
           icon={<MdAccessTime />}
           value={todayLiveMeta?.today_total_in_progress_shift ?? todayLiveMeta?.in_progress ?? cards.active_shifts_count}
           label={ui.inProgress}
           tone="bg-sky-50 text-sky-600"
+          href="/shift-monitoring?status=inprogress"
         />
         <Metric
           icon={<MdCheckCircle />}
           value={todayLiveMeta?.today_total_completed_shift ?? todayLiveMeta?.completed_shift ?? 0}
           label={ui.completed}
           tone="bg-emerald-50 text-emerald-600"
+          href="/shift-monitoring?status=complete"
         />
         <Metric
           icon={<MdAccessTime />}
           value={todayLiveMeta?.today_total_pending_shift ?? todayLiveMeta?.pending ?? 0}
           label={ui.pendingShifts}
           tone="bg-indigo-50 text-indigo-600"
+          href="/shift-monitoring?status=upcoming"
         />
         <Metric
           icon={<MdWarningAmber />}
           value={todayLiveMeta?.today_total_worker_late ?? cards.late_no_show_count}
           label={ui.lateWorkers}
           tone="bg-red-50 text-red-600"
+          href="/shift-monitoring/attendance-and-time-tracking"
         />
         <Metric
           icon={<MdReportProblem />}
           value={todayLiveMeta?.total_issue_report ?? cards.reviews_pending_count}
           label={ui.issueReports}
           tone="bg-amber-50 text-amber-600"
+          href="/escalations"
         />
       </div>
+
+      <section className="dashboard-card p-4">
+        <div className="mb-3 flex items-center gap-2">
+          <span className="text-base text-sky-500">⚡</span>
+          <h2 className="text-sm font-bold text-slate-800">Quick Actions</h2>
+        </div>
+        <div className="flex w-full flex-wrap gap-2">
+          {[
+            { label: "Create plan", href: "/cleaning-plans", icon: <MdAdd />, tone: "bg-sky-500 hover:bg-sky-600" },
+            { label: "Clients", href: "/clients", icon: <MdBusiness />, tone: "bg-violet-500 hover:bg-violet-600" },
+            { label: "Locations", href: "/locations", icon: <MdLocationOn />, tone: "bg-cyan-500 hover:bg-cyan-600" },
+            { label: "Review photos", href: "/photo-reviews", icon: <MdPhotoCamera />, tone: "bg-pink-500 hover:bg-pink-600" },
+            { label: "Roster", href: "/roster", icon: <MdViewWeek />, tone: "bg-emerald-500 hover:bg-emerald-600" },
+            { label: "Workers", href: "/workers", icon: <MdGroups />, tone: "bg-amber-500 hover:bg-amber-600" },
+            { label: "Reports", href: "/reports", icon: <MdAssessment />, tone: "bg-slate-600 hover:bg-slate-700" },
+          ].map((action) => (
+            <Link
+              key={action.label}
+              href={action.href}
+              className={`inline-flex h-9 min-w-[120px] flex-1 items-center justify-center gap-1.5 rounded-lg px-3.5 text-xs font-semibold text-white shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md ${action.tone}`}
+            >
+              <span className="text-sm">{action.icon}</span>
+              {action.label}
+            </Link>
+          ))}
+        </div>
+      </section>
 
       {/* Live Operations Widget */}
       <section className="dashboard-card overflow-hidden">
@@ -721,46 +755,65 @@ export default function DashboardPage() {
             </div>
 
             <div className="p-5">
+              {loadingWorkerDetails ? (
+                <div className="mb-4 h-1 overflow-hidden rounded-full bg-slate-100">
+                  <span className="block h-full w-1/2 animate-pulse rounded-full bg-sky-400" />
+                </div>
+              ) : null}
+              {workerDetailsError ? (
+                <p className="mb-4 rounded-lg border border-red-100 bg-red-50 px-3 py-2 text-[11px] text-red-600">
+                  {apiError(workerDetailsError)}
+                </p>
+              ) : null}
+
               <div className="flex items-center gap-3">
-                {selectedLateWorker.photo ? (
+                {modalWorkerPhoto ? (
                   <img
-                    src={selectedLateWorker.photo}
-                    alt={selectedLateWorker.name}
+                    src={modalWorkerPhoto}
+                    alt={modalWorkerName}
                     className="h-12 w-12 rounded-full border border-slate-200 object-cover"
                   />
                 ) : (
                   <span className="flex h-12 w-12 items-center justify-center rounded-full bg-sky-100 text-sm font-bold text-sky-700">
-                    {getInitials(selectedLateWorker.name)}
+                    {getInitials(modalWorkerName)}
                   </span>
                 )}
                 <div className="min-w-0">
-                  <p className="truncate text-base font-bold text-slate-900">{selectedLateWorker.name || "Worker"}</p>
-                  <p className="text-xs text-slate-500">Employee details</p>
+                  <p className="truncate text-base font-bold text-slate-900">{modalWorkerName}</p>
+                  <p className="text-xs text-slate-500">
+                    {[selectedWorkerDetails?.worker_type, selectedWorkerDetails?.position].filter(Boolean).join(" · ") || "Employee details"}
+                  </p>
                 </div>
               </div>
 
               <div className="mt-5 space-y-2">
                 <div className="flex items-center gap-3 rounded-lg bg-slate-50 px-3 py-2.5">
                   <MdPerson className="shrink-0 text-slate-400" />
-                  <span className="min-w-0 truncate text-xs font-medium text-slate-700">{selectedLateWorker.name || "Not available"}</span>
+                  <span className="min-w-0 truncate text-xs font-medium text-slate-700">{modalWorkerName}</span>
                 </div>
-                {selectedLateWorker.email ? (
+                {modalWorkerEmail ? (
                   <div className="flex items-center gap-3 rounded-lg bg-slate-50 px-3 py-2.5">
                     <MdEmail className="shrink-0 text-slate-400" />
-                    <span className="min-w-0 truncate text-xs font-medium text-slate-700">{selectedLateWorker.email}</span>
+                    <span className="min-w-0 truncate text-xs font-medium text-slate-700">{modalWorkerEmail}</span>
                   </div>
                 ) : null}
-                {selectedLateWorker.phone ? (
+                {modalWorkerPhone ? (
                   <div className="flex items-center gap-3 rounded-lg bg-slate-50 px-3 py-2.5">
                     <MdPhone className="shrink-0 text-slate-400" />
-                    <span className="text-xs font-medium text-slate-700">{selectedLateWorker.phone}</span>
+                    <span className="text-xs font-medium text-slate-700">{modalWorkerPhone}</span>
+                  </div>
+                ) : null}
+                {selectedWorkerDetails?.address ? (
+                  <div className="flex items-start gap-3 rounded-lg bg-slate-50 px-3 py-2.5">
+                    <MdLocationOn className="mt-0.5 shrink-0 text-slate-400" />
+                    <span className="text-xs font-medium leading-5 text-slate-700">{selectedWorkerDetails.address}</span>
                   </div>
                 ) : null}
               </div>
 
-              {dialHref(selectedLateWorker.phone) ? (
+              {dialHref(modalWorkerPhone) ? (
                 <a
-                  href={dialHref(selectedLateWorker.phone)}
+                  href={dialHref(modalWorkerPhone)}
                   className="mt-5 flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-sky-500 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-sky-600"
                 >
                   <MdPhone className="text-lg" /> Call worker
@@ -782,13 +835,32 @@ export default function DashboardPage() {
   );
 }
 
-function Metric({ icon, value, label, tone }: { icon: React.ReactNode; value: number; label: string; tone: string }) {
+function Metric({
+  icon,
+  value,
+  label,
+  tone,
+  href,
+}: {
+  icon: React.ReactNode;
+  value: number;
+  label: string;
+  tone: string;
+  href: string;
+}) {
   return (
-    <div className="dashboard-card min-h-32 p-5">
+    <Link
+      href={href}
+      aria-label={`View ${label}`}
+      className="dashboard-card group min-h-32 cursor-pointer p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-sky-200 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-sky-200"
+    >
       <span className={`flex h-10 w-10 items-center justify-center rounded-full text-xl ${tone}`}>{icon}</span>
       <p className="mt-4 text-2xl font-bold text-slate-900">{value.toLocaleString()}</p>
-      <p className="text-xs text-slate-500">{label}</p>
-    </div>
+      <p className="flex items-center gap-1 text-xs text-slate-500">
+        {label}
+        <MdChevronRight className="translate-x-0 text-sm opacity-0 transition-all group-hover:translate-x-0.5 group-hover:opacity-100" />
+      </p>
+    </Link>
   );
 }
 

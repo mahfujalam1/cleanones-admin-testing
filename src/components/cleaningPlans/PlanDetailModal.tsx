@@ -20,7 +20,7 @@ import { ErrorNotice } from "@/components/shared/ListStates";
 import { Button } from "@/components/ui/button";
 import { apiError } from "@/redux/api/apiError";
 import { refDoc, refId } from "@/redux/api/types";
-import { clientLabel, CLIENT_LOOKUP_ARGS, useGetClientsQuery, type Client } from "@/redux/api/endpoints/clients.api";
+import { clientCompanyLabel, CLIENT_LOOKUP_ARGS, useGetClientsQuery, type Client } from "@/redux/api/endpoints/clients.api";
 import type { Location } from "@/redux/api/endpoints/locations.api";
 import type { Room } from "@/redux/api/endpoints/rooms.api";
 import type { AdditionalTask } from "@/redux/api/endpoints/additionalTasks.api";
@@ -151,7 +151,7 @@ function PlanBody({
   const populatedClient = refDoc<Client>(plan.client);
   const client =
     populatedClient ?? clientPage?.result.find((candidate) => candidate._id === refId(plan.client));
-  const clientDisplay = client ? clientLabel(client) : refId(plan.client);
+  const clientDisplay = client ? clientCompanyLabel(client) : refId(plan.client);
 
   const rawLocation = plan.location;
   const location = refDoc<Location>(rawLocation);

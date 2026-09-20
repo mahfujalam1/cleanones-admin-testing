@@ -319,6 +319,7 @@ export function PlanForm({ plan, onClose, onCreated }: {
           <div className="grid gap-4 sm:grid-cols-2">
             <ClientPicker
               value={client}
+              showCompanyName
               onChange={(value) => {
                 setClient(value);
                 setLocation("");

@@ -3,7 +3,6 @@
 import Link from "next/link";
 import {
   MdArrowForward,
-  MdBadge,
   MdDelete,
   MdEdit,
   MdEventAvailable,
@@ -49,16 +48,15 @@ export function ClientCard({
               aria-hidden
               className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-50 text-xs font-semibold tracking-wide text-slate-500 ring-1 ring-slate-200/70 transition-colors group-hover:bg-sky-50 group-hover:text-primary group-hover:ring-sky-100"
             >
-              {initials(clientLabel(client))}
+              {initials(client.company_name || clientLabel(client))}
             </span>
 
             <div className="min-w-0 flex-1 pr-12">
-              <h3 className="truncate text-sm font-semibold text-slate-900 transition-colors group-hover:text-primary">
-                {clientLabel(client)}
+              <h3 className="truncate text-base font-semibold text-slate-900 transition-colors group-hover:text-primary">
+                {client.company_name?.trim() || "Individual"}
               </h3>
-              <p className="mt-1 flex items-center gap-1.5 truncate text-xs text-slate-500">
-                <MdBadge className="shrink-0 text-sm text-slate-400" />
-                <span className="truncate">{client.company_name || "Individual"}</span>
+              <p className="mt-0.5 truncate text-xs text-slate-500">
+                {clientLabel(client)}
               </p>
             </div>
           </div>

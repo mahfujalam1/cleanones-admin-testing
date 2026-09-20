@@ -12,7 +12,7 @@ import { CardGridSkeleton, ErrorNotice, SearchInput } from "@/components/shared/
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
-import { clientLabel, CLIENT_LOOKUP_ARGS, useGetClientsQuery } from "@/redux/api/endpoints/clients.api";
+import { clientCompanyLabel, CLIENT_LOOKUP_ARGS, useGetClientsQuery } from "@/redux/api/endpoints/clients.api";
 import {
   useDeleteLocationMutation,
   useGetClientLocationsQuery,
@@ -88,7 +88,7 @@ function LocationsView() {
           </div>
           <p className="mt-1 text-xs text-slate-500">
             {selectedClient
-              ? `Locations for ${clientLabel(selectedClient)}`
+              ? `Locations for ${clientCompanyLabel(selectedClient)}`
               : ui.locationsSubtitle}
           </p>
         </div>
@@ -107,7 +107,7 @@ function LocationsView() {
             { value: "", label: ui.allClients },
             ...(clientPage?.result ?? []).map((client) => ({
               value: client._id,
-              label: clientLabel(client),
+              label: clientCompanyLabel(client),
             })),
           ]}
         />

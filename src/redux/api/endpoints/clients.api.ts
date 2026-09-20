@@ -31,6 +31,11 @@ export function clientLabel(client: Pick<Client, "name" | "company_name" | "emai
   return client.name?.trim() || client.company_name?.trim() || client.email || "Unnamed client";
 }
 
+/** Company-first label for pickers that represent the business, not the contact person. */
+export function clientCompanyLabel(client: Pick<Client, "name" | "company_name" | "email">): string {
+  return client.company_name?.trim() || client.name?.trim() || client.email || "Unnamed client";
+}
+
 /** Creating a client also creates its user account and emails the credentials. */
 export type CreateClientInput = {
   name: string;

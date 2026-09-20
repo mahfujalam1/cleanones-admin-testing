@@ -1,7 +1,7 @@
 "use client";
 
 import { SelectField } from "@/components/shared/Field";
-import { clientLabel, CLIENT_LOOKUP_ARGS, useGetClientsQuery } from "@/redux/api/endpoints/clients.api";
+import { clientCompanyLabel, clientLabel, CLIENT_LOOKUP_ARGS, useGetClientsQuery } from "@/redux/api/endpoints/clients.api";
 import { useGetClientLocationsQuery, useGetLocationsQuery } from "@/redux/api/endpoints/locations.api";
 import { useGetRoomsQuery } from "@/redux/api/endpoints/rooms.api";
 
@@ -19,13 +19,16 @@ export function ClientPicker({
   value,
   onChange,
   required,
+  showCompanyName = false,
 }: {
   value: string;
   onChange: (clientId: string) => void;
   required?: boolean;
+  showCompanyName?: boolean;
 }) {
   const { data, isFetching } = useGetClientsQuery(CLIENT_LOOKUP_ARGS);
   const clients = data?.result ?? [];
+  const labelOf = showCompanyName ? clientCompanyLabel : clientLabel;
 
   return (
     <SelectField
@@ -34,7 +37,7 @@ export function ClientPicker({
       required={required}
       disabled={isFetching && clients.length === 0}
       placeholder={isFetching && clients.length === 0 ? "Loading clients…" : "Select a client"}
-      options={clients.map((client) => ({ value: client._id, label: clientLabel(client) }))}
+      options={clients.map((client) => ({ value: client._id, label: labelOf(client) }))}
       onChange={onChange}
     />
   );

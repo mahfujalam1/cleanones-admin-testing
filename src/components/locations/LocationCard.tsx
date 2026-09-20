@@ -8,7 +8,7 @@ import {
 } from "react-icons/md";
 import type { Location } from "@/redux/api/endpoints/locations.api";
 import { refDoc } from "@/redux/api/types";
-import { clientLabel, type Client } from "@/redux/api/endpoints/clients.api";
+import { clientCompanyLabel, type Client } from "@/redux/api/endpoints/clients.api";
 
 export function LocationCard({
   location,
@@ -75,7 +75,7 @@ export function LocationCard({
                 {rooms === 1 ? "room" : "rooms"}
               </>
             ) : (
-              <span className="truncate text-slate-400">{client ? clientLabel(client) : "—"}</span>
+              <span className="truncate text-slate-400">{client ? clientCompanyLabel(client) : "—"}</span>
             )}
           </span>
         </footer>

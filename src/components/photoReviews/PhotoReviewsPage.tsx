@@ -2,8 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { Search, Eye, Image as ImageIcon, RefreshCw, SlidersHorizontal } from "lucide-react";
-import { usePathname } from "next/navigation";
-import { getLocale } from "@/lib/locale";
+import { usePathname, useRouter } from "next/navigation";
+import { getLocale, localizePath } from "@/lib/locale";
 import { getDashboardTranslation } from "@/lib/translations";
 import { TableSkeleton } from "@/components/shared/SkeletonLoader";
 import { BackendPagination } from "@/components/shared/BackendPagination";
@@ -19,7 +19,6 @@ import {
 } from "@/redux/api/photoReviewsApi";
 import { useGetCleaningPlanListQuery } from "@/redux/api/endpoints/cleaningPlans.api";
 import { useGetLocationCatalogQuery } from "@/redux/api/endpoints/catalog.api";
-import { PhotoReviewDetail } from "./ReviewDetail";
 
 const PAGE_SIZE = 10;
 type QueueFilter = "needs" | "spot" | "not-checked" | "passed" | "all";
@@ -27,6 +26,20 @@ type QueueFilter = "needs" | "spot" | "not-checked" | "passed" | "all";
 const formatDate = (value: string) => {
   const parsed = new Date(value);
   return Number.isNaN(parsed.getTime()) ? "—" : parsed.toLocaleDateString();
+};
+
+const latestReviewTime = (task: PhotoReviewTask) => {
+  const photoTimes = (task.uploaded_photos ?? []).flatMap((photo) => [
+    photo.manager_verdict_at,
+    photo.ai_evaluated_at,
+  ]);
+  return Math.max(
+    ...photoTimes
+      .filter((value): value is string => Boolean(value))
+      .map((value) => new Date(value).getTime())
+      .filter(Number.isFinite),
+    new Date(task.shift_date).getTime() || 0,
+  );
 };
 
 /** The payload has no id, so a row is identified by what makes the instance unique. */
@@ -77,13 +90,13 @@ const belongsToQueue = (task: PhotoReviewTask, queue: QueueFilter) => {
 
 export function PhotoReviewsPage() {
   const pathname = usePathname();
+  const router = useRouter();
   const locale = getLocale(pathname);
   const t = getDashboardTranslation(locale);
   const ui = getUiTranslation(locale);
 
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
-  const [selected, setSelected] = useState<PhotoReviewTask | null>(null);
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [planId, setPlanId] = useState("");
@@ -96,6 +109,7 @@ export function PhotoReviewsPage() {
       to: to || undefined,
       planId: planId || undefined,
       locationId: locationId || undefined,
+      status: "all" as const,
     }),
     [from, to, planId, locationId],
   );
@@ -122,11 +136,7 @@ export function PhotoReviewsPage() {
           .toLowerCase()
           .includes(q)
       )
-      .sort((a, b) => {
-        const priority = photoPriority(headlinePhoto(a)) - photoPriority(headlinePhoto(b));
-        if (priority !== 0) return priority;
-        return new Date(b.shift_date).getTime() - new Date(a.shift_date).getTime();
-      });
+      .sort((a, b) => latestReviewTime(b) - latestReviewTime(a));
   }, [tasks, search, queue]);
 
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -142,10 +152,6 @@ export function PhotoReviewsPage() {
     "Review status",
     t.common.actions || t.photoReviews.actions,
   ];
-
-  if (selected) {
-    return <PhotoReviewDetail task={selected} onClose={() => setSelected(null)} />;
-  }
 
   return (
     <div className="flex h-full min-h-0 flex-col space-y-3 overflow-hidden">
@@ -320,7 +326,15 @@ export function PhotoReviewsPage() {
                     </td>
                     <td className="px-5 py-4">
                       <button
-                        onClick={() => setSelected(task)}
+                        onClick={() => {
+                          if (!task.shift_id || !task.task_id) return;
+                          const date = task.shift_date.slice(0, 10);
+                          router.push(localizePath(
+                            `/photo-reviews/${encodeURIComponent(task.shift_id)}/${encodeURIComponent(task.task_id)}?date=${encodeURIComponent(date)}`,
+                            locale,
+                          ));
+                        }}
+                        disabled={!task.shift_id || !task.task_id}
                         className="flex cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-lg border border-sky-200 bg-sky-50 px-3.5 py-2 text-sm font-semibold text-[#0ea5e9] transition-colors hover:border-sky-300 hover:bg-sky-100"
                       >
                         <Eye className="h-4 w-4" />

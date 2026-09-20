@@ -23,6 +23,8 @@ export type Location = {
    * carries it.
    */
   type?: LocationType;
+  /** Free-text type when `type` is `Other`. */
+  other_type?: string;
   description?: string;
   is_active: boolean;
   location?: GeoPoint;
@@ -38,6 +40,7 @@ export type CreateLocationInput = {
   address: string;
   /** See the note on `Location` — not persisted until the API accepts these. */
   type?: LocationType;
+  other_type?: string;
   description?: string;
   is_active?: boolean;
   location?: GeoPoint;

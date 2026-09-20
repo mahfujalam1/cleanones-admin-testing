@@ -22,7 +22,7 @@ import { EmployeeDetailsModal } from "@/components/shift-monitoring/EmployeeDeta
 import type { WorkerInfo } from "@/components/shift-monitoring/types";
 import { BackendPagination } from "@/components/shared/BackendPagination";
 import { SlidingTabs } from "@/components/ui/sliding-tabs";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { getLocale, localizePath } from "@/lib/locale";
 import { getDashboardTranslation } from "@/lib/translations";
 import { getUiTranslation } from "@/lib/translations";
@@ -82,6 +82,7 @@ type UnifiedLiveShift = {
 
 export default function LiveStatusPage() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const locale = getLocale(pathname);
   const router = useRouter();
   const ui = getUiTranslation(getLocale(usePathname()));
@@ -106,7 +107,12 @@ export default function LiveStatusPage() {
 
   const [selected, setSelected] = useState<WorkerInfo | null>(null);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<LiveStatusFilter>("");
+  const [statusFilter, setStatusFilter] = useState<LiveStatusFilter>(() => {
+    const requested = searchParams.get("status");
+    return requested === "inprogress" || requested === "upcoming" || requested === "complete"
+      ? requested
+      : "";
+  });
   const [page, setPage] = useState(1);
   const LIMIT = 10;
 

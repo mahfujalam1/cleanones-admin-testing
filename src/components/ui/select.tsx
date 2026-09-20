@@ -29,9 +29,11 @@ export function Select({
   const popupRef = useRef<HTMLDivElement>(null);
 
   const scrollToOption = (open: boolean) => {
-    if (!open || value || !scrollToValue) return;
+    if (!open) return;
+    const target = value || scrollToValue;
+    if (!target) return;
     popupRef.current
-      ?.querySelector<HTMLElement>(`[data-slot-value="${CSS.escape(scrollToValue)}"]`)
+      ?.querySelector<HTMLElement>(`[data-slot-value="${CSS.escape(target)}"]`)
       ?.scrollIntoView({ block: "center" });
   };
 

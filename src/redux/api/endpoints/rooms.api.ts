@@ -28,6 +28,7 @@ export const ROOM_TYPES = [
   "Gym",
   "Sauna",
   "Lab",
+  "Custom",
 ] as const;
 
 export const CLEANING_TYPES = ["Standard", "Deep Clean", "Regular", "Disinfection", "Custom"] as const;
@@ -54,7 +55,7 @@ export type Room = {
   location: Ref<Location>;
   name: string;
   room_type: string;
-  cleaning_type?: CleaningType;
+  cleaning_type?: string;
   /** Accepted by the API but not collected by the form. */
   floor?: number;
   is_active: boolean;
@@ -73,7 +74,7 @@ export type CreateRoomInput = {
   location: string;
   name: string;
   room_type: string;
-  cleaning_type?: CleaningType;
+  cleaning_type?: string;
   floor?: number;
   is_active?: boolean;
 };

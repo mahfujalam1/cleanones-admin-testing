@@ -55,7 +55,14 @@ export function LocationForm({
 
   const [name, setName] = useState(location?.name ?? "");
   const [address, setAddress] = useState(location?.address ?? "");
-  const [locationType, setLocationType] = useState<LocationType | "">(location?.type ?? "");
+  const knownType = LOCATION_TYPES.includes((location?.type ?? "") as LocationType);
+  const [locationType, setLocationType] = useState<LocationType | "">(
+    knownType ? (location?.type as LocationType) : location?.type ? "Other" : "",
+  );
+  const [otherType, setOtherType] = useState(
+    location?.other_type
+      ?? (!knownType && location?.type ? location.type : ""),
+  );
   const [description, setDescription] = useState(location?.description ?? "");
   const [pin, setPin] = useState<Pin | null>(() => fromGeoPoint(location?.location));
   const [error, setError] = useState("");
@@ -72,6 +79,10 @@ export function LocationForm({
       setError("Location Type is required.");
       return;
     }
+    if (locationType === "Other" && !otherType.trim()) {
+      setError("Specify the location type.");
+      return;
+    }
     if (!address.trim()) {
       setError("Address is required.");
       return;
@@ -81,6 +92,7 @@ export function LocationForm({
       name: name.trim(),
       address: address.trim(),
       type: locationType,
+      other_type: locationType === "Other" ? otherType.trim() : undefined,
       description: description.trim() || undefined,
       is_active: location?.is_active ?? true,
       location: toGeoPoint(pin),
@@ -116,6 +128,7 @@ export function LocationForm({
       {picksClient && (
         <ClientPicker
           value={chosenClient}
+          showCompanyName
           onChange={(value) => {
             setChosenClient(value);
             setError("");
@@ -132,12 +145,26 @@ export function LocationForm({
           options={LOCATION_TYPES}
           onChange={(val) => {
             setLocationType(val);
+            if (val !== "Other") setOtherType("");
             setError("");
           }}
           placeholder="Select type"
           required
         />
       </div>
+
+      {locationType === "Other" && (
+        <TextField
+          label="Specify type"
+          value={otherType}
+          onChange={(value) => {
+            setOtherType(value);
+            setError("");
+          }}
+          placeholder="e.g. Warehouse, Clinic, Restaurant"
+          required
+        />
+      )}
 
       <div>
         <FieldLabel htmlFor={addressId} label="Address" required />

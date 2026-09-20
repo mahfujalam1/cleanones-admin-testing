@@ -5,7 +5,7 @@ import { FormModal } from "@/components/shared/FormModal";
 import { SelectField, TextField } from "@/components/shared/Field";
 import { apiError } from "@/redux/api/apiError";
 import {
-  clientLabel,
+  clientCompanyLabel,
   CLIENT_LOOKUP_ARGS,
   useGetClientsQuery,
 } from "@/redux/api/endpoints/clients.api";
@@ -46,8 +46,25 @@ export function RoomForm({
   });
 
   const [name, setName] = useState(room?.name ?? "");
-  const [roomType, setRoomType] = useState(room?.room_type ?? "");
-  const [cleaningType, setCleaningType] = useState<PlanType | "">(room?.cleaning_type ?? "");
+  const knownRoomType = ROOM_TYPES.includes((room?.room_type ?? "") as (typeof ROOM_TYPES)[number]);
+  const [roomType, setRoomType] = useState(
+    knownRoomType ? room?.room_type ?? "" : room?.room_type ? "Custom" : "",
+  );
+  const [customRoomType, setCustomRoomType] = useState(
+    knownRoomType || !room?.room_type ? "" : room.room_type,
+  );
+  const [cleaningType, setCleaningType] = useState<PlanType | "">(
+    CLEANING_TYPES.includes((room?.cleaning_type ?? "") as PlanType)
+      ? (room?.cleaning_type as PlanType)
+      : room?.cleaning_type
+        ? "Custom"
+        : "",
+  );
+  const [customCleaningType, setCustomCleaningType] = useState(
+    CLEANING_TYPES.includes((room?.cleaning_type ?? "") as PlanType) || !room?.cleaning_type
+      ? ""
+      : room.cleaning_type,
+  );
   const [selectedClientId, setSelectedClientId] = useState(clientId ?? "");
   const [selectedLocationId, setSelectedLocationId] = useState(
     locationId || (room ? refId(room.location) : "")
@@ -85,7 +102,7 @@ export function RoomForm({
   const clientOptions = useMemo(() => {
     const options = (clientsData?.result ?? []).map((client) => ({
       value: client._id,
-      label: clientLabel(client),
+      label: clientCompanyLabel(client),
     }));
     // The lookup only covers the first page of clients, so a scoped client can be missing from it.
     // Without this the locked select would render blank on the very client we are standing in.
@@ -93,7 +110,7 @@ export function RoomForm({
       const populated = selectedLocation ? refDoc(selectedLocation.client) : null;
       options.push({
         value: selectedClientId,
-        label: populated ? clientLabel(populated) : "Current client",
+        label: populated ? clientCompanyLabel(populated) : "Current client",
       });
     }
     return options;
@@ -135,15 +152,23 @@ export function RoomForm({
       setError("Pick a room type.");
       return;
     }
+    if (roomType === "Custom" && !customRoomType.trim()) {
+      setError("Specify the room type.");
+      return;
+    }
     if (!cleaningType) {
       setError("Pick a cleaning type.");
+      return;
+    }
+    if (cleaningType === "Custom" && !customCleaningType.trim()) {
+      setError("Specify the cleaning type.");
       return;
     }
 
     const body = {
       name: name.trim(),
-      room_type: roomType,
-      cleaning_type: cleaningType,
+      room_type: roomType === "Custom" ? customRoomType.trim() : roomType,
+      cleaning_type: cleaningType === "Custom" ? customCleaningType.trim() : cleaningType,
       is_active: true,
     };
 
@@ -204,7 +229,11 @@ export function RoomForm({
           label="Room Type"
           value={roomType}
           options={ROOM_TYPES}
-          onChange={setRoomType}
+          onChange={(value) => {
+            setRoomType(value);
+            if (value !== "Custom") setCustomRoomType("");
+            setError("");
+          }}
           required
           placeholder="Select Room Type"
         />
@@ -212,11 +241,41 @@ export function RoomForm({
           label="Cleaning Type"
           value={cleaningType}
           options={CLEANING_TYPES}
-          onChange={setCleaningType}
+          onChange={(value) => {
+            setCleaningType(value);
+            if (value !== "Custom") setCustomCleaningType("");
+            setError("");
+          }}
           required
           placeholder="Select Cleaning Type"
         />
       </div>
+
+      {roomType === "Custom" && (
+        <TextField
+          label="Specify room type"
+          value={customRoomType}
+          onChange={(value) => {
+            setCustomRoomType(value);
+            setError("");
+          }}
+          placeholder="e.g. Changing room, Kitchen"
+          required
+        />
+      )}
+
+      {cleaningType === "Custom" && (
+        <TextField
+          label="Specify cleaning type"
+          value={customCleaningType}
+          onChange={(value) => {
+            setCustomCleaningType(value);
+            setError("");
+          }}
+          placeholder="e.g. Post-construction, Biohazard"
+          required
+        />
+      )}
     </FormModal>
   );
 }

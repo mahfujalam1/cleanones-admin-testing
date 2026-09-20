@@ -6,7 +6,8 @@ import { MdOutlineClose, MdWarningAmber } from "react-icons/md";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
 import { SearchInput, ErrorNotice } from "@/components/shared/ListStates";
-import { SelectField } from "@/components/shared/Field";
+import { FieldLabel } from "@/components/shared/Field";
+import { TimePicker } from "@/components/ui/time-picker";
 import { apiError } from "@/redux/api/apiError";
 import { WORKER_TYPES, workerName, type WorkerType } from "@/redux/api/endpoints/workers.api";
 import { conflictLabel, planWorkDurationMinutes, useGetCleaningPlanQuery } from "@/redux/api/endpoints/cleaningPlans.api";
@@ -23,15 +24,6 @@ const ROLES = ["Team leader", "Co-leader", "Normal worker"] as const;
 
 type PlanRole = (typeof ROLES)[number];
 const DEFAULT_ROLE: PlanRole = "Normal worker";
-
-const TIME_SLOTS = Array.from({ length: 48 }, (_, index) => {
-  const hours = Math.floor(index / 2);
-  const minutes = index % 2 ? "30" : "00";
-  const value = `${String(hours).padStart(2, "0")}:${minutes}`;
-  const suffix = hours < 12 ? "AM" : "PM";
-  const display = `${String(hours % 12 || 12).padStart(2, "0")}:${minutes} ${suffix}`;
-  return { value, label: display };
-});
 
 export type ShiftAssignTarget = {
   planId: string;
@@ -77,7 +69,10 @@ function isPastStartSlot(date: string, time: string) {
   if (date !== todayKey()) return false;
   const start = new Date(toTimestamp(date, time));
   if (Number.isNaN(start.getTime())) return false;
-  return start.getTime() <= Date.now();
+  const now = new Date();
+  now.setSeconds(0, 0);
+  now.setMilliseconds(0);
+  return start.getTime() < now.getTime();
 }
 
 function calculateEnd(date: string, startTime: string, durationMinutes: number) {
@@ -86,13 +81,6 @@ function calculateEnd(date: string, startTime: string, durationMinutes: number) 
   const end = endFromStart(start, durationMinutes);
   if (!end) return { time: "", iso: "" };
   return { time: timeFromDate(end), iso: end.toISOString() };
-}
-
-function timeLabel(value: string) {
-  const [hourText, minute = "00"] = value.split(":");
-  const hour = Number(hourText);
-  const suffix = hour < 12 ? "AM" : "PM";
-  return `${String(hour % 12 || 12).padStart(2, "0")}:${minute} ${suffix}`;
 }
 
 export function formatAssignDateLabel(date: string) {
@@ -133,26 +121,11 @@ export function AssignWorkersPanel({
   const durationMinutes = target.durationMinutes || (plan ? planWorkDurationMinutes(plan) : 0);
   const computedEnd = calculateEnd(target.date, startTime, durationMinutes);
   const endTime = computedEnd.time;
-  const endOptions = endTime && !TIME_SLOTS.some((slot) => slot.value === endTime)
-    ? [...TIME_SLOTS, { value: endTime, label: timeLabel(endTime) }]
-    : TIME_SLOTS;
   const startIso = lockTimes && target.startTime?.includes("T")
     ? new Date(target.startTime).toISOString()
     : toTimestamp(target.date, startTime);
   const endIso = computedEnd.iso;
   const timesValid = Boolean(startTime && endTime && new Date(endIso).getTime() > new Date(startIso).getTime());
-  const startSlots = useMemo(
-    () => TIME_SLOTS.map((slot) => ({ ...slot, disabled: isPastStartSlot(target.date, slot.value) })),
-    [target.date],
-  );
-  const currentStartSlot =
-    target.date === todayKey() ? startSlots.find((slot) => !slot.disabled)?.value : undefined;
-
-  useEffect(() => {
-    if (!lockTimes && startTime && isPastStartSlot(target.date, startTime)) {
-      setStartTime("");
-    }
-  }, [lockTimes, startTime, target.date]);
 
   const { data: eligible = [], isFetching } = useGetShiftEligibleWorkersQuery(
     { planId: target.planId, date: target.date, start_time: startIso, end_time: endIso },
@@ -246,7 +219,7 @@ export function AssignWorkersPanel({
       return;
     }
     if (!lockTimes && isPastStartSlot(target.date, startTime)) {
-      setError("That start time has already passed. Pick a later slot.");
+      setError("That start time has already passed. Pick a later time.");
       return;
     }
     if (!timesValid) {
@@ -312,32 +285,30 @@ export function AssignWorkersPanel({
       )}
 
       <div className={`grid gap-2 border-b border-slate-100 px-5 pb-4 sm:grid-cols-2 ${embedded ? "pt-4" : ""}`}>
-        <SelectField
-          label="Start time"
-          value={startTime}
-          options={startSlots}
-          onChange={(value) => {
-            if (lockTimes) return;
-            if (isPastStartSlot(target.date, value)) {
-              setError("That start time has already passed. Pick a later slot.");
-              return;
-            }
-            setStartTime(value);
-            setError("");
-          }}
-          required
-          disabled={lockTimes}
-          placeholder="Select start time"
-          scrollToValue={currentStartSlot}
-        />
         <div>
-          <SelectField
-            label="End time"
+          <FieldLabel htmlFor="assign-start-time" label="Start time" required />
+          <TimePicker
+            value={startTime}
+            disabled={lockTimes}
+            placeholder="Select start time"
+            onValueChange={(value) => {
+              if (lockTimes) return;
+              if (value && isPastStartSlot(target.date, value)) {
+                setError("That start time has already passed. Pick a later time.");
+                return;
+              }
+              setStartTime(value);
+              setError("");
+            }}
+          />
+        </div>
+        <div>
+          <FieldLabel htmlFor="assign-end-time" label="End time" />
+          <TimePicker
             value={endTime}
-            options={endOptions}
-            onChange={() => undefined}
             disabled
             placeholder={startTime ? "No task duration on this plan" : "Select a start time first"}
+            onValueChange={() => undefined}
           />
           {startTime && durationMinutes > 0 ? (
             <p className="mt-1.5 text-[11px] text-slate-400">

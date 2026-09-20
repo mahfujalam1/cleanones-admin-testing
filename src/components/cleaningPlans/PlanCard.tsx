@@ -11,7 +11,7 @@ import {
 } from "react-icons/md";
 import { planCounts, type CleaningPlan } from "@/redux/api/endpoints/cleaningPlans.api";
 import { refDoc, refId } from "@/redux/api/types";
-import { clientLabel, CLIENT_LOOKUP_ARGS, useGetClientsQuery, type Client } from "@/redux/api/endpoints/clients.api";
+import { clientCompanyLabel, CLIENT_LOOKUP_ARGS, useGetClientsQuery, type Client } from "@/redux/api/endpoints/clients.api";
 import type { Location } from "@/redux/api/endpoints/locations.api";
 
 function MetaLine({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {
@@ -85,7 +85,7 @@ export function PlanCard({
               <h3 className="truncate text-sm font-semibold text-slate-900 transition-colors group-hover:text-primary">
                 {plan.title}
               </h3>
-              {client && <p className="mt-0.5 truncate text-xs text-slate-500">{clientLabel(client)}</p>}
+              {client && <p className="mt-0.5 truncate text-xs text-slate-500">{clientCompanyLabel(client)}</p>}
             </div>
           </div>
 
