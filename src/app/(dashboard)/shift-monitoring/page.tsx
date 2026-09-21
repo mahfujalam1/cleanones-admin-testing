@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
   MdAccessTime,
+  MdCalendarToday,
   MdChevronRight,
   MdClose,
   MdLocationOn,
@@ -32,6 +33,23 @@ const formatShiftTime = (dateTimeStr?: string) => {
   } catch {
     return dateTimeStr;
   }
+};
+
+/** Calendar day from API `date` (YYYY-MM-DD), so timezone does not shift the shown day. */
+const formatShiftDate = (dateStr?: string) => {
+  if (!dateStr) return "";
+  const day = dateStr.slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) {
+    const parsed = new Date(dateStr);
+    if (isNaN(parsed.getTime())) return "";
+    return parsed.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+  }
+  const [year, month, date] = day.split("-").map(Number);
+  return new Date(year, month - 1, date).toLocaleDateString(undefined, {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
 };
 
 const getStatusTone = (st: string) => {
@@ -64,6 +82,7 @@ type UnifiedLiveShift = {
   client_name?: string;
   location_name?: string;
   plan_title?: string;
+  date_text?: string;
   start_time: string;
   duration_text?: string;
   status: string;
@@ -172,6 +191,7 @@ export default function LiveStatusPage() {
         client_name: s.client?.name,
         location_name: s.location?.name,
         plan_title: typeof s.cleaning_plan === "object" ? s.cleaning_plan?.title : undefined,
+        date_text: formatShiftDate(s.date || s.date_time),
         start_time: formatShiftTime(s.date_time || s.date),
         duration_text: s.duration_minutes ? `${s.duration_minutes}m` : undefined,
         status: s.status,
@@ -404,6 +424,12 @@ export default function LiveStatusPage() {
                         <span className="flex min-w-0 items-center gap-1">
                           <MdLocationOn className="shrink-0 text-sm text-slate-400" />
                           <span className="truncate">{item.location_name}</span>
+                        </span>
+                      )}
+                      {item.date_text && (
+                        <span className="flex items-center gap-1">
+                          <MdCalendarToday className="shrink-0 text-sm text-slate-400" />
+                          <span>{item.date_text}</span>
                         </span>
                       )}
                       <span className="flex items-center gap-1">

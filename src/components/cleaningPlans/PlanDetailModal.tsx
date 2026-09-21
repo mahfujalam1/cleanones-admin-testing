@@ -141,11 +141,9 @@ function initials(name: string) {
 function PlanBody({
   plan,
   assignedWorkers,
-  shiftSchedule,
 }: {
   plan: CleaningPlan;
   assignedWorkers?: PlanRosterAssignedWorker[];
-  shiftSchedule?: { date?: string; startTime?: string | null; endTime?: string | null };
 }) {
   const { data: clientPage } = useGetClientsQuery(CLIENT_LOOKUP_ARGS);
   const populatedClient = refDoc<Client>(plan.client);
@@ -219,13 +217,6 @@ function PlanBody({
               </Detail>
               <Detail icon={<MdOutlinePlace />} label="Location">
                 {locationName}
-              </Detail>
-              <Detail icon={<MdOutlineSchedule />} label="Start time">
-                {formatClock(shiftSchedule?.startTime) || formatDateTime(plan.date_time)}
-              </Detail>
-              <Detail icon={<MdOutlineSchedule />} label="End time">
-                {formatClock(shiftSchedule?.endTime)
-                  || formatPlanEnd(shiftSchedule?.startTime || plan.date_time, durationMinutes, plan.end_date)}
               </Detail>
             </div>
 
@@ -751,7 +742,7 @@ export function PlanDetailModal({
                   ? [plan?.title ?? liveAssignTarget.planTitle, liveAssignTarget.locationName, formatAssignDateLabel(liveAssignTarget.date)]
                       .filter(Boolean)
                       .join(" · ")
-                  : scheduleLabel || (fromShift ? "" : `${formatDateTime(plan?.date_time) ?? ""}${plan?.end_date ? ` → ${formatDate(plan.end_date)}` : ""}`)}
+                  : scheduleLabel}
               </p>
             </div>
           </div>
@@ -817,7 +808,6 @@ export function PlanDetailModal({
                   <PlanBody
                     plan={plan}
                     assignedWorkers={liveWorkers}
-                    shiftSchedule={schedule}
                   />
                 ) : null}
               </div>

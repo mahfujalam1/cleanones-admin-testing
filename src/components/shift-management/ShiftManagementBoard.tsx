@@ -77,7 +77,7 @@ export function ShiftManagementBoard() {
   }, [view, currentDate, searchTerm, page, clientId, locationId]);
 
   const { data, isLoading, error, refetch } = useGetPlanRosterQuery(params);
-  const plans = data?.cleaning_plans ?? [];
+  const plans = useMemo(() => data?.cleaning_plans ?? [], [data]);
   const visibleShifts = plans.flatMap((plan) => plan.shifts ?? []);
   const scheduledHours = visibleShifts.reduce(
     (total, shift) => total + (shift.duration_minutes ?? 0) / 60,

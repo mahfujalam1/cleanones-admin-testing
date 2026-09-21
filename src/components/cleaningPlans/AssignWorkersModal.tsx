@@ -414,7 +414,7 @@ export function AssignWorkersPanel({
 
                       {unavailable && (
                         <p className="mt-1 text-xs font-medium text-red-700">
-                          This worker isn't available. You can still force assign them.
+                          This worker is not available. You can still force assign them.
                         </p>
                       )}
                       {isConflict && (

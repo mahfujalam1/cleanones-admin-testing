@@ -17,6 +17,7 @@ import {
   useCreateLocationMutation,
   useUpdateLocationMutation,
   type Location,
+  type LocationType,
 } from "@/redux/api/endpoints/locations.api";
 import type { GeoPoint } from "@/redux/api/types";
 
@@ -33,11 +34,15 @@ const fromGeoPoint = (point?: GeoPoint): Pin | null => {
 };
 
 const PRESET_LOCATION_TYPES = ["Hotel", "School", "Hospital", "Office"] as const;
-const LOCATION_FORM_TYPES = [...PRESET_LOCATION_TYPES, "Custom"] as const;
+const LOCATION_FORM_TYPES = ["Hotel", "School", "Hospital", "Office", "Custom"] as const;
 type LocationFormType = (typeof LOCATION_FORM_TYPES)[number];
 
 function isPresetLocationType(value?: string): value is (typeof PRESET_LOCATION_TYPES)[number] {
   return PRESET_LOCATION_TYPES.includes(value as (typeof PRESET_LOCATION_TYPES)[number]);
+}
+
+function toApiLocationType(formType: LocationFormType): LocationType {
+  return formType === "Custom" ? "Other" : formType;
 }
 
 export function LocationForm({
@@ -98,7 +103,7 @@ export function LocationForm({
     const body = {
       name: name.trim(),
       address: address.trim(),
-      type: locationType === "Custom" ? "Other" : locationType,
+      type: toApiLocationType(locationType),
       other_type: locationType === "Custom" ? customType.trim() : undefined,
       description: description.trim() || undefined,
       is_active: location?.is_active ?? true,

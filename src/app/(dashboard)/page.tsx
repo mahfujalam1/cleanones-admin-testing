@@ -198,9 +198,7 @@ export default function DashboardPage() {
   const t = getDashboardTranslation(locale);
   const ui = getUiTranslation(locale);
 
-  const [liveTab, setLiveTab] = useState<
-    "all" | "upcoming" | "in_progress" | "completed" | "cancelled"
-  >("all");
+  const [liveTab, setLiveTab] = useState<"all" | "upcoming" | "in_progress" | "completed">("all");
   const [selectedLateWorker, setSelectedLateWorker] = useState<LateWorkerChip | null>(null);
   const {
     data: selectedWorkerDetails,
@@ -588,7 +586,7 @@ export default function DashboardPage() {
           </div>
           <div className="flex items-center gap-2 sm:gap-4">
             <div className="flex max-w-full overflow-x-auto rounded border border-gray-200 bg-gray-50 p-0.5 text-xs font-medium">
-              {(['all', 'upcoming', 'in_progress', 'completed', 'cancelled'] as const).map((tab) => {
+              {(['all', 'upcoming', 'in_progress', 'completed'] as const).map((tab) => {
                 const active = liveTab === tab;
                 const label =
                   tab === 'all'
@@ -597,9 +595,7 @@ export default function DashboardPage() {
                     ? ui.inProgress
                     : tab === 'upcoming'
                     ? ui.upcoming
-                    : tab === 'completed'
-                    ? ui.completed
-                    : ui.cancelled;
+                    : ui.completed;
                 return (
                   <button
                     key={tab}
