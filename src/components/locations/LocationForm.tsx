@@ -20,10 +20,10 @@ import {
 } from "@/redux/api/endpoints/locations.api";
 import type { GeoPoint } from "@/redux/api/types";
 
-/** What the form holds while the user is picking: plain latitude/longitude, map order. */
+
 type Pin = { latitude: number; longitude: number };
 
-/** GeoJSON stores `[longitude, latitude]`, the reverse of how a map is usually read. */
+
 const toGeoPoint = (pin: Pin | null): GeoPoint | undefined =>
   pin ? { type: "Point", coordinates: [pin.longitude, pin.latitude] } : undefined;
 
@@ -45,11 +45,8 @@ export function LocationForm({
   location,
   onClose,
 }: {
-  /**
-   * Fixes the owning client, for when the form opens from inside one. Left out — adding from the
-   * locations page — the client is chosen in the form itself, since a location cannot be moved to
-   * another client afterwards.
-   */
+
+
   clientId?: string;
   location?: Location;
   onClose: () => void;
@@ -178,8 +175,8 @@ export function LocationForm({
         <AddressAutocompleteInput
           value={address}
           onChange={setAddress}
-          // Picking a suggestion supplies the address and its GPS pin together, so there is
-          // nothing for the user to copy across by hand.
+          
+          
           onPlaceSelect={({ address: picked, latitude, longitude, name: placeName }) => {
             setAddress(picked);
             setPin({ latitude, longitude });
@@ -188,7 +185,7 @@ export function LocationForm({
             }
             setError("");
           }}
-          // Typing over a chosen address makes the stored pin wrong, so it is dropped.
+          
           onCoordinatesCleared={() => setPin(null)}
           required
           placeholder="Search an address"

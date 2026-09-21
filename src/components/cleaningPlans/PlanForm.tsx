@@ -25,17 +25,18 @@ import {
   useDeleteAdditionalTaskMutation,
   useUpdateAdditionalTaskMutation,
   type AdditionalTask,
+  type PhotoRequirement,
 } from "@/redux/api/endpoints/additionalTasks.api";
 import { refDoc, refId } from "@/redux/api/types";
 import { todayIso } from "@/components/ui/date-picker";
 
-/** "3 tasks" beside a room, falling back to its type when the count was not sent. */
+
 const taskLabel = (room: Parameters<typeof roomTaskCount>[0] & { room_type: string }) => {
   const count = roomTaskCount(room);
   return count === null ? room.room_type : `${count} ${count === 1 ? "task" : "tasks"}`;
 };
 
-/** Combines the date and time fields into the single timestamp the API stores. */
+
 const toTimestamp = (date: string, time: string) => {
   const [hours, minutes] = time.split(":").map(Number);
   const parsed = new Date(date);
@@ -48,10 +49,28 @@ type TaskDraft = {
   name: string;
   duration_minutes: string;
   is_photo_required: boolean;
-  /** Titles only — the worker fills in `photo_url` and `is_uploaded` when they finish. */
-  photo_requirements: string[];
+  photo_requirements: PhotoRequirement[];
   date: string;
 };
+
+const blankPhoto = (): PhotoRequirement => ({
+  title: "",
+  description: "",
+  reference_image_url: "",
+  photo_url: "",
+  is_uploaded: false,
+});
+
+function isInvalidHttpUrl(value?: string) {
+  const trimmed = value?.trim();
+  if (!trimmed) return false;
+  try {
+    const url = new URL(trimmed);
+    return url.protocol !== "http:" && url.protocol !== "https:";
+  } catch {
+    return true;
+  }
+}
 
 let draftCounter = 0;
 const newDraft = (date: string): TaskDraft => ({
@@ -59,19 +78,42 @@ const newDraft = (date: string): TaskDraft => ({
   name: "",
   duration_minutes: "",
   is_photo_required: false,
-  photo_requirements: [],
+  photo_requirements: [blankPhoto()],
   date,
 });
+
+function namedPhotos(requirements: PhotoRequirement[]) {
+  return requirements.filter((requirement) => requirement.title.trim() !== "");
+}
+
+function photoProblem(draft: TaskDraft): string | null {
+  if (!draft.name.trim() || !draft.is_photo_required) return null;
+  const named = namedPhotos(draft.photo_requirements);
+  const taskName = draft.name.trim();
+  if (draft.photo_requirements.length === 0 || named.length === 0) {
+    return `Add at least one photo for "${taskName}", or turn photos off.`;
+  }
+  if (named.length !== draft.photo_requirements.length) {
+    return `Give every required photo for "${taskName}" a name, or remove the empty ones.`;
+  }
+  const invalidReference = draft.photo_requirements.find((requirement) =>
+    isInvalidHttpUrl(requirement.reference_image_url),
+  );
+  if (invalidReference) {
+    return `Enter a valid reference image URL for "${invalidReference.title.trim()}".`;
+  }
+  return null;
+}
 
 export function PlanForm({ plan, onClose, onCreated }: {
   plan?: CleaningPlan;
   onClose: () => void;
-  /** Handed the new plan so the caller can offer to add tasks to it. */
+  
   onCreated?: (plan: CleaningPlan) => void;
 }) {
   const isEdit = plan !== undefined;
 
-  // Query full cleaning plan from GET /cleaning-plan/single-cleaning-plan/{id}
+  
   const { data: singlePlan, isLoading: loadingSinglePlan } = useGetCleaningPlanQuery(
     plan?._id ?? "",
     { skip: !isEdit || !plan?._id }
@@ -86,7 +128,7 @@ export function PlanForm({ plan, onClose, onCreated }: {
   const [error, setError] = useState("");
   const [savingTasks, setSavingTasks] = useState(false);
 
-  // When single cleaning plan data is retrieved, populate the form defaults
+  
   useEffect(() => {
     if (!singlePlan) return;
     if (singlePlan.title) setTitle(singlePlan.title);
@@ -113,9 +155,9 @@ export function PlanForm({ plan, onClose, onCreated }: {
   const [updateTask] = useUpdateAdditionalTaskMutation();
   const [deleteTask] = useDeleteAdditionalTaskMutation();
 
-  /** Inline edits to tasks already saved on the plan, keyed by task id. */
+  
   const [taskEdits, setTaskEdits] = useState<Record<string, { name: string; duration: string }>>({});
-  /** The task id currently being saved or deleted, so only its own row shows a busy state. */
+  
   const [busyTaskId, setBusyTaskId] = useState("");
 
   const editDraft = (key: string, patch: Partial<TaskDraft>) =>
@@ -124,12 +166,12 @@ export function PlanForm({ plan, onClose, onCreated }: {
   const toggleRoom = (id: string) =>
     setRooms((current) => (current.includes(id) ? current.filter((item) => item !== id) : [...current, id]));
 
-  // Existing additional tasks populated from singlePlan
+  
   const existingTasks = (singlePlan?.additional_tasks ?? [])
     .map((task) => refDoc<AdditionalTask>(task))
     .filter(Boolean) as AdditionalTask[];
 
-  /** The values shown in a row: the local edit if there is one, otherwise the saved task. */
+  
   const taskValue = (task: AdditionalTask) =>
     taskEdits[task._id] ?? {
       name: task.name ?? "",
@@ -161,7 +203,7 @@ export function PlanForm({ plan, onClose, onCreated }: {
         name: edit.name.trim(),
         duration_minutes: Number(edit.duration),
       }).unwrap();
-      // The refetched plan is the source of truth again, so the local edit is dropped.
+      
       setTaskEdits((current) => {
         const next = { ...current };
         delete next[task._id];
@@ -217,28 +259,9 @@ export function PlanForm({ plan, onClose, onCreated }: {
       return;
     }
 
-    const noPhotos = drafts.find(
-      (draft) =>
-        draft.name.trim() &&
-        draft.is_photo_required &&
-        !draft.photo_requirements.some((title) => title.trim()),
-    );
+    const noPhotos = drafts.find(photoProblem);
     if (noPhotos) {
-      setError(`Name at least one photo for "${noPhotos.name.trim()}", or turn photos off.`);
-      return;
-    }
-
-    // An unnamed row would otherwise be dropped from the payload without saying so.
-    const unnamedPhoto = drafts.find(
-      (draft) =>
-        draft.name.trim() &&
-        draft.is_photo_required &&
-        draft.photo_requirements.some((title) => !title.trim()),
-    );
-    if (unnamedPhoto) {
-      setError(
-        `Give every required photo for "${unnamedPhoto.name.trim()}" a name, or remove the empty ones.`,
-      );
+      setError(photoProblem(noPhotos) ?? "");
       return;
     }
 
@@ -254,7 +277,7 @@ export function PlanForm({ plan, onClose, onCreated }: {
       if (isEdit) {
         await updatePlan({ id: plan._id, body }).unwrap();
 
-        // Each additional task is its own record pointing back at the plan.
+        
         const named = drafts.filter((draft) => draft.name.trim());
         if (named.length) {
           setSavingTasks(true);
@@ -265,16 +288,13 @@ export function PlanForm({ plan, onClose, onCreated }: {
               duration_minutes: Number(draft.duration_minutes),
               is_photo_required: draft.is_photo_required,
               photo_requirements: draft.is_photo_required
-                ? draft.photo_requirements
-                    .map((title) => title.trim())
-                    .filter(Boolean)
-                    .map((title) => ({
-                      title,
-                      photo_url: "",
-                      is_uploaded: false,
-                      description: "",
-                      reference_image_url: "",
-                    }))
+                ? namedPhotos(draft.photo_requirements).map((requirement) => ({
+                    title: requirement.title.trim(),
+                    photo_url: "",
+                    is_uploaded: false,
+                    description: requirement.description?.trim() ?? "",
+                    reference_image_url: requirement.reference_image_url?.trim() ?? "",
+                  }))
                 : [],
               date_time: toTimestamp(draft.date || todayIso(), "08:00"),
             }).unwrap();
@@ -386,7 +406,7 @@ export function PlanForm({ plan, onClose, onCreated }: {
             required
           />
 
-          {/* Additional tasks attach to a plan that already exists, so they only appear when editing. */}
+          
           {isEdit && (
             <section className="space-y-3 rounded-xl border border-slate-200 bg-slate-50/60 p-3">
               <div className="flex items-center justify-between gap-3">
@@ -549,66 +569,139 @@ export function PlanForm({ plan, onClose, onCreated }: {
                     <CheckboxField
                       label="Photo required"
                       checked={draft.is_photo_required}
-                      onChange={(checked) =>
+                      onChange={(checked) => {
                         editDraft(draft.key, {
                           is_photo_required: checked,
-                          photo_requirements: checked
-                            ? draft.photo_requirements.length
-                              ? draft.photo_requirements
-                              : [""]
-                            : [],
-                        })
-                      }
+                          photo_requirements: draft.photo_requirements.length
+                            ? draft.photo_requirements
+                            : [blankPhoto()],
+                        });
+                        setError("");
+                      }}
                     />
                   </div>
 
                   {draft.is_photo_required && (
-                    <div className="mt-3 space-y-2 rounded-lg border border-slate-200 bg-slate-50/60 p-2.5">
-                      <div className="flex items-center justify-between gap-3">
-                        <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                          Photos to capture
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            editDraft(draft.key, { photo_requirements: [...draft.photo_requirements, ""] })
-                          }
-                          className="inline-flex cursor-pointer items-center gap-1 rounded-md border border-primary/40 bg-white px-2.5 py-1 text-[11px] font-semibold text-primary transition-colors hover:bg-sky-50"
-                        >
-                          <MdAdd className="text-xs" /> Photo
-                        </button>
+                    <div className="mt-4 space-y-4 rounded-xl border border-slate-200 bg-slate-50/60 p-4">
+                      <div>
+                        <p className="text-sm font-semibold text-slate-800">Photo instructions</p>
+                        <p className="mt-1 text-xs leading-5 text-slate-500">
+                          Add each photo the worker may be asked to capture. Description and example image are optional.
+                        </p>
                       </div>
 
-                      {draft.photo_requirements.map((title, photoIndex) => (
-                        <div key={photoIndex} className="flex items-center gap-2">
-                          <input
-                            value={title}
-                            onChange={(event) =>
-                              editDraft(draft.key, {
-                                photo_requirements: draft.photo_requirements.map((item, position) =>
-                                  position === photoIndex ? event.target.value : item,
-                                ),
-                              })
-                            }
-                            placeholder={photoIndex === 0 ? "Before cleaning" : "After cleaning"}
-                            className="h-9 min-w-0 flex-1 rounded-lg border border-slate-300 bg-white px-3 text-sm font-medium text-slate-900 transition-colors placeholder:font-normal placeholder:text-slate-400 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                          />
-                          <button
-                            type="button"
-                            aria-label={`Remove photo ${photoIndex + 1}`}
-                            onClick={() =>
-                              editDraft(draft.key, {
-                                photo_requirements: draft.photo_requirements.filter(
-                                  (_item, position) => position !== photoIndex,
-                                ),
-                              })
-                            }
-                            className="shrink-0 cursor-pointer rounded p-1 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600"
-                          >
-                            <MdDeleteOutline className="text-base" />
-                          </button>
+                      {draft.photo_requirements.map((req, photoIndex) => (
+                        <div key={photoIndex} className="rounded-lg border border-slate-200 bg-white p-3 shadow-2xs">
+                          <div className="mb-3 flex items-center justify-between gap-3">
+                            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                              Required photo {photoIndex + 1}
+                            </span>
+                            <button
+                              type="button"
+                              disabled={draft.photo_requirements.length === 1}
+                              onClick={() => {
+                                editDraft(draft.key, {
+                                  photo_requirements: draft.photo_requirements.filter(
+                                    (_item, position) => position !== photoIndex,
+                                  ),
+                                });
+                                setError("");
+                              }}
+                              className="cursor-pointer text-xs font-semibold text-red-500 transition-colors hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-40"
+                            >
+                              Remove
+                            </button>
+                          </div>
+
+                          <div className="grid gap-3">
+                            <label className="block">
+                              <span className="mb-1.5 block text-xs font-semibold text-slate-700">
+                                Title <span className="text-red-500">*</span>
+                              </span>
+                              <input
+                                type="text"
+                                value={req.title}
+                                onChange={(event) => {
+                                  editDraft(draft.key, {
+                                    photo_requirements: draft.photo_requirements.map((item, position) =>
+                                      position === photoIndex ? { ...item, title: event.target.value } : item,
+                                    ),
+                                  });
+                                  setError("");
+                                }}
+                                placeholder="e.g. Bathroom after cleaning"
+                                className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm outline-none transition-all placeholder:text-slate-400 hover:border-slate-300 focus:border-primary focus:ring-1 focus:ring-primary"
+                              />
+                            </label>
+
+                            <label className="block">
+                              <span className="mb-1.5 block text-xs font-semibold text-slate-700">
+                                Worker instruction
+                              </span>
+                              <textarea
+                                value={req.description ?? ""}
+                                onChange={(event) => {
+                                  editDraft(draft.key, {
+                                    photo_requirements: draft.photo_requirements.map((item, position) =>
+                                      position === photoIndex
+                                        ? { ...item, description: event.target.value }
+                                        : item,
+                                    ),
+                                  });
+                                  setError("");
+                                }}
+                                rows={2}
+                                placeholder="Explain what must be visible and where to take the photo from."
+                                className="w-full resize-y rounded-lg border border-slate-200 px-3 py-2 text-sm leading-5 outline-none transition-all placeholder:text-slate-400 hover:border-slate-300 focus:border-primary focus:ring-1 focus:ring-primary"
+                              />
+                            </label>
+
+                            <label className="block">
+                              <span className="mb-1.5 block text-xs font-semibold text-slate-700">
+                                Example image URL
+                              </span>
+                              <div className="flex items-center gap-3">
+                                {req.reference_image_url?.trim() ? (
+                                  <img
+                                    src={req.reference_image_url}
+                                    alt=""
+                                    className="h-10 w-10 shrink-0 rounded-md border border-slate-200 bg-slate-50 object-cover"
+                                  />
+                                ) : null}
+                                <input
+                                  type="url"
+                                  value={req.reference_image_url ?? ""}
+                                  onChange={(event) => {
+                                    editDraft(draft.key, {
+                                      photo_requirements: draft.photo_requirements.map((item, position) =>
+                                        position === photoIndex
+                                          ? { ...item, reference_image_url: event.target.value }
+                                          : item,
+                                      ),
+                                    });
+                                    setError("");
+                                  }}
+                                  placeholder="https://..."
+                                  className="h-10 min-w-0 flex-1 rounded-lg border border-slate-200 px-3 text-sm outline-none transition-all placeholder:text-slate-400 hover:border-slate-300 focus:border-primary focus:ring-1 focus:ring-primary"
+                                />
+                              </div>
+                            </label>
+                          </div>
                         </div>
                       ))}
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          editDraft(draft.key, {
+                            photo_requirements: [...draft.photo_requirements, blankPhoto()],
+                          });
+                          setError("");
+                        }}
+                        className="inline-flex h-9 cursor-pointer items-center justify-center rounded-lg border border-primary/30 bg-white px-3 text-xs font-semibold text-primary transition-colors hover:bg-sky-50"
+                      >
+                        + Add another photo
+                      </button>
                     </div>
                   )}
                 </div>

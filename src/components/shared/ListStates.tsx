@@ -3,7 +3,7 @@
 import React from "react";
 import { MdSearch, MdClose } from "react-icons/md";
 
-/** Placeholder cards shown while a list loads, sized to match the real cards. */
+
 export function CardGridSkeleton({ count = 6 }: { count?: number }) {
   return (
     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">

@@ -92,7 +92,7 @@ export function ChatMembersPanel({
         </div>
       </div>
 
-      {/* Client Section */}
+      
       {client && (
         <div className="space-y-2">
           <div className="flex items-center gap-1.5 text-slate-500">
@@ -138,7 +138,7 @@ export function ChatMembersPanel({
         </div>
       )}
 
-      {/* Workers Section */}
+      
       {workers.length > 0 && (
         <div className="space-y-2">
           <div className="flex items-center justify-between text-slate-500">
@@ -216,7 +216,7 @@ export function ChatMembersPanel({
         </div>
       )}
 
-      {/* Managers Section */}
+      
       <div className="space-y-2">
         <div className="flex items-center gap-1.5 text-slate-500">
           <MdShield className="text-sm" />

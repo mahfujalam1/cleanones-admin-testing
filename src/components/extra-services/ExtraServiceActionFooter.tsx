@@ -38,6 +38,7 @@ const footerTranslations: Record<
     durationConfirm: string;
     durationSaving: string;
     durationInvalid: string;
+    durationRequired: string;
     failedDuration: string;
     photoRequired: string;
     photoName: string;
@@ -72,6 +73,7 @@ const footerTranslations: Record<
     durationConfirm: "Approve",
     durationSaving: "Saving...",
     durationInvalid: "Enter a duration in whole minutes.",
+    durationRequired: "Duration is required.",
     failedDuration: "Failed to update the task duration.",
     photoRequired: "Photo required",
     photoName: "Required photo name",
@@ -105,6 +107,7 @@ const footerTranslations: Record<
     durationConfirm: "Goedkeuren",
     durationSaving: "Opslaan...",
     durationInvalid: "Voer een duur in hele minuten in.",
+    durationRequired: "Duur is verplicht.",
     failedDuration: "Bijwerken van de taakduur mislukt.",
     photoRequired: "Foto vereist",
     photoName: "Naam van vereiste foto",
@@ -138,6 +141,7 @@ const footerTranslations: Record<
     durationConfirm: "Zatwierdź",
     durationSaving: "Zapisywanie...",
     durationInvalid: "Podaj czas trwania w pełnych minutach.",
+    durationRequired: "Czas trwania jest wymagany.",
     failedDuration: "Nie udało się zaktualizować czasu zadania.",
     photoRequired: "Wymagane zdjęcie",
     photoName: "Nazwa wymaganego zdjęcia",
@@ -171,6 +175,7 @@ const footerTranslations: Record<
     durationConfirm: "Затвердити",
     durationSaving: "Збереження...",
     durationInvalid: "Вкажіть тривалість у цілих хвилинах.",
+    durationRequired: "Тривалість обов'язкова.",
     failedDuration: "Не вдалося оновити тривалість завдання.",
     photoRequired: "Потрібне фото",
     photoName: "Назва потрібного фото",
@@ -204,6 +209,7 @@ const footerTranslations: Record<
     durationConfirm: "Aprovar",
     durationSaving: "A guardar...",
     durationInvalid: "Indique a duração em minutos inteiros.",
+    durationRequired: "A duração é obrigatória.",
     failedDuration: "Falha ao atualizar a duração da tarefa.",
     photoRequired: "Foto obrigatória",
     photoName: "Nome da foto obrigatória",
@@ -237,6 +243,7 @@ const footerTranslations: Record<
     durationConfirm: "موافقة",
     durationSaving: "جارٍ الحفظ...",
     durationInvalid: "أدخل المدة بالدقائق الكاملة.",
+    durationRequired: "المدة مطلوبة.",
     failedDuration: "فشل تحديث مدة المهمة.",
     photoRequired: "صورة مطلوبة",
     photoName: "اسم الصورة المطلوبة",
@@ -270,6 +277,7 @@ const footerTranslations: Record<
     durationConfirm: "Approuver",
     durationSaving: "Enregistrement...",
     durationInvalid: "Saisissez une durée en minutes entières.",
+    durationRequired: "La durée est obligatoire.",
     failedDuration: "Échec de la mise à jour de la durée de la tâche.",
     photoRequired: "Photo requise",
     photoName: "Nom de la photo requise",
@@ -303,6 +311,7 @@ const footerTranslations: Record<
     durationConfirm: "Aprobar",
     durationSaving: "Guardando...",
     durationInvalid: "Introduzca una duración en minutos enteros.",
+    durationRequired: "La duración es obligatoria.",
     failedDuration: "Error al actualizar la duración de la tarea.",
     photoRequired: "Foto obligatoria",
     photoName: "Nombre de la foto obligatoria",
@@ -339,22 +348,21 @@ export function ExtraServiceActionFooter({
   const currentStatus = (request.status || "").toLowerCase();
   const isActionable = ["pending", "under_review", "awaiting_approval"].includes(currentStatus);
 
-  /** Task ids this request approves — an /additional-task row stands alone. */
+  
   const approvalTaskIds = request.taskIds?.length
     ? request.taskIds
     : request.taskId
     ? [request.taskId]
     : [];
 
-  /**
-   * Approving runs in two steps: the duration entered in the confirmation modal is written
-   * back to the additional task first, then the approval itself. A failed duration update
-   * aborts before approving, so the manager can correct the value and retry.
-   *
-   * Returns `null` on success, or the failure message. When the duration modal is driving
-   * this, that message is rendered inside it instead of on the request modal behind it.
-   */
+
+
   const handleApprove = async (decision?: ApproveDecision) => {
+    if (!decision) {
+      setShowDurationPrompt(true);
+      return null;
+    }
+
     setSaving(true);
     const planId = request.planId;
     const taskIds = approvalTaskIds;
@@ -377,25 +385,25 @@ export function ExtraServiceActionFooter({
 
     let approveSuccess = false;
 
-    // The decision endpoint takes the task id alone, whether the row came from
-    // /additional-task or off a plan's pending list.
+    
+    
     for (const tId of taskIds) {
       try {
         await approveAdditional({ id: tId, status: "Approved" }).unwrap();
         approveSuccess = true;
       } catch {
-        // Keep going; a partial success is still reported below.
+        
       }
     }
 
     setSaving(false);
     if (!approveSuccess && (request.rawAdditionalTask || !planId)) {
-      // Without the duration modal open there is nowhere else to put this.
+      
       if (!decision) onError(t.failedApprove);
       return t.failedApprove;
     }
-    // The duration modal is dismissed first and the request modal behind it a beat later,
-    // so the two closings read as a sequence rather than both vanishing at once.
+    
+    
     setShowDurationPrompt(false);
     if (decision) {
       window.setTimeout(onDone, 160);
@@ -406,8 +414,8 @@ export function ExtraServiceActionFooter({
   };
 
   const handleReject = async () => {
-    // `reject_reason` is required by the API whenever the status is Rejected, and it is stored
-    // verbatim for the worker and client to read, so an empty box is not sent.
+    
+    
     const reason = rejectionReason.trim();
     if (!reason) {
       onError(t.specifyReason);
@@ -423,13 +431,13 @@ export function ExtraServiceActionFooter({
 
     let rejectSuccess = false;
 
-    // The decision endpoint takes the reason, so it rides along with the rejection.
+    
     for (const tId of taskIds) {
       try {
         await approveAdditional({ id: tId, status: "Rejected", reject_reason: reason }).unwrap();
         rejectSuccess = true;
       } catch {
-        // Keep going; a partial success is still reported below.
+        
       }
     }
 
@@ -522,12 +530,7 @@ export function ExtraServiceActionFooter({
           <button
             type="button"
             disabled={saving}
-            onClick={() => {
-              // Nothing to re-time when the request carries no additional task, so the
-              // duration step is skipped and the approval runs straight away.
-              if (approvalTaskIds.length > 0) setShowDurationPrompt(true);
-              else void handleApprove();
-            }}
+            onClick={() => setShowDurationPrompt(true)}
             className="flex items-center gap-1.5 rounded-lg bg-sky-600 px-5 py-2 text-xs font-semibold text-white shadow-xs hover:bg-sky-700 transition-all disabled:opacity-50 cursor-pointer"
           >
             <MdCheck className="text-base" />
@@ -539,7 +542,7 @@ export function ExtraServiceActionFooter({
         <ApproveDurationModal
           initialMinutes={request.rawAdditionalTask?.duration_minutes}
           initialPhotoRequired={request.rawAdditionalTask?.is_photo_required}
-          initialPhotoTitles={request.rawAdditionalTask?.photo_requirements?.map((p) => p.title)}
+          initialPhotoRequirements={request.rawAdditionalTask?.photo_requirements}
           copy={{
             title: t.durationTitle,
             hint: t.durationHint,
@@ -549,6 +552,7 @@ export function ExtraServiceActionFooter({
             confirm: t.durationConfirm,
             saving: t.durationSaving,
             invalid: t.durationInvalid,
+            required: t.durationRequired,
             photoRequired: t.photoRequired,
             photoName: t.photoName,
             addPhoto: t.addPhoto,

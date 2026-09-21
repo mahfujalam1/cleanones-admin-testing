@@ -15,8 +15,8 @@ import {
   useGetTodayLiveShiftsQuery,
   type TodayLiveShiftItem,
 } from "@/redux/api/shiftsApi";
-import { EmployeeDetailsModal } from "@/components/shift-monitoring/EmployeeDetailsModal";
-import type { WorkerInfo } from "@/components/shift-monitoring/types";
+import { PlanDetailModal } from "@/components/cleaningPlans/PlanDetailModal";
+import type { PlanRosterAssignedWorker } from "@/redux/api/rosterApi";
 import { BackendPagination } from "@/components/shared/BackendPagination";
 import { SlidingTabs } from "@/components/ui/sliding-tabs";
 import { usePathname, useSearchParams } from "next/navigation";
@@ -35,7 +35,7 @@ const formatShiftTime = (dateTimeStr?: string) => {
   }
 };
 
-/** Calendar day from API `date` (YYYY-MM-DD), so timezone does not shift the shown day. */
+
 const formatShiftDate = (dateStr?: string) => {
   if (!dateStr) return "";
   const day = dateStr.slice(0, 10);
@@ -69,12 +69,35 @@ const getStatusTone = (st: string) => {
   return { chip: "bg-slate-100 text-slate-700 ring-slate-200", dot: "bg-slate-500", label: st || "Active" };
 };
 
-/** The four states the Live Status tabs can filter by; "" is every shift. */
+
+function planIdOfLiveShift(shift: TodayLiveShiftItem) {
+  const plan = shift.cleaning_plan;
+  if (typeof plan === "string") return plan;
+  return plan?._id || "";
+}
+
+function dateOfLiveShift(shift: TodayLiveShiftItem) {
+  return (shift.date || shift.date_time || "").slice(0, 10);
+}
+
+function crewOfLiveShift(shift: TodayLiveShiftItem): PlanRosterAssignedWorker[] {
+  return (shift.assigned_workers ?? shift.workers ?? [])
+    .map((worker) => ({
+      worker_id: worker.worker_id,
+      name: worker.name,
+      role: worker.shift_role || worker.worker_type,
+    }))
+    .filter((worker) => worker.worker_id || worker.name);
+}
+
 type LiveStatusFilter = "" | "inprogress" | "upcoming" | "complete";
 
 type UnifiedLiveShift = {
   id: string;
   shift_id?: string;
+  plan_id: string;
+  date_key: string;
+  assignedWorkers: PlanRosterAssignedWorker[];
   worker_name?: string;
   worker_type?: string;
   worker_id?: string;
@@ -100,7 +123,13 @@ export default function LiveStatusPage() {
   const ui = getUiTranslation(getLocale(usePathname()));
   const t = getDashboardTranslation(locale);
 
-  const [selected, setSelected] = useState<WorkerInfo | null>(null);
+  const [viewingLiveShift, setViewingLiveShift] = useState<{
+    planId: string;
+    date: string;
+    startTime?: string;
+    endTime?: string;
+    assignedWorkers?: PlanRosterAssignedWorker[];
+  } | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<LiveStatusFilter>(() => {
     const requested = searchParams.get("status");
@@ -122,10 +151,10 @@ export default function LiveStatusPage() {
     { value: "complete", label: ui.completed },
   ];
 
-  // 1. Fetch Today's Live Shift Metadata
+  
   const { data: todayMeta, refetch: refetchMeta } = useGetTodayLiveShiftMetaQuery();
 
-  // 2. Fetch Today's Live Shifts List
+  
   const statusParam =
     statusFilter === "inprogress"
       ? "in_progress"
@@ -144,16 +173,16 @@ export default function LiveStatusPage() {
     limit: 100,
   });
 
-  // `?? []` would be a fresh array each render and re-run every memo that depends on it.
+  
   const todayShifts = useMemo(() => todayShiftsRes?.result ?? [], [todayShiftsRes]);
 
-  // Refetch all endpoints
+  
   const refetchAll = () => {
     void refetchMeta();
     void refetchTodayShifts();
   };
 
-  // KPI Counters: /shift/today-live-shift-meta, then older key names, then a count of the list.
+  
   const counts = useMemo(() => {
     if (todayMeta) {
       return {
@@ -181,13 +210,16 @@ export default function LiveStatusPage() {
     };
   }, [todayMeta, todayShifts]);
 
-  // Unified items for display
+  
   const unifiedItems: UnifiedLiveShift[] = useMemo(() => {
-    // If today's live shifts API returned data, use it
+    
     if (todayShifts.length > 0) {
       return todayShifts.map((s) => ({
         id: s._id,
         shift_id: s._id,
+        plan_id: planIdOfLiveShift(s),
+        date_key: dateOfLiveShift(s),
+        assignedWorkers: crewOfLiveShift(s),
         client_name: s.client?.name,
         location_name: s.location?.name,
         plan_title: typeof s.cleaning_plan === "object" ? s.cleaning_plan?.title : undefined,
@@ -206,7 +238,7 @@ export default function LiveStatusPage() {
     return [];
   }, [todayShifts]);
 
-  // Client-side search and status filter
+  
   const filteredItems = useMemo(() => {
     return unifiedItems.filter((item) => {
       if (statusFilter === "inprogress") {
@@ -254,7 +286,7 @@ export default function LiveStatusPage() {
 
   return (
     <div className="space-y-4 pb-10">
-      {/* Header with Today's Live Shifts mention */}
+      
       <div className="flex min-w-0 items-center gap-2.5">
         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-sky-100 bg-sky-50 text-sky-600">
           <TbActivity className="h-4.5 w-4.5" />
@@ -270,7 +302,7 @@ export default function LiveStatusPage() {
         </div>
       </div>
 
-      {/* Stats Cards from /shift/today-live-shift-meta */}
+      
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatCard
           icon={<TbActivity />}
@@ -301,7 +333,7 @@ export default function LiveStatusPage() {
         />
       </div>
 
-      {/* Toolbar */}
+      
       <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center">
         <div className="relative min-w-0 flex-1">
           <MdSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-lg text-slate-400" />
@@ -330,7 +362,7 @@ export default function LiveStatusPage() {
         />
       </div>
 
-      {/* Shifts List */}
+      
       <div key={statusFilter || "all"} className="animate-in fade-in slide-in-from-bottom-1 duration-300">
       {loading ? (
         <div className="space-y-3">
@@ -354,30 +386,20 @@ export default function LiveStatusPage() {
             const tone = getStatusTone(item.status);
 
             return (
-              <div
+              <button
+                type="button"
                 key={item.id}
                 onClick={() => {
-                  if (item.worker_id) {
-                    setSelected({
-                      id: item.worker_id,
-                      initials: "",
-                      name: item.worker_name || item.client_name || "Worker",
-                      role: item.worker_type?.toLowerCase() === "freelancer" ? "Freelancer" : "Employee",
-                      shiftId: item.shift_id || "",
-                      location: item.location_name || "",
-                      checkIn: item.start_time || "",
-                      status: item.status?.toLowerCase() === "late" ? "Late" : "On Time",
-                      color: "bg-sky-500",
-                      statusColor: "text-sky-500",
-                      hoursWorked: 0,
-                      totalShifts: 0,
-                      lateDays: 0,
-                      avgDuration: "0h",
-                    });
-                  }
+                  if (!item.plan_id) return;
+                  setViewingLiveShift({
+                    planId: item.plan_id,
+                    date: item.date_key,
+                    startTime: item.rawItem?.date_time,
+                    assignedWorkers: item.assignedWorkers,
+                  });
                 }}
                 className={`group w-full rounded-xl border border-slate-200 bg-white p-4 text-left transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-sm ${
-                  item.worker_id ? "cursor-pointer" : ""
+                  item.plan_id ? "cursor-pointer" : "cursor-default"
                 }`}
               >
                 <div className="flex items-start gap-3">
@@ -455,12 +477,12 @@ export default function LiveStatusPage() {
                     <p className="text-[10px] uppercase tracking-wide text-slate-400">progress</p>
                   </div>
 
-                  {item.worker_id && (
+                  {item.plan_id && (
                     <MdChevronRight className="mt-2 shrink-0 text-lg text-slate-300 transition-all group-hover:translate-x-0.5 group-hover:text-primary" />
                   )}
                 </div>
 
-                {/* Progress bar */}
+                
                 <div className="mt-3 flex items-center gap-2">
                   <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-100">
                     <div
@@ -472,7 +494,7 @@ export default function LiveStatusPage() {
                     {item.progress}%
                   </span>
                 </div>
-              </div>
+              </button>
             );
           })}
         </div>
@@ -487,11 +509,20 @@ export default function LiveStatusPage() {
         itemLabel="shifts"
       />
 
-      {selected && (
-        <EmployeeDetailsModal
-          worker={selected}
-          onClose={() => setSelected(null)}
-          onChanged={refetchAll}
+      {viewingLiveShift && (
+        <PlanDetailModal
+          planId={viewingLiveShift.planId}
+          shiftDate={viewingLiveShift.date || undefined}
+          assignedWorkers={viewingLiveShift.assignedWorkers}
+          shiftSchedule={{
+            date: viewingLiveShift.date,
+            startTime: viewingLiveShift.startTime,
+            endTime: viewingLiveShift.endTime,
+          }}
+          onClose={() => setViewingLiveShift(null)}
+          onAssigned={() => {
+            refetchAll();
+          }}
         />
       )}
     </div>

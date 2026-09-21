@@ -23,7 +23,7 @@ export function Select({
   disabled?: boolean;
   required?: boolean;
   className?: string;
-  /** When the list opens with no selection, scroll this option into view. */
+  
   scrollToValue?: string;
 }) {
   const popupRef = useRef<HTMLDivElement>(null);
@@ -58,9 +58,9 @@ export function Select({
           side="bottom"
           align="start"
           sideOffset={4}
-          // Base UI defaults to overlapping the trigger so the chosen item's text lands on the
-          // trigger's, the way a native macOS menu behaves. Here the list should simply drop
-          // below the field and line up with its edges, so that behaviour is turned off.
+          
+          
+          
           alignItemWithTrigger={false}
           className="z-[120] w-[var(--anchor-width)] outline-none"
         >
@@ -76,8 +76,8 @@ export function Select({
                 data-slot-value={option.value}
                 className="flex cursor-pointer items-center gap-2 rounded px-2.5 py-2 text-sm font-medium text-slate-700 outline-none transition-colors data-[highlighted]:bg-sky-50 data-[highlighted]:text-primary data-[disabled]:cursor-not-allowed data-[disabled]:opacity-40"
               >
-                {/* The wrapper always occupies the tick's width; the indicator inside only
-                    renders when selected. Without it, unselected labels shift left. */}
+
+
                 <span className="flex h-4 w-4 shrink-0 items-center justify-center">
                   <BaseSelect.ItemIndicator>
                     <Check className="h-4 w-4 text-primary" />

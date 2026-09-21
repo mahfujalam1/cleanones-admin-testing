@@ -20,8 +20,8 @@ export default function DashboardLayout({
   const routePath = stripLocale(pathname);
   const { isAuthenticated, initialized, user } = useAppSelector((state) => state.auth);
 
-  // Auth state settles in a few dispatches, so these effects re-run. Navigating to
-  // the route we are already on would refetch it from the server for nothing.
+  
+  
   const replaceRoute = useCallback((target: string) => {
     const href = localizePath(target, locale);
     if (href !== pathname) router.replace(href);

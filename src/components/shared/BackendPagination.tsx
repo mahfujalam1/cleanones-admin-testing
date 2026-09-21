@@ -35,8 +35,8 @@ export function BackendPagination({
   const [jumpInput, setJumpInput] = useState("");
   const popoverRef = useRef<HTMLDivElement>(null);
 
-  // If page exceeds totalPages (e.g. all items on the current page were deleted),
-  // automatically redirect/fallback to the highest available page.
+  
+  
   useEffect(() => {
     if (total > 0 && page > totalPages && totalPages >= 1) {
       onPageChange(totalPages);
@@ -47,7 +47,7 @@ export function BackendPagination({
     }
   }, [page, total, totalPages, itemCount, onPageChange]);
 
-  // Close jump popover when clicking outside
+  
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (popoverRef.current && !popoverRef.current.contains(event.target as Node)) {
@@ -60,12 +60,12 @@ export function BackendPagination({
     }
   }, [popoverPosition]);
 
-  // If no items or only 1 page, hide pagination controls
+  
   if (total <= limit || totalPages <= 1) {
     return null;
   }
 
-  // Calculate items with ellipsis
+  
   const getPageItems = (): PageItem[] => {
     if (totalPages <= 7) {
       return Array.from({ length: totalPages }, (_, i) => i + 1);
@@ -105,7 +105,7 @@ export function BackendPagination({
     <div
       className={`flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-slate-100 pt-4 text-xs text-slate-500 ${className}`}
     >
-      {/* Summary info */}
+      
       {showSummary && (
         <span className="text-slate-500 font-medium">
           Showing <span className="font-semibold text-slate-800">{startItem}</span>–
@@ -114,13 +114,13 @@ export function BackendPagination({
         </span>
       )}
 
-      {/* Pagination Controls */}
+      
       <nav
         role="navigation"
         aria-label={ui.pagination}
         className="flex items-center gap-1.5 ml-auto relative select-none"
       >
-        {/* Previous Button */}
+        
         <button
           type="button"
           disabled={page <= 1}
@@ -132,7 +132,7 @@ export function BackendPagination({
           <span className="hidden sm:inline">{ui.previous}</span>
         </button>
 
-        {/* Page Buttons & Interactive Ellipsis */}
+        
         <div className="flex items-center gap-1 relative">
           {pageItems.map((item, idx) => {
             if (typeof item === "number") {
@@ -170,7 +170,7 @@ export function BackendPagination({
                   <MoreHorizontal className="h-4 w-4" />
                 </button>
 
-                {/* Jump to Page Popover */}
+                
                 {isOpen && (
                   <div
                     ref={popoverRef}
@@ -205,7 +205,7 @@ export function BackendPagination({
           })}
         </div>
 
-        {/* Next Button */}
+        
         <button
           type="button"
           disabled={page >= totalPages}

@@ -9,28 +9,19 @@ interface Props {
   value: string;
   onChange: (address: string) => void;
   onPlaceSelect: (result: PlaceSelection) => void;
-  /**
-   * Called when the address is edited by hand after a suggestion was picked, so the caller can
-   * drop coordinates that no longer match what is typed.
-   */
+
   onCoordinatesCleared?: () => void;
   required?: boolean;
   placeholder?: string;
   className?: string;
 }
 
-/** True while Google's suggestion dropdown is on screen with at least one row. */
 function suggestionsVisible() {
   return Array.from(document.querySelectorAll(".pac-container")).some(
     (element) => (element as HTMLElement).offsetParent !== null && element.querySelector(".pac-item")
   );
 }
 
-/**
- * A plain text input wired to Google Places Autocomplete. Typing shows address suggestions;
- * picking one — by mouse, or with ArrowDown + Enter — reports the formatted address plus its
- * lat/lng in a single callback, so the caller never needs its own latitude/longitude fields.
- */
 export function AddressAutocompleteInput({
   value,
   onChange,
@@ -46,8 +37,6 @@ export function AddressAutocompleteInput({
   const [loadError, setLoadError] = useState("");
   const [ready, setReady] = useState(false);
 
-  // Callers pass inline arrow functions, so keep the live ones in a ref: the widget below must be
-  // built exactly once. Rebuilding it on every keystroke tears the suggestion list down as it opens.
   const handlers = useRef({ onChange, onPlaceSelect, onCoordinatesCleared });
   useEffect(() => {
     handlers.current = { onChange, onPlaceSelect, onCoordinatesCleared };
@@ -111,15 +100,14 @@ export function AddressAutocompleteInput({
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key !== "Enter" || !suggestionsVisible()) return;
-    // Google handles Enter itself to confirm the highlighted suggestion. Without this the browser
-    // submits the form first and the address is saved with no coordinates.
+
     event.preventDefault();
   };
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const next = event.target.value;
     if (pickedAddressRef.current !== null && next !== pickedAddressRef.current) {
-      // Typing over a picked address makes the stored coordinates wrong — let the caller drop them.
+
       pickedAddressRef.current = null;
       handlers.current.onCoordinatesCleared?.();
     }

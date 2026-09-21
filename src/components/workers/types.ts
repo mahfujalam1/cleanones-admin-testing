@@ -18,26 +18,26 @@ export interface Worker {
   certificates?: string[];
   completedShifts: number;
   avgPhotoScore: number;
-  weeklyAvailability: boolean[]; // Mon–Sun, 7 items
+  weeklyAvailability: boolean[]; 
   weekly_availability?: Array<{ day: string; start_time: string; end_time: string; is_available: boolean }>;
   preferred_hours_per_week?: number;
 
-  // Attendance
+  
   monthlyHours: string;
   lateDays: number;
   absentDays: number;
   attendanceRecords: AttendanceRecord[];
 
-  // Documents
+  
   documents: WorkerDocument[];
 
-  // Invoices
+  
   totalEarned: number;
   totalPaid: number;
   remaining: number;
   invoices: WorkerInvoice[];
 
-  // Shifts
+  
   shiftRecords: ShiftRecord[];
 }
 

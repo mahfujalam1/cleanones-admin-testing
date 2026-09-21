@@ -12,19 +12,14 @@ import { baseApi, type ApiMeta } from "../baseApi";
 export type LoginRequest = {
   email: string;
   password: string;
-  /** Push device ID, when the browser has registered for notifications. */
+  remember_me?: boolean;
   playerId?: string;
 };
 
 type Tokens = { accessToken: string; refreshToken?: string; role?: string };
 
-/**
- * A login result the UI can act on directly. `user` is null when the credentials were valid but
- * the account is not a manager-side role, which the login page reports as a permission error.
- */
 export type AuthSession = { accessToken: string; user: DashboardUser | null };
 
-/** Endpoints that answer `data: null` carry their result in the envelope's message. */
 const messageOnly = (_data: null, meta: ApiMeta | undefined) => meta?.message ?? "";
 
 export const authApi = baseApi.injectEndpoints({
@@ -39,12 +34,12 @@ export const authApi = baseApi.injectEndpoints({
         accessToken: tokens.accessToken,
         user: userFromAccessToken(tokens.accessToken, { email: arg.email, role: tokens.role }),
       }),
-      async onQueryStarted(_arg, { dispatch, queryFulfilled }) {
+      async onQueryStarted(arg, { dispatch, queryFulfilled }) {
         const { data: session } = await queryFulfilled;
-        // A non-manager account gets no session; the login page turns the null user into an error.
+
         if (!session.user) return;
         tokenStore.set(session.accessToken);
-        writeSessionMarker(session.user.role);
+        writeSessionMarker(session.user.role, Boolean(arg.remember_me));
         clearRefreshCooldown();
         dispatch(setUser(session.user));
       },
@@ -65,10 +60,6 @@ export const authApi = baseApi.injectEndpoints({
       transformResponse: messageOnly,
     }),
 
-    /**
-     * Requires a prior `verifyResetOtp`. The API returns tokens here, but they are deliberately
-     * discarded: the user is sent back to the login page so the new password is proven once.
-     */
     resetPassword: builder.mutation<string, { email: string; password: string; confirmPassword: string }>({
       query: (body) => ({ url: "/auth/reset-password", method: "POST", body }),
       transformResponse: (_tokens: Tokens, meta: ApiMeta | undefined) => meta?.message ?? "",
@@ -84,11 +75,6 @@ export const authApi = baseApi.injectEndpoints({
   }),
 });
 
-/**
- * Signs out locally. The API exposes no logout route, so the HttpOnly refresh cookie can only be
- * dropped by the backend — clearing the session marker is what actually ends the session here:
- * `proxy.ts` gates on it, and nothing will attempt a refresh without it.
- */
 export function clearLocalSession() {
   tokenStore.clear();
   clearSessionMarker();

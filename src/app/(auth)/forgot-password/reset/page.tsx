@@ -37,7 +37,7 @@ export default function ResetPasswordPage() {
       return;
     }
 
-    // The code was already proven on the previous screen; only the address travels from here.
+    
     const email = passwordReset.email();
     if (!email || !passwordReset.isVerified()) {
       setError(t.sessionExpired);

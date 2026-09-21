@@ -35,7 +35,7 @@ export function TaskCard({
 
   return (
     <div className="space-y-3 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-      {/* Header row: Task # + Remove */}
+      
       <div className="flex items-center justify-between border-b border-slate-100 pb-2">
         <strong className="text-xs font-bold text-slate-700">{t.common.tasks} {taskIndex + 1}</strong>
         <button
@@ -48,7 +48,7 @@ export function TaskCard({
         </button>
       </div>
 
-      {/* Row 1: Task name & Schedule type */}
+      
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-1">
           <label className="block text-xs font-semibold text-slate-700">{t.common.tasks} *</label>
@@ -73,7 +73,7 @@ export function TaskCard({
         </div>
       </div>
 
-      {/* Row 2: Fixed date & Duration */}
+      
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-1">
           <label className="block text-xs font-semibold text-slate-700">{t.roster.date} *</label>
@@ -106,7 +106,7 @@ export function TaskCard({
         </div>
       </div>
 
-      {/* Photo Required Checkbox (Optional, not mandatory) */}
+      
       <label className="flex items-center gap-2 text-xs font-semibold text-slate-700 cursor-pointer pt-1">
         <input
           type="checkbox"
@@ -125,7 +125,7 @@ export function TaskCard({
         {t.common.required}
       </label>
 
-      {/* Photo List (Optional, photo not mandatory) */}
+      
       {task.is_photo_req && (
         <div className="space-y-2 rounded-lg border border-gray-200 bg-slate-50 p-3">
           <p className="text-xs font-semibold text-slate-600">{t.common.photos}</p>

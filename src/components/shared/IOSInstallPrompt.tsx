@@ -7,9 +7,9 @@ export function IOSInstallPrompt() {
   const [showPrompt, setShowPrompt] = useState(false);
 
   useEffect(() => {
-    // Check if device is iOS and not already running in standalone PWA mode
-    // `MSStream` (old IE on Windows Phone) and `standalone` (iOS Safari) are vendor extensions
-    // that the DOM lib does not declare, so they are read through narrow local shapes.
+    
+    
+    
     const isIOS =
       /iPad|iPhone|iPod/.test(navigator.userAgent) &&
       !(window as Window & { MSStream?: unknown }).MSStream;
@@ -17,7 +17,7 @@ export function IOSInstallPrompt() {
       window.matchMedia("(display-mode: standalone)").matches ||
       Boolean((navigator as Navigator & { standalone?: boolean }).standalone);
 
-    // Check if user dismissed prompt previously in this session
+    
     const isDismissed = sessionStorage.getItem("ios_pwa_prompt_dismissed");
 
     if (isIOS && !isStandalone && !isDismissed) {

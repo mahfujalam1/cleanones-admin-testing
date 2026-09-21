@@ -11,7 +11,7 @@ import { WorkerAvatar } from "./WorkerAvatar";
 const typeTone = (type: Worker["worker_type"]) =>
   type === "Employee" ? "bg-[#0ea5e9]/10 text-[#0ea5e9]" : "bg-[#8b5cf6]/10 text-[#8b5cf6]";
 
-/** Columns the API cannot fill yet render this, rather than an empty cell. */
+
 const Unavailable = () => <span className="text-gray-300">&mdash;</span>;
 
 export function WorkersTable({

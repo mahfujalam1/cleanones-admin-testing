@@ -33,11 +33,8 @@ export default function ResetOtpPage() {
     else setError(t.restartReset);
   }, [t.restartReset]);
 
-  /**
-   * Writes one or more digits starting at `start`, then parks the caret on the next empty box.
-   * Typing, pasting and SMS autofill all land here, so a six-digit value behaves the same
-   * however it arrives.
-   */
+
+
   const fill = (start: number, value: string) => {
     const incoming = value.replace(/\D/g, "").slice(0, CODE_LENGTH - start);
     if (!incoming) return;
@@ -55,7 +52,7 @@ export default function ResetOtpPage() {
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>, index: number) => {
     const value = event.target.value.replace(/\D/g, "");
-    // An emptied box is a deletion, not a fill.
+    
     if (!value) {
       setDigits((current) => current.map((digit, position) => (position === index ? "" : digit)));
       return;
@@ -67,8 +64,8 @@ export default function ResetOtpPage() {
     const pasted = event.clipboardData.getData("text").replace(/\D/g, "");
     if (!pasted) return;
     event.preventDefault();
-    // A complete code always fills from the first box, whichever one the user pasted into —
-    // nobody clicks box four intending to drop the first four digits on the floor.
+    
+    
     fill(pasted.length >= CODE_LENGTH ? 0 : index, pasted);
   };
 
@@ -93,7 +90,7 @@ export default function ResetOtpPage() {
     }
 
     try {
-      // The code is proven here, not at reset time, so an invalid one is caught on this screen.
+      
       await verifyCode({ email, resetCode: Number(code) }).unwrap();
       passwordReset.markVerified();
       router.push(localizePath("/forgot-password/reset", locale));

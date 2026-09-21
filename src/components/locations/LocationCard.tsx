@@ -19,7 +19,7 @@ export function LocationCard({
 }: {
   location: Location;
   selected?: boolean;
-  /** When given, the card opens the location's rooms. */
+
   onSelect?: (location: Location) => void;
   onEdit?: (location: Location) => void;
   onDelete?: (location: Location) => void;
@@ -47,7 +47,7 @@ export function LocationCard({
       >
         <div className="flex-1 p-4">
           <div className="flex items-start gap-3">
-            {/* A neutral tile anchors the card so a grid of them reads as a list, not loose text. */}
+
             <span
               aria-hidden
               className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-50 text-lg text-slate-400 ring-1 ring-slate-200/70 transition-colors group-hover:bg-sky-50 group-hover:text-primary group-hover:ring-sky-100"
@@ -64,8 +64,6 @@ export function LocationCard({
           </div>
         </div>
 
-        {/* The footer sits on a tinted strip so every card ends on the same line, however long
-            the address above it runs. */}
         <footer className="flex items-center gap-3 border-t border-slate-100 bg-slate-50/60 px-4 py-2.5">
           <span className="flex min-w-0 items-center gap-1.5 text-xs text-slate-600">
             <MdOutlineMeetingRoom className="shrink-0 text-sm text-slate-400" />

@@ -12,7 +12,7 @@ export type PlanStatus = "active" | "inactive";
 export type AssignedWorker = {
   worker: Ref<Worker>;
   role?: string;
-  /** The API flags an assignment that overlaps another shift rather than refusing it. */
+  
   assigned_with_conflict?: boolean;
 };
 
@@ -23,7 +23,7 @@ export type CleaningPlan = {
   note?: string;
   client: Ref<Client>;
   location: Ref<Location>;
-  /** Omitted from list results — only the counts below come back there. */
+  
   rooms?: Ref<Room>[];
   assigned_workers?: AssignedWorker[];
   additional_tasks?: Ref<AdditionalTask>[];
@@ -38,10 +38,8 @@ export type CleaningPlan = {
   is_active?: boolean;
   manager?: string;
   last_updated_by?: string;
-  /**
-   * The list response carries both spellings of each count. Read them through `planCounts()`
-   * rather than picking one, since which is populated is not guaranteed.
-   */
+
+
   total_room?: number;
   total_rooms?: number;
   total_assigned_worker?: number;
@@ -52,7 +50,7 @@ export type CleaningPlan = {
   updatedAt?: string;
 };
 
-/** Normalises the duplicated count fields, falling back to the arrays when a detail is loaded. */
+
 export function planCounts(plan: CleaningPlan) {
   return {
     rooms: plan.total_room ?? plan.total_rooms ?? plan.rooms?.length ?? 0,
@@ -61,7 +59,7 @@ export function planCounts(plan: CleaningPlan) {
   };
 }
 
-/** Room-task minutes plus additional-task minutes. Prefers the API total when present. */
+
 export function planWorkDurationMinutes(plan: CleaningPlan): number {
   if (typeof plan.total_duration === "number" && plan.total_duration > 0) return plan.total_duration;
   const rooms = (plan.rooms ?? []).map((room) => refDoc<Room>(room)).filter(Boolean) as Room[];
@@ -81,23 +79,16 @@ export function planWorkDurationMinutes(plan: CleaningPlan): number {
   return plan.max_estimated_duration ?? 0;
 }
 
-/**
- * List filters.
- *
- * The API applies any unrecognised query key as an equality filter on the collection, which is
- * how `client` and `location` narrow the list. That also means a typo silently filters on a
- * field nobody meant, so nothing beyond these named keys is ever forwarded.
- */
+
+
 export type PlanListParams = ListParams & {
   client?: string;
   location?: string;
   status?: PlanStatus;
 };
 
-/**
- * Update and delete are not in the docs; they follow the spelling every other resource uses and
- * are collected here so correcting one is a single-line change.
- */
+
+
 const ROUTES = {
   list: "/cleaning-plan/all-cleaning-plans",
   create: "/cleaning-plan/create-cleaning-plan",
@@ -118,7 +109,7 @@ export type CreatePlanInput = {
 
 export type UpdatePlanInput = Partial<CreatePlanInput>;
 
-/** A worker the plan may use, with the conflict the API worked out against this plan's schedule. */
+
 export type EligibleWorker = {
   worker: Worker;
   is_conflict?: boolean;
@@ -126,7 +117,7 @@ export type EligibleWorker = {
   conflicting_plan_id?: string;
 };
 
-/** `double_booked` → "Double booked", so a raw reason code never reaches the screen. */
+
 export const conflictLabel = (reason?: string) =>
   reason ? reason.replaceAll("_", " ").replace(/^./, (letter) => letter.toUpperCase()) : "Scheduling conflict";
 

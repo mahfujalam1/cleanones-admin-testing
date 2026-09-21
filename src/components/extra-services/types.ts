@@ -21,7 +21,7 @@ export type UnifiedServiceRequest = {
   rejection_reason?: string;
   rawExtraService?: ExtraServiceRequest;
   rawPendingTask?: PendingAdditionalTask;
-  /** Present when the row came from `/additional-task/all-additional-tasks`. */
+  
   rawAdditionalTask?: AdditionalTask;
   isCleaningPlanTask: boolean;
 };

@@ -11,17 +11,15 @@ export type Location = {
   client: Ref<Client>;
   name: string;
   address: string;
-  /**
-   * Free-text from the form. Presets are Hotel/School/Hospital/Office; a custom type is the
-   * typed label itself, not a separate `other_type` field.
-   */
+
+
   type?: string;
-  /** Legacy only — older records stored custom text here when `type` was `Other`. */
+  
   other_type?: string;
   description?: string;
   is_active: boolean;
   location?: GeoPoint;
-  /** Only the `client-locations` listing carries this. */
+  
   total_room?: number;
   createdAt?: string;
   updatedAt?: string;
@@ -49,7 +47,7 @@ export const locationsApi = baseApi.injectEndpoints({
       ],
     }),
 
-    /** A single client's locations, each carrying its room count. */
+    
     getClientLocations: builder.query<Paginated<Location>, { clientId: string } & ListParams>({
       query: ({ clientId, ...params }) =>
         `/location/client-locations/${encodeURIComponent(clientId)}?${listQuery(params)}`,
@@ -84,7 +82,7 @@ export const locationsApi = baseApi.injectEndpoints({
       ],
     }),
 
-    /** Deactivates the location. Child rooms and tasks are left as they are. */
+    
     deleteLocation: builder.mutation<Location, string>({
       query: (id) => ({ url: `/location/delete-location/${encodeURIComponent(id)}`, method: "DELETE" }),
       invalidatesTags: (_result, _error, id) => [

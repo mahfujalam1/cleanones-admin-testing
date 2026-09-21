@@ -3,7 +3,7 @@ import { tokenStore } from "./tokenStore";
 
 export type RefreshOutcome =
   | "refreshed"
-  | "unauthenticated" 
+  | "unauthenticated"
   | "unavailable";
 
 const FAILURE_COOLDOWN_MS = 60_000;
@@ -16,7 +16,7 @@ export function refreshAccessToken(): Promise<RefreshOutcome> {
 
   inFlight ??= (async () => {
     try {
-      // No body and no auth header: the browser sends the refresh cookie on its own.
+
       const response = await fetch(`${apiBase()}/auth/refresh-token`, {
         method: "POST",
         credentials: "include",
@@ -46,7 +46,6 @@ export function refreshAccessToken(): Promise<RefreshOutcome> {
   return inFlight;
 }
 
-/** Lets a fresh sign-in retry immediately after an earlier failure opened the cooldown. */
 export function clearRefreshCooldown() {
   blockedUntil = 0;
 }

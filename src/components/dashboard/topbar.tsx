@@ -145,13 +145,11 @@ export default function Topbar() {
 
   return (
     <>
-      {/* The header owns a stacking context, so this value — not the z-[80] on the menus
-          inside it — is what decides whether a dropdown paints over the page. Sticky
-          table headers on Roster and Shift Monitoring sit at z-30/z-40, and modals start
-          at z-[70], so the navbar belongs between them. */}
+
+
       <header className="relative z-50 flex h-14 shrink-0 items-center justify-between gap-2 border-b border-sidebar-border bg-sidebar px-3 shadow-none sm:px-4 lg:px-6">
         <div className="flex items-center gap-2 sm:gap-4 min-w-0">
-          {/* Mobile/tablet hamburger - always visible below lg */}
+          
           <button
             type="button"
             onClick={() => dispatch(toggleMobileSidebar())}
@@ -185,7 +183,7 @@ export default function Topbar() {
               <span>{currentLocale.toUpperCase()}</span>
             </button>
 
-            {/* Kept mounted so opening and closing both animate. */}
+            
             <div
               role="menu"
               aria-hidden={!languageOpen}

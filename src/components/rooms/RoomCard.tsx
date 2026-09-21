@@ -13,7 +13,7 @@ export function RoomCard({
 }: {
   room: Room;
   selected?: boolean;
-  /** When given, the card drills into the room's tasks. */
+  
   onSelect?: (room: Room) => void;
   onEdit?: (room: Room) => void;
   onDelete?: (room: Room) => void;

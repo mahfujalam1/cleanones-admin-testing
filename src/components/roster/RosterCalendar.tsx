@@ -45,8 +45,8 @@ export function RosterCalendar() {
   const [error, setError] = useState('');
   const [deletePlan, { isLoading: removingPlan }] = useDeleteCleaningPlanMutation();
 
-  // A shift generated from a cleaning plan opens that plan's own modals, so the roster offers
-  // exactly what the Cleaning Plans page does - view, edit, assign, delete - minus creating one.
+  
+  
   const selectedPlanId = selectedShift ? (selectedShift.planId || planIdFromShift(selectedShift.id)) : '';
 
   const handlePlanDelete = async (plan: CleaningPlan) => {
@@ -114,8 +114,8 @@ export function RosterCalendar() {
       }
       if (!worker.shifts_by_date) continue;
       for (const [rawDate, occurrences] of Object.entries(worker.shifts_by_date)) {
-        // The date key follows the local clock too, so a shift whose local time crosses
-        // midnight is filed under the same day its start time is drawn in.
+        
+        
         const cleanDate = rawDate.includes('T') ? toLocalDateKey(rawDate) : rawDate;
         for (const occ of occurrences || []) {
           shiftCounter += 1;
@@ -396,7 +396,7 @@ function formatYYYYMMDD(d: Date): string {
   return `${year}-${month}-${day}`;
 }
 
-/** `2026-09-15T16:00:00.000Z` -> `2026-09-15` in the viewer's timezone. */
+
 function toLocalDateKey(value: string): string {
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return value.split('T')[0];
@@ -405,9 +405,9 @@ function toLocalDateKey(value: string): string {
 
 function formatTimeToHHMM(value?: string): string {
   if (!value) return "08:00";
-  // A full timestamp is converted to the viewer's own clock. Slicing the ISO string instead
-  // showed the raw UTC time, so a 16:00Z shift read as 16:00 here while the plan modal -
-  // which parses the same value as a Date - correctly showed 22:00 local.
+  
+  
+  
   if (value.includes("T")) {
     const parsed = new Date(value);
     if (!Number.isNaN(parsed.getTime())) {

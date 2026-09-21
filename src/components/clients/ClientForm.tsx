@@ -12,7 +12,7 @@ import {
   type Client,
 } from "@/redux/api/endpoints/clients.api";
 
-/** `2026-09-12T09:00:00.000Z` → `2026-09-12`, which is what a date input wants. */
+
 const toDateInput = (value?: string) => (value ? value.slice(0, 10) : "");
 
 type Draft = {
@@ -44,12 +44,8 @@ const draftFrom = (client: Client): Draft => ({
   licence_expiration_date: toDateInput(client.licence_expiration_date),
 });
 
-/**
- * One form for both creating and editing a client.
- *
- * Creating also provisions the client's login and emails the credentials, so a password is
- * collected then and only then — the update endpoint does not accept one.
- */
+
+
 export function ClientForm({ client, onClose }: { client?: Client; onClose: () => void }) {
   const isEdit = client !== undefined;
   const [draft, setDraft] = useState<Draft>(() => (client ? draftFrom(client) : emptyDraft));
@@ -68,7 +64,7 @@ export function ClientForm({ client, onClose }: { client?: Client; onClose: () =
     email: draft.email.trim().toLowerCase(),
     phone: draft.phone.trim().replace(/[^\d+]/g, "").replace(/(?!^)\+/g, ""),
     company_name: draft.company_name.trim(),
-    // A date input gives `YYYY-MM-DD`; the API stores a full timestamp.
+    
     licence_expiration_date: draft.licence_expiration_date
       ? new Date(draft.licence_expiration_date).toISOString()
       : undefined,

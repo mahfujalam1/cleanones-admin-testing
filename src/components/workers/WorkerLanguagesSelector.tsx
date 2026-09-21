@@ -8,7 +8,7 @@ interface WorkerLanguagesSelectorProps {
   onToggleLanguage: (language: string) => void;
 }
 
-/** The languages a worker can speak — the same set the dashboard itself is translated into. */
+
 export function WorkerLanguagesSelector({
   selectedLanguages,
   onToggleLanguage,

@@ -1,20 +1,13 @@
-/**
- * Roster shifts generated from a cleaning plan carry the plan id inside their own id
- * ("exec_plan_b5cf1d87f9_2026-09-08" comes from plan "plan_b5cf1d87f9"). The roster API
- * does not return the plan id on its own, so this is the only link available. Shifts
- * created directly on the roster ("shift_2981de3e24") have no plan behind them.
- */
+
 export const planIdFromShift = (shiftId: string) => {
   const generated = /^exec_(plan_[A-Za-z0-9]+)_\d{4}-\d{2}-\d{2}$/.exec(shiftId);
   if (generated) return generated[1];
-  // Some roster rows carry the plan id verbatim rather than wrapped in an exec_ id.
+  
   return /^plan_[A-Za-z0-9]+$/.test(shiftId) ? shiftId : '';
 };
 
-/**
- * Roster times are held as 24-hour "HH:MM" but shown on a 12-hour clock.
- * "16:00" -> "4:00 PM".
- */
+
+
 export const formatTime12 = (value?: string) => {
   if (!value) return "";
   const [rawHour, rawMinute] = value.split(":");
@@ -25,7 +18,7 @@ export const formatTime12 = (value?: string) => {
   return `${hour12}:${(rawMinute ?? "00").padStart(2, "0")} ${period}`;
 };
 
-/** Hour-axis label: 13 -> "1 PM". */
+
 export const formatHour12 = (hour: number) => {
   const period = hour >= 12 ? "PM" : "AM";
   const hour12 = hour % 12 === 0 ? 12 : hour % 12;
@@ -39,9 +32,9 @@ export interface Shift {
   workerName: string;
   workerId?: string;
   location: string;
-  date: string; // YYYY-MM-DD
-  startTime: string; // HH:MM (24-hour)
-  endTime: string; // HH:MM (24-hour)
+  date: string; 
+  startTime: string; 
+  endTime: string; 
   startAt?: string;
   theme: ShiftTheme;
   planId?: string;
@@ -61,7 +54,7 @@ export const getThemeClasses = (theme: ShiftTheme) => {
   }
 };
 
-// Helper to generate a date string offset from today
+
 const getOffsetDate = (offsetDays: number) => {
   const d = new Date();
   d.setDate(d.getDate() + offsetDays);

@@ -26,7 +26,7 @@ export default function SettingsPage() {
   const t = getDashboardTranslation(locale);
   const ui = getUiTranslation(locale);
 
-  // Change Password state
+  
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -104,7 +104,7 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-6 pb-10">
-      {/* Account & Security Section */}
+      
       <section>
         <h2 className="mb-3 flex h-7 items-center text-lg font-bold leading-none text-slate-950">
           {ui.accountSecurity}
@@ -123,7 +123,7 @@ export default function SettingsPage() {
         </div>
       </section>
 
-      {/* Legal Section */}
+      
       <section>
         <h2 className="mb-3 flex h-7 items-center text-lg font-bold leading-none text-slate-950">
           {t.settings.legal}
@@ -160,7 +160,7 @@ export default function SettingsPage() {
         </div>
       </section>
 
-      {/* Change Password Modal */}
+      
       {isPasswordModalOpen && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4 animate-in fade-in"

@@ -96,8 +96,8 @@ function GeneralTab({ worker, onEdit }: { worker: Worker; onEdit?: () => void })
 }
 
 function AvailabilityTab({ worker }: { worker: Worker }) {
-  // The API returns `working_days` for freelancers as well as employees, so they are shown for
-  // both. Only the form restricts who may edit them.
+  
+  
   const working = new Set(worker.working_days ?? []);
 
   return (
@@ -168,8 +168,8 @@ export function WorkerDetailModal({
         role="dialog"
         aria-modal="true"
         aria-label="Worker details"
-        // Fixed box: the tabs hold very different amounts of content, and sizing to it made
-        // the modal jump on every switch. The body scrolls inside instead.
+        
+        
         className={`flex h-[85vh] w-full max-w-3xl flex-col rounded-lg bg-white shadow-2xl animate-in fade-in zoom-in-95 duration-200 ${jumpClassName}`}
       >
         <header className="flex items-start justify-between gap-4 border-b border-slate-100 px-6 pb-4 pt-5">

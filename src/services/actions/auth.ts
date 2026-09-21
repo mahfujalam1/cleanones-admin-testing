@@ -2,18 +2,12 @@ import { apiBase } from "@/utils/baseUrl";
 import { refreshAccessToken } from "@/lib/auth/refresh";
 import { tokenStore } from "@/lib/auth/tokenStore";
 
-/**
- * Transitional fetch helper for the domains still on the old action layer.
- *
- * Authentication itself has moved to RTK Query (`redux/api/endpoints/auth.api.ts`); what remains
- * here is the plumbing those not-yet-migrated modules import. Everything it owned before — login,
- * password reset, cookie writing, session restore — now lives in `lib/auth`. Delete this file
- * once the last `services/actions/*` module has an endpoint slice.
- */
+
+
 
 export type ActionResult<T = string> = { success: true; data: T } | { success: false; error: string; status?: number };
 
-/** Pulls a readable sentence out of whatever shape the server sent back. */
+
 function message(value: unknown, fallback: string): string {
   if (typeof value === "string" && value.trim()) return value;
   if (!value || typeof value !== "object") return fallback;
@@ -55,7 +49,7 @@ async function request<T>(path: string, init: RequestInit): Promise<ActionResult
     try {
       body = text ? JSON.parse(text) : null;
     } catch {
-      // Non-JSON response; `text` already holds it.
+      
     }
 
     if (!response.ok) return { success: false, error: message(body, "Request failed"), status: response.status };
@@ -65,7 +59,7 @@ async function request<T>(path: string, init: RequestInit): Promise<ActionResult
   }
 }
 
-/** Runs a request with the current access token, refreshing once if the server rejects it. */
+
 export async function authenticated<T>(path: string, init: RequestInit): Promise<ActionResult<T>> {
   if (tokenStore.needsRefresh() && (await refreshAccessToken()) !== "refreshed") {
     return { success: false, error: "Session expired", status: 401 };

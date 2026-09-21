@@ -1,13 +1,5 @@
 import React from "react";
 
-/**
- * The one button in the app.
- *
- * The press feedback is deliberate: a short scale-down on `:active` plus a shadow that softens
- * as it goes reads as the surface being pushed rather than a colour swapping. Everything
- * transitions on the same curve so a row of buttons reacts as one control set.
- */
-
 type Variant = "primary" | "secondary" | "ghost" | "danger";
 type Size = "sm" | "md" | "lg" | "icon";
 

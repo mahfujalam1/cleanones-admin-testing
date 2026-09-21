@@ -29,7 +29,7 @@ export function EmployeeStatistics({ onWorkerSelect, selectedWorkerId }: Props) 
               onClick={() => onWorkerSelect(worker)}
               className={`dashboard-card cursor-pointer p-5 transition-[border-color,box-shadow] hover:border-[#d7dbe4] hover:shadow ${isSelected ? 'border-[#0ea5e9] shadow ring-1 ring-[#0ea5e9]' : ''}`}
             >
-              {/* Header */}
+              
               <div className="flex items-center gap-3 mb-6">
                 <img src="/avatar-placeholder.svg" alt={worker.name} className="h-10 w-10 rounded-full border border-gray-200 object-cover" />
                 <div>
@@ -40,7 +40,7 @@ export function EmployeeStatistics({ onWorkerSelect, selectedWorkerId }: Props) 
                 </div>
               </div>
 
-              {/* Stats Grid */}
+              
               <div className="grid grid-cols-2 gap-2 mb-4">
                 <div className="bg-gray-50 rounded p-2.5 border border-gray-100">
                   <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">Hours</div>
@@ -52,7 +52,7 @@ export function EmployeeStatistics({ onWorkerSelect, selectedWorkerId }: Props) 
                 </div>
               </div>
 
-              {/* Footer Stat */}
+              
               <div>
                 <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">Late Days</div>
                 <div className="text-sm font-bold text-gray-800">{worker.lateDays}</div>

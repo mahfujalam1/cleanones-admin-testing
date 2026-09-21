@@ -42,7 +42,7 @@ export function ChatSidebar({
   const ui = getUiTranslation(getLocale(usePathname()));
   return (
     <aside className={`min-h-0 flex-col lg:border-r lg:border-slate-200/90 ${className}`}>
-      {/* Segmented Tabs: All, Group, Clients, Workers */}
+      
       <div className="p-2.5 border-b border-slate-100 bg-white">
         <SlidingTabs
           compact
@@ -58,7 +58,7 @@ export function ChatSidebar({
         />
       </div>
 
-      {/* Search */}
+      
       <div className="border-b border-slate-100 p-2.5">
         <div className="relative">
           <MdSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-base" />
@@ -71,7 +71,7 @@ export function ChatSidebar({
         </div>
       </div>
 
-      {/* Chat List */}
+      
       <div key={activeTab} className="scrollbar-tiny min-h-0 flex-1 animate-in space-y-1 overflow-y-auto p-2 fade-in slide-in-from-bottom-1 duration-300">
         {loading ? (
           <DetailSkeleton blocks={6} />
@@ -94,7 +94,7 @@ export function ChatSidebar({
                 }`}
               >
                 <div className="flex items-start gap-2.5">
-                  {/* Avatar - Primary Color */}
+                  
                   <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-white font-bold text-xs shadow-xs">
                     {chat.type === "group" ? (
                       <MdGroups className="text-lg text-white" />
@@ -111,7 +111,7 @@ export function ChatSidebar({
                     />
                   </div>
 
-                  {/* Content */}
+                  
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-1">
                       <span className="truncate text-xs font-bold text-slate-900">

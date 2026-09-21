@@ -86,7 +86,7 @@ export function TasksView({
     if (scopedRoomId) refetch();
   }, [scopedRoomId, refetch]);
 
-  // Update the URL only (debounce is handled via local effect)
+  
   const applySearch = useCallback(
     (search: string) => router.push(`${pathname}?${createQuery({ search, page: "1", tab: "All" })}`),
     [createQuery, pathname, router],
@@ -110,7 +110,7 @@ export function TasksView({
       setDeleteTarget(null);
       router.refresh();
     } catch {
-      // Ignore error, UI will show toast via RTK Query error handler
+      
     }
   };
 

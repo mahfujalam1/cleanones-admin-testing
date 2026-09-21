@@ -45,7 +45,7 @@ export function ConfirmDialog({
         onClick={(e) => e.stopPropagation()}
         className={`w-full max-w-md rounded-lg border border-slate-100 bg-white p-6 shadow-2xl animate-in zoom-in-95 duration-150 ${jumpClassName}`}
       >
-        {/* Header */}
+        
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">
             <span
@@ -70,12 +70,12 @@ export function ConfirmDialog({
           </button>
         </div>
 
-        {/* Content */}
+        
         <div className="mt-4">
           <p className="text-xs leading-relaxed text-slate-600 font-normal">{description}</p>
         </div>
 
-        {/* Actions */}
+        
         <div className="mt-6 flex items-center justify-end gap-2.5 border-t border-slate-100 pt-4">
           <button
             type="button"

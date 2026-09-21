@@ -107,7 +107,7 @@ export function WorkerForm({ worker, onClose }: { worker?: Worker; onClose: () =
       base_location: baseLocation.trim(),
       hourly_rate: hourlyRate.trim() ? Number(hourlyRate) : undefined,
       languages,
-      // Stripped for freelancers by `withWorkingDays` in the endpoint.
+      
       working_days: workingDays.length ? workingDays : undefined,
     };
 
@@ -162,7 +162,7 @@ export function WorkerForm({ worker, onClose }: { worker?: Worker; onClose: () =
           required
         />
         <div>
-          {/* Base Location is required */}
+          
           <FieldLabel htmlFor={locationId} label="Base Location" required />
           <PlaceSearchSelect value={baseLocation} onValueChange={setBaseLocation} placeholder="Search Base Location…" />
         </div>
@@ -176,7 +176,7 @@ export function WorkerForm({ worker, onClose }: { worker?: Worker; onClose: () =
         }}
       />
 
-      {/* The API rejects working days for freelancers, so the picker only appears for employees. */}
+      
       {workerType === "Employee" && (
         <WeeklyAvailability
           selected={workingDays}

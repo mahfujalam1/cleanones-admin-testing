@@ -2,12 +2,8 @@
 
 import { useEffect, useState } from "react";
 
-/**
- * Worker avatar.
- *
- * Prefers the photo URL from `profile_image`. A missing or broken URL falls back to initials
- * so rows stay distinguishable without a shared silhouette.
- */
+
+
 
 const SIZES = {
   sm: "h-9 w-9 text-[11px]",
@@ -40,7 +36,7 @@ export function WorkerAvatar({
 
   if (showPhoto) {
     return (
-      // A plain <img>: the photo host is not known ahead of time, so next/image cannot be configured for it.
+      
       <img
         src={src}
         alt={name}

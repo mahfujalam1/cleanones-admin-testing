@@ -35,8 +35,8 @@ export function ClientCard({
   const expiry = formatDate(client.licence_expiration_date);
 
   return (
-    // `group` sits on the wrapper so the action buttons, which live outside the link, still
-    // react to hovering the card.
+    
+    
     <div className="group relative h-full">
       <Link
         href={href}
@@ -84,7 +84,7 @@ export function ClientCard({
         </div>
       </Link>
 
-      {/* Outside the link so the card itself stays one clickable target. */}
+      
       <div className="absolute right-2.5 top-2.5 flex items-center gap-0.5 transition-opacity lg:opacity-0 lg:group-hover:opacity-100 lg:group-focus-within:opacity-100">
         <button
           type="button"

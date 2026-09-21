@@ -6,11 +6,6 @@ import { ChevronDown, Search } from "lucide-react";
 import { searchPlaces, type Place } from "@/lib/geonames";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 
-/**
- * Type-ahead over GeoNames' populated places, for fields that hold a place as plain text rather
- * than a reference to one of our own records. The stored value is the formatted label, so it
- * stays readable wherever it is shown back.
- */
 export function PlaceSearchSelect({
   value,
   onValueChange,
@@ -35,7 +30,7 @@ export function PlaceSearchSelect({
     if (!open) return;
     setQuery("");
     setResults([]);
-    // Let the popup mount before stealing focus, so typing starts in the search box.
+
     const frame = requestAnimationFrame(() => searchRef.current?.focus());
     return () => cancelAnimationFrame(frame);
   }, [open]);
@@ -47,7 +42,6 @@ export function PlaceSearchSelect({
       return;
     }
 
-    // Abort the previous lookup so a slow early keystroke cannot overwrite a newer result.
     const controller = new AbortController();
     setSearching(true);
     void searchPlaces(term, controller.signal).then((places) => {
@@ -86,7 +80,7 @@ export function PlaceSearchSelect({
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 onKeyDown={(event) => {
-                  // Enter keeps whatever was typed, so a place GeoNames does not know is still usable.
+
                   if (event.key === "Enter") {
                     event.preventDefault();
                     pick(results[0]?.label ?? query.trim());

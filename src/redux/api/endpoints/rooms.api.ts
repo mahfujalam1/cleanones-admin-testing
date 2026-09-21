@@ -4,10 +4,8 @@ import { listQuery, type ListParams, type Paginated, type Ref } from "../types";
 import { tagTypes } from "../../tagTypes";
 import type { Location } from "./locations.api";
 
-/**
- * Room types offered in the form. `room_type` is a free-text field on the API, so this list only
- * steers the UI — adding an entry here needs no backend change.
- */
+
+
 export const ROOM_TYPES = [
   "Workshop",
   "Storage",
@@ -56,14 +54,12 @@ export type Room = {
   name: string;
   room_type: string;
   cleaning_type?: string;
-  /** Accepted by the API but not collected by the form. */
+  
   floor?: number;
   is_active: boolean;
   tasks?: RoomTask[];
-  /**
-   * Task count the listing aggregation attaches. The API is inconsistent about the plural
-   * elsewhere, so read it through `roomTaskCount()` rather than either field directly.
-   */
+
+
   total_task?: number;
   total_tasks?: number;
   createdAt?: string;
@@ -81,17 +77,15 @@ export type CreateRoomInput = {
 
 export type UpdateRoomInput = Partial<Omit<CreateRoomInput, "location">>;
 
-/** Tasks in a room, whichever spelling the endpoint used. Null when the count was not sent. */
+
 export function roomTaskCount(room: Pick<Room, "total_task" | "total_tasks">): number | null {
   return room.total_task ?? room.total_tasks ?? null;
 }
 
 export const roomsApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    /**
-     * Rooms are only listed per location — the API has no global room feed, so a location must be
-     * chosen before this can run. Callers pass `skip` until they have one.
-     */
+
+
     getRooms: builder.query<Paginated<Room>, { locationId: string } & ListParams>({
       query: ({ locationId, ...params }) =>
         `/room/all-rooms/${encodeURIComponent(locationId)}?${listQuery(params)}`,
@@ -137,12 +131,12 @@ export const roomsApi = baseApi.injectEndpoints({
           }
         } catch {}
       },
-      // The optimistic patch above only reaches the room catalog. Without these tags the
-      // location's own room list (and its count) stayed stale until a full page reload.
+      
+      
       invalidatesTags: (_result, _error, { location }) => [
         { type: tagTypes.rooms, id: `LOCATION-${location}` },
-        // The catalog falls back to this tag whenever it is not scoped to one location,
-        // which is what the client-scoped "all locations" room list uses.
+        
+        
         { type: tagTypes.rooms, id: "LIST" },
         { type: tagTypes.locations, id: location },
       ],
@@ -160,7 +154,7 @@ export const roomsApi = baseApi.injectEndpoints({
       ],
     }),
 
-    /** Deactivates the room. Child tasks are left as they are. */
+    
     deleteRoom: builder.mutation<Room, { id: string; locationId: string }>({
       query: ({ id }) => ({ url: `/room/delete-room/${encodeURIComponent(id)}`, method: "DELETE" }),
       invalidatesTags: (_result, _error, { id, locationId }) => [

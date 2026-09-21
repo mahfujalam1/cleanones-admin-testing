@@ -5,11 +5,8 @@ import { useGetLocationCatalogQuery } from "@/redux/api/endpoints/catalog.api";
 import { refId } from "@/redux/api/types";
 import { Select } from "@/components/ui/select";
 
-/**
- * Client and location filters, sharing the app's dropdown rather than a native `<select>` so the
- * whole toolbar reacts the same way. Locations narrow to the chosen client, since the pair is
- * always read together.
- */
+
+
 export function CatalogFilters({
   clientId,
   locationId,

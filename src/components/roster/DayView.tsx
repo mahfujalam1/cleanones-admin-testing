@@ -13,7 +13,7 @@ const START_HOUR = 0;
 const END_HOUR = 24;
 const HOUR_WIDTH = 96;
 const EMPLOYEE_WIDTH = 220;
-/** Narrowest a shift bar may be drawn — enough for "08:15-09:00" to stay inside it. */
+
 const MIN_SHIFT_WIDTH = 104;
 const colors = ["#0ea5e9", "#0284c7", "#06a7df", "#0891b2", "#38a9db", "#0369a1", "#0b9fd3", "#0284c7"];
 
@@ -58,13 +58,13 @@ export function DayView({ currentDate, shifts, teamMembers, onShiftClick }: DayV
                 {hours.slice(0, -1).map((hour, index) => <span key={`${hour}-half`} className="absolute inset-y-0 border-r border-dashed border-slate-100" style={{ left: index * HOUR_WIDTH + HOUR_WIDTH / 2 }} />)}
                 {employeeShifts.map((shift, shiftIndex) => {
                   const left = timeToPosition(shift.startTime);
-                  // An end earlier than the start means the shift runs past midnight, so it is
-                  // drawn to the end of the day rather than collapsing to a negative width.
+                  
+                  
                   const rawSpan = timeToPosition(shift.endTime) - left;
                   const span = rawSpan > 0 ? rawSpan : (END_HOUR - START_HOUR) * HOUR_WIDTH - left;
-                  // A 30-minute shift is only ~48px wide, far too narrow for its own label, so the
-                  // bar is floored at a width that always fits "08:15-09:00". It then reads a little
-                  // wider than the slot it occupies, which is the trade that keeps the text inside.
+                  
+                  
+                  
                   const width = Math.max(span, MIN_SHIFT_WIDTH);
                   const color = colors[(rowIndex + shiftIndex) % colors.length];
                   const showLocation = span >= 150;
@@ -77,8 +77,8 @@ export function DayView({ currentDate, shifts, teamMembers, onShiftClick }: DayV
               </div>
             </div>;
           })}
-          {/* The hour grid carries on past the last team member, so the unused part of the day
-              still reads as a calendar rather than a blank panel. */}
+
+
           <div className="flex min-h-0 flex-1" aria-hidden>
             <div className="sticky left-0 z-20 shrink-0 border-r border-slate-200 bg-white" style={{ width: EMPLOYEE_WIDTH }} />
             <div className="relative bg-white" style={{ width: (END_HOUR - START_HOUR) * HOUR_WIDTH }}>
@@ -95,7 +95,7 @@ export function DayView({ currentDate, shifts, teamMembers, onShiftClick }: DayV
 }
 
 function timeToPosition(time: string) { const [hours, minutes] = time.split(":").map(Number); return ((hours - START_HOUR) + minutes / 60) * HOUR_WIDTH; }
-/** A shift ending before it starts has run past midnight, so a day is added. */
+
 function durationHours(shift: Shift) { const span = timeToMinutes(shift.endTime) - timeToMinutes(shift.startTime); return (span >= 0 ? span : span + 24 * 60) / 60; }
 function timeToMinutes(time: string) { const [hours, minutes] = time.split(":").map(Number); return hours * 60 + minutes; }
 function toDateKey(date: Date) { const year = date.getFullYear(); const month = String(date.getMonth() + 1).padStart(2, "0"); const day = String(date.getDate()).padStart(2, "0"); return `${year}-${month}-${day}`; }

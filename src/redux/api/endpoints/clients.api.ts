@@ -13,30 +13,28 @@ export type Client = {
   company_name?: string;
   licence_expiration_date?: string;
   contract_status?: ContractStatus;
-  /** Ids of the linked records, not the client profile itself. */
+  
   user?: string;
   manager?: string;
   last_updated_by?: string;
-  /** Snake_case elsewhere, but the API really does spell this one in camelCase. */
+  
   isDeleted?: boolean;
   createdAt?: string;
   updatedAt?: string;
 };
 
-/**
- * What to call a client in a list or dropdown. `name` is the account name and `company_name` the
- * legal entity, so the account name leads and the company stands in when it is missing.
- */
+
+
 export function clientLabel(client: Pick<Client, "name" | "company_name" | "email">): string {
   return client.name?.trim() || client.company_name?.trim() || client.email || "Unnamed client";
 }
 
-/** Company-first label for pickers that represent the business, not the contact person. */
+
 export function clientCompanyLabel(client: Pick<Client, "name" | "company_name" | "email">): string {
   return client.company_name?.trim() || client.name?.trim() || client.email || "Unnamed client";
 }
 
-/** Creating a client also creates its user account and emails the credentials. */
+
 export type CreateClientInput = {
   name: string;
   email: string;
@@ -52,7 +50,7 @@ export type UpdateClientInput = Partial<Omit<CreateClientInput, "password" | "co
 
 export type ClientContact = {
   _id: string;
-  /** The API returns the owning client as an id string. */
+  
   client: Ref<Client>;
   name: string;
   role: string;
@@ -73,7 +71,7 @@ export const clientsApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getClients: builder.query<Paginated<Client>, ListParams | void>({
       query: (params) => `/client/all-clients?${listQuery(params ?? {})}`,
-      // Tagging each row means editing one client refreshes that row's caches, not every list.
+      
       providesTags: (response) => [
         { type: tagTypes.clients, id: "LIST" },
         ...(response?.result ?? []).map(({ _id }) => ({ type: tagTypes.clients, id: _id })),
@@ -97,24 +95,19 @@ export const clientsApi = baseApi.injectEndpoints({
       ],
     }),
 
-    /** Soft delete: the client is deactivated and its user account blocked. */
+    
     deleteClient: builder.mutation<null, string>({
       query: (id) => ({ url: `/client/delete-client/${encodeURIComponent(id)}`, method: "DELETE" }),
       invalidatesTags: (_result, _error, id) => [
         { type: tagTypes.clients, id },
         { type: tagTypes.clients, id: "LIST" },
-        // A removed client takes its locations out of any list that showed them.
+        
         { type: tagTypes.locations, id: "LIST" },
       ],
     }),
 
-    /**
-     * `baseApi` already unwraps the `{ success, message, data }` envelope, so what arrives here is
-     * the contact array itself — reading `.data` off it is what left the list empty.
-     *
-     * There is no per-client contact route, so the full list is fetched once and narrowed here.
-     * Swap this for a scoped endpoint if the backend gains one; it will not scale as contacts grow.
-     */
+
+
     getClientContacts: builder.query<ClientContact[], { clientId: string }>({
       query: () => "/client-contact/all-client-contacts",
       transformResponse: (contacts: ClientContact[], _meta, { clientId }) =>
@@ -160,19 +153,12 @@ export const clientsApi = baseApi.injectEndpoints({
   }),
 });
 
-/**
- * Args the client dropdowns use. Sharing them means every caller hits one cache entry instead of
- * each fetching its own page of the same data.
- */
+
+
 export const CLIENT_LOOKUP_ARGS = { limit: 100, sort: "name" } as const;
 
-/**
- * Finds one client by id.
- *
- * The API has no single-client route, so this reads the cached lookup page rather than fetching.
- * That caps it at the first hundred clients — replace the whole hook with a real
- * `GET /client/single-client/:id` query as soon as the backend exposes one.
- */
+
+
 export function useClientById(id: string) {
   return clientsApi.useGetClientsQuery(CLIENT_LOOKUP_ARGS, {
     selectFromResult: ({ data, isLoading, error }) => ({

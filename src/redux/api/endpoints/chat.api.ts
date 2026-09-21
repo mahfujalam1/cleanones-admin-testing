@@ -43,7 +43,7 @@ export type ChatItem = {
     company_name?: string;
     primary_contact_name?: string;
     user?: {
-      /** The auth user id - this is what `ChatMessage.sender` refers to. */
+      
       _id?: string;
       full_name?: string;
       profile_photo?: string | null;
@@ -56,7 +56,7 @@ export type ChatItem = {
     email?: string;
     phone?: string;
     user?: {
-      /** The auth user id - this is what `ChatMessage.sender` refers to. */
+      
       _id?: string;
       full_name?: string;
       profile_photo?: string | null;

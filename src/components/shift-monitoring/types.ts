@@ -14,7 +14,7 @@ export interface WorkerInfo {
   statusColor: string;
   profilePicture?: string;
   
-  // Extra fields for Employee/Location Statistics
+  
   hoursWorked: number;
   totalShifts: number;
   lateDays: number;

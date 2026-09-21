@@ -176,10 +176,8 @@ export const shiftsApi = baseApi.injectEndpoints({
       },
       providesTags: (_res, _err, { workerId }) => [{ type: "shifts" as never, id: `perf-${workerId}` }],
     }),
-    /**
-     * `/shift/attendance-summary` aggregates every worker; appending a worker id scopes the
-     * same figures to that one worker. Both shapes return an identical payload.
-     */
+
+
     getShiftAttendanceSummary: builder.query<
       ShiftAttendanceSummary,
       { workerId?: string; period?: "today" | "weekly" | "monthly" } | void
@@ -192,10 +190,8 @@ export const shiftsApi = baseApi.injectEndpoints({
       },
       providesTags: ["shifts" as never, "shiftMonitoring" as never],
     }),
-    /**
-     * One row per active worker for the period, carrying `late_days`. The live-shift meta only
-     * reports how many workers were late, never who — this is the endpoint that names them.
-     */
+
+
     getWorkerAttendanceList: builder.query<
       WorkerAttendanceListItem[],
       { period?: "today" | "weekly" | "monthly"; search?: string; type?: "all" | "Employee" | "Freelancer" } | void
@@ -209,10 +205,8 @@ export const shiftsApi = baseApi.injectEndpoints({
       transformResponse: (payload: unknown) => rowsFromPayload<WorkerAttendanceListItem>(payload),
       providesTags: ["shifts" as never, "shiftMonitoring" as never],
     }),
-    /**
-     * `/shift/today-live-shifts` often omits `assigned_workers`. Late pills need those names,
-     * so in-progress/completed rows are filled from `/shift/single-live-shift/:id`.
-     */
+
+
     getTodayLiveShiftsWithCrew: builder.query<TodayLiveShiftItem[], void>({
       async queryFn(_arg, _api, _extra, fetchWithBQ) {
         const listRes = await fetchWithBQ("/shift/today-live-shifts?limit=100&page=1&sort=-date_time");
@@ -447,7 +441,7 @@ export type WorkerAttendanceListItem = {
   worker_type: "Employee" | "Freelancer";
   hours_worked: number;
   total_shifts: number;
-  /** Check-ins after the shift's scheduled start. No grace period is applied server-side. */
+  
   late_days: number;
   is_late?: boolean;
   late?: boolean;

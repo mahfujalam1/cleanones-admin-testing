@@ -1,14 +1,14 @@
-// Loads the Google Maps JavaScript API (classic script tag with `libraries=places`) exactly
-// once, no matter how many components ask for it — every caller awaits the same
-// in-flight/cached promise.
-//
-// Deliberately NOT using `loading=async` + `google.maps.importLibrary(...)`: that pattern only
-// works when Google's special inline bootstrap-loader snippet defines `importLibrary` itself —
-// just appending `&loading=async` to a plain <script src="...maps/api/js?..."> tag does NOT
-// define it, and calling it throws "window.google.maps.importLibrary is not a function". The
-// classic `libraries=places` query param, with no `loading=async`, guarantees
-// `google.maps.places.*` is fully populated by the time the script's `onload` fires — which is
-// all this app's single Autocomplete widget needs.
+
+
+
+
+
+
+
+
+
+
+
 
 declare global {
   interface Window {

@@ -1163,10 +1163,8 @@ export const getDashboardTranslation = (locale: string | string[] | undefined): 
   return translations[code] || translations.en;
 };
 
-/**
- * Shared UI vocabulary: the labels, buttons, table headers and modal copy that repeat
- * across screens. Page-specific wording stays in the sections above.
- */
+
+
 export type UiDict = {
   pagination: string;
   previousPage: string;

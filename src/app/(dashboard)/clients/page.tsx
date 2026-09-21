@@ -33,7 +33,7 @@ export default function ClientsPage() {
   const [deleteTarget, setDeleteTarget] = useState<Client | null>(null);
   const [actionError, setActionError] = useState("");
 
-  // A new search starts over; staying on page 7 of the old result set shows nothing.
+  
   useEffect(() => setPage(1), [searchTerm]);
 
   const { data, isFetching, error } = useGetClientsQuery({
@@ -47,7 +47,7 @@ export default function ClientsPage() {
   const total = data?.meta.total ?? 0;
   const message = actionError || (error ? apiError(error) : "");
 
-  // Auto-fallback: if current page has no data and we are past page 1, redirect to previous page
+  
   useEffect(() => {
     if (!isFetching && data && clients.length === 0 && page > 1) {
       setPage((prev) => Math.max(1, prev - 1));

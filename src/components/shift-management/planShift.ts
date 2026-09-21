@@ -43,7 +43,7 @@ export function hasShiftStarted(startTime?: string | null, date?: string | null)
   return parsed.getTime() <= Date.now();
 }
 
-/** Staff or reassign only before the shift start time. */
+
 export function canReassign(options: {
   startTime?: string | null;
   date?: string | null;
@@ -63,7 +63,7 @@ export function canStaff(shift?: PlanRosterShift | null) {
   });
 }
 
-/** Exact finish: scheduled start plus the plan's total task duration. */
+
 export function endFromStart(start: Date, durationMinutes: number) {
   if (Number.isNaN(start.getTime()) || durationMinutes <= 0) return null;
   return new Date(start.getTime() + durationMinutes * 60_000);

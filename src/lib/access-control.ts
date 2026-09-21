@@ -1,4 +1,4 @@
-// Single source of truth lives beside the session contract; re-exported for existing importers.
+
 export type { DashboardRole } from "./auth/session";
 
 export type RoutePermission = {
@@ -56,7 +56,7 @@ export function getStoredManagerAccess(): string[] {
     const routes = Array.isArray(parsed)
       ? parsed
           .filter((value): value is string => typeof value === "string")
-          // The workers page moved from /users; saved access lists still name the old path.
+          
           .map((route) => (route === "/users" ? "/workers" : route))
       : defaultManagerAccess;
     if (!routes.includes("/profile")) routes.push("/profile");

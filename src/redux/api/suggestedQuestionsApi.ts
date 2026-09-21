@@ -60,7 +60,7 @@ export const {
   useCreateQuestionSuggestionMutation,
   useUpdateQuestionSuggestionMutation,
   useDeleteQuestionSuggestionMutation,
-  // Backward compatibility aliases
+
   useGetQuestionSuggestionsQuery: useGetSuggestedQuestionsQuery,
   useCreateQuestionSuggestionMutation: useCreateSuggestedQuestionMutation,
   useUpdateQuestionSuggestionMutation: useUpdateSuggestedQuestionMutation,

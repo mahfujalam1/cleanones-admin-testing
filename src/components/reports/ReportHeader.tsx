@@ -27,14 +27,14 @@ export function ReportHeader({
 }: ReportHeaderProps) {
   return (
     <div className="flex items-center justify-between gap-3 no-print">
-      {/* Timeframe Selector */}
+      
       <SlidingTabs
         value={activeRange}
         options={ranges.map((range) => ({ value: range, label: rangeLabels[range] }))}
         onValueChange={(next) => onRangeChange(next as ReportRange)}
       />
 
-      {/* PDF Generate & Download Button */}
+      
       <button
         type="button"
         onClick={onExportPdf}

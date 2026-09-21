@@ -30,7 +30,7 @@ export default function ClientContacts({ params }: { params: Promise<{ id: strin
       await deleteContact({ clientId: id, contactId: deleteTarget }).unwrap();
       setDeleteTarget(null);
     } catch {
-      // RTK Error Notice toast will handle it
+      
     }
   };
 

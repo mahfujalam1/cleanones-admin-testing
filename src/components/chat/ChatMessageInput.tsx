@@ -53,7 +53,7 @@ export function ChatMessageInput({
             disabled={sending}
             onChange={(e) => {
               void onAttachFile(e.target.files?.[0]);
-              // Clearing lets the same file be picked again after a failed upload.
+              
               e.target.value = "";
             }}
           />

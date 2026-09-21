@@ -55,17 +55,15 @@ export default function WorkerHistoryPage({ params }: { params: Promise<{ worker
   const router = useRouter();
   const { workerId } = use(params);
   const [month, setMonth] = useState(new Date().toISOString().slice(0, 7));
-  /**
-   * The per-day activity route was dropped from the backend and the current API has no
-   * replacement, so the page renders its zero state until one lands.
-   */
+
+
   const data = null as Activity | null;
   const loading = false;
   const error = '';
 
   return (
     <div className="space-y-6 pb-12 animate-in fade-in duration-300">
-      {/* Top Back Navigation Bar */}
+      
       <div className="flex items-center justify-between">
         <button
           onClick={() => router.back()}
@@ -80,7 +78,7 @@ export default function WorkerHistoryPage({ params }: { params: Promise<{ worker
         </span>
       </div>
 
-      {/* Header Profile & Month Selector */}
+      
       <div className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-2xs sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4">
           <img
@@ -105,7 +103,7 @@ export default function WorkerHistoryPage({ params }: { params: Promise<{ worker
           </div>
         </div>
 
-        {/* Month Selector */}
+        
         <div className="flex items-center gap-2 self-start sm:self-center">
           <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
             <MdOutlineCalendarMonth className="text-lg" />
@@ -119,7 +117,7 @@ export default function WorkerHistoryPage({ params }: { params: Promise<{ worker
         </div>
       </div>
 
-      {/* Error Message */}
+      
       {error && (
         <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-xs text-red-700">
           <p className="font-medium">Unable to load worker daily activity</p>
@@ -127,7 +125,7 @@ export default function WorkerHistoryPage({ params }: { params: Promise<{ worker
         </div>
       )}
 
-      {/* 5 KPI Metric Cards */}
+      
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         <MetricCard
           label="Total Hours"
@@ -163,7 +161,7 @@ export default function WorkerHistoryPage({ params }: { params: Promise<{ worker
         />
       </div>
 
-      {/* Activity Table */}
+      
       <div className="dashboard-card overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xs">
         <header className="flex items-center justify-between border-b border-slate-100 bg-slate-50/70 px-6 py-4">
           <div className="flex items-center gap-2">

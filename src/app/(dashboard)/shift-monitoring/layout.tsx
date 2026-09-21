@@ -39,7 +39,7 @@ export default function ShiftMonitoringLayout({ children }: { children: React.Re
 
   return (
     <div className="h-full flex flex-col relative">
-      {/* Top Navigation Tabs */}
+      
       <div className="mb-6 flex-shrink-0 border-b border-gray-200 pb-3">
         <SlidingTabs
           value={activePath}
@@ -52,7 +52,7 @@ export default function ShiftMonitoringLayout({ children }: { children: React.Re
         />
       </div>
 
-      {/* Tab Content */}
+      
       <div key={activePath} className="flex-1 animate-in overflow-y-auto pb-10 fade-in slide-in-from-bottom-1 duration-300">
         {children}
       </div>

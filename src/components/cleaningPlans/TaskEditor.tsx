@@ -38,7 +38,7 @@ export function TaskEditor({
 
   const handleAddTask = () => {
     setTasks((items) => [...items, { ...newTask(), fixed_date: minDate || "" }]);
-    // Auto-scroll smoothly to the newly added task section
+    
     setTimeout(() => {
       tasksEndRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
     }, 80);

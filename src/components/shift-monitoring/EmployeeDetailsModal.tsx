@@ -21,12 +21,8 @@ interface EmployeeDetailsModalProps {
   onChanged?: () => void;
 }
 
-/**
- * Check-in/out come back either as a short clock label ("10:39") or as a raw timestamp
- * ("2026-09-08T10:45:06.089000"). The time portion is read straight off the string rather
- * than parsed into a Date, so the value shown matches what the API reports elsewhere
- * instead of being shifted into the browser's timezone.
- */
+
+
 const formatTime = (value?: string | null) => {
   if (!value) return '--:--';
   const timestamp = /T(\d{2}):(\d{2})/.exec(value);
@@ -48,11 +44,11 @@ export function EmployeeDetailsModal({ worker, onClose, onChanged }: EmployeeDet
   const [assigning, setAssigning] = useState(false);
   const { triggerJump, jumpClassName } = useModalJump();
 
-  // Live-status shifts generated from a cleaning plan carry the plan id, which is what makes
-  // editing and reassigning possible from here without a shift-level endpoint.
+  
+  
   const planId = planIdFromShift(String(worker.shiftId));
-  // The shared plan modals take the record, not the id, and going through RTK means the
-  // cleaning-plan caches invalidate on save instead of needing a page reload.
+  
+  
   const { data: planRecord } = useGetCleaningPlanQuery(planId, { skip: !planId });
 
   const period = activeTab.toLowerCase() as Period;
@@ -68,10 +64,8 @@ export function EmployeeDetailsModal({ worker, onClose, onChanged }: EmployeeDet
       ? `${(summary.total_hours / summary.completed_shifts).toFixed(1)}h`
       : '0h';
 
-  /**
-   * The per-shift breakdown and the live check-in/check-out pair have no endpoint in the
-   * current API, so those stay blank until one lands.
-   */
+
+
   const rows: Array<{ date: string; checkIn: string; checkOut: string; scheduled: string; hours: string }> = [];
 
   useEffect(() => {
@@ -99,7 +93,7 @@ export function EmployeeDetailsModal({ worker, onClose, onChanged }: EmployeeDet
         className={`flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-xl border border-slate-200 bg-white animate-in fade-in zoom-in-95 duration-150 ${jumpClassName}`}
         onMouseDown={(event) => event.stopPropagation()}
       >
-        {/* Header */}
+        
         <header className="flex shrink-0 items-start gap-3 border-b border-slate-200 px-5 py-4">
           <img src="/avatar-placeholder.svg" alt={worker.name} className="h-11 w-11 shrink-0 rounded-full border border-slate-200 object-cover" />
           <div className="min-w-0 flex-1">
@@ -124,7 +118,7 @@ export function EmployeeDetailsModal({ worker, onClose, onChanged }: EmployeeDet
           </button>
         </header>
 
-        {/* Period tabs */}
+        
         <div className="shrink-0 border-b border-slate-200 px-5 py-3">
           <SlidingTabs
             compact
@@ -141,7 +135,7 @@ export function EmployeeDetailsModal({ worker, onClose, onChanged }: EmployeeDet
         <div key={activeTab} className="min-h-0 flex-1 animate-in overflow-y-auto p-5 fade-in slide-in-from-bottom-1 duration-300">
           {loading ? <DetailSkeleton blocks={5} /> : (
             <div className="space-y-4">
-              {/* Summary */}
+              
               <div className="grid grid-cols-3 gap-3">
                 <Stat icon={<TbClock />} value={hoursWorked} label="Hours worked" />
                 <Stat icon={<TbCalendarStats />} value={String(shiftsCount)} label="Shifts" />
@@ -193,7 +187,7 @@ export function EmployeeDetailsModal({ worker, onClose, onChanged }: EmployeeDet
           )}
         </div>
 
-        {/* Actions */}
+        
         <footer className="flex shrink-0 flex-wrap items-center gap-2 border-t border-slate-200 px-5 py-3">
           <button
             onClick={() => router.push(`/shift-monitoring/history/${worker.id}`)}

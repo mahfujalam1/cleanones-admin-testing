@@ -105,7 +105,7 @@ export default function SettingsFaqsPage() {
         backHref="/settings"
       />
 
-      {/* Search bar */}
+      
       <div className="relative w-full">
         <MdSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-lg text-slate-400" />
         <input

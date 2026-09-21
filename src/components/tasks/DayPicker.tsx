@@ -18,7 +18,6 @@ export function toggleDay<T>(values: T[], value: T): T[] {
   return values.includes(value) ? values.filter((item) => item !== value) : [...values, value];
 }
 
-/** Compact multi-select used for both the weekday and day-of-month schedules. */
 export function DayPicker<T extends string | number>({
   label,
   options,

@@ -45,11 +45,11 @@ export default function ChatPage() {
   const [activeTab, setActiveTab] = useState<ChatTab>("all");
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  // Below `lg` there is only room for one pane, so the list and the open conversation
-  // take turns instead of being squeezed side by side.
+  
+  
   const [mobilePane, setMobilePane] = useState<"list" | "chat">("list");
-  // Realtime delivery can be unavailable while the rest of the page works, so say so
-  // rather than letting the conversation look merely quiet.
+  
+  
   const [realtimeDown, setRealtimeDown] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState("");
@@ -57,7 +57,7 @@ export default function ChatPage() {
   const [sending, setSending] = useState(false);
   const [onlineProfileIds, setOnlineProfileIds] = useState<Set<string>>(new Set());
 
-  // Modals & Action States
+  
   const [renamingChat, setRenamingChat] = useState<ChatItem | null>(null);
   const [deletingMsg, setDeletingMsg] = useState<ChatMessage | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
@@ -69,7 +69,7 @@ export default function ChatPage() {
   }, [selectedId]);
   const typingTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // 1. Determine Current User ID from Token or Store
+  
   const currentUserId = useMemo(() => {
     if (user?.id) return user.id;
     const token = tokenStore.get();
@@ -80,7 +80,7 @@ export default function ChatPage() {
     return "";
   }, [user]);
 
-  // 2. Fetch User's Chat List
+  
   const {
     data: chatsData,
     isLoading: loadingChats,
@@ -90,18 +90,18 @@ export default function ChatPage() {
     refetchOnMountOrArgChange: true,
   });
 
-  // `?? []` would be a fresh array on every render, and this feeds an effect's dependencies.
+  
   const rawChats: ChatItem[] = useMemo(() => chatsData?.result ?? [], [chatsData]);
 
-  // Auto-select first chat if none selected
+  
   useEffect(() => {
     if (!selectedId && rawChats.length > 0) {
       setSelectedId(rawChats[0]._id);
     }
   }, [rawChats, selectedId]);
 
-  // Anything rendered in the open conversation counts as read, including messages that land
-  // over the socket while it is on screen.
+  
+  
   useEffect(() => {
     if (!selectedId) return;
     markChatSeen(selectedId, messages[messages.length - 1]?.createdAt);
@@ -112,7 +112,7 @@ export default function ChatPage() {
     [rawChats, selectedId]
   );
 
-  // 3. Fetch Messages for Active Chat
+  
   const { data: messagesData, isFetching: loadingMessages } = useGetChatMessagesQuery(
     { chatId: selectedId! },
     {
@@ -131,27 +131,23 @@ export default function ChatPage() {
       setMessages(initialMessages);
       return;
     }
-    // Setting a new [] unconditionally changed the state identity every render, which with an
-    // unmemoised `initialMessages` spun this effect forever and locked up the page.
+    
+    
     if (!loadingMessages) {
       setMessages((prev) => (prev.length === 0 ? prev : []));
     }
   }, [initialMessages, loadingMessages, selectedId]);
 
-  /**
-   * The socket broadcast and the send acknowledgement both carry the saved message, so
-   * whichever arrives second must not append it again.
-   */
-  /**
-   * Messages carry `sender` as a bare id, so the display name is resolved from the chat's
-   * member list - the same source the Details panel uses.
-   */
+
+
+
+
   const { data: chatMembers } = useGetChatMembersQuery(selectedId!, { skip: !selectedId });
 
   const senderNames = useMemo(() => {
     const map = new Map<string, string>();
-    // A message's `sender` is the auth user id, while a member's `_id` is its client/worker
-    // profile id. Both are registered so the lookup hits whichever the payload carries.
+    
+    
     const remember = (name: string, ...ids: Array<string | undefined>) => {
       for (const id of ids) if (id) map.set(id, name);
     };
@@ -176,7 +172,7 @@ export default function ChatPage() {
     setMessages((prev) => (prev.some((m) => m._id === message._id) ? prev : [...prev, message]));
   }, []);
 
-  // 4. Socket.IO Lifecycle
+  
   useEffect(() => {
     let activeSocket: Socket | null = null;
 
@@ -191,18 +187,18 @@ export default function ChatPage() {
       sock.on("connect", () => setRealtimeDown(false));
       sock.on("connect_error", () => setRealtimeDown(true));
 
-      // Online status tracking
+      
       sock.on("onlineUser", (payload: { onlineUsers?: string[] } | string[]) => {
         const users = Array.isArray(payload) ? payload : payload?.onlineUsers || [];
         setOnlineProfileIds(new Set(users));
       });
 
-      // Join chat room if already selected
+      
       if (selectedIdRef.current) {
         joinChatGroup(sock, selectedIdRef.current);
       }
 
-      // Incoming messages
+      
       sock.on("group:new-message", (newMsg: ChatMessage) => {
         const chatId = typeof newMsg.chat === "object" ? (newMsg.chat as { _id: string })._id : newMsg.chat;
         if (chatId === selectedIdRef.current) {
@@ -211,7 +207,7 @@ export default function ChatPage() {
         void refetchChats();
       });
 
-      // Message deleted
+      
       sock.on("group:message-deleted", (payload: { _id: string; chat: string }) => {
         if (payload.chat === selectedIdRef.current) {
           setMessages((prev) =>
@@ -220,7 +216,7 @@ export default function ChatPage() {
         }
       });
 
-      // Typing indicators
+      
       sock.on("group:typing", (payload: { groupId: string; userId: string; name?: string }) => {
         if (payload.groupId === selectedIdRef.current && payload.userId !== currentUserId) {
           setTypingUser(payload.name || "Someone");
@@ -233,12 +229,12 @@ export default function ChatPage() {
         }
       });
 
-      // Group renamed
+      
       sock.on("group:renamed", () => {
         void refetchChats();
       });
 
-      // New worker or client chat created
+      
       sock.on("worker-chat:created", () => {
         void refetchChats();
       });
@@ -248,7 +244,7 @@ export default function ChatPage() {
     });
 
     return () => {
-      // Leave the room on the way out, so the next page does not keep receiving its traffic.
+      
       if (activeSocket && selectedIdRef.current) {
         leaveChatGroup(activeSocket, selectedIdRef.current);
       }
@@ -265,7 +261,7 @@ export default function ChatPage() {
     };
   }, [currentUserId, refetchChats, appendMessage]);
 
-  // Handle switching active chat room in Socket.IO
+  
   const selectChat = (chat: ChatItem) => {
     if (selectedId === chat._id) return;
     if (socketRef.current && selectedId) {
@@ -278,8 +274,8 @@ export default function ChatPage() {
     }
   };
 
-  // Tapping a row opens the conversation; on a phone that also swaps which pane is shown,
-  // even when the row was already the selected one.
+  
+  
   const handleSelectChat = (chat: ChatItem) => {
     selectChat(chat);
     setMobilePane("chat");
@@ -303,7 +299,7 @@ export default function ChatPage() {
     }
   };
 
-  // 5. Search & Tab Filtering
+  
   const filteredChats = useMemo(() => {
     let list = rawChats;
     if (activeTab !== "all") {
@@ -318,7 +314,7 @@ export default function ChatPage() {
     });
   }, [rawChats, activeTab, query]);
 
-  // 6. Typing handler
+  
   const handleInputChange = (text: string) => {
     setInputText(text);
     if (!socketRef.current || !selectedId) return;
@@ -333,7 +329,7 @@ export default function ChatPage() {
     }, 2000);
   };
 
-  // 7. Send Message
+  
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     const textToSend = inputText.trim();
@@ -365,7 +361,7 @@ export default function ChatPage() {
     }
   };
 
-  // 8. Attach file
+  
   const handleAttachFile = async (file?: File) => {
     if (!file || !selectedId || sending) return;
 
@@ -410,7 +406,7 @@ export default function ChatPage() {
     }
   };
 
-  // 9. Soft-delete message (Manager has override permission)
+  
   const [deleteChatMsgMutation] = useDeleteChatMessageMutation();
   const [uploadConversationFiles] = useUploadConversationFilesMutation();
   const [deleteUploadedFiles] = useDeleteUploadedFilesMutation();
@@ -428,7 +424,7 @@ export default function ChatPage() {
         prev.map((m) => (m._id === deletingMsg._id ? { ...m, is_deleted: true } : m))
       );
 
-      // Clean up uploaded files from storage if present
+      
       if (deletingMsg.attachments && deletingMsg.attachments.length > 0) {
         const urls = deletingMsg.attachments.map((a) => a.url).filter(Boolean);
         if (urls.length > 0) {
@@ -444,7 +440,7 @@ export default function ChatPage() {
     }
   };
 
-  // Check if chat is online
+  
   const isChatOnline = useCallback(
     (chat: ChatItem) => {
       if (chat.type === "worker") {
@@ -463,7 +459,7 @@ export default function ChatPage() {
 
   return (
     <div className="flex h-[calc(100dvh-6.5rem)] min-h-[460px] flex-col gap-3 sm:min-h-[580px]">
-      {/* Page Header */}
+      
       <header className="flex items-center justify-between">
         <div>
           <h1 className="text-lg font-bold text-slate-900">{ui.conversationsTeamChat}</h1>
@@ -481,9 +477,9 @@ export default function ChatPage() {
         </div>
       )}
 
-      {/* Main Container */}
+      
       <div className="grid min-h-0 flex-1 overflow-hidden rounded-xl border border-slate-200/90 bg-white shadow-xs lg:grid-cols-[300px_minmax(0,1fr)] xl:grid-cols-[310px_minmax(0,1fr)_270px]">
-        {/* Left Sidebar: Tabs, Search & Chat List */}
+        
         <ChatSidebar
           className={mobilePane === "chat" ? "hidden lg:flex" : "flex"}
           activeTab={activeTab}
@@ -498,13 +494,13 @@ export default function ChatPage() {
           isChatOnline={isChatOnline}
         />
 
-        {/* Center Pane: Active Chat Messages & Composer */}
+        
         <section
           className={`min-h-0 flex-col bg-white ${mobilePane === "chat" ? "flex" : "hidden lg:flex"}`}
         >
           {selectedChat ? (
             <>
-              {/* Active Chat Header */}
+              
               <ChatHeader
                 chat={selectedChat}
                 isOnline={isChatOnline(selectedChat)}
@@ -512,7 +508,7 @@ export default function ChatPage() {
                 onBack={() => setMobilePane("list")}
               />
 
-              {/* Messages Scroll Area */}
+              
               <ChatMessageList
                 messages={messages}
                 loading={loadingMessages}
@@ -523,7 +519,7 @@ export default function ChatPage() {
                 onRequestDeleteMessage={setDeletingMsg}
               />
 
-              {/* Message Input Bar */}
+              
               <ChatMessageInput
                 placeholder={`Message ${selectedChat.display_name || selectedChat.name || ""}...`}
                 inputText={inputText}
@@ -540,7 +536,7 @@ export default function ChatPage() {
           )}
         </section>
 
-        {/* Right Sidebar: Chat Details & Participants */}
+        
         {selectedChat && (
           <aside className="hidden min-h-0 overflow-y-auto border-l border-slate-200/90 bg-white xl:block">
             <ChatMembersPanel chat={selectedChat} onlineProfileIds={onlineProfileIds} />
@@ -548,7 +544,7 @@ export default function ChatPage() {
         )}
       </div>
 
-      {/* Rename Group Modal */}
+      
       {renamingChat && (
         <RenameGroupModal
           chatId={renamingChat._id}
@@ -558,7 +554,7 @@ export default function ChatPage() {
         />
       )}
 
-      {/* Delete Confirmation Modal */}
+      
       {deletingMsg && (
         <DeleteMessageModal
           loading={actionLoading}

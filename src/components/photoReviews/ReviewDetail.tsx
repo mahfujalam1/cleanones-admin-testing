@@ -68,7 +68,7 @@ export function ReviewDetail({ review, onClose, onApprove, onReject }: ReviewDet
 
     return (
         <div className="fixed inset-0 z-50 bg-gray-50 flex flex-col overflow-hidden animate-in fade-in duration-150">
-            {/* Top bar */}
+            
             <header className="bg-white shadow-sm px-4 sm:px-6 py-3 flex flex-wrap items-center gap-3 shrink-0">
                 <button
                     onClick={onClose}
@@ -95,11 +95,11 @@ export function ReviewDetail({ review, onClose, onApprove, onReject }: ReviewDet
                 </div>
             </header>
 
-            {/* Body */}
+            
             <div className="flex flex-col lg:flex-row flex-1 overflow-hidden">
-                {/* Left panel */}
+                
                 <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
-                    {/* Section A — Photo Comparison */}
+                    
                     <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-5 space-y-4">
                         <div>
                             <p className="text-[10px] font-bold uppercase tracking-widest text-sky-600">Section A</p>
@@ -125,7 +125,7 @@ export function ReviewDetail({ review, onClose, onApprove, onReject }: ReviewDet
                         </div>
                     </div>
 
-                    {/* Section C — Service Quality Verification */}
+                    
                     <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-5 space-y-4">
                         <div>
                             <p className="text-[10px] font-bold uppercase tracking-widest text-sky-600">Section C</p>
@@ -171,7 +171,7 @@ export function ReviewDetail({ review, onClose, onApprove, onReject }: ReviewDet
                     </div>
                 </div>
 
-                {/* Right panel — AI Analysis */}
+                
                 {ai && (
                     <aside className="w-full lg:w-80 xl:w-96 bg-white shadow-sm overflow-y-auto p-5 space-y-5 shrink-0 lg:border-l border-gray-200">
                         <div>
@@ -182,7 +182,7 @@ export function ReviewDetail({ review, onClose, onApprove, onReject }: ReviewDet
                             </div>
                         </div>
 
-                        {/* Overall score */}
+                        
                         <div className="bg-sky-50/70 border border-sky-100 rounded-lg p-5 text-center">
                             <p className="text-4xl font-extrabold text-[#0ea5e9]">{ai.overallScore}%</p>
                             <p className="text-xs font-semibold text-slate-600 mt-1">Overall Quality Score</p>
@@ -191,7 +191,7 @@ export function ReviewDetail({ review, onClose, onApprove, onReject }: ReviewDet
                             </p>
                         </div>
 
-                        {/* Score breakdown */}
+                        
                         <div className="space-y-3">
                             <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider">Score Breakdown</h4>
                             {ai.breakdown && ai.breakdown.length > 0 ? (
@@ -205,7 +205,7 @@ export function ReviewDetail({ review, onClose, onApprove, onReject }: ReviewDet
                             )}
                         </div>
 
-                        {/* AI notes */}
+                        
                         {ai.notes && ai.notes.length > 0 && (
                             <div className="space-y-2 border-t border-gray-100 pt-3">
                                 <p className="text-xs font-bold text-slate-700">AI Notes</p>
@@ -220,7 +220,7 @@ export function ReviewDetail({ review, onClose, onApprove, onReject }: ReviewDet
                             </div>
                         )}
 
-                        {/* Submitted by */}
+                        
                         <div className="pt-3 border-t border-gray-100">
                             <CleanerAvatar name={review.cleaner.name} />
                             <p className="text-[11px] text-gray-400 mt-1 ml-9">{review.dateSubmitted}</p>
@@ -232,11 +232,8 @@ export function ReviewDetail({ review, onClose, onApprove, onReject }: ReviewDet
     );
 }
 
-/**
- * Detail view for a `/shift/photo-review` row: the task's context plus every photo the
- * worker uploaded against its requirements. The endpoint carries no decision or AI data,
- * so this is a read-only gallery.
- */
+
+
 export function PhotoReviewDetail({
   task,
   onClose,

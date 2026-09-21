@@ -47,15 +47,15 @@ export default function ProfilePage() {
   const [updateUserProfile, { isLoading: saving }] = useUpdateUserProfileMutation();
   const [uploadProfilePhoto, { isLoading: uploadingPhoto }] = useUploadProfilePhotoMutation();
 
-  // `syncUser` dispatches `setUser`, so reading `authUser` from the closure would give the
-  // callback a new identity on every dispatch and re-run the effect below forever. The ref
-  // keeps the latest values readable while the callback identity stays stable.
+  
+  
+  
   const authUserRef = useRef(authUser);
   useEffect(() => {
     authUserRef.current = authUser;
   }, [authUser]);
 
-  // Keeps the header avatar and the topbar in step after a photo or name change.
+  
   const syncUser = useCallback(
     (source: { id?: string; _id?: string; full_name?: string; name?: string; email?: string; role?: string; profile_photo?: string; profile_image?: string }) => {
       const current = authUserRef.current;
@@ -179,7 +179,7 @@ export default function ProfilePage() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-6 pb-12">
-      {/* Identity Banner */}
+      
       <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-2xs">
         <div className="flex flex-col items-center gap-4 text-center sm:flex-row sm:items-center sm:text-left">
           <div className="relative h-20 w-20 shrink-0">
@@ -245,7 +245,7 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* Notification Alert */}
+      
       {message && (
         <div
           className={`flex items-center justify-between gap-3 rounded-lg border px-4 py-3 text-sm font-medium ${
@@ -265,9 +265,9 @@ export default function ProfilePage() {
         </div>
       )}
 
-      {/* Profile Edit Form */}
+      
       <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-6 md:grid-cols-3">
-        {/* Main Details (Left 2 cols) */}
+        
         <div className="space-y-5 rounded-xl border border-slate-200 bg-white p-5 shadow-2xs md:col-span-2">
           <h2 className="flex items-center gap-2 border-b border-slate-100 pb-3 text-sm font-bold text-slate-900">
             <MdOutlinePerson className="text-lg text-primary" />
@@ -337,7 +337,7 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Sidebar Info Card (Right 1 col) */}
+        
         <div className="space-y-4">
           <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-2xs">
             <h3 className="border-b border-slate-100 pb-3 text-sm font-bold text-slate-900">

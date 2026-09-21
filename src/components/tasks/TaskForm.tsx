@@ -23,10 +23,8 @@ export function TaskForm({
   task,
   onClose,
 }: {
-  /**
-   * Fixes the owning room, for when the form opens from inside one. Left out — adding from the
-   * cleaning plans page — the client, location and room are chosen in the form itself.
-   */
+
+
   roomId?: string;
   task?: Task;
   onClose: () => void;
@@ -57,7 +55,7 @@ export function TaskForm({
   );
   const [error, setError] = useState("");
 
-  /** Only titled rows are sent, so they are what the required count is measured against. */
+  
   const namedPhotoRequirements = photoRequirements.filter((r) => r.title.trim() !== "");
 
   const [createTask, { isLoading: creating }] = useCreateTaskMutation();
@@ -69,7 +67,7 @@ export function TaskForm({
       frequency_type: frequency,
       days_of_week: daysOfWeek,
       days_of_month: daysOfMonth,
-      // The API rejects a duration of zero, so a blank box means "not specified", not zero.
+      
       duration_minutes: duration.trim() ? Number(duration) : undefined,
       is_photo_required: photoRequired,
       photo_requirements: photoRequired
@@ -101,8 +99,8 @@ export function TaskForm({
         setError("Add at least one photo, or turn off \"Photo required\".");
         return;
       }
-      // Every slot the worker will be shown needs a name, so an unnamed row is not just
-      // dropped silently from the payload.
+      
+      
       if (namedPhotoRequirements.length !== photoRequirements.length) {
         setError("Give every required photo a name, or remove the empty ones.");
         return;
@@ -126,7 +124,7 @@ export function TaskForm({
         setError("Enter the daily random photo count.");
         return;
       }
-      // The worker cannot be asked for more photos than there are slots to fill.
+      
       if (count > namedPhotoRequirements.length) {
         setError(
           `Daily random photo count cannot be more than the ${namedPhotoRequirements.length} photo${
@@ -171,7 +169,7 @@ export function TaskForm({
             value={chosenClient}
             onChange={(value) => {
               setChosenClient(value);
-              // Each level below belongs to the old parent, so it cannot carry over.
+              
               setChosenLocation("");
               setChosenRoom("");
               setError("");

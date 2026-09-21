@@ -96,7 +96,7 @@ export function AttendanceTimeTracking({ onWorkerSelect, selectedWorkerId, timeR
 
   const period = timeRange.toLowerCase() as Period;
 
-  // 1. Period totals for the KPI banner — /shift/attendance-summary.
+  
   const {
     data: attendanceSummary,
     isLoading: loadingSummary,
@@ -104,8 +104,8 @@ export function AttendanceTimeTracking({ onWorkerSelect, selectedWorkerId, timeR
     refetch: refetchSummary,
   } = useGetShiftAttendanceSummaryQuery({ period: period as 'today' | 'weekly' | 'monthly' });
 
-  // Rows come from GET /worker/all-workers, which now includes total_shift,
-  // total_late_check_ins, total_on_time_check_ins, total_absent, and hours.
+  
+  
   const {
     data: workerListRes,
     isLoading: loadingWorkerList,
@@ -144,7 +144,7 @@ export function AttendanceTimeTracking({ onWorkerSelect, selectedWorkerId, timeR
     });
   }, [directoryWorkers, roleFilter, search, sortBy]);
 
-  // Aggregate Metrics for Top KPI Banner
+  
   const summaryStats = useMemo(() => {
     const totalWorkers = workers.length;
     const employeeCount = workers.filter((w) => w.role === 'Employee').length;
@@ -183,7 +183,7 @@ export function AttendanceTimeTracking({ onWorkerSelect, selectedWorkerId, timeR
 
   return (
     <div className="space-y-4 animate-in fade-in duration-300">
-      {/* Header Banner */}
+      
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2.5">
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-sky-100 bg-sky-50 text-sky-600">
@@ -204,7 +204,7 @@ export function AttendanceTimeTracking({ onWorkerSelect, selectedWorkerId, timeR
           </div>
         </div>
 
-        {/* Time Period Selector */}
+        
         <SlidingTabs
           value={timeRange}
           options={(['Today', 'Weekly', 'Monthly'] as const).map((range) => ({
@@ -215,9 +215,9 @@ export function AttendanceTimeTracking({ onWorkerSelect, selectedWorkerId, timeR
         />
       </div>
 
-      {/* Top 3 KPI Summary Cards */}
+      
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        {/* Card 1: Total Hours */}
+        
         <div className="flex items-center gap-3.5 rounded-xl border border-slate-200 bg-white p-3.5 shadow-2xs">
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-50 text-amber-600 border border-amber-100/80">
             <TbClock className="text-lg" />
@@ -233,7 +233,7 @@ export function AttendanceTimeTracking({ onWorkerSelect, selectedWorkerId, timeR
           </div>
         </div>
 
-        {/* Card 2: Completed Shifts */}
+        
         <div className="flex items-center gap-3.5 rounded-xl border border-slate-200 bg-white p-3.5 shadow-2xs">
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-600 border border-blue-100/80">
             <TbCalendarStats className="text-lg" />
@@ -249,7 +249,7 @@ export function AttendanceTimeTracking({ onWorkerSelect, selectedWorkerId, timeR
           </div>
         </div>
 
-        {/* Card 3: Punctuality */}
+        
         <div className="flex items-center gap-3.5 rounded-xl border border-slate-200 bg-white p-3.5 shadow-2xs">
           <span
             className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border ${
@@ -286,10 +286,10 @@ export function AttendanceTimeTracking({ onWorkerSelect, selectedWorkerId, timeR
         </div>
       </div>
 
-      {/* Filter and Search Toolbar */}
+      
       <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-3 shadow-2xs sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-1 flex-wrap items-center gap-3">
-          {/* Search Input */}
+          
           <div className="relative min-w-[240px] flex-1 sm:max-w-xs">
             <MdSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-lg text-slate-400" />
             <input
@@ -309,7 +309,7 @@ export function AttendanceTimeTracking({ onWorkerSelect, selectedWorkerId, timeR
             )}
           </div>
 
-          {/* Role Filter Pills */}
+          
           <SlidingTabs
             compact
             value={roleFilter}
@@ -321,7 +321,7 @@ export function AttendanceTimeTracking({ onWorkerSelect, selectedWorkerId, timeR
           />
         </div>
 
-        {/* Sort Dropdown */}
+        
         <div className="flex items-center gap-2">
           <span className="text-xs font-medium text-slate-500 flex items-center gap-1 shrink-0">
             <MdFilterList className="text-base text-slate-400" /> Sort:
@@ -337,7 +337,7 @@ export function AttendanceTimeTracking({ onWorkerSelect, selectedWorkerId, timeR
         </div>
       </div>
 
-      {/* Sync / Error Notice */}
+      
       {summaryError && (
         <div className="flex items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50/70 px-4 py-2.5 text-xs text-amber-800">
           <div className="flex items-center gap-2">
@@ -356,7 +356,7 @@ export function AttendanceTimeTracking({ onWorkerSelect, selectedWorkerId, timeR
         </div>
       )}
 
-      {/* Table Card */}
+      
       <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xs">
         <div className="overflow-x-auto w-full">
           <table className="w-full text-left border-collapse min-w-[720px]">
@@ -414,7 +414,7 @@ export function AttendanceTimeTracking({ onWorkerSelect, selectedWorkerId, timeR
                         isSelected ? 'bg-sky-50/70' : ''
                       }`}
                     >
-                      {/* Worker Info */}
+                      
                       <td className="px-6 py-3.5">
                         <div className="flex items-center gap-3">
                           <WorkerAvatar name={worker.name} src={worker.profilePicture} />
@@ -424,7 +424,7 @@ export function AttendanceTimeTracking({ onWorkerSelect, selectedWorkerId, timeR
                         </div>
                       </td>
 
-                      {/* Role Pill */}
+                      
                       <td className="px-6 py-3.5">
                         <span
                           className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${
@@ -437,7 +437,7 @@ export function AttendanceTimeTracking({ onWorkerSelect, selectedWorkerId, timeR
                         </span>
                       </td>
 
-                      {/* Hours Worked with Progress Indicator */}
+                      
                       <td className="px-6 py-3.5">
                         <div className="w-36">
                           <div className="flex items-center justify-between text-xs">
@@ -453,7 +453,7 @@ export function AttendanceTimeTracking({ onWorkerSelect, selectedWorkerId, timeR
                         </div>
                       </td>
 
-                      {/* Total Shifts */}
+                      
                       <td className="px-6 py-3.5">
                         <span className="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">
                           <TbCalendarStats className="text-slate-500 text-sm" />
@@ -461,7 +461,7 @@ export function AttendanceTimeTracking({ onWorkerSelect, selectedWorkerId, timeR
                         </span>
                       </td>
 
-                      {/* Late check-ins & punctuality from all-workers */}
+                      
                       <td className="px-6 py-3.5">
                         <div className="flex flex-wrap items-center gap-1.5">
                           {worker.lateDays > 0 ? (
@@ -491,7 +491,7 @@ export function AttendanceTimeTracking({ onWorkerSelect, selectedWorkerId, timeR
           </table>
         </div>
 
-        {/* Pagination */}
+        
         {workers.length > LIMIT && (
           <div className="border-t border-slate-100 px-4 py-3 bg-slate-50/30">
             <BackendPagination

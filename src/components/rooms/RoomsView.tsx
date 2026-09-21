@@ -33,7 +33,7 @@ export function RoomsView({
   const locale = getLocale(usePathname());
   const ui = getUiTranslation(locale);
   
-  // Default to empty ("All") so no filter is selected on initial page load
+  
   const [clientId, setClientId] = useState(scopedClientId ?? "");
   const [locationId, setLocationId] = useState(scopedLocationId ?? "");
   const [roomId, setRoomId] = useState("");
@@ -45,7 +45,7 @@ export function RoomsView({
   const [remove, setRemove] = useState<Room | null>(null);
   const [actionError, setActionError] = useState("");
 
-  // Clear any old leftover search params from previous redirects
+  
   useEffect(() => {
     if (!scopedLocationId && typeof window !== "undefined" && window.location.search) {
       router.replace(localizePath("/rooms", locale));
@@ -196,8 +196,8 @@ export function RoomsView({
         onPageChange={setPage}
         itemLabel="rooms"
       />
-      {/* Inside a client's location both are fixed by the page; on the global Rooms list the
-          form asks for them itself. */}
+
+
       {creating && (
         <RoomForm
           clientId={scopedClientId}

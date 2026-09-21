@@ -2,7 +2,7 @@ export type LegalSlug = "privacy-policy" | "terms-and-conditions" | "about-us";
 
 import type { UiDict } from "./translations";
 
-/** Localised heading for each legal document; the body text itself lives in the API. */
+
 export const legalLabelKeys: Record<LegalSlug, { title: keyof UiDict; subtitle: keyof UiDict }> = {
   "privacy-policy": { title: "privacyPolicy", subtitle: "privacyPolicySubtitle" },
   "terms-and-conditions": { title: "termsConditions", subtitle: "termsConditionsSubtitle" },

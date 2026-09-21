@@ -54,7 +54,7 @@ export default function GetHelpPage() {
   const questions = useMemo(() => suggestions.map(toCardItem), [suggestions]);
   const total = questions.length;
 
-  // The route takes no search param, so filtering is done here over the full list.
+  
   const filteredQuestions = useMemo(() => {
     const q = filters.search.trim().toLowerCase();
     if (!q) return questions;

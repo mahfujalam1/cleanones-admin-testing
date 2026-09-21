@@ -8,7 +8,7 @@ import { getLocale } from "@/lib/locale";
 import { getHelpTranslation } from "@/lib/translations";
 
 interface GetHelpFaqBannerProps {
-  /** Slim single-line strip that links to the FAQ manager. */
+
   compact?: boolean;
 }
 

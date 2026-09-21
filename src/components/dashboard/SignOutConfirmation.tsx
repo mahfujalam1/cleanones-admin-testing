@@ -21,7 +21,7 @@ export function SignOutConfirmation() {
     dispatch(setSignOutModalOpen(false));
     clearLocalSession();
     dispatch(logout());
-    // Drop every cached response so the next account never sees the previous one's data.
+    
     dispatch(baseApi.util.resetApiState());
     window.location.href = localizePath("/login", locale);
   };

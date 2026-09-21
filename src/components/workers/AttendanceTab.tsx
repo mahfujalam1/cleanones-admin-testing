@@ -47,7 +47,7 @@ function formatDateRange(start?: string, end?: string): string {
 export function AttendanceTab({ worker }: AttendanceTabProps) {
   const [period, setPeriod] = useState<Period>("today");
 
-  // 1. Attendance summary scoped to this worker for the selected period.
+  
   const {
     data: summary,
     isLoading: loadingSummary,
@@ -74,7 +74,7 @@ export function AttendanceTab({ worker }: AttendanceTabProps) {
 
   return (
     <div className="space-y-4">
-      {/* Period Selection & Header Banner */}
+      
       <div className="flex flex-wrap items-center justify-between gap-2.5 rounded-xl border border-slate-200/80 bg-slate-50/70 p-3 shadow-2xs">
         <div className="flex items-center gap-2">
           <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-100 text-sky-600">
@@ -96,7 +96,7 @@ export function AttendanceTab({ worker }: AttendanceTabProps) {
         </div>
 
         <div className="flex items-center gap-1.5 ml-auto">
-          {/* Period Segmented Control */}
+          
           <SlidingTabs
             compact
             value={period}
@@ -107,7 +107,7 @@ export function AttendanceTab({ worker }: AttendanceTabProps) {
             onValueChange={(next) => setPeriod(next as Period)}
           />
 
-          {/* Refresh Button */}
+          
           <button
             type="button"
             onClick={handleRefresh}
@@ -125,7 +125,7 @@ export function AttendanceTab({ worker }: AttendanceTabProps) {
         </div>
       )}
 
-      {/* Summary KPI Cards */}
+      
       {loadingSummary ? (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {[1, 2, 3, 4].map((i) => (
@@ -134,7 +134,7 @@ export function AttendanceTab({ worker }: AttendanceTabProps) {
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {/* Total Hours */}
+          
           <div className="rounded-xl border border-slate-200/80 bg-white p-3 shadow-2xs">
             <div className="flex items-center gap-1.5 text-slate-500">
               <span className="flex h-6 w-6 items-center justify-center rounded-md bg-sky-50 text-sky-600">
@@ -148,7 +148,7 @@ export function AttendanceTab({ worker }: AttendanceTabProps) {
             <p className="mt-1 text-[10px] text-slate-400">Total hours worked</p>
           </div>
 
-          {/* Completed Shifts */}
+          
           <div className="rounded-xl border border-slate-200/80 bg-white p-3 shadow-2xs">
             <div className="flex items-center gap-1.5 text-slate-500">
               <span className="flex h-6 w-6 items-center justify-center rounded-md bg-emerald-50 text-emerald-600">
@@ -162,7 +162,7 @@ export function AttendanceTab({ worker }: AttendanceTabProps) {
             <p className="mt-1 text-[10px] text-slate-400">Finished in period</p>
           </div>
 
-          {/* Punctuality Rate */}
+          
           <div className="rounded-xl border border-slate-200/80 bg-white p-3 shadow-2xs">
             <div className="flex items-center gap-1.5 text-slate-500">
               <span className="flex h-6 w-6 items-center justify-center rounded-md bg-violet-50 text-violet-600">
@@ -176,13 +176,13 @@ export function AttendanceTab({ worker }: AttendanceTabProps) {
             <p className="mt-1 text-[10px] text-slate-400">On-time check-in rate</p>
           </div>
 
-          {/* Check-ins Breakdown */}
+          
           <div className="min-w-0 rounded-xl border border-slate-200/80 bg-white p-3 shadow-2xs">
             <div className="flex items-center justify-between gap-2">
               <p className="truncate text-[11px] font-semibold text-slate-500">Check-ins</p>
               <span className="shrink-0 text-[10px] font-bold text-slate-400">{totalCheckIns} total</span>
             </div>
-            {/* Two badges do not fit side by side at a quarter of the grid, so they wrap. */}
+            
             <div className="mt-2 flex flex-wrap items-center gap-1.5">
               <span className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-md bg-emerald-50 px-1.5 py-0.5 text-[10px] font-bold text-emerald-700 ring-1 ring-emerald-200">
                 <TbCheck className="text-[11px]" /> {onTimeCount} on time
@@ -196,7 +196,7 @@ export function AttendanceTab({ worker }: AttendanceTabProps) {
         </div>
       )}
 
-      {/* Punctuality Bar */}
+      
       <div className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-2xs">
         <div className="flex items-center justify-between text-xs">
           <span className="font-semibold text-slate-700">Punctuality Share</span>

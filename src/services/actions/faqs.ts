@@ -19,10 +19,8 @@ export interface UpdateFaqDto {
   serial_no?: number;
 }
 
-/* ---------------------------------------------------------------------------
- * `/manage/*-faq` — the public FAQ content routes. These carry no `serial_no`;
- * the list arrives in insertion order.
- * ------------------------------------------------------------------------ */
+
+
 
 export interface ManageFaq {
   _id: string;
@@ -37,7 +35,7 @@ export interface CreateManageFaqDto {
   answer: string;
 }
 
-/** Both fields optional — send only what changed. */
+
 export interface UpdateManageFaqDto {
   question?: string;
   answer?: string;

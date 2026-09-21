@@ -19,7 +19,7 @@ import {
 import { useModalJump } from "@/hooks/useModalJump";
 import { endFromStart } from "@/components/shift-management/planShift";
 
-/** Roles a worker can hold on a shift. */
+
 const ROLES = ["Team leader", "Co-leader", "Normal worker"] as const;
 
 type PlanRole = (typeof ROLES)[number];

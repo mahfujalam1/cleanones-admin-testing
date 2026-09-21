@@ -1,7 +1,4 @@
-/**
- * One store for the whole app. Server data lives in the RTK Query cache, so the slices here
- * hold only what the UI owns: the signed-in user and transient interface state.
- */
+
 import { configureStore } from '@reduxjs/toolkit';
 import authReducer from './slices/auth.slice';
 import uiReducer from './slices/ui.slice';

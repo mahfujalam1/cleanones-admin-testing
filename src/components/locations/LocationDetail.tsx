@@ -27,8 +27,8 @@ export function LocationDetail({ clientId, locationId }: { clientId: string; loc
   const [viewPlan, setViewPlan] = useState<CleaningPlan | null>(null);
   const { data: location, isLoading, error } = useGetLocationQuery(locationId);
   const { currentData: rooms = [] } = useGetRoomCatalogQuery({ clientId, locationId }, { refetchOnMountOrArgChange: false });
-  // The plans belonging to this client at this location — the same filter pair the
-  // /cleaning-plans page uses, so both screens agree on what belongs here.
+  
+  
   const { data: planPage, isFetching: loadingPlans, error: plansError } = useGetCleaningPlanListQuery(
     { client: clientId, location: locationId, limit: 50 },
     { skip: tab !== 'Cleaning plan' },

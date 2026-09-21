@@ -55,11 +55,8 @@ const formatDateTime = (value?: string) => {
   return `${parsed.toLocaleDateString()} · ${parsed.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
 };
 
-/**
- * Finish time is the start plus the plan's exact total task duration.
- * `end_date` is the date the plan repeats until, not a finish time, so it is only used
- * when there is no duration to work from.
- */
+
+
 const formatPlanEnd = (start?: string, minutes?: number, endDate?: string) => {
   if (start && minutes) {
     const parsed = new Date(start);
@@ -262,7 +259,7 @@ function PlanBody({
                       )}
                     </div>
 
-                    {/* Room tasks list if populated */}
+                    
                     {room.tasks && room.tasks.length > 0 && (
                       <div className="mt-2 space-y-1.5 border-t border-slate-200/60 pt-2">
                         {room.tasks.map((task, taskIdx) => (
@@ -313,7 +310,7 @@ function PlanBody({
                         >
                           {task.is_completed ? "Completed" : "Incomplete"}
                         </span>
-                        {/* An approved task is marked with a tick beside its completion badge. */}
+                        
                         {task.status === "Approved" && (
                           <MdCheckCircle
                             aria-label="Approved"
@@ -684,9 +681,9 @@ export function PlanDetailModal({
 
   if (typeof document === "undefined") return null;
 
-  // Portalled to <body> so the backdrop is laid out against the viewport. Inside the
-  // dashboard tree an animating ancestor can become the containing block for `fixed`,
-  // which left a strip uncovered at the bottom when this modal was stacked under another.
+  
+  
+  
   return createPortal(
     <div
       className="modal-backdrop fixed inset-0 z-[70] flex items-center justify-center p-4 animate-in fade-in duration-200"

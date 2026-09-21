@@ -60,7 +60,7 @@ export function ApproveModal({ review, open, onClose, onConfirm }: ApproveModalP
             aria-labelledby="approve-modal-title"
         >
             <div className={`bg-white rounded-md w-full max-w-md shadow ${jumpClassName}`}>
-                {/* Header */}
+                
                 <div className="flex items-start justify-between p-6 pb-0">
                     <div>
                         <h2 id="approve-modal-title" className="text-base font-semibold text-gray-900">
@@ -81,7 +81,7 @@ export function ApproveModal({ review, open, onClose, onConfirm }: ApproveModalP
                     </button>
                 </div>
 
-                {/* Body */}
+                
                 <div className="p-6 space-y-4">
                     <div className="space-y-1.5">
                         <label className="text-sm font-medium text-gray-700">
@@ -97,7 +97,7 @@ export function ApproveModal({ review, open, onClose, onConfirm }: ApproveModalP
                         />
                     </div>
 
-                    {/* Training data toggle */}
+                    
                     <label className="flex items-start gap-3 bg-emerald-50 p-3 rounded cursor-pointer">
                         <input
                             type="checkbox"
@@ -111,7 +111,7 @@ export function ApproveModal({ review, open, onClose, onConfirm }: ApproveModalP
                         </div>
                     </label>
 
-                    {/* Actions */}
+                    
                     <div className="flex justify-end gap-2 pt-1">
                         <button
                             onClick={handleClose}

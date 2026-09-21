@@ -16,7 +16,7 @@ interface ChatMessageListProps {
   currentUserId?: string;
   authUserId?: string;
   typingUser?: string;
-  /** Sender id -> display name, resolved from the chat's member list. */
+  
   senderNames?: Map<string, string>;
   onRequestDeleteMessage: (msg: ChatMessage) => void;
 }
@@ -32,11 +32,11 @@ export function ChatMessageList({
 }: ChatMessageListProps) {
   const ui = getUiTranslation(getLocale(usePathname()));
   const [activeMenuMsgId, setActiveMenuMsgId] = useState<string | null>(null);
-  /** The photo currently open in the lightbox, or null when it is closed. */
+  
   const [preview, setPreview] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
-  // Escape closes the preview, matching every other modal in the dashboard.
+  
   useEffect(() => {
     if (!preview) return;
     const close = (event: KeyboardEvent) => {
@@ -156,7 +156,7 @@ export function ChatMessageList({
                         </div>
                       )}
 
-                      {/* Message Bubble */}
+                      
                       <div
                         className={`relative rounded-2xl px-3.5 py-2.5 text-xs leading-5 shadow-2xs border ${
                           message.is_deleted
@@ -170,7 +170,7 @@ export function ChatMessageList({
                           <p>This message was deleted</p>
                         ) : (
                           <>
-                            {/* Attachments */}
+                            
                             {message.attachments && message.attachments.length > 0 && (
                               <div className="mb-2 space-y-1.5">
                                 {message.attachments.map((att, aIdx) => (
@@ -187,7 +187,7 @@ export function ChatMessageList({
                                           alt={ui.photo}
                                           className="max-h-56 max-w-full rounded-lg object-cover transition-transform duration-200 group-hover/photo:scale-[1.02]"
                                         />
-                                        {/* Hover hint, so it is clear the photo opens larger. */}
+                                        
                                         <span className="pointer-events-none absolute inset-0 flex items-center justify-center gap-1.5 rounded-lg bg-slate-950/45 text-xs font-semibold text-white opacity-0 transition-opacity duration-200 group-hover/photo:opacity-100">
                                           <MdZoomIn className="text-base" />
                                           {ui.clickToPreview}
@@ -242,7 +242,7 @@ export function ChatMessageList({
         </div>
       )}
 
-      {/* Photo lightbox, portalled so the chat scroll container cannot clip it. */}
+      
       {preview &&
         typeof document !== "undefined" &&
         createPortal(
@@ -265,7 +265,7 @@ export function ChatMessageList({
             <img
               src={preview}
               alt={ui.photo}
-              // The image itself must not close the dialog, so the backdrop click is stopped here.
+              
               onClick={(event) => event.stopPropagation()}
               className="max-h-[88vh] max-w-full rounded-lg object-contain shadow-2xl animate-in zoom-in-95 duration-150"
             />

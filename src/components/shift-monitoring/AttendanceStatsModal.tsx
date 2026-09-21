@@ -23,11 +23,8 @@ interface AttendanceStatsModalProps {
 export function AttendanceStatsModal({ worker, onClose, period = 'monthly' }: AttendanceStatsModalProps) {
   const { triggerJump, jumpClassName } = useModalJump();
 
-  /**
-   * The headline figures come from /shift/attendance-summary/:workerId for the chosen period.
-   * The weekly and monthly trend series have no endpoint in the current API, so those charts
-   * stay empty until one lands.
-   */
+
+
   const {
     data: summary,
     isLoading: loadingSummary,
@@ -58,7 +55,7 @@ export function AttendanceStatsModal({ worker, onClose, period = 'monthly' }: At
   const weeklyData: Array<{ name: string; hours: number }> = [];
   const monthlyData: Array<{ name: string; hours: number }> = [];
 
-  // Handle escape key
+  
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
@@ -84,7 +81,7 @@ export function AttendanceStatsModal({ worker, onClose, period = 'monthly' }: At
         className={`flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-2xl animate-in fade-in zoom-in-95 duration-150 ${jumpClassName}`}
         onMouseDown={(e) => e.stopPropagation()}
       >
-        {/* Header */}
+        
         <header className="relative flex shrink-0 items-center justify-between border-b border-slate-200 bg-white px-6 py-4.5 text-slate-900">
           <div className="flex items-center gap-4">
             <div className="relative">
@@ -129,7 +126,7 @@ export function AttendanceStatsModal({ worker, onClose, period = 'monthly' }: At
           </button>
         </header>
 
-        {/* Scrollable Content */}
+        
         <div className="min-h-0 flex-1 overflow-y-auto bg-slate-50/50 p-6 space-y-6">
           {loadingSummary ? (
             <DetailSkeleton blocks={5} />
@@ -144,7 +141,7 @@ export function AttendanceStatsModal({ worker, onClose, period = 'monthly' }: At
             </div>
           ) : (
             <>
-              {/* 4 Metric Cards - Unified Clean Theme */}
+              
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-2xs">
                   <div className="flex items-center justify-between">
@@ -201,13 +198,13 @@ export function AttendanceStatsModal({ worker, onClose, period = 'monthly' }: At
                 </div>
               </div>
 
-              {/* Charts Section — the trend series comes from a separate call, so the charts
-                  only appear when that call actually returned something. */}
+
+
               <div
                 className="grid grid-cols-1 gap-4 lg:grid-cols-2"
                 hidden={weeklyData.length === 0 && monthlyData.length === 0}
               >
-                {/* Weekly Trend Bar Chart */}
+                
                 <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs">
                   <div className="mb-4 flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -251,7 +248,7 @@ export function AttendanceStatsModal({ worker, onClose, period = 'monthly' }: At
                   </div>
                 </div>
 
-                {/* Monthly Trend Line Chart */}
+                
                 <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs">
                   <div className="mb-4 flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -305,7 +302,7 @@ export function AttendanceStatsModal({ worker, onClose, period = 'monthly' }: At
           )}
         </div>
 
-        {/* Footer */}
+        
         <footer className="flex shrink-0 items-center justify-end border-t border-slate-200 bg-white px-6 py-4">
           <button
             onClick={onClose}

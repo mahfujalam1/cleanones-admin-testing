@@ -2,10 +2,6 @@
 
 import React from "react";
 
-/**
- * The red counter that sits on the notification bell and the Chat nav item. Counts past 99
- * are shown as "99+" so the pill keeps a predictable width.
- */
 export function CountBadge({
   count,
   label,

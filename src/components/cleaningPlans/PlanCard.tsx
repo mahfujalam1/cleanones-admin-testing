@@ -97,8 +97,8 @@ export function PlanCard({
           </div>
         </div>
 
-        {/* Fixed stat strip: every card ends on the same line and the numbers a manager scans for
-            sit in the same place on each one. */}
+
+
         <div className="grid grid-cols-2 divide-x divide-slate-100 border-t border-slate-100 bg-slate-50/60">
           <Stat
             value={plan.max_estimated_duration ? `${plan.max_estimated_duration}m` : "—"}

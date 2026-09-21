@@ -5,10 +5,6 @@ import { Popover } from "@base-ui/react/popover";
 import { Check, ChevronDown, Search } from "lucide-react";
 import { loadCountries } from "@/lib/geonames";
 
-/**
- * Searchable country picker, fed by GeoNames (see `lib/geonames`). The stored value is the
- * country name itself, since that is what the record holds rather than a code.
- */
 export function CountrySelect({
   value,
   onValueChange,
@@ -38,7 +34,7 @@ export function CountrySelect({
   useEffect(() => {
     if (!open) return;
     setQuery("");
-    // Let the popup mount before stealing focus, so typing starts in the search box.
+
     const frame = requestAnimationFrame(() => searchRef.current?.focus());
     return () => cancelAnimationFrame(frame);
   }, [open]);
@@ -46,7 +42,7 @@ export function CountrySelect({
   const matches = useMemo(() => {
     const term = query.trim().toLowerCase();
     if (!term) return countries;
-    // A name starting with the term is the likelier intent, so those float to the top.
+
     const starts = countries.filter((country) => country.toLowerCase().startsWith(term));
     const contains = countries.filter(
       (country) => !country.toLowerCase().startsWith(term) && country.toLowerCase().includes(term),
@@ -98,7 +94,7 @@ export function CountrySelect({
                       country === value ? "font-medium text-primary" : "text-slate-700"
                     }`}
                   >
-                    {/* Fixed slot so unselected names line up with the selected one. */}
+
                     <span className="flex h-4 w-4 shrink-0 items-center justify-center">
                       {country === value && <Check className="h-4 w-4 text-primary" />}
                     </span>

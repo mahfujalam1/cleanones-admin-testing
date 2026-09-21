@@ -6,7 +6,7 @@ export type { DashboardUser };
 type AuthState = {
   user: DashboardUser | null;
   isAuthenticated: boolean;
-  /** False until the session has been restored (or proven absent) after a page load. */
+
   initialized: boolean;
 };
 

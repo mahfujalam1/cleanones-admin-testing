@@ -5,14 +5,8 @@ import { clientCompanyLabel, clientLabel, CLIENT_LOOKUP_ARGS, useGetClientsQuery
 import { useGetClientLocationsQuery, useGetLocationsQuery } from "@/redux/api/endpoints/locations.api";
 import { useGetRoomsQuery } from "@/redux/api/endpoints/rooms.api";
 
-/**
- * Dropdowns for the parent a record hangs off.
- *
- * The API exposes rooms only under a location and tasks only under a room, so those screens
- * cannot show anything until a parent is chosen — these are how it gets chosen. Each fetches a
- * single generous page rather than paging inside a `<select>`; the shared cache means the list
- * is usually already warm by the time a picker mounts.
- */
+
+
 const PICKER_LIMIT = 100;
 
 export function ClientPicker({
@@ -26,7 +20,7 @@ export function ClientPicker({
   onChange: (clientId: string) => void;
   required?: boolean;
   showCompanyName?: boolean;
-  /** Screens that pick the account by its company rather than its contact override this. */
+  
   label?: string;
 }) {
   const { data, isFetching } = useGetClientsQuery(CLIENT_LOOKUP_ARGS);
@@ -70,7 +64,7 @@ export function LocationPicker({
   );
 }
 
-/** Locations belonging to one client — the second step when creating a room from scratch. */
+
 export function ClientLocationPicker({
   clientId,
   value,

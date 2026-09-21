@@ -12,7 +12,6 @@ import type { DashboardRole } from "@/lib/auth/session";
 import { getLocale, localizePath } from "@/lib/locale";
 import { getAuthTranslation } from "@/lib/translations";
 
-/** Managers land on the first route they are allowed to see; admins land on the dashboard. */
 function landingRoute(role: DashboardRole) {
   if (role !== "MANAGER") return "/";
   return getFirstAllowedRoute(getStoredManagerAccess()) ?? "/unauthorized";
@@ -28,6 +27,7 @@ export default function LoginPage() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
 
@@ -42,15 +42,12 @@ export default function LoginPage() {
     setError("");
 
     try {
-      const session = await login({ email, password }).unwrap();
+      const session = await login({ email, password, remember_me: rememberMe }).unwrap();
       if (!session.user) {
         setError(t.subtitle);
         return;
       }
-      // A document navigation, not router.replace: the proxy gates routes on the session cookie,
-      // and the client router still holds the pre-login redirect for this path
-      // (experimental.staleTimes keeps it for 30s), so a soft navigation replays that redirect
-      // straight back here. A full load re-runs the proxy with the cookie that was just set.
+
       window.location.replace(localizePath(landingRoute(session.user.role), locale));
     } catch (cause) {
       setError(apiError(cause, t.subtitle));
@@ -111,7 +108,16 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <div className="flex items-center justify-end pt-0.5">
+          <div className="flex items-center justify-between pt-0.5">
+            <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-700">
+              <input
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(event) => setRememberMe(event.target.checked)}
+                className="h-4 w-4 rounded border-slate-300 accent-primary"
+              />
+              {t.rememberMe}
+            </label>
             <Link
               href={localizePath("/forgot-password", locale)}
               className="text-sm font-medium text-primary hover:underline"

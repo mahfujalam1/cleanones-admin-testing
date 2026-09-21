@@ -18,7 +18,7 @@ type FormModalProps = {
   children: React.ReactNode;
 };
 
-/** Dialog shell every create/edit form shares: header, scrollable body, footer, Escape to close. */
+
 export function FormModal({
   title,
   subtitle,
@@ -77,8 +77,8 @@ export function FormModal({
 
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-6 py-5">{children}</div>
 
-        {/* The error sits with the buttons rather than at the end of the scrollable body, so a
-            failed submit is visible without scrolling back down. */}
+
+
         <div className="flex flex-wrap items-center justify-end gap-3 border-t border-slate-100 px-6 py-5">
           {error && (
             <p

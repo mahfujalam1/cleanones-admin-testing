@@ -49,7 +49,7 @@ export function InvoicesTab({ worker }: { worker: Worker }) {
 
   return (
     <div className="space-y-4">
-      {/* 3 Stats Cards */}
+      
       <div className="grid grid-cols-3 gap-3">
         <div className="bg-[#e0f7fa] border border-[#b2ebf2] rounded-lg p-3.5 sm:p-4 text-center">
           <div className="text-base sm:text-lg font-bold text-[#0ea5e9]">{money(totalEarned)}</div>
@@ -65,7 +65,7 @@ export function InvoicesTab({ worker }: { worker: Worker }) {
         </div>
       </div>
 
-      {/* Period summary banner */}
+      
       <div className="rounded-lg border border-slate-100 bg-slate-50/80 px-4 py-2.5 text-xs text-slate-500">
         <div className="flex flex-wrap items-center justify-between gap-1">
           <span className="font-medium text-slate-700">
@@ -80,7 +80,7 @@ export function InvoicesTab({ worker }: { worker: Worker }) {
         </div>
       </div>
 
-      {/* Record payment action button */}
+      
       {fullyPaid ? (
         <button
           type="button"
@@ -99,7 +99,7 @@ export function InvoicesTab({ worker }: { worker: Worker }) {
         </button>
       )}
 
-      {/* Invoices Table */}
+      
       {isLoading ? (
         <div className="space-y-2 py-4">
           {Array.from({ length: 3 }, (_, i) => (
@@ -159,7 +159,7 @@ export function InvoicesTab({ worker }: { worker: Worker }) {
         </div>
       )}
 
-      {/* Record Payment Modal */}
+      
       {recording && (
         <RecordPaymentModal
           worker={worker}

@@ -78,12 +78,12 @@ export function PlanDetailSidebar({ plan, onClose, onDelete, onEdit, onAssign }:
             onClick={onClose}
             className="modal-backdrop fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-200"
         >
-            {/* Modal Box */}
+            
             <div
                 onClick={(e) => e.stopPropagation()}
                 className="flex max-h-[92vh] w-full max-w-4xl flex-col rounded-xl bg-white shadow-2xl overflow-hidden border border-slate-200 animate-in zoom-in-95 duration-200"
             >
-                {/* 1. Header Bar (Full White UI Modal Style) */}
+                
                 <header className="flex items-center gap-3 border-b border-slate-200 p-5 bg-white shrink-0">
                     <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-sky-50 text-sky-500 shrink-0">
                         <TbClipboardList className="text-xl" />
@@ -109,7 +109,7 @@ export function PlanDetailSidebar({ plan, onClose, onDelete, onEdit, onAssign }:
                         </p>
                     </div>
 
-                    {/* Right Header Actions */}
+                    
                     <div className="flex items-center gap-2">
                         {onAssign && (
                             <button
@@ -146,7 +146,7 @@ export function PlanDetailSidebar({ plan, onClose, onDelete, onEdit, onAssign }:
                     </div>
                 </header>
 
-                {/* 2. Scrollable Body Content */}
+                
                 <div className="flex-1 overflow-y-auto p-6 space-y-5 text-xs bg-white">
                     {error && (
                         <div className="rounded-lg border border-red-200 bg-red-50 p-3.5 text-xs font-medium text-red-700">
@@ -158,7 +158,7 @@ export function PlanDetailSidebar({ plan, onClose, onDelete, onEdit, onAssign }:
                         <DetailSkeleton blocks={8} />
                     ) : (
                         <>
-                            {/* Unified 4 Metrics Row */}
+                            
                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                                 <div className="rounded-lg border border-slate-200 bg-slate-50/50 p-3.5 flex items-center gap-3">
                                     <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-sky-50 text-sky-500 shrink-0">
@@ -201,11 +201,11 @@ export function PlanDetailSidebar({ plan, onClose, onDelete, onEdit, onAssign }:
                                 </div>
                             </div>
 
-                            {/* 2-Column Main Section */}
+                            
                             <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-                                {/* Left Column: Client, Location, Rooms & Tasks (66%) */}
+                                
                                 <div className="lg:col-span-2 space-y-5">
-                                    {/* Client & Location Card */}
+                                    
                                     <div className="rounded-lg border border-slate-200 bg-white p-4 space-y-3">
                                         <h3 className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
                                             {t.clients.title}
@@ -247,7 +247,7 @@ export function PlanDetailSidebar({ plan, onClose, onDelete, onEdit, onAssign }:
                                             </div>
                                         </div>
 
-                                        {/* Shift Notes */}
+                                        
                                         {details?.shift_notes && (
                                             <div className="rounded-md border border-sky-100 bg-sky-50/60 p-3 flex items-start gap-2 text-xs">
                                                 <TbNotes className="text-sky-600 text-base shrink-0 mt-0.5" />
@@ -259,7 +259,7 @@ export function PlanDetailSidebar({ plan, onClose, onDelete, onEdit, onAssign }:
                                         )}
                                     </div>
 
-                                    {/* Detailed Rooms Breakdown */}
+                                    
                                     <div className="space-y-3">
                                         <div className="flex items-center justify-between">
                                             <h3 className="text-[11px] font-semibold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
@@ -274,7 +274,7 @@ export function PlanDetailSidebar({ plan, onClose, onDelete, onEdit, onAssign }:
                                                         key={room.room_id}
                                                         className="rounded-lg border border-slate-200 bg-white p-4 space-y-3"
                                                     >
-                                                        {/* Room Header */}
+                                                        
                                                         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
                                                             <div className="flex items-center gap-2.5">
                                                                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-50 text-sky-500 font-semibold text-xs shrink-0">
@@ -303,7 +303,7 @@ export function PlanDetailSidebar({ plan, onClose, onDelete, onEdit, onAssign }:
                                                             </div>
                                                         </div>
 
-                                                        {/* Tasks inside Room */}
+                                                        
                                                         {(room.tasks || []).length > 0 && (
                                                             <div className="space-y-2">
                                                                 <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
@@ -340,7 +340,7 @@ export function PlanDetailSidebar({ plan, onClose, onDelete, onEdit, onAssign }:
                                                             </div>
                                                         )}
 
-                                                        {/* Required Photos in Room */}
+                                                        
                                                         {(room.required_photos || []).length > 0 && (
                                                             <div className="space-y-1.5 pt-2 border-t border-slate-100">
                                                                 <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
@@ -376,7 +376,7 @@ export function PlanDetailSidebar({ plan, onClose, onDelete, onEdit, onAssign }:
                                         )}
                                     </div>
 
-                                    {/* Additional Plan Tasks */}
+                                    
                                     {additionalTasks.length > 0 && (
                                         <div className="rounded-lg border border-slate-200 bg-white p-4 space-y-2.5">
                                             <h3 className="text-[11px] font-semibold text-slate-700 uppercase tracking-wider">
@@ -433,9 +433,9 @@ export function PlanDetailSidebar({ plan, onClose, onDelete, onEdit, onAssign }:
                                     )}
                                 </div>
 
-                                {/* Right Column: Assigned Workers & Execution Details (34%) */}
+                                
                                 <div className="space-y-5">
-                                    {/* Assigned Workers Card */}
+                                    
                                     <div className="rounded-lg border border-slate-200 bg-white p-4 space-y-3">
                                         <div className="flex items-center justify-between">
                                             <h3 className="text-[11px] font-semibold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
@@ -500,7 +500,7 @@ export function PlanDetailSidebar({ plan, onClose, onDelete, onEdit, onAssign }:
                                         )}
                                     </div>
 
-                                    {/* Manager Info */}
+                                    
                                     {details?.manager && (
                                         <div className="rounded-lg border border-slate-200 bg-white p-4 space-y-2">
                                             <h3 className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
@@ -530,7 +530,7 @@ export function PlanDetailSidebar({ plan, onClose, onDelete, onEdit, onAssign }:
                                         </div>
                                     )}
 
-                                    {/* Schedule & Working Days */}
+                                    
                                     <div className="rounded-lg border border-slate-200 bg-white p-4 space-y-2.5">
                                         <h3 className="text-[11px] font-semibold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
                                             <TbCalendar className="text-sky-500" /> {t.roster.title}

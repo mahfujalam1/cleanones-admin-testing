@@ -66,7 +66,7 @@ export function PerformanceTab({ worker }: PerformanceTabProps) {
 
   return (
     <div className="space-y-4">
-      {/* Month & Year navigation banner */}
+
       <div className="flex items-center justify-between rounded-xl border border-slate-200/80 bg-slate-50/60 px-4 py-2.5 shadow-2xs">
         <div className="flex items-center gap-2">
           <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-sky-100 text-sky-700">
@@ -111,9 +111,9 @@ export function PerformanceTab({ worker }: PerformanceTabProps) {
         </div>
       ) : (
         <>
-          {/* Main Grid of Counters */}
+
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {/* Total Shifts */}
+
             <div className="rounded-xl border border-slate-200/80 bg-white p-3.5 shadow-2xs">
               <div className="flex items-center justify-between">
                 <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
@@ -124,7 +124,6 @@ export function PerformanceTab({ worker }: PerformanceTabProps) {
               <p className="mt-2 text-xs font-medium text-slate-500">Total Shifts</p>
             </div>
 
-            {/* Completed */}
             <div className="rounded-xl border border-emerald-100 bg-emerald-50/40 p-3.5 shadow-2xs">
               <div className="flex items-center justify-between">
                 <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700">
@@ -135,7 +134,6 @@ export function PerformanceTab({ worker }: PerformanceTabProps) {
               <p className="mt-2 text-xs font-medium text-emerald-700">Completed</p>
             </div>
 
-            {/* In Progress */}
             <div className="rounded-xl border border-amber-100 bg-amber-50/40 p-3.5 shadow-2xs">
               <div className="flex items-center justify-between">
                 <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-100 text-amber-700">
@@ -146,7 +144,6 @@ export function PerformanceTab({ worker }: PerformanceTabProps) {
               <p className="mt-2 text-xs font-medium text-amber-700">In Progress</p>
             </div>
 
-            {/* Upcoming */}
             <div className="rounded-xl border border-blue-100 bg-blue-50/40 p-3.5 shadow-2xs">
               <div className="flex items-center justify-between">
                 <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100 text-blue-700">
@@ -157,7 +154,6 @@ export function PerformanceTab({ worker }: PerformanceTabProps) {
               <p className="mt-2 text-xs font-medium text-blue-700">Upcoming</p>
             </div>
 
-            {/* Total Work Hours */}
             <div className="rounded-xl border border-indigo-100 bg-indigo-50/40 p-3.5 shadow-2xs">
               <div className="flex items-center justify-between">
                 <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-100 text-indigo-700">
@@ -168,7 +164,6 @@ export function PerformanceTab({ worker }: PerformanceTabProps) {
               <p className="mt-2 text-xs font-medium text-indigo-700">Hours Worked</p>
             </div>
 
-            {/* Late Shifts */}
             <div className="rounded-xl border border-orange-100 bg-orange-50/40 p-3.5 shadow-2xs">
               <div className="flex items-center justify-between">
                 <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-100 text-orange-700">
@@ -179,7 +174,6 @@ export function PerformanceTab({ worker }: PerformanceTabProps) {
               <p className="mt-2 text-xs font-medium text-orange-700">Late Check-ins</p>
             </div>
 
-            {/* Absent Shifts */}
             <div className="rounded-xl border border-rose-100 bg-rose-50/40 p-3.5 shadow-2xs">
               <div className="flex items-center justify-between">
                 <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-rose-100 text-rose-700">
@@ -190,7 +184,6 @@ export function PerformanceTab({ worker }: PerformanceTabProps) {
               <p className="mt-2 text-xs font-medium text-rose-700">Absent Shifts</p>
             </div>
 
-            {/* Completion Rate */}
             <div className="rounded-xl border border-sky-100 bg-sky-50/40 p-3.5 shadow-2xs">
               <div className="flex items-center justify-between">
                 <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-100 text-sky-700">
@@ -202,7 +195,6 @@ export function PerformanceTab({ worker }: PerformanceTabProps) {
             </div>
           </div>
 
-          {/* Performance Rate Indicators */}
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-2xs">
               <div className="flex items-center justify-between mb-2">

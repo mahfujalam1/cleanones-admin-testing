@@ -53,7 +53,7 @@ function LocationsView() {
   const message = actionError || (error ? apiError(error) : "");
   const selectedClient = clientPage?.result.find((client) => client._id === clientId);
 
-  // Auto-fallback: if current page has no data and we are past page 1, redirect to previous page
+  
   useEffect(() => {
     if (!isFetching && data && locations.length === 0 && page > 1) {
       setPage((prev) => Math.max(1, prev - 1));
@@ -94,8 +94,8 @@ function LocationsView() {
         </div>
       </header>
 
-      {/* Controls take only the width they need and sit left; stretching them across a wide
-          screen makes a two-field toolbar look like a form. */}
+
+
       <div className="grid gap-2 rounded-xl bg-white p-2 ring-1 ring-slate-200/70 md:grid-cols-2 xl:grid-cols-[1.4fr_1fr_auto]">
         <SearchInput value={search} onChange={setSearch} placeholder={ui.searchLocations} />
 
@@ -164,8 +164,8 @@ function LocationsView() {
         onPageChange={setPage}
       />
 
-      {/* The client is chosen inside the form, so adding never takes two dialogs. When the page
-          is already scoped to a client, that choice is made for the user. */}
+
+
       {creating && <LocationForm clientId={clientId || undefined} onClose={() => setCreating(false)} />}
 
       {editTarget && <LocationForm location={editTarget} onClose={() => setEditTarget(null)} />}
@@ -185,7 +185,7 @@ function LocationsView() {
 }
 
 export default function LocationsPage() {
-  // `useSearchParams` needs a Suspense boundary to keep the route statically renderable.
+  
   return (
     <Suspense fallback={<CardGridSkeleton />}>
       <LocationsView />

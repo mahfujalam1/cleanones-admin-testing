@@ -68,7 +68,7 @@ export function ExtraServicePlanSection({ plan, loading, planId }: ExtraServiceP
 
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-4 text-xs">
-      {/* Plan Header */}
+      
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
         <div>
           <div className="flex items-center gap-2">
@@ -94,7 +94,7 @@ export function ExtraServicePlanSection({ plan, loading, planId }: ExtraServiceP
         </div>
       </div>
 
-      {/* 4 Stat Cards */}
+      
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
         <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-3 flex items-center gap-3">
           <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-sky-50 text-sky-600 text-lg">
@@ -137,11 +137,11 @@ export function ExtraServicePlanSection({ plan, loading, planId }: ExtraServiceP
         </div>
       </div>
 
-      {/* Main Breakdown Layout (2 columns) */}
+      
       <div className="grid gap-4 lg:grid-cols-3">
-        {/* Left Column (2/3) */}
+        
         <div className="space-y-4 lg:col-span-2">
-          {/* Plan Details & Client Info */}
+          
           <div className="rounded-xl border border-slate-200 bg-white p-3.5 space-y-3">
             <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
               {t.clients.title}
@@ -185,7 +185,7 @@ export function ExtraServicePlanSection({ plan, loading, planId }: ExtraServiceP
             )}
           </div>
 
-          {/* Rooms & Tasks Breakdown */}
+          
           {rooms.length > 0 && (
             <div className="rounded-xl border border-slate-200 bg-white p-3.5 space-y-3">
               <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
@@ -221,7 +221,7 @@ export function ExtraServicePlanSection({ plan, loading, planId }: ExtraServiceP
                       </div>
                     </div>
 
-                    {/* Room Tasks */}
+                    
                     {room.tasks && room.tasks.length > 0 && (
                       <div className="space-y-1.5">
                         <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Room Tasks</p>
@@ -248,7 +248,7 @@ export function ExtraServicePlanSection({ plan, loading, planId }: ExtraServiceP
                       </div>
                     )}
 
-                    {/* Required Photos in Room */}
+                    
                     {room.required_photos && room.required_photos.length > 0 && (
                       <div className="pt-1 flex flex-wrap items-center gap-1">
                         <span className="text-[10px] font-semibold text-slate-400 flex items-center gap-1">
@@ -270,7 +270,7 @@ export function ExtraServicePlanSection({ plan, loading, planId }: ExtraServiceP
             </div>
           )}
 
-          {/* Additional Plan Tasks (Approved) */}
+          
           {additionalTasks.length > 0 && (
             <div className="rounded-xl border border-slate-200 bg-white p-3.5 space-y-2.5">
               <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
@@ -322,9 +322,9 @@ export function ExtraServicePlanSection({ plan, loading, planId }: ExtraServiceP
           )}
         </div>
 
-        {/* Right Column (1/3) */}
+        
         <div className="space-y-4">
-          {/* Assigned Workers */}
+          
           <div className="rounded-xl border border-slate-200 bg-white p-3.5 space-y-3">
             <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
               <TbUsers className="text-sky-600" /> Assigned Workers ({workers.length})
@@ -359,7 +359,7 @@ export function ExtraServicePlanSection({ plan, loading, planId }: ExtraServiceP
             )}
           </div>
 
-          {/* Assigned Manager */}
+          
           {plan.manager && (
             <div className="rounded-xl border border-slate-200 bg-white p-3.5 space-y-2.5">
               <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
@@ -385,7 +385,7 @@ export function ExtraServicePlanSection({ plan, loading, planId }: ExtraServiceP
             </div>
           )}
 
-          {/* Working Days */}
+          
           <div className="rounded-xl border border-slate-200 bg-white p-3.5 space-y-2.5">
             <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
               <TbCalendar className="text-sky-600" /> Working Days

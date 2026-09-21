@@ -42,7 +42,7 @@ const latestReviewTime = (task: PhotoReviewTask) => {
   );
 };
 
-/** The payload has no id, so a row is identified by what makes the instance unique. */
+
 export const rowKey = (task: PhotoReviewTask) =>
   `${task.shift_date}-${task.cleaning_name}-${task.room_name}-${task.task_name}`;
 
@@ -248,7 +248,7 @@ export function PhotoReviewsPage() {
         </div>
       </div>
 
-      {/* Table */}
+      
       <div className="flex flex-1 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xs">
         <div className="flex-1 overflow-x-auto">
           <table className="w-full min-w-[1100px] border-collapse text-sm">

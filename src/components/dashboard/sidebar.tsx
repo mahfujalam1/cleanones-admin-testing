@@ -72,7 +72,7 @@ export default function Sidebar() {
 
   return (
     <>
-      {/* Mobile/tablet backdrop */}
+      
       <button
         type="button"
         aria-label="Close navigation"
@@ -109,7 +109,7 @@ export default function Sidebar() {
           {collapsed ? <MdChevronRight /> : <MdChevronLeft />}
         </button>
 
-        {/* Navigation */}
+        
         <div className="flex-1 overflow-y-auto py-3 custom-scrollbar lg:py-2">
           <nav className="space-y-1 px-3">
             {visibleMainLinks.map((link) => {
@@ -164,21 +164,11 @@ export default function Sidebar() {
             })}
           </nav>
 
-          {/* {user?.role === 'ADMIN' && (
-            <>
-              <div className="mx-3 my-4 border-t border-sidebar-border" />
-              <div className={`mb-2 px-6 text-xs font-medium uppercase tracking-wider text-sidebar-foreground/70 ${collapsed ? 'lg:hidden' : 'block'}`}>{t.nav.administration}</div>
-              <nav className="space-y-1 px-3">
-                <Link prefetch={prefetchRoutes} href={localizePath('/manager-access', locale)} onClick={() => dispatch(closeMobileSidebar())} className={`flex h-9 items-center gap-2.5 rounded px-3 text-sm font-medium transition-colors ${routePath.startsWith('/manager-access') ? 'bg-[#e5f6fc] text-primary' : 'text-sidebar-foreground hover:bg-[#f2f9fc] hover:text-foreground'}`}>
-                  <MdAdminPanelSettings className="text-lg" />
-                  <span className={collapsed ? 'lg:hidden' : 'block'}>{t.nav.managerAccess}</span>
-                </Link>
-              </nav>
-            </>
-          )} */}
+
+
         </div>
 
-        {/* Footer */}
+        
         <div className="shrink-0 border-t border-sidebar-border p-3">
           <button onClick={() => dispatch(setSignOutModalOpen(true))} className="flex h-9 w-full cursor-pointer items-center gap-3 rounded px-3 text-sm font-medium text-sidebar-foreground hover:bg-sidebar-accent hover:text-foreground">
             <MdLogout className="shrink-0 text-lg" />

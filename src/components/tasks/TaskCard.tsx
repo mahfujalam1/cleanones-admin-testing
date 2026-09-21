@@ -25,7 +25,6 @@ const DAY_LABELS: Record<WeekDay, string> = {
 
 const capitalise = (value: string) => value[0].toUpperCase() + value.slice(1);
 
-/** Reads as "Daily", "Weekly · Mon, Fri" or "Monthly · 1, 15". */
 function scheduleLabel(task: Task): string {
   const frequency = capitalise(task.frequency_type);
   if (task.frequency_type === "weekly" && task.days_of_week?.length) {
@@ -120,8 +119,6 @@ export default function TaskCard({
           </div>
         </div>
 
-        {/* A fixed stat strip keeps every card the same height and puts the numbers a manager
-            scans for on one predictable line. */}
         <div className="grid grid-cols-3 divide-x divide-slate-100 border-t border-slate-100 bg-slate-50/60">
           <Stat
             value={typeof task.duration_minutes === "number" ? `${task.duration_minutes}m` : "—"}

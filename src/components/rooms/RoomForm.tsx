@@ -27,13 +27,11 @@ export function RoomForm({
   room,
   onClose,
 }: {
-  /** The client that owns `locationId`. Scoped callers know it, so the form need not derive it. */
+  
   clientId?: string;
   locationId?: string;
-  /**
-   * Opened from inside a client's location, where both are already decided by the page: the two
-   * selects show them but stay read-only, so a room can never be filed under another client.
-   */
+
+
   lockScope?: boolean;
   room?: Room;
   onClose: () => void;
@@ -71,8 +69,8 @@ export function RoomForm({
   );
   const [error, setError] = useState("");
 
-  // Derive the client from the location once the catalog lands. A scoped caller already passed
-  // `clientId`, so this only fills the gap for the global Rooms page and for editing.
+  
+  
   useEffect(() => {
     if (clientId || allLocations.length === 0) return;
     const targetLocId = locationId || (room ? refId(room.location) : "");
@@ -93,7 +91,7 @@ export function RoomForm({
     return allLocations.filter((loc) => refId(loc.client) === selectedClientId);
   }, [allLocations, selectedClientId]);
 
-  /** The location behind `selectedLocationId`, whichever client it belongs to. */
+  
   const selectedLocation = useMemo(
     () => allLocations.find((loc) => loc._id === selectedLocationId),
     [allLocations, selectedLocationId],
@@ -104,8 +102,8 @@ export function RoomForm({
       value: client._id,
       label: clientCompanyLabel(client),
     }));
-    // The lookup only covers the first page of clients, so a scoped client can be missing from it.
-    // Without this the locked select would render blank on the very client we are standing in.
+    
+    
     if (selectedClientId && !options.some((option) => option.value === selectedClientId)) {
       const populated = selectedLocation ? refDoc(selectedLocation.client) : null;
       options.push({
@@ -121,8 +119,8 @@ export function RoomForm({
       value: loc._id,
       label: loc.name,
     }));
-    // Same guard as above: until the catalog resolves the client, `clientLocations` is empty and
-    // the already-chosen location would otherwise have no option to display.
+    
+    
     if (selectedLocationId && !options.some((option) => option.value === selectedLocationId)) {
       options.push({
         value: selectedLocationId,

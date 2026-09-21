@@ -10,10 +10,8 @@ const MONTHS = [
   "July", "August", "September", "October", "November", "December",
 ];
 
-/** Days rendered per month view: six weeks, so the grid never changes height. */
 const GRID_DAYS = 42;
 
-/** How far the year dropdown reaches when `min`/`max` do not pin it down. */
 const YEARS_BACK = 100;
 const YEARS_AHEAD = 20;
 
@@ -55,8 +53,7 @@ export function DatePicker({
 
   useEffect(() => {
     if (selected) setView(selected);
-    // Following `value` alone is deliberate: re-running on the parsed date would loop, since
-    // `parse` returns a new object every render.
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value]);
 
@@ -73,12 +70,11 @@ export function DatePicker({
     );
   }, [view]);
 
-  // Jumping a decade through arrow clicks is painful, so the header offers both directly.
   const years = useMemo(() => {
     const thisYear = new Date().getFullYear();
     const first = parse(min ?? "")?.getFullYear() ?? thisYear - YEARS_BACK;
     const last = parse(max ?? "")?.getFullYear() ?? thisYear + YEARS_AHEAD;
-    // A selected date outside the range still has to appear, or the dropdown would show it blank.
+
     const from = Math.min(first, view.getFullYear());
     const to = Math.max(last, view.getFullYear());
     return Array.from({ length: to - from + 1 }, (_, index) => from + index);

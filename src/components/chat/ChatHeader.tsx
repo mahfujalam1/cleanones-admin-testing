@@ -8,7 +8,7 @@ interface ChatHeaderProps {
   chat: ChatItem;
   isOnline: boolean;
   onRename: () => void;
-  /** Returns to the conversation list on screens too narrow to show both panes. */
+  
   onBack?: () => void;
 }
 

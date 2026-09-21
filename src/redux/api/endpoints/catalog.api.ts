@@ -4,8 +4,8 @@ import { tagTypes } from "../../tagTypes";
 import type { Location } from "./locations.api";
 import type { Room } from "./rooms.api";
 
-// The backend exposes rooms per location. Walk every page so global filters never
-// silently omit records beyond the first API page.
+
+
 export const catalogApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getLocationCatalog: builder.query<Location[], void>({
@@ -20,7 +20,7 @@ export const catalogApi = baseApi.injectEndpoints({
         }
         return { data: locations };
       },
-      // Walking every page is expensive; hold the result well past the app-wide default.
+      
       keepUnusedDataFor: 900,
       providesTags: (locations) => [
         { type: tagTypes.locations, id: 'LIST' },
@@ -48,7 +48,7 @@ export const catalogApi = baseApi.injectEndpoints({
           return { data: rooms };
         }
 
-        // When "All locations" is selected:
+        
         const locCatalogRes = await fetch(`/location/all-locations?page=1&limit=100&sort=name`);
         if (locCatalogRes.error) return { error: locCatalogRes.error };
         const locData = locCatalogRes.data as Paginated<Location>;

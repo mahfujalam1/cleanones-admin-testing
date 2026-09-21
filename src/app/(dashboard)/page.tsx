@@ -16,10 +16,8 @@ import { apiError } from "@/redux/api/apiError";
 import { PlanDetailModal } from "@/components/cleaningPlans/PlanDetailModal";
 import type { PlanRosterAssignedWorker } from "@/redux/api/rosterApi";
 
-/**
- * Shapes the dashboard's zero state is built from. The current API has no endpoint that fills
- * them, so these lists stay empty until one lands.
- */
+
+
 type AttentionPill = {
   worker_id: string;
   worker_name: string;
@@ -61,10 +59,8 @@ type FallingBehindShift = {
   checkin_status: string;
 };
 
-/**
- * Permanently empty until the endpoints that used to fill them land. They are module level so
- * their identity is stable across renders and the memos below do not re-run every time.
- */
+
+
 const NO_FALLING_BEHIND: readonly FallingBehindShift[] = [];
 
 
@@ -156,8 +152,8 @@ export default function DashboardPage() {
 
   const { data: todayLiveMeta, isFetching: loadingLiveMeta } = useGetTodayLiveShiftMetaQuery();
   const { data: issueReports = [] } = useGetEscalationsQuery();
-  // The Live Operations tabs are sent to the API as `status`, so each tab is its own request
-  // rather than a slice of one cached list.
+  
+  
   const { data: todayShiftsRes, isFetching: fetchingLiveShifts, refetch: refetchLiveShifts } = useGetTodayLiveShiftsQuery({
     limit: 100,
     page: 1,
@@ -165,21 +161,19 @@ export default function DashboardPage() {
     status: liveTab === "all" ? undefined : liveTab,
   });
 
-  // The API's greeting is built from the server clock, so the time of day is taken from the
-  // viewer's own timezone instead and re-checked each minute in case a boundary passes.
+  
+  
   const [greetingHour, setGreetingHour] = useState(() => new Date().getHours());
   useEffect(() => {
     const id = setInterval(() => setGreetingHour(new Date().getHours()), 60_000);
     return () => clearInterval(id);
   }, []);
 
-  // `?? []` would be a fresh array each render and re-run every memo that depends on it.
+  
   const todayLiveShifts = useMemo(() => todayShiftsRes?.result ?? [], [todayShiftsRes]);
 
-  /**
-   * The dashboard overview route was dropped from the backend and the current API has no
-   * replacement for it, so the page renders its own zero state until one lands.
-   */
+
+
   const safeOverview = {
     greeting: "",
     subtitle_date: new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }),
@@ -203,10 +197,8 @@ export default function DashboardPage() {
   const fallingBehind = NO_FALLING_BEHIND;
   const cards = safeOverview.summary_cards;
 
-  /**
-   * Absent pills come only from GET /shift/today-live-shift-meta `absent_workers`.
-   * Each chip is the first two letters of the name; click loads GET /worker/single-worker/{id}.
-   */
+
+
   const absentPills: LateWorkerChip[] = (todayLiveMeta?.absent_workers ?? [])
     .filter((worker) => worker.worker_id || worker.name)
     .map((worker) => ({
@@ -306,8 +298,8 @@ export default function DashboardPage() {
     return [];
   }, [todayLiveShifts]);
 
-  // The tabs are shift lifecycle statuses and the row badge is check-in punctuality, so there
-  // is nothing to re-filter here — the request itself is already scoped by `status`.
+  
+  
   const displayLiveRows = liveOperationsRows.slice(0, 6);
 
   const translateGreeting = (greeting: string) => {
@@ -317,7 +309,7 @@ export default function DashboardPage() {
         : greetingHour < 17
           ? t.dashboard.goodAfternoon
           : t.dashboard.goodEvening;
-    // Whatever the API put after its own "Good …" (the manager's name, say) is kept.
+    
     const match = greeting.match(/^Good (?:morning|afternoon|evening)(.*)$/i);
     return match ? `${localGreeting}${match[1]}` : localGreeting;
   };
@@ -337,7 +329,7 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      {/* Red Attention Banner */}
+      
       <section className={`rounded-xl border p-4 ${needAttentionCount > 0 ? "border-red-200 bg-red-50/80" : "border-slate-200 bg-white"}`}>
         <div className="flex flex-wrap items-center gap-4">
           <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${needAttentionCount > 0 ? "bg-red-100 text-red-500" : "bg-emerald-100 text-emerald-600"}`}>
@@ -384,7 +376,7 @@ export default function DashboardPage() {
         </div>
       </section>
 
-      {/* Work in Progress Banner */}
+      
       <section className={`rounded-xl border p-4 ${fallingBehind.length > 0 ? "border-sky-200 bg-sky-50/50" : "border-slate-200 bg-white"}`}>
         <div className="flex items-center gap-2">
           <MdAccessTime className={`text-lg ${fallingBehind.length > 0 ? "text-sky-600" : "text-slate-400"}`} />
@@ -422,7 +414,7 @@ export default function DashboardPage() {
         )}
       </section>
 
-      {/* Summary Cards from /shift/today-live-shift-meta */}
+      
       <div className="grid gap-3.5 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
         <Metric
           icon={<MdCalendarToday />}
@@ -495,7 +487,7 @@ export default function DashboardPage() {
         </div>
       </section>
 
-      {/* Live Operations Widget */}
+      
       <section className="dashboard-card overflow-hidden">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 p-4 sm:p-5">
           <div className="flex items-center gap-2">
@@ -557,7 +549,7 @@ export default function DashboardPage() {
               }}
               className="group flex w-full cursor-pointer items-center justify-between gap-3 p-3.5 text-left sm:px-5 hover:bg-slate-50/70 transition-colors"
             >
-              {/* Left: Avatar + Name + Location */}
+              
               <div className="flex items-center gap-3 min-w-0 flex-1">
                 {row.profile_picture ? (
                   <img
@@ -579,15 +571,15 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              {/* Right side: Check-In, Progress, Status, Chevron */}
+              
               <div className="flex items-center gap-4 sm:gap-6 shrink-0">
-                {/* Check-In */}
+                
                 <div className="text-right min-w-[50px] hidden xs:block sm:block">
                   <span className="block text-[10px] text-slate-400 font-medium">{ui.checkIn}</span>
                   <span className="block text-xs font-bold text-slate-800 mt-0.5">{row.check_in_time}</span>
                 </div>
 
-                {/* Progress */}
+                
                 <div className="w-24 sm:w-28 text-right">
                   <div className="flex items-center justify-end gap-1.5 text-xs font-bold text-slate-800">
                     <span className="text-[10px] text-slate-400 font-normal">{ui.progress}</span>
@@ -607,7 +599,7 @@ export default function DashboardPage() {
                   </div>
                 </div>
 
-                {/* Status Badge */}
+                
                 <div className="min-w-[75px] flex items-center justify-start gap-1 text-xs font-semibold">
                   {row.status === 'late' ? (
                     <span className="flex items-center gap-1.5 text-amber-600">
@@ -627,7 +619,7 @@ export default function DashboardPage() {
                   )}
                 </div>
 
-                {/* Arrow */}
+                
                 <MdChevronRight className="text-slate-300 text-lg group-hover:text-slate-600" />
               </div>
             </button>
@@ -639,7 +631,7 @@ export default function DashboardPage() {
         </div>
       </section>
 
-      {/* Escalations Banner */}
+      
       <Link href="/escalations" className="dashboard-card flex items-center gap-4 p-5 hover:border-amber-300 transition-colors">
         <MdWarningAmber className={`text-2xl ${pendingEscalations > 0 ? "text-amber-500" : "text-slate-400"}`} />
         <div>

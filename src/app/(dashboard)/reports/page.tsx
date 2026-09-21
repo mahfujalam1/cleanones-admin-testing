@@ -93,7 +93,7 @@ export default function ReportsPage() {
 
   return (
     <div className="space-y-5 pb-10">
-      {/* Top Action Header (Range filters + PDF download button) */}
+      
       <ReportHeader
         ranges={ranges}
         activeRange={activeRange}
@@ -113,7 +113,7 @@ export default function ReportsPage() {
       {loading ? (
         <ContentSkeleton />
       ) : (
-        /* Printable & Capturable Report Blueprint Section */
+        
         <div
           key={activeRange}
           ref={blueprintRef}

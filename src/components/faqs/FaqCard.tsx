@@ -23,7 +23,7 @@ export function FaqCard({ item, serialNo, onEdit, onDelete }: FaqCardProps) {
   return (
     <article className="flex flex-col justify-between rounded-xl border border-slate-200/90 bg-white p-4 sm:p-5 shadow-2xs transition-all hover:border-slate-300 hover:shadow-xs">
       <div>
-        {/* Top row: badge + icon + question on left, edit & delete buttons on right */}
+        
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-2 min-w-0 flex-1">
             <span className="shrink-0 rounded bg-sky-50 px-2 py-0.5 text-xs font-bold text-sky-600">
@@ -55,14 +55,14 @@ export function FaqCard({ item, serialNo, onEdit, onDelete }: FaqCardProps) {
           </div>
         </div>
 
-        {/* Answer box */}
+        
         <div className="my-3.5 flex items-start gap-2.5 rounded-lg border border-slate-100 bg-slate-50/90 p-3 sm:p-3.5 text-xs sm:text-[13px] leading-relaxed text-slate-600">
           <FiMessageSquare className="h-3.5 w-3.5 shrink-0 text-slate-400 mt-0.5" />
           <p className="whitespace-pre-line font-normal">{item.answer}</p>
         </div>
       </div>
 
-      {/* Footer row */}
+      
       <div className="flex items-center justify-between text-[11px] font-medium text-slate-400 pt-1">
         <span>Order: #{serial}</span>
         <span>Updated: {formattedDate}</span>

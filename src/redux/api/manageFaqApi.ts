@@ -1,19 +1,12 @@
 import { baseApi } from "./baseApi";
 import type { ManageFaq, CreateManageFaqDto, UpdateManageFaqDto } from "@/services/actions/faqs";
 
-/**
- * The `/manage/*-faq` routes. Reading is public; every write requires the
- * `superAdmin` role, so a mutation can legitimately come back 403.
- *
- * `baseApi` already unwraps the `{ success, message, data }` envelope, so these
- * endpoints see `data` directly — an array for the list, a single FAQ otherwise.
- */
 export const manageFaqApi = baseApi.injectEndpoints({
   overrideExisting: true,
   endpoints: (builder) => ({
     getManageFaqs: builder.query<ManageFaq[], void>({
       query: () => ({ url: "/manage/get-faq", cache: "no-store" as RequestCache }),
-      // A malformed payload would otherwise crash every `.map` downstream.
+
       transformResponse: (response: unknown) => (Array.isArray(response) ? (response as ManageFaq[]) : []),
       providesTags: ["faqs" as never],
     }),

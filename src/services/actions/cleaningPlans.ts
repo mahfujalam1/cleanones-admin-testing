@@ -140,30 +140,22 @@ export type PendingAdditionalTask = {
     reviewed_at?: string;
     rejection_reason?: string;
 };
-/**
- * Reads the plan from
- * plan from `/cleaning-plan/single-cleaning-plan/{id}` and reshapes it into `PlanDetails`.
- *
- * The new payload is the leaner document model: it has no shift scheduling fields
- * (`start_time`, `end_time`, `repeat_shift`, `repeat_until`, `working_days`, `shift_notes`,
- * `timezone`) and no per-room task breakdown. Those come back blank here, exactly as they did
- * while the old route was 404ing, so nothing regresses — but a screen that needs them still
- * needs an endpoint that supplies them.
- */
+
+
 export async function getCleaningPlan(planId: string) {
     const res = await authenticated<SingleCleaningPlan | { data: SingleCleaningPlan }>(
         `/cleaning-plan/single-cleaning-plan/${encodeURIComponent(planId)}`,
         { method: "GET" },
     );
     if (!res.success) return res;
-    // Unlike the RTK Query base, `authenticated` hands back the whole `{ success, message, data }`
-    // envelope. Reading it as the plan itself left every field undefined.
+    
+    
     const payload = ((res.data as { data?: SingleCleaningPlan })?.data ??
         res.data) as SingleCleaningPlan;
     return { ...res, data: toPlanDetails(payload) };
 }
 
-/** Only the fields this adapter reads; the full shape lives in `redux/api/endpoints`. */
+
 type PlanRef<T> = string | T;
 type SingleCleaningPlan = {
     _id: string;
@@ -218,7 +210,7 @@ type SingleCleaningPlan = {
     updatedAt?: string;
 };
 
-/** A reference comes back either as a bare id or as the populated document. */
+
 const populated = <T extends object>(ref: PlanRef<T> | undefined | null): T | null =>
     ref && typeof ref === "object" ? ref : null;
 const idOf = (ref: PlanRef<{ _id: string }> | undefined | null): string =>
@@ -349,7 +341,7 @@ function toPlanDetails(plan: SingleCleaningPlan): PlanDetails {
                 0,
             ) + mappedTasks.reduce((sum, task) => sum + (task.total_photos_required ?? 0), 0),
         date: dayOf(plan.date_time),
-        // `max_estimated_duration` is 0 on this payload; the real figure is the rooms' total.
+        
         duration_minutes:
             plan.total_duration ||
             plan.max_estimated_duration ||
@@ -358,7 +350,7 @@ function toPlanDetails(plan: SingleCleaningPlan): PlanDetails {
         is_active: plan.is_active ?? plan.status !== "inactive",
         createdAt: plan.createdAt ?? "",
         updatedAt: plan.updatedAt ?? "",
-        // Not represented in the new payload.
+        
         start_time: "",
         end_time: "",
         repeat_shift: "",

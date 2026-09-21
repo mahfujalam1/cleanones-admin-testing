@@ -51,7 +51,7 @@ export default function ClientLocationsPage({ params }: { params: Promise<{ id: 
   const total = data?.meta.total ?? 0;
   const message = actionError || (error ? apiError(error) : "");
 
-  // Auto-fallback: if current page has no data and we are past page 1, redirect to previous page
+  
   useEffect(() => {
     if (!isFetching && data && locations.length === 0 && page > 1) {
       setPage((prev) => Math.max(1, prev - 1));

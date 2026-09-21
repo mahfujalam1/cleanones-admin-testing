@@ -5,11 +5,6 @@ import { usePathname, useRouter } from "next/navigation";
 import { MdLanguage } from "react-icons/md";
 import { getLocale, localizePath, LOCALE_OPTIONS, setLocale } from "@/lib/locale";
 
-/**
- * Locale switcher for the signed-out pages. `setLocale` writes the choice to localStorage and
- * a cookie, which is the same store the dashboard reads, so whatever is picked here is still
- * in force after signing in.
- */
 export function LanguageSwitcher({ className = "" }: { className?: string }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -29,7 +24,7 @@ export function LanguageSwitcher({ className = "" }: { className?: string }) {
   const choose = (code: string) => {
     setLocale(code);
     setOpen(false);
-    // The locale also lives in the path, so the URL has to follow the choice.
+
     router.replace(localizePath(pathname ?? "/login", code));
     router.refresh();
   };

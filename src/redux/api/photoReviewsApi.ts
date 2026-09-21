@@ -8,7 +8,7 @@ export type PhotoAiCheck = {
   note?: string | null;
 };
 
-/** One uploaded photo against a task's photo requirement. AI fields are optional for old records. */
+
 export type UploadedPhoto = {
   title: string;
   photo_url: string;
@@ -34,7 +34,7 @@ export type UploadedPhoto = {
   auto_accepted?: boolean;
 };
 
-/** A single shift task instance that has photos uploaded against it. */
+
 export type PhotoReviewTask = {
   shift_id?: string;
   plan_id?: string;
@@ -54,11 +54,8 @@ export type PhotoReviewTask = {
 export const photoReviewsApi = baseApi.injectEndpoints({
   overrideExisting: true,
   endpoints: (builder) => ({
-    /**
-     * GET /shift/photo-review — manager-only, system wide. One row per shift task instance
-     * that has at least one uploaded photo; tasks with no photo requirement, or none uploaded
-     * yet, are left out entirely. Defaults to the last 30 days when no range is given.
-     */
+
+
     getShiftPhotoReviews: builder.query<
       PhotoReviewTask[],
       { from?: string; to?: string; planId?: string; locationId?: string; status?: "pending" | "decided" | "all" } | void
@@ -73,7 +70,7 @@ export const photoReviewsApi = baseApi.injectEndpoints({
         const qs = q.toString();
         return `/shift/photo-review${qs ? `?${qs}` : ""}`;
       },
-      // A malformed payload would otherwise crash every `.map` downstream.
+      
       transformResponse: (response: PhotoReviewTask[] | null) =>
         Array.isArray(response) ? response : [],
       providesTags: ["photoReviews" as never],

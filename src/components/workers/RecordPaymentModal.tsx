@@ -134,7 +134,7 @@ export function RecordPaymentModal({
         </header>
 
         <div className="space-y-4 p-5">
-          {/* Mini 3 Stats Cards */}
+
           <div className="grid grid-cols-3 gap-2 rounded-lg border border-slate-100 bg-slate-50/80 p-3 text-center">
             <div>
               <div className="text-sm font-bold text-[#0ea5e9]">{money(effectiveTotalEarned)}</div>
@@ -150,7 +150,6 @@ export function RecordPaymentModal({
             </div>
           </div>
 
-          {/* Amount field */}
           <label className="block">
             <span className="mb-1.5 block text-xs font-semibold text-slate-700">
               Amount paid (€) <span className="text-red-500">*</span>
@@ -176,7 +175,6 @@ export function RecordPaymentModal({
             )}
           </label>
 
-          {/* Payment method & Transaction ID */}
           <div className="grid grid-cols-2 gap-3">
             <label className="block">
               <span className="mb-1.5 block text-xs font-semibold text-slate-700">Payment method</span>
@@ -206,7 +204,6 @@ export function RecordPaymentModal({
             </label>
           </div>
 
-          {/* Notes */}
           <label className="block">
             <span className="mb-1.5 block text-xs font-semibold text-slate-700">Notes</span>
             <textarea

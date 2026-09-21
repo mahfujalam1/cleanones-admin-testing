@@ -7,7 +7,7 @@ import { BackendPagination } from "@/components/shared/BackendPagination";
 import { usePathname } from "next/navigation";
 import { getLocale } from "@/lib/locale";
 import { getUiTranslation } from "@/lib/translations";
-// Clients now come from the new backend; the rest of this page is still on the old one.
+
 import { CLIENT_LOOKUP_ARGS, clientLabel, useGetClientsQuery } from "@/redux/api/endpoints/clients.api";
 import { additionalTaskStatus, useGetAdditionalTasksQuery } from "@/redux/api/endpoints/additionalTasks.api";
 import { useGetCleaningPlanListQuery, type CleaningPlan } from "@/redux/api/endpoints/cleaningPlans.api";
@@ -17,7 +17,7 @@ import { ExtraServiceModal } from "@/components/extra-services/ExtraServiceModal
 import type { UnifiedServiceRequest } from "@/components/extra-services/types";
 import { Select } from "@/components/ui/select";
 
-/** The whole list is pulled in one page; this screen filters in the browser. */
+
 const TASK_PAGE_SIZE = 100;
 const LIMIT = 12;
 
@@ -67,7 +67,7 @@ export default function ExtraServicesPage() {
     void refetchTasks();
   };
 
-  /** Additional tasks only reference their plan by id, so names are borrowed from the plan list. */
+  
   const plansById = useMemo(() => {
     const map = new Map<string, CleaningPlan>();
     for (const plan of plansRes?.result ?? []) map.set(plan._id, plan);
@@ -77,9 +77,9 @@ export default function ExtraServicesPage() {
   const items: UnifiedServiceRequest[] = useMemo(() => {
     const list: UnifiedServiceRequest[] = [];
 
-    // Additional tasks, straight from /additional-task/all-additional-tasks
+    
     for (const task of tasksRes?.result ?? []) {
-      // The list route populates the plan; the plan list is the fallback when it sends a bare id.
+      
       const planIdStr = refId(task.cleaning_plan_id);
       const plan = plansById.get(planIdStr);
       const planClient = plan ? refDoc(plan.client) : null;
@@ -105,7 +105,7 @@ export default function ExtraServicesPage() {
       });
     }
 
-    // Filter by search & status
+    
     return list.filter((item) => {
       const matchesSearch =
         !search.trim() ||
@@ -129,7 +129,7 @@ export default function ExtraServicesPage() {
 
   return (
     <div className="space-y-5 pb-10">
-      {/* Top Search & Filter Bar */}
+      
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative min-w-[240px] flex-1">
           <MdSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg" />
@@ -141,7 +141,7 @@ export default function ExtraServicesPage() {
           />
         </div>
 
-        {/* Client filter dropdown */}
+        
         <div className="w-full sm:w-52">
           <Select
             value={clientId}
@@ -157,7 +157,7 @@ export default function ExtraServicesPage() {
           />
         </div>
 
-        {/* Status filter dropdown */}
+        
         <div className="w-full sm:w-44">
           <Select
             value={status}
@@ -174,7 +174,7 @@ export default function ExtraServicesPage() {
         </p>
       )}
 
-      {/* Requests Grid */}
+      
       {loading ? (
         <CardGridSkeleton cards={6} />
       ) : (
@@ -206,7 +206,7 @@ export default function ExtraServicesPage() {
         itemLabel="requests"
       />
 
-      {/* Cleaning Plan Modal View */}
+      
       {selected && (
         <ExtraServiceModal
           request={selected}

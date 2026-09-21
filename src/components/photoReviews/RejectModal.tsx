@@ -64,7 +64,7 @@ export function RejectModal({ review, open, onClose, onConfirm }: RejectModalPro
             aria-labelledby="reject-modal-title"
         >
             <div className={`bg-white rounded-md w-full max-w-md shadow ${jumpClassName}`}>
-                {/* Header */}
+                
                 <div className="flex items-start justify-between p-6 pb-0">
                     <div>
                         <h2 id="reject-modal-title" className="text-base font-semibold text-gray-900">
@@ -85,9 +85,9 @@ export function RejectModal({ review, open, onClose, onConfirm }: RejectModalPro
                     </button>
                 </div>
 
-                {/* Body */}
+                
                 <div className="p-6 space-y-4">
-                    {/* Reason select */}
+                    
                     <div className="space-y-1.5">
                         <label htmlFor="reject-reason" className="text-sm font-medium text-gray-700">
                             Reason <span className="text-red-500">*</span>
@@ -107,7 +107,7 @@ export function RejectModal({ review, open, onClose, onConfirm }: RejectModalPro
                         </select>
                     </div>
 
-                    {/* Comment */}
+                    
                     <div className="space-y-1.5">
                         <label htmlFor="reject-comment" className="text-sm font-medium text-gray-700">
                             Manager Comment <span className="text-red-500">*</span>
@@ -122,7 +122,7 @@ export function RejectModal({ review, open, onClose, onConfirm }: RejectModalPro
                         />
                     </div>
 
-                    {/* Training data toggle */}
+                    
                     <label className="flex items-start gap-3 bg-red-50 p-3 rounded cursor-pointer">
                         <input
                             type="checkbox"
@@ -136,7 +136,7 @@ export function RejectModal({ review, open, onClose, onConfirm }: RejectModalPro
                         </div>
                     </label>
 
-                    {/* Actions */}
+                    
                     <div className="flex justify-end gap-2 pt-1">
                         <button
                             onClick={handleClose}

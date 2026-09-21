@@ -35,7 +35,7 @@ import { ExtraServiceActionFooter } from "./ExtraServiceActionFooter";
 import { getLocale } from "@/lib/locale";
 import { getDashboardTranslation } from "@/lib/translations";
 
-/** Resolves the account card's client by id first, then by any of its display names. */
+
 function findClient(
   clients: Client[] | undefined,
   clientId: string,
@@ -73,7 +73,7 @@ function getClientInitials(name: string) {
 const formatDate = (value?: string) =>
   value ? new Date(value).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : null;
 
-/** `/additional-task` names its fields differently from the extra-service task shape. */
+
 function additionalTaskToDetail(task: AdditionalTask): ExtraServiceTaskDetail {
   return {
     id: task._id,
@@ -94,8 +94,8 @@ export function ExtraServiceModal({ request, onClose, onDone, onError }: ExtraSe
   const [loadingPlan, setLoadingPlan] = useState(false);
   const [extraDetails] = useState<ExtraServiceRequest | null>(null);
 
-  // The row from the list route is only a summary. Re-read the task on its own endpoint so the
-  // modal shows the authoritative record — including an approval someone else just made.
+  
+  
   const listedTask = request.rawAdditionalTask;
   const { data: fetchedTask, isFetching: loadingTask } = useGetAdditionalTaskQuery(listedTask?._id ?? "", {
     skip: !listedTask,
@@ -107,7 +107,7 @@ export function ExtraServiceModal({ request, onClose, onDone, onError }: ExtraSe
   const initialPlanId = request.planId || refId(taskRecord?.cleaning_plan_id);
   const [resolvedPlanId, setResolvedPlanId] = useState<string>(initialPlanId);
 
-  // Read all clients for full account card information
+  
   const { data: clientsData } = useGetClientsQuery(CLIENT_LOOKUP_ARGS);
   const [fetchCleaningPlans] = useLazyGetCleaningPlanListQuery();
 
@@ -123,7 +123,7 @@ export function ExtraServiceModal({ request, onClose, onDone, onError }: ExtraSe
           const page = await fetchCleaningPlans({ location: locationId, limit: 1 }, true).unwrap();
           if (active) currentPlanId = page.result[0]?._id ?? "";
         } catch {
-          // No plan for this location; the section below renders its empty state.
+          
         }
       }
 
@@ -145,7 +145,7 @@ export function ExtraServiceModal({ request, onClose, onDone, onError }: ExtraSe
     };
   }, [fetchCleaningPlans, request.id, request.planId, request.location_id, request.isCleaningPlanTask, taskRecord]);
 
-  // Resolve matching client for the Client Card display
+  
   const targetClientId =
     request.client_id ||
     extraDetails?.client_id ||
@@ -168,7 +168,7 @@ export function ExtraServiceModal({ request, onClose, onDone, onError }: ExtraSe
     "";
 
   const clientList = clientsData?.result;
-  // Two cheap `find`s over the cached lookup page; the React Compiler memoizes this for us.
+  
   const matchedClient: Client | undefined = findClient(clientList, targetClientId, targetClientName);
 
   const clientDisplayName =
@@ -253,7 +253,7 @@ export function ExtraServiceModal({ request, onClose, onDone, onError }: ExtraSe
         onClick={(e) => e.stopPropagation()}
         className={`flex max-h-[92vh] w-full max-w-4xl flex-col rounded-2xl bg-white shadow-2xl overflow-hidden border border-slate-200 animate-in zoom-in-95 duration-200 ${jumpClassName}`}
       >
-        {/* Header */}
+        
         <header className="flex items-center justify-between border-b border-slate-200 px-6 py-4 bg-white shrink-0">
           <div className="flex items-center gap-3">
             <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-50 text-sky-600">
@@ -287,14 +287,14 @@ export function ExtraServiceModal({ request, onClose, onDone, onError }: ExtraSe
           </button>
         </header>
 
-        {/* Content */}
+        
         <div
           className={`flex-1 overflow-y-auto p-6 space-y-4 text-xs text-slate-700 transition-opacity ${loadingTask ? "opacity-60" : "opacity-100"
             }`}
         >
-          {/* Top Section: 2-Column Grid (Request Details & Client Information Card) */}
+          
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Request Overview Card */}
+            
             <div className="flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-4 shadow-2xs space-y-3">
               <div>
                 <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
@@ -346,7 +346,7 @@ export function ExtraServiceModal({ request, onClose, onDone, onError }: ExtraSe
               </div>
             </div>
 
-            {/* Client Information Card (Matching the Client Card design in screenshot) */}
+            
             <div className="flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-4 shadow-2xs">
               <div>
                 <div className="flex items-center justify-between border-b border-slate-100 pb-2">
@@ -420,7 +420,7 @@ export function ExtraServiceModal({ request, onClose, onDone, onError }: ExtraSe
             </div>
           </div>
 
-          {/* Requested Tasks Array */}
+          
           <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-3">
             <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
               <TbChecklist className="text-sky-600 text-base" />
@@ -462,19 +462,19 @@ export function ExtraServiceModal({ request, onClose, onDone, onError }: ExtraSe
             </div>
           </div>
 
-          {/* Associated Cleaning Plan Section */}
+          
           <ExtraServicePlanSection plan={plan} loading={loadingPlan} planId={resolvedPlanId} />
         </div>
 
-        {/* Action Footer */}
+        
         <ExtraServiceActionFooter
           request={{
             ...request,
             planId: refId(taskRecord?.cleaning_plan_id) || resolvedPlanId,
             status: displayStatus,
             rawAdditionalTask: taskRecord,
-            // An /additional-task row stands alone: widening this to the plan's other pending
-            // tasks would approve every sibling along with the one on screen.
+            
+            
             taskIds: taskRecord
               ? [taskRecord._id]
               : (Array.from(

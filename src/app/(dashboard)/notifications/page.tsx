@@ -59,7 +59,7 @@ export default function NotificationsPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkBusy, setBulkBusy] = useState(false);
 
-  // RTK Query hooks using Swagger APIs
+  
   const {
     data: notifRes,
     isLoading: loading,
@@ -77,7 +77,7 @@ export default function NotificationsPage() {
   const meta = notifRes?.meta;
   const unreadCount = meta?.unreadCount ?? notifications.filter((item) => !item.isRead).length;
 
-  // Opening a notification navigates to its route
+  
   const open = async (item: NotificationItem) => {
     const target = resolveNotificationRoute(item);
     if (!item.isRead) {
@@ -93,7 +93,7 @@ export default function NotificationsPage() {
     router.push(localizePath(target, locale));
   };
 
-  // Selections are per page
+  
   useEffect(() => {
     setSelectedIds(new Set());
   }, [page]);
@@ -115,7 +115,7 @@ export default function NotificationsPage() {
     );
   };
 
-  /** What the confirmation dialog is currently asking about. */
+  
   const [pendingDelete, setPendingDelete] = useState<
     { kind: "one"; item: NotificationItem } | { kind: "selected" } | { kind: "all" } | null
   >(null);
@@ -166,7 +166,7 @@ export default function NotificationsPage() {
     }
   };
 
-  /** Runs whichever delete the dialog was opened for, then closes it. */
+  
   const confirmDelete = async () => {
     if (!pendingDelete) return;
     if (pendingDelete.kind === "one") await dismiss(pendingDelete.item);
@@ -210,7 +210,7 @@ export default function NotificationsPage() {
 
       {error && <p className="rounded border border-red-200 bg-red-50 p-3 text-xs text-red-700">{error}</p>}
 
-      {/* Selection toolbar */}
+      
       {notifications.length > 0 && (
         <div className="flex flex-wrap items-center gap-3 rounded border border-slate-200 bg-white px-3 py-2">
           <label className="flex cursor-pointer items-center gap-2 text-xs font-semibold text-slate-600">
@@ -292,7 +292,7 @@ export default function NotificationsPage() {
                 } ${opening === item._id ? "opacity-60" : ""}`}
               >
                 <div className="flex items-start gap-3">
-                  {/* Selecting must not also open the notification */}
+                  
                   <input
                     type="checkbox"
                     checked={selectedIds.has(item._id)}

@@ -15,14 +15,14 @@ import {
 } from "@/redux/api/endpoints/legal.api";
 import { apiError } from "@/redux/api/apiError";
 
-/** Rich text in, readable numbers out. */
+
 function documentStats(html: string) {
   const text = html.replace(/<[^>]*>/g, " ").replace(/&nbsp;/g, " ").trim();
   const words = text ? text.split(/\s+/).length : 0;
   return {
     words,
     characters: text.length,
-    // 220 wpm is the usual reading-time figure for prose.
+    
     minutes: Math.max(1, Math.round(words / 220)),
     empty: text.length === 0,
   };
@@ -40,16 +40,16 @@ export default function EditLegalDocumentPage() {
   const labels = valid ? legalLabelKeys[slug] : null;
 
   const [content, setContent] = useState("");
-  /** Empty until the document has been created; that is what picks POST add vs PATCH edit. */
+  
   const [documentId, setDocumentId] = useState("");
   const [error, setError] = useState("");
   const [dirty, setDirty] = useState(false);
   const [draftSavedAt, setDraftSavedAt] = useState(0);
   const [recoverable, setRecoverable] = useState<{ html: string; savedAt: number } | null>(null);
-  /** Quill is uncontrolled, so swapping this is the only way to push text into it. */
+  
   const [editorKey, setEditorKey] = useState(0);
 
-  /** The last text confirmed by the server, so "unsaved" means genuinely different from it. */
+  
   const publishedRef = useRef("");
   const storageKey = valid ? legalStorageKey(slug) : "";
 
@@ -70,7 +70,7 @@ export default function EditLegalDocumentPage() {
     setDocumentId(document.id);
     publishedRef.current = document.content;
 
-    // A local draft that differs from the published text means the last session never saved.
+    
     try {
       const stored = storageKey ? localStorage.getItem(storageKey) : null;
       if (stored) {
@@ -82,7 +82,7 @@ export default function EditLegalDocumentPage() {
         }
       }
     } catch {
-      // A malformed or unavailable store is not worth failing the page over.
+      
     }
   }, [document, storageKey]);
 
@@ -91,7 +91,7 @@ export default function EditLegalDocumentPage() {
     setDirty(html !== publishedRef.current);
   }, []);
 
-  // Keep a local copy while typing, so a refresh or a crash never loses the work.
+  
   useEffect(() => {
     if (!dirty || !storageKey) return;
     const timer = window.setTimeout(() => {
@@ -100,13 +100,13 @@ export default function EditLegalDocumentPage() {
         localStorage.setItem(storageKey, JSON.stringify({ html: content, savedAt }));
         setDraftSavedAt(savedAt);
       } catch {
-        // Private mode or a full store; the text is still safe in the editor itself.
+        
       }
     }, 800);
     return () => window.clearTimeout(timer);
   }, [content, dirty, storageKey]);
 
-  // The browser's own guard: leaving with unsaved text asks first.
+  
   useEffect(() => {
     if (!dirty) return;
     const warn = (event: BeforeUnloadEvent) => event.preventDefault();
@@ -137,7 +137,7 @@ export default function EditLegalDocumentPage() {
     router.push(`/settings/legal/${slug}`);
   }, [content, documentId, loading, router, saveLegalDocument, saving, slug, storageKey, valid, ui.documentIsEmpty]);
 
-  // Ctrl/Cmd+S publishes, the way every other document editor behaves.
+  
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "s") {
@@ -227,9 +227,8 @@ export default function EditLegalDocumentPage() {
       )}
 
       <section className="w-full space-y-3">
-        {/* Quill is uncontrolled, so it must not mount before the saved document arrives -
-            otherwise it keeps the empty first render and saving would wipe the document.
-            Restoring a draft swaps the key so the editor remounts with the recovered text. */}
+
+
         {loading ? (
           <div className="min-h-[560px] animate-pulse rounded-lg border border-slate-200 bg-white" />
         ) : (

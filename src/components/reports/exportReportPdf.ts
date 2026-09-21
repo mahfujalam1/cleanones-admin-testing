@@ -6,7 +6,7 @@ export async function exportReportToPdf(
   filename = "CleanOnes-Report.pdf"
 ): Promise<boolean> {
   try {
-    // Generate high-resolution PNG using browser native SVG rasterization
+    
     const dataUrl = await toPng(element, {
       quality: 0.98,
       pixelRatio: 2,

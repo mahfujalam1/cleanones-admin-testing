@@ -20,14 +20,14 @@ export type PhotoRequirement = {
 export type Task = {
   _id: string;
   room: Ref<Room>;
-  /** Resolved from the room when the task is created. */
+  
   client?: string;
   location?: string;
   name: string;
   frequency_type: FrequencyType;
   is_photo_required?: boolean;
   photo_requirements?: PhotoRequirement[];
-  /** How many of `photo_requirements` the worker actually has to supply. */
+  
   required_photo_count?: number;
   duration_minutes?: number;
   days_of_week?: WeekDay[];
@@ -54,11 +54,8 @@ export type CreateTaskInput = {
 
 export type UpdateTaskInput = Partial<Omit<CreateTaskInput, "room">>;
 
-/**
- * A weekly task needs at least one weekday and a monthly task at least one day of the month —
- * the API rejects the request otherwise. Checking here keeps a pointless round trip off the wire
- * and lets the form say what is missing.
- */
+
+
 export function scheduleProblem(input: {
   frequency_type?: FrequencyType;
   days_of_week?: WeekDay[];
@@ -79,11 +76,8 @@ type ScheduleFields = {
   days_of_month?: number[];
 };
 
-/**
- * Drops the schedule array that does not belong to the chosen frequency, so switching a task
- * from weekly to monthly cannot leave a stale `days_of_week` behind. When the frequency is not
- * part of the request both arrays are left alone — a partial update may be editing only the days.
- */
+
+
 export function withSchedule<T extends ScheduleFields>(input: T): T {
   const body = { ...input };
   if (body.frequency_type === "daily" || body.frequency_type === "monthly") delete body.days_of_week;
@@ -91,7 +85,7 @@ export function withSchedule<T extends ScheduleFields>(input: T): T {
   return body;
 }
 
-/** The API expects these strings on every write; the form never collects them. */
+
 function withEmptyPhotoStrings<T extends {
   description?: string | null;
   reference_image_url?: string | null;
@@ -113,7 +107,7 @@ function withEmptyPhotoStrings<T extends {
 
 export const tasksApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    /** Tasks are only listed per room; a room must be chosen before this can run. */
+    
     getTasks: builder.query<Paginated<Task>, { roomId: string } & ListParams>({
       query: ({ roomId, ...params }) =>
         `/task/all-tasks/${encodeURIComponent(roomId)}?${listQuery(params)}`,
@@ -136,7 +130,7 @@ export const tasksApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: (_result, _error, { room }) => [
         { type: tagTypes.tasks, id: `ROOM-${room}` },
-        // The room's task count changes with it.
+        
         { type: tagTypes.rooms, id: room },
       ],
     }),

@@ -79,7 +79,7 @@ export function ShiftModal({ shift, onClose }: ShiftModalProps) {
           {(
             <div className="space-y-5">
 
-              {/* Shift facts */}
+              
               <div className="grid gap-2 sm:grid-cols-2">
                 <Fact icon={<MdBusinessCenter />} label="Client" value={plan?.company_name} />
                 <Fact icon={<MdPerson />} label="Worker" value={shift.workerName} />
@@ -99,7 +99,7 @@ export function ShiftModal({ shift, onClose }: ShiftModalProps) {
 
               {plan && (
                 <>
-                  {/* Plan summary */}
+                  
                   <Section icon={<TbClipboardList />} title="Cleaning plan">
                     <div className="grid gap-2 sm:grid-cols-2">
                       <Row label="Plan title" value={plan.title} />
@@ -118,7 +118,7 @@ export function ShiftModal({ shift, onClose }: ShiftModalProps) {
                     )}
                   </Section>
 
-                  {/* Totals */}
+                  
                   <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                     <Stat label="Rooms" value={plan.rooms_count ?? plan.rooms?.length ?? 0} />
                     <Stat label="Workers" value={plan.workers_count ?? plan.workers?.length ?? 0} />
@@ -126,7 +126,7 @@ export function ShiftModal({ shift, onClose }: ShiftModalProps) {
                     <Stat label="Photos" value={plan.total_photos_count ?? 0} />
                   </div>
 
-                  {/* Rooms with their tasks */}
+                  
                   {(plan.rooms ?? []).length > 0 && (
                     <Section icon={<TbDoor />} title={`Rooms (${plan.rooms.length})`}>
                       <div className="space-y-2">
@@ -160,7 +160,7 @@ export function ShiftModal({ shift, onClose }: ShiftModalProps) {
                     </Section>
                   )}
 
-                  {/* Additional tasks */}
+                  
                   {(plan.additional_tasks ?? []).length > 0 && (
                     <Section icon={<MdChecklist />} title={`Additional tasks (${plan.additional_tasks.length})`}>
                       <ul className="space-y-1.5">
@@ -179,7 +179,7 @@ export function ShiftModal({ shift, onClose }: ShiftModalProps) {
                     </Section>
                   )}
 
-                  {/* Assigned workers */}
+                  
                   {(plan.workers ?? []).length > 0 && (
                     <Section icon={<TbUsers />} title={`Assigned workers (${plan.workers.length})`}>
                       <div className="grid gap-2 sm:grid-cols-2">

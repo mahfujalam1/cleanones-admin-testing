@@ -14,6 +14,7 @@ export type ApproveDurationCopy = {
   confirm: string;
   saving: string;
   invalid: string;
+  required: string;
   photoRequired: string;
   photoName: string;
   addPhoto: string;
@@ -22,32 +23,51 @@ export type ApproveDurationCopy = {
   photoUnnamed: string;
 };
 
-/** What the manager settled on in this dialog, applied to the task before it is approved. */
 export type ApproveDecision = {
   minutes: number;
   is_photo_required: boolean;
   photo_requirements: PhotoRequirement[];
 };
 
-/**
- * Sits on top of the request modal: the manager confirms (or corrects) the task duration
- * before the request is approved. `onConfirm` resolves to `null` once the duration has been
- * saved and the approval went through, at which point this closes first and the caller
- * closes the request modal behind it. Any other value is a failure message, which is shown
- * here rather than on the request modal underneath — the manager is looking at this dialog.
- */
+const blankPhoto = (): PhotoRequirement => ({
+  title: "",
+  description: "",
+  reference_image_url: "",
+  photo_url: "",
+  is_uploaded: false,
+});
+
+function parseDuration(value: string): number | null {
+  const trimmed = value.trim();
+  if (!trimmed || !/^\d+$/.test(trimmed)) return null;
+  const minutes = Number(trimmed);
+  if (!Number.isInteger(minutes) || minutes <= 0) return null;
+  return minutes;
+}
+
+function isInvalidHttpUrl(value?: string) {
+  const trimmed = value?.trim();
+  if (!trimmed) return false;
+  try {
+    const url = new URL(trimmed);
+    return url.protocol !== "http:" && url.protocol !== "https:";
+  } catch {
+    return true;
+  }
+}
+
 export function ApproveDurationModal({
   copy,
   initialMinutes,
   initialPhotoRequired,
-  initialPhotoTitles,
+  initialPhotoRequirements,
   onCancel,
   onConfirm,
 }: {
   copy: ApproveDurationCopy;
   initialMinutes?: number;
   initialPhotoRequired?: boolean;
-  initialPhotoTitles?: string[];
+  initialPhotoRequirements?: PhotoRequirement[];
   onCancel: () => void;
   onConfirm: (decision: ApproveDecision) => Promise<string | null>;
 }) {
@@ -55,33 +75,56 @@ export function ApproveDurationModal({
     initialMinutes && initialMinutes > 0 ? String(initialMinutes) : ""
   );
   const [photoRequired, setPhotoRequired] = useState(Boolean(initialPhotoRequired));
-  const [titles, setTitles] = useState<string[]>(
-    initialPhotoTitles?.length ? initialPhotoTitles : [""]
+  const [photoRequirements, setPhotoRequirements] = useState<PhotoRequirement[]>(
+    initialPhotoRequirements?.length
+      ? initialPhotoRequirements.map((requirement) => ({
+          ...requirement,
+          title: requirement.title ?? "",
+          description: requirement.description ?? "",
+          reference_image_url: requirement.reference_image_url ?? "",
+          photo_url: requirement.photo_url ?? "",
+          is_uploaded: Boolean(requirement.is_uploaded),
+        }))
+      : [blankPhoto()]
   );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
-  const editTitle = (index: number, next: string) => {
-    setTitles((current) => current.map((title, i) => (i === index ? next : title)));
+  const namedPhotoRequirements = photoRequirements.filter((requirement) => requirement.title.trim() !== "");
+
+  const updateRequirement = (index: number, patch: Partial<PhotoRequirement>) => {
+    setPhotoRequirements((current) =>
+      current.map((requirement, i) => (i === index ? { ...requirement, ...patch } : requirement))
+    );
     setError("");
   };
 
+  const minutes = parseDuration(value);
+
   const submit = async () => {
-    const minutes = Number(value);
-    if (!Number.isFinite(minutes) || !Number.isInteger(minutes) || minutes <= 0) {
+    if (!value.trim()) {
+      setError(copy.required);
+      return;
+    }
+    if (minutes == null) {
       setError(copy.invalid);
       return;
     }
 
-    const named = titles.map((title) => title.trim()).filter(Boolean);
     if (photoRequired) {
-      if (named.length === 0) {
+      if (photoRequirements.length === 0 || namedPhotoRequirements.length === 0) {
         setError(copy.photoNeeded);
         return;
       }
-      // A blank row would be dropped from the payload without saying so.
-      if (named.length !== titles.length) {
+      if (namedPhotoRequirements.length !== photoRequirements.length) {
         setError(copy.photoUnnamed);
+        return;
+      }
+      const invalidReference = photoRequirements.find((requirement) =>
+        isInvalidHttpUrl(requirement.reference_image_url)
+      );
+      if (invalidReference) {
+        setError(`Enter a valid reference image URL for "${invalidReference.title.trim()}".`);
         return;
       }
     }
@@ -92,10 +135,16 @@ export function ApproveDurationModal({
       minutes,
       is_photo_required: photoRequired,
       photo_requirements: photoRequired
-        ? named.map((title) => ({ title, photo_url: "", is_uploaded: false }))
+        ? namedPhotoRequirements.map((requirement) => ({
+            title: requirement.title.trim(),
+            description: requirement.description?.trim() ?? "",
+            reference_image_url: requirement.reference_image_url?.trim() ?? "",
+            photo_url: "",
+            is_uploaded: false,
+          }))
         : [],
     });
-    // On success the parent unmounts this modal, so the reset only matters on failure.
+
     if (failure) {
       setError(failure);
       setBusy(false);
@@ -110,7 +159,7 @@ export function ApproveDurationModal({
         role="dialog"
         aria-modal="true"
         aria-label={copy.title}
-        className="flex max-h-[85vh] w-full max-w-md flex-col rounded-2xl border border-slate-200 bg-white shadow-2xl animate-in zoom-in-95 duration-150"
+        className="flex max-h-[85vh] w-full max-w-xl flex-col rounded-2xl border border-slate-200 bg-white shadow-2xl animate-in zoom-in-95 duration-150"
       >
         <header className="flex shrink-0 items-start justify-between gap-4 border-b border-slate-100 px-5 py-4">
           <div className="flex items-start gap-3">
@@ -135,16 +184,23 @@ export function ApproveDurationModal({
 
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-5 py-4">
           <label className="block">
-            <span className="mb-1.5 block text-xs font-semibold text-slate-700">{copy.label}</span>
+            <span className="mb-1.5 block text-xs font-semibold text-slate-700">
+              {copy.label} <span className="text-red-500">*</span>
+            </span>
             <div className="relative">
               <input
                 type="number"
                 min={1}
                 step={1}
+                required
+                aria-required="true"
                 autoFocus
                 value={value}
                 disabled={busy}
-                onChange={(e) => setValue(e.target.value)}
+                onChange={(e) => {
+                  setValue(e.target.value);
+                  setError("");
+                }}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") void submit();
                 }}
@@ -172,38 +228,96 @@ export function ApproveDurationModal({
             </label>
 
             {photoRequired && (
-              <div className="ml-1.5 mt-3 space-y-2 border-l-2 border-sky-500 pl-4">
-                {titles.map((title, index) => (
-                  <div key={index} className="flex items-center gap-2">
-                    <input
-                      type="text"
-                      value={title}
-                      disabled={busy}
-                      onChange={(e) => editTitle(index, e.target.value)}
-                      placeholder={copy.photoName}
-                      className="h-9 flex-1 rounded-lg border border-slate-200 px-3 text-sm outline-none transition-all placeholder:text-slate-400 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 disabled:bg-slate-50"
-                    />
-                    <button
-                      type="button"
-                      disabled={busy || titles.length === 1}
-                      onClick={() => {
-                        setTitles((current) => current.filter((_, i) => i !== index));
-                        setError("");
-                      }}
-                      className="cursor-pointer text-xs font-semibold text-red-500 transition-colors hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-40"
-                    >
-                      {copy.remove}
-                    </button>
+              <div className="mt-4 space-y-4 rounded-xl border border-slate-200 bg-slate-50/60 p-4">
+                <div>
+                  <p className="text-sm font-semibold text-slate-800">Photo instructions</p>
+                  <p className="mt-1 text-xs leading-5 text-slate-500">
+                    Add each photo the worker may be asked to capture. Description and example image are optional.
+                  </p>
+                </div>
+
+                {photoRequirements.map((req, index) => (
+                  <div key={index} className="rounded-lg border border-slate-200 bg-white p-3 shadow-2xs">
+                    <div className="mb-3 flex items-center justify-between gap-3">
+                      <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        Required photo {index + 1}
+                      </span>
+                      <button
+                        type="button"
+                        disabled={busy || photoRequirements.length === 1}
+                        onClick={() => {
+                          setPhotoRequirements((current) => current.filter((_, i) => i !== index));
+                          setError("");
+                        }}
+                        className="cursor-pointer text-xs font-semibold text-red-500 transition-colors hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        {copy.remove}
+                      </button>
+                    </div>
+
+                    <div className="grid gap-3">
+                      <label className="block">
+                        <span className="mb-1.5 block text-xs font-semibold text-slate-700">
+                          Title <span className="text-red-500">*</span>
+                        </span>
+                        <input
+                          type="text"
+                          value={req.title}
+                          disabled={busy}
+                          onChange={(e) => updateRequirement(index, { title: e.target.value })}
+                          placeholder={copy.photoName}
+                          className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm outline-none transition-all placeholder:text-slate-400 hover:border-slate-300 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 disabled:bg-slate-50"
+                        />
+                      </label>
+
+                      <label className="block">
+                        <span className="mb-1.5 block text-xs font-semibold text-slate-700">
+                          Worker instruction
+                        </span>
+                        <textarea
+                          value={req.description ?? ""}
+                          disabled={busy}
+                          onChange={(e) => updateRequirement(index, { description: e.target.value })}
+                          rows={2}
+                          placeholder="Explain what must be visible and where to take the photo from."
+                          className="w-full resize-y rounded-lg border border-slate-200 px-3 py-2 text-sm leading-5 outline-none transition-all placeholder:text-slate-400 hover:border-slate-300 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 disabled:bg-slate-50"
+                        />
+                      </label>
+
+                      <label className="block">
+                        <span className="mb-1.5 block text-xs font-semibold text-slate-700">
+                          Example image URL
+                        </span>
+                        <div className="flex items-center gap-3">
+                          {req.reference_image_url?.trim() ? (
+                            <img
+                              src={req.reference_image_url}
+                              alt=""
+                              className="h-10 w-10 shrink-0 rounded-md border border-slate-200 bg-slate-50 object-cover"
+                            />
+                          ) : null}
+                          <input
+                            type="url"
+                            value={req.reference_image_url ?? ""}
+                            disabled={busy}
+                            onChange={(e) => updateRequirement(index, { reference_image_url: e.target.value })}
+                            placeholder="https://..."
+                            className="h-10 min-w-0 flex-1 rounded-lg border border-slate-200 px-3 text-sm outline-none transition-all placeholder:text-slate-400 hover:border-slate-300 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 disabled:bg-slate-50"
+                          />
+                        </div>
+                      </label>
+                    </div>
                   </div>
                 ))}
+
                 <button
                   type="button"
                   disabled={busy}
                   onClick={() => {
-                    setTitles((current) => [...current, ""]);
+                    setPhotoRequirements((current) => [...current, blankPhoto()]);
                     setError("");
                   }}
-                  className="cursor-pointer text-xs font-semibold text-sky-600 transition-colors hover:text-sky-700 disabled:opacity-50"
+                  className="inline-flex h-9 cursor-pointer items-center justify-center rounded-lg border border-sky-500/30 bg-white px-3 text-xs font-semibold text-sky-600 transition-colors hover:bg-sky-50 disabled:opacity-50"
                 >
                   {copy.addPhoto}
                 </button>
@@ -233,8 +347,8 @@ export function ApproveDurationModal({
           <button
             type="button"
             onClick={() => void submit()}
-            disabled={busy}
-            className="flex cursor-pointer items-center gap-1.5 rounded-lg bg-sky-600 px-4 py-2 text-xs font-semibold text-white shadow-xs transition-all hover:bg-sky-700 disabled:opacity-50"
+            disabled={busy || minutes == null}
+            className="flex cursor-pointer items-center gap-1.5 rounded-lg bg-sky-600 px-4 py-2 text-xs font-semibold text-white shadow-xs transition-all hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <MdCheck className="text-base" />
             {busy ? copy.saving : copy.confirm}

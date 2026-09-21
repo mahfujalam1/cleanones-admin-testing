@@ -112,7 +112,7 @@ export default function EscalationsPage() {
     return map;
   }, [workersData]);
 
-  // Compute status counts
+  
   const counts = useMemo(() => {
     let pending = 0;
     let inProgress = 0;
@@ -128,7 +128,7 @@ export default function EscalationsPage() {
     return { total: rawIssues.length, pending, inProgress, resolved };
   }, [rawIssues]);
 
-  // Filtered issues
+  
   const filtered = useMemo(() => {
     return rawIssues.filter((issue) => {
       const q = search.trim().toLowerCase();
@@ -203,7 +203,7 @@ export default function EscalationsPage() {
 
   return (
     <div className="space-y-6 pb-16">
-      {/* Header */}
+      
       <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
@@ -228,7 +228,7 @@ export default function EscalationsPage() {
         </button>
       </header>
 
-      {/* KPI Stats Row */}
+      
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <div className="rounded-xl border border-slate-200/80 bg-white p-3.5 shadow-2xs">
           <p className="text-[11px] font-medium text-slate-500">{ui.totalIssues}</p>
@@ -257,7 +257,7 @@ export default function EscalationsPage() {
         </div>
       </div>
 
-      {/* Toolbar: Search & Select Filters */}
+      
       <div className="grid gap-2 rounded-xl bg-white p-2.5 ring-1 ring-slate-200/70 md:grid-cols-[1.5fr_1fr_1fr]">
         <div className="relative">
           <MdSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-base" />
@@ -301,7 +301,7 @@ export default function EscalationsPage() {
         </div>
       )}
 
-      {/* Issues Grid / List */}
+      
       {isLoading ? (
         <CardGridSkeleton cards={6} />
       ) : filtered.length === 0 ? (
@@ -341,7 +341,7 @@ export default function EscalationsPage() {
                 className="group relative flex cursor-pointer flex-col justify-between rounded-xl border border-slate-200 bg-white p-4.5 shadow-2xs transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
               >
                 <div>
-                  {/* Top Bar: Severity & Status Badges */}
+                  
                   <div className="flex items-center justify-between gap-2">
                     <span className={`rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${sevStyle.badge}`}>
                       {issue.severity || "Medium"}
@@ -352,18 +352,18 @@ export default function EscalationsPage() {
                     </span>
                   </div>
 
-                  {/* Issue Type Title */}
+                  
                   <h3 className="mt-2.5 truncate text-sm font-bold text-slate-900 group-hover:text-primary transition-colors">
                     {issue.issueType || "Field Issue"}
                   </h3>
 
-                  {/* Description Excerpt */}
+                  
                   <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-slate-600 font-normal">
                     {issue.description || "No description provided."}
                   </p>
                 </div>
 
-                {/* Bottom Metadata */}
+                
                 <div className="mt-4 space-y-1.5 border-t border-slate-100 pt-3 text-[11px] text-slate-500">
                   <div className="flex items-center gap-1.5 truncate">
                     <MdLocationOn className="shrink-0 text-slate-400 text-xs" />
@@ -398,7 +398,7 @@ export default function EscalationsPage() {
         itemLabel="issues"
       />
 
-      {/* Modal: Issue Details & Manager Status Update */}
+      
       {selectedIssue && (
         <IssueDetailModal
           issue={selectedIssue}
@@ -413,7 +413,7 @@ export default function EscalationsPage() {
         />
       )}
 
-      {/* Delete Confirmation Dialog */}
+      
       {deleteTarget && (
         <ConfirmDialog
           title={ui.deleteIssueReport}
@@ -484,7 +484,7 @@ function IssueDetailModal({
         aria-hidden="true"
       />
       <div className="relative z-10 flex w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl animate-in zoom-in-95 duration-150 max-h-[90vh]">
-        {/* Header */}
+        
         <header className="flex items-center justify-between border-b border-slate-100 p-5 bg-slate-50/50">
           <div>
             <div className="flex items-center gap-2">
@@ -507,9 +507,9 @@ function IssueDetailModal({
           </button>
         </header>
 
-        {/* Content Body */}
+        
         <div className="flex-1 overflow-y-auto p-5 space-y-4">
-          {/* Issue Description */}
+          
           <div>
             <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400">
               Description
@@ -519,7 +519,7 @@ function IssueDetailModal({
             </div>
           </div>
 
-          {/* Context Info Cards */}
+          
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="rounded-xl border border-slate-200/80 bg-white p-3 shadow-2xs">
               <div className="flex items-center gap-1.5 text-slate-400">
@@ -538,13 +538,13 @@ function IssueDetailModal({
             </div>
           </div>
 
-          {/* Report Date */}
+          
           <div className="rounded-xl border border-slate-200/80 bg-white p-3 shadow-2xs text-xs text-slate-600 flex items-center justify-between">
             <span className="text-slate-400 font-medium">{ui.loggedAt}</span>
             <span className="font-semibold text-slate-700">{formattedDate}</span>
           </div>
 
-          {/* Manager Action: Status Management (PATCH) */}
+          
           <div className="rounded-xl border border-primary/20 bg-sky-50/40 p-4 space-y-3">
             <div>
               <h3 className="text-xs font-bold text-slate-900">{ui.managerStatusAction}</h3>
@@ -636,7 +636,7 @@ function IssueDetailModal({
           </div>
         </div>
 
-        {/* Modal Footer: Delete action & Close */}
+        
         <footer className="flex items-center justify-between border-t border-slate-100 p-4 bg-slate-50/50">
           <button
             type="button"

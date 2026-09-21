@@ -1,5 +1,5 @@
-// ISO 3166-1 country names, generated once and kept static on purpose: this value is
-// stored as a plain string on the worker, so it must not shift with the UI language.
+
+
 export const countries: string[] = [
   "Afghanistan",
   "Åland Islands",

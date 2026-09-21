@@ -10,9 +10,9 @@ const publicAuthRoutes = new Set([
   "/forgot-password/reset",
 ]);
 
-// Set DEBUG_REQUESTS=1 to print what kind of request each hit actually is.
-// "prefetch" = Link prefetch, "rsc-nav" = client-side navigation,
-// "document" = full page load or reload. Remove once the noise is diagnosed.
+
+
+
 function logRequestKind(request: NextRequest, pathname: string) {
   if (!process.env.DEBUG_REQUESTS) return;
   const headers = request.headers;
@@ -43,9 +43,9 @@ export function proxy(request: NextRequest) {
 
   const internalPath = `/${segments.slice(1).join("/")}`.replace(/\/$/, "") || "/";
   const isAuthRoute = publicAuthRoutes.has(internalPath);
-  // The access token is memory-only, so route gating reads the two things that do survive a
-  // reload: the backend's HttpOnly refresh cookie, and our own marker cookie (which is also the
-  // one sign-out can delete, since JavaScript cannot touch an HttpOnly cookie).
+  
+  
+  
   const hasSession = Boolean(
     request.cookies.get(SESSION_COOKIE)?.value && request.cookies.get(REFRESH_COOKIE)?.value,
   );

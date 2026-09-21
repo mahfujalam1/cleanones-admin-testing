@@ -35,10 +35,8 @@ function CleaningPlansView() {
 
   const clientId = query.get("client") ?? "";
   const locationId = query.get("location") ?? "";
-  /**
-   * `?plan=<id>&action=edit|assign|delete` opens that plan straight away, so other screens
-   * (Shift Monitoring's quick actions, for one) can link to a specific plan action.
-   */
+
+
   const deepLinkPlanId = query.get("plan") ?? "";
   const deepLinkAction = query.get("action") ?? "view";
 
@@ -60,11 +58,11 @@ function CleaningPlansView() {
     if (deepLinkAction === "edit") setFormTarget(deepLinkPlan);
     else if (deepLinkAction === "delete") setDeleteTarget(deepLinkPlan);
     else setViewTarget(deepLinkPlan);
-    // Drop the params, so closing the modal does not immediately reopen it.
+    
     router.replace(localizePath("/cleaning-plans", locale));
   }, [deepLinkPlan, deepLinkAction, locale, router]);
 
-  /** Narrowing the client clears the location, which no longer belongs to it. */
+  
   const applyScope = (next: { client?: string; location?: string }) => {
     const params = new URLSearchParams();
     if (next.client) params.set("client", next.client);
@@ -73,7 +71,7 @@ function CleaningPlansView() {
     router.replace(localizePath(`/cleaning-plans${suffix ? `?${suffix}` : ""}`, locale));
   };
 
-  // One request, paged and searched by the server — no walking rooms to collect tasks.
+  
   const { data, isFetching, error } = useGetCleaningPlanListQuery({
     page,
     limit: LIMIT,
@@ -94,7 +92,7 @@ function CleaningPlansView() {
   const total = data?.meta.total ?? 0;
   const message = actionError || (error ? apiError(error) : "");
 
-  // Auto-fallback: if current page has no data and we are past page 1, redirect to previous page
+  
   useEffect(() => {
     if (!isFetching && data && plans.length === 0 && page > 1) {
       setPage((prev) => Math.max(1, prev - 1));
@@ -212,7 +210,7 @@ function CleaningPlansView() {
         <PlanForm
           plan={formTarget === "new" ? undefined : formTarget}
           onClose={() => setFormTarget(null)}
-          // A plan has to exist before tasks can point at it, so the offer comes after creating.
+          
           onCreated={(created) => {
             setFormTarget(null);
             setJustCreated(created);
@@ -251,7 +249,7 @@ function CleaningPlansView() {
 }
 
 export default function CleaningPlansPage() {
-  // `useSearchParams` needs a Suspense boundary to keep the route statically renderable.
+  
   return (
     <Suspense fallback={<CardGridSkeleton />}>
       <CleaningPlansView />

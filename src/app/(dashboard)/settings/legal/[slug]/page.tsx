@@ -26,7 +26,7 @@ export default function LegalDocumentPage() {
   const ui = getUiTranslation(getLocale(usePathname()));
   const labels = valid ? legalLabelKeys[slug] : null;
 
-  // `/manage/*` stores only the body text, so the heading always comes from the app's own copy.
+  
   const title = labels ? ui[labels.title] : "";
   const {
     data: document,
