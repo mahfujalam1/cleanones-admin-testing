@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { AttendanceTimeTracking, type TimeRange } from '@/components/shift-monitoring/AttendanceTimeTracking';
 import { AttendanceStatsModal } from '@/components/shift-monitoring/AttendanceStatsModal';
 import { WorkerInfo } from '@/components/shift-monitoring/types';

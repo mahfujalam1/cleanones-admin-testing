@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { MdAttachFile, MdSend } from "react-icons/md";
 import { usePathname } from "next/navigation";
 import { getLocale } from "@/lib/locale";
@@ -24,8 +24,19 @@ export function ChatMessageInput({
   onAttachFile,
 }: ChatMessageInputProps) {
   const ui = getUiTranslation(getLocale(usePathname()));
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!sending) inputRef.current?.focus();
+  }, [sending]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    onSendMessage(e);
+    requestAnimationFrame(() => inputRef.current?.focus());
+  };
+
   return (
-    <form onSubmit={onSendMessage} className="border-t border-slate-100 p-3 bg-white">
+    <form onSubmit={handleSubmit} className="border-t border-slate-100 p-3 bg-white">
       <div className="flex items-center gap-2">
         <label
           className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition-colors ${
@@ -49,9 +60,9 @@ export function ChatMessageInput({
         </label>
 
         <input
+          ref={inputRef}
           value={inputText}
           onChange={(e) => onInputChange(e.target.value)}
-          disabled={sending}
           placeholder={placeholder || ui.typeAMessage}
           className="h-10 min-w-0 flex-1 rounded-lg border border-slate-200 bg-slate-50/60 px-3.5 text-xs text-slate-800 placeholder:text-slate-400 focus:border-primary focus:bg-white focus:outline-none focus:ring-1 focus:ring-primary transition-all"
         />
