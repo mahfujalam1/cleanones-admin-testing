@@ -2,9 +2,8 @@
 
 import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { MdOutlineClose, MdAccessTime, MdArrowForward } from 'react-icons/md';
+import { MdOutlineClose, MdAccessTime } from 'react-icons/md';
 import { TbClock, TbCalendarStats, TbHourglass, TbAlertTriangle, TbChartBar, TbTrendingUp } from 'react-icons/tb';
-import { useRouter } from 'next/navigation';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { WorkerInfo } from './types';
 import type { Period } from '@/redux/api/shiftsApi';
@@ -12,6 +11,8 @@ import { DetailSkeleton } from '@/components/shared/SkeletonLoader';
 import { useModalJump } from '@/hooks/useModalJump';
 import { apiError } from '@/redux/api/apiError';
 import { useGetShiftAttendanceSummaryQuery } from '@/redux/api/shiftsApi';
+import { useGetWorkerQuery } from '@/redux/api/endpoints/workers.api';
+import { WorkerAvatar } from '@/components/workers/WorkerAvatar';
 
 interface AttendanceStatsModalProps {
   worker: WorkerInfo;
@@ -20,7 +21,6 @@ interface AttendanceStatsModalProps {
 }
 
 export function AttendanceStatsModal({ worker, onClose, period = 'monthly' }: AttendanceStatsModalProps) {
-  const router = useRouter();
   const { triggerJump, jumpClassName } = useModalJump();
 
   /**
@@ -36,6 +36,16 @@ export function AttendanceStatsModal({ worker, onClose, period = 'monthly' }: At
     { workerId: String(worker.id), period },
     { skip: !worker.id }
   );
+  const { data: workerDetails } = useGetWorkerQuery(String(worker.id), {
+    skip: !worker.id,
+  });
+
+  const photoSrc =
+    workerDetails?.profile_image ||
+    workerDetails?.profile_photo ||
+    (worker.profilePicture && !worker.profilePicture.includes('avatar-placeholder')
+      ? worker.profilePicture
+      : undefined);
 
   const hoursWorked = summary ? `${summary.total_hours}h` : '0h';
   const completedShifts = summary?.completed_shifts ?? 0;
@@ -78,11 +88,7 @@ export function AttendanceStatsModal({ worker, onClose, period = 'monthly' }: At
         <header className="relative flex shrink-0 items-center justify-between border-b border-slate-200 bg-white px-6 py-4.5 text-slate-900">
           <div className="flex items-center gap-4">
             <div className="relative">
-              <img
-                src="/avatar-placeholder.svg"
-                alt={worker.name}
-                className="h-13 w-13 rounded-full border border-slate-200 object-cover shadow-2xs"
-              />
+              <WorkerAvatar name={worker.name} src={photoSrc} size="lg" />
               <span
                 className={`absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full border-2 border-white ${
                   worker.lateDays > 0 ? 'bg-amber-400' : 'bg-emerald-500'
@@ -106,8 +112,6 @@ export function AttendanceStatsModal({ worker, onClose, period = 'monthly' }: At
                 </span>
               </div>
               <p className="mt-1 flex items-center gap-2 text-xs text-slate-500">
-                <span className="font-mono text-[11px] text-slate-400">ID: #{worker.id}</span>
-                <span>•</span>
                 <span className="flex items-center gap-1 font-normal text-slate-600">
                   <MdAccessTime className="text-slate-400 text-sm" />
                   {worker.hoursWorked}h total recorded
@@ -302,24 +306,13 @@ export function AttendanceStatsModal({ worker, onClose, period = 'monthly' }: At
         </div>
 
         {/* Footer */}
-        <footer className="flex shrink-0 items-center justify-between border-t border-slate-200 bg-white px-6 py-4">
+        <footer className="flex shrink-0 items-center justify-end border-t border-slate-200 bg-white px-6 py-4">
           <button
-            onClick={() => router.push(`/shift-monitoring/history/${worker.id}`)}
-            className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-slate-100 px-4 py-2.5 text-xs font-medium text-slate-700 transition-colors hover:bg-slate-200"
+            onClick={onClose}
+            className="cursor-pointer rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-xs font-medium text-slate-700 transition-colors hover:bg-slate-50"
           >
-            <TbCalendarStats className="text-base text-slate-500" />
-            View Full Activity Calendar
-            <MdArrowForward className="text-sm text-slate-400" />
+            Close
           </button>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={onClose}
-              className="cursor-pointer rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-xs font-medium text-slate-700 transition-colors hover:bg-slate-50"
-            >
-              Close
-            </button>
-          </div>
         </footer>
       </div>
     </div>,

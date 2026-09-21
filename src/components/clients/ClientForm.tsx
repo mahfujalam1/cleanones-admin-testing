@@ -38,7 +38,7 @@ const emptyDraft: Draft = {
 const draftFrom = (client: Client): Draft => ({
   ...emptyDraft,
   name: client.name ?? "",
-  email: client.email,
+  email: (client.email ?? "").toLowerCase(),
   phone: client.phone,
   company_name: client.company_name ?? "",
   licence_expiration_date: toDateInput(client.licence_expiration_date),
@@ -65,8 +65,8 @@ export function ClientForm({ client, onClose }: { client?: Client; onClose: () =
 
   const shared = {
     name: draft.name.trim(),
-    email: draft.email.trim(),
-    phone: draft.phone.trim(),
+    email: draft.email.trim().toLowerCase(),
+    phone: draft.phone.trim().replace(/[^\d+]/g, "").replace(/(?!^)\+/g, ""),
     company_name: draft.company_name.trim(),
     // A date input gives `YYYY-MM-DD`; the API stores a full timestamp.
     licence_expiration_date: draft.licence_expiration_date
@@ -122,12 +122,25 @@ export function ClientForm({ client, onClose }: { client?: Client; onClose: () =
       onClose={onClose}
       onSubmit={() => void submit()}
     >
-      <TextField label="Client name" value={draft.name} onChange={set("name")} required />
       <TextField label="Company name" value={draft.company_name} onChange={set("company_name")} required />
+      <TextField label="Client name" value={draft.name} onChange={set("name")} required />
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <TextField label="Email" type="email" value={draft.email} onChange={set("email")} required />
-        <TextField label="Phone" type="tel" value={draft.phone} onChange={set("phone")} required />
+        <TextField
+          label="Email"
+          type="email"
+          value={draft.email}
+          onChange={(value) => set("email")(value.toLowerCase())}
+          required
+        />
+        <TextField
+          label="Phone"
+          type="tel"
+          inputMode="numeric"
+          value={draft.phone}
+          onChange={(value) => set("phone")(value.replace(/[^\d+]/g, "").replace(/(?!^)\+/g, ""))}
+          required
+        />
       </div>
 
       <DateField

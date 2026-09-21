@@ -17,7 +17,6 @@ import {
   useCreateLocationMutation,
   useUpdateLocationMutation,
   type Location,
-  type LocationType,
 } from "@/redux/api/endpoints/locations.api";
 import type { GeoPoint } from "@/redux/api/types";
 
@@ -39,10 +38,6 @@ type LocationFormType = (typeof LOCATION_FORM_TYPES)[number];
 
 function isPresetLocationType(value?: string): value is (typeof PRESET_LOCATION_TYPES)[number] {
   return PRESET_LOCATION_TYPES.includes(value as (typeof PRESET_LOCATION_TYPES)[number]);
-}
-
-function toApiLocationType(formType: LocationFormType): LocationType {
-  return formType === "Custom" ? "Other" : formType;
 }
 
 export function LocationForm({
@@ -103,8 +98,7 @@ export function LocationForm({
     const body = {
       name: name.trim(),
       address: address.trim(),
-      type: toApiLocationType(locationType),
-      other_type: locationType === "Custom" ? customType.trim() : undefined,
+      type: locationType === "Custom" ? customType.trim() : locationType,
       description: description.trim() || undefined,
       is_active: location?.is_active ?? true,
       location: toGeoPoint(pin),
@@ -140,6 +134,7 @@ export function LocationForm({
       {picksClient && (
         <ClientPicker
           value={chosenClient}
+          label="Company Name"
           showCompanyName
           onChange={(value) => {
             setChosenClient(value);

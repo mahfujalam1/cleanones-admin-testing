@@ -20,11 +20,14 @@ export function ClientPicker({
   onChange,
   required,
   showCompanyName = false,
+  label = "Client",
 }: {
   value: string;
   onChange: (clientId: string) => void;
   required?: boolean;
   showCompanyName?: boolean;
+  /** Screens that pick the account by its company rather than its contact override this. */
+  label?: string;
 }) {
   const { data, isFetching } = useGetClientsQuery(CLIENT_LOOKUP_ARGS);
   const clients = data?.result ?? [];
@@ -32,7 +35,7 @@ export function ClientPicker({
 
   return (
     <SelectField
-      label="Client"
+      label={label}
       value={value}
       required={required}
       disabled={isFetching && clients.length === 0}

@@ -56,7 +56,7 @@ export interface DashboardTranslationDict {
     fallingBehindSchedule: string; alerts: string; allActiveShiftsProgressing: string;
     shiftNearlyOver: string; activeShifts: string; workersOnSite: string;
     lateNoShow: string; reviewsPending: string; liveOperationsByClient: string;
-    locationsFirst: string; all: string; onTime: string; late: string;
+    locationsFirst: string; all: string; onTime: string; late: string; absent: string;
     noShow: string; openEscalations: string; allEscalationsResolved: string;
     attendanceAlert: string; callEmployee: string;
     goodMorning: string; goodAfternoon: string; goodEvening: string;
@@ -194,7 +194,7 @@ export const translations: Record<string, DashboardTranslationDict> = {
       activeShifts: "Active shifts", workersOnSite: "Workers on site", lateNoShow: "Late / no show",
       reviewsPending: "Reviews pending", liveOperationsByClient: "Live operations by client",
       locationsFirst: "Locations first, then people working there", all: "All", onTime: "On time",
-      late: "Late", noShow: "No show", openEscalations: "open escalations",
+      late: "Late", absent: "Absent", noShow: "No show", openEscalations: "open escalations",
       allEscalationsResolved: "All escalations resolved", attendanceAlert: "Attendance Alert",
       callEmployee: "Call employee",
       goodMorning: "Good morning", goodAfternoon: "Good afternoon", goodEvening: "Good evening",
@@ -316,7 +316,7 @@ export const translations: Record<string, DashboardTranslationDict> = {
       activeShifts: "Actieve diensten", workersOnSite: "Medewerkers op locatie", lateNoShow: "Te laat / afwezig",
       reviewsPending: "Beoordelingen in behandeling", liveOperationsByClient: "Live operaties per klant",
       locationsFirst: "Eerst locaties, dan medewerkers daar", all: "Alles", onTime: "Op tijd",
-      late: "Te laat", noShow: "Niet verschenen", openEscalations: "openstaande escalaties",
+      late: "Te laat", absent: "Afwezig", noShow: "Niet verschenen", openEscalations: "openstaande escalaties",
       allEscalationsResolved: "Alle escalaties opgelost", attendanceAlert: "Aanwezigheidsmelding",
       callEmployee: "Bellen medewerker",
       goodMorning: "Goedemorgen", goodAfternoon: "Goedemiddag", goodEvening: "Goedenavond",
@@ -438,7 +438,7 @@ export const translations: Record<string, DashboardTranslationDict> = {
       activeShifts: "Aktywne zmiany", workersOnSite: "Pracownicy na miejscu", lateNoShow: "Spóźnienie / brak obecności",
       reviewsPending: "Recenzje oczekujące", liveOperationsByClient: "Operacje na żywo według klienta",
       locationsFirst: "Najpierw lokalizacje, potem pracujący tam ludzie", all: "Wszystkie", onTime: "Na czas",
-      late: "Spóźniony", noShow: "Nieobecny", openEscalations: "otwarte eskalacje",
+      late: "Spóźniony", absent: "Nieobecny", noShow: "Nieobecny", openEscalations: "otwarte eskalacje",
       allEscalationsResolved: "Wszystkie eskalacje rozwiązane", attendanceAlert: "Alert Obecności",
       callEmployee: "Zadzwoń do pracownika",
       goodMorning: "Dzień dobry", goodAfternoon: "Dzień dobry", goodEvening: "Dobry wieczór",
@@ -560,7 +560,7 @@ export const translations: Record<string, DashboardTranslationDict> = {
       activeShifts: "Активні зміни", workersOnSite: "Працівники на об'єкті", lateNoShow: "Запізнення / Нез'явлення",
       reviewsPending: "Перевірок очікується", liveOperationsByClient: "Операції в режимі реального часу за клієнтами",
       locationsFirst: "Спочатку локації, потім працівники", all: "Усі", onTime: "Вчасно",
-      late: "Запізнення", noShow: "Нез'явлення", openEscalations: "відкритих ескалацій",
+      late: "Запізнення", absent: "Відсутній", noShow: "Нез'явлення", openEscalations: "відкритих ескалацій",
       allEscalationsResolved: "Усі ескалації вирішено", attendanceAlert: "Сповіщення про Відвідуваність",
       callEmployee: "Зателефонувати працівнику",
       goodMorning: "Доброго ранку", goodAfternoon: "Доброго дня", goodEvening: "Доброго вечора",
@@ -682,7 +682,7 @@ export const translations: Record<string, DashboardTranslationDict> = {
       activeShifts: "Turnos ativos", workersOnSite: "Trabalhadores no local", lateNoShow: "Atrasado / Falta",
       reviewsPending: "Avaliações pendentes", liveOperationsByClient: "Operações ao vivo por cliente",
       locationsFirst: "Primeiro localizações, depois trabalhadores", all: "Todos", onTime: "A tempo",
-      late: "Atrasado", noShow: "Falta", openEscalations: "escalações abertas",
+      late: "Atrasado", absent: "Ausente", noShow: "Falta", openEscalations: "escalações abertas",
       allEscalationsResolved: "Todas as escalações resolvidas", attendanceAlert: "Alerta de Assiduidade",
       callEmployee: "Ligar ao funcionário",
       goodMorning: "Bom dia", goodAfternoon: "Boa tarde", goodEvening: "Boa noite",
@@ -804,7 +804,7 @@ export const translations: Record<string, DashboardTranslationDict> = {
       activeShifts: "الورديات النشطة", workersOnSite: "العمال في الموقع", lateNoShow: "متأخر / غائب",
       reviewsPending: "المراجعات المعلقة", liveOperationsByClient: "العمليات المباشرة حسب العميل",
       locationsFirst: "المواقع أولاً، ثم العاملون هناك", all: "الكل", onTime: "في الوقت",
-      late: "متأخر", noShow: "غائب", openEscalations: "تصعيدات مفتوحة",
+      late: "متأخر", absent: "غائب", noShow: "غائب", openEscalations: "تصعيدات مفتوحة",
       allEscalationsResolved: "تم حل جميع التصعيدات", attendanceAlert: "تنبيه الحضور",
       callEmployee: "الاتصال بالموظف",
       goodMorning: "صباح الخير", goodAfternoon: "مساء الخير", goodEvening: "مساء الخير",
@@ -926,7 +926,7 @@ export const translations: Record<string, DashboardTranslationDict> = {
       activeShifts: "Shifts actifs", workersOnSite: "Employés sur place", lateNoShow: "En retard / Absent",
       reviewsPending: "Revues en attente", liveOperationsByClient: "Opérations en direct par client",
       locationsFirst: "D'abord les emplacements, puis les employés", all: "Tous", onTime: "À l'heure",
-      late: "En retard", noShow: "Absent", openEscalations: "escalades ouvertes",
+      late: "En retard", absent: "Absent", noShow: "Absent", openEscalations: "escalades ouvertes",
       allEscalationsResolved: "Toutes les escalades sont résolues", attendanceAlert: "Alerte de Présence",
       callEmployee: "Appeler l'employé",
       goodMorning: "Bonjour", goodAfternoon: "Bon après-midi", goodEvening: "Bonsoir",
@@ -1048,7 +1048,7 @@ export const translations: Record<string, DashboardTranslationDict> = {
       activeShifts: "Turnos activos", workersOnSite: "Trabajadores en el lugar", lateNoShow: "Atrasado / No presentado",
       reviewsPending: "Revisiones pendientes", liveOperationsByClient: "Operaciones en vivo por cliente",
       locationsFirst: "Primero ubicaciones, luego personal", all: "Todos", onTime: "A tiempo",
-      late: "Atrasado", noShow: "No presentado", openEscalations: "escalaciones abiertas",
+      late: "Atrasado", absent: "Ausente", noShow: "No presentado", openEscalations: "escalaciones abiertas",
       allEscalationsResolved: "Todas las escalaciones resueltas", attendanceAlert: "Alerta de Asistencia",
       callEmployee: "Llamar al empleado",
       goodMorning: "Buenos días", goodAfternoon: "Buenas tardes", goodEvening: "Buenas noches",
@@ -1260,6 +1260,7 @@ export type UiDict = {
   checkIn: string;
   issueReports: string;
   lateWorkers: string;
+  absentWorkers: string;
   missing: string;
   noShiftsFound: string;
   onTime: string;
@@ -1650,6 +1651,7 @@ export const uiTranslations: Record<string, UiDict> = {
     checkIn: "Check-in",
     issueReports: "Issue reports",
     lateWorkers: "Late workers",
+    absentWorkers: "Absent workers",
     missing: "Missing",
     noShiftsFound: "No shifts found",
     onTime: "On time",
@@ -1943,6 +1945,7 @@ export const uiTranslations: Record<string, UiDict> = {
     checkIn: "Inchecken",
     issueReports: "Storingsmeldingen",
     lateWorkers: "Te late medewerkers",
+    absentWorkers: "Afwezige medewerkers",
     missing: "Ontbrekend",
     noShiftsFound: "Geen diensten gevonden",
     onTime: "Op tijd",
@@ -2236,6 +2239,7 @@ export const uiTranslations: Record<string, UiDict> = {
     checkIn: "Zameldowanie",
     issueReports: "Zgłoszenia problemów",
     lateWorkers: "Spóźnieni pracownicy",
+    absentWorkers: "Nieobecni pracownicy",
     missing: "Brak",
     noShiftsFound: "Nie znaleziono zmian",
     onTime: "Na czas",
@@ -2529,6 +2533,7 @@ export const uiTranslations: Record<string, UiDict> = {
     checkIn: "Реєстрація прибуття",
     issueReports: "Звіти про проблеми",
     lateWorkers: "Працівники із запізненням",
+    absentWorkers: "Відсутні працівники",
     missing: "Відсутні",
     noShiftsFound: "Змін не знайдено",
     onTime: "Вчасно",
@@ -2822,6 +2827,7 @@ export const uiTranslations: Record<string, UiDict> = {
     checkIn: "Entrada",
     issueReports: "Relatórios de problemas",
     lateWorkers: "Colaboradores atrasados",
+    absentWorkers: "Colaboradores ausentes",
     missing: "Em falta",
     noShiftsFound: "Nenhum turno encontrado",
     onTime: "A horas",
@@ -3115,6 +3121,7 @@ export const uiTranslations: Record<string, UiDict> = {
     checkIn: "تسجيل الحضور",
     issueReports: "تقارير المشاكل",
     lateWorkers: "العاملون المتأخرون",
+    absentWorkers: "العاملون الغائبون",
     missing: "مفقود",
     noShiftsFound: "لا توجد مناوبات",
     onTime: "في الوقت",
@@ -3408,6 +3415,7 @@ export const uiTranslations: Record<string, UiDict> = {
     checkIn: "Pointage",
     issueReports: "Signalements d’incident",
     lateWorkers: "Intervenants en retard",
+    absentWorkers: "Intervenants absents",
     missing: "Manquant",
     noShiftsFound: "Aucune vacation trouvée",
     onTime: "À l’heure",
@@ -3701,6 +3709,7 @@ export const uiTranslations: Record<string, UiDict> = {
     checkIn: "Entrada",
     issueReports: "Informes de incidencias",
     lateWorkers: "Trabajadores con retraso",
+    absentWorkers: "Trabajadores ausentes",
     missing: "Ausente",
     noShiftsFound: "No se encontraron turnos",
     onTime: "A tiempo",

@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { getLocale } from "@/lib/locale";
 import { getUiTranslation } from "@/lib/translations";
 import { getDashboardTranslation } from "@/lib/translations";
-import { workerName, type Worker } from "@/redux/api/endpoints/workers.api";
+import { workerName, workerPhoto, type Worker } from "@/redux/api/endpoints/workers.api";
 import { WorkerAvatar } from "./WorkerAvatar";
 
 const typeTone = (type: Worker["worker_type"]) =>
@@ -48,7 +48,7 @@ export function WorkersTable({
                 className="group grid grid-cols-[2fr_1fr_1fr_1fr_1.1fr_1fr] items-center gap-2 px-6 py-4 transition-colors hover:bg-gray-50/60"
               >
                 <div className="flex min-w-0 items-center gap-3">
-                  <WorkerAvatar name={workerName(worker)} src={worker.profile_photo} />
+                  <WorkerAvatar name={workerName(worker)} src={workerPhoto(worker)} />
                   <div className="min-w-0">
                     <p className="truncate text-sm font-semibold text-gray-900">{workerName(worker)}</p>
                     <p className="truncate text-xs text-gray-400">{worker.email}</p>

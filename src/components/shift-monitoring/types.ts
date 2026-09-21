@@ -18,6 +18,8 @@ export interface WorkerInfo {
   hoursWorked: number;
   totalShifts: number;
   lateDays: number;
+  onTimeCheckIns?: number;
+  absentDays?: number;
   avgDuration: string;
 }
 

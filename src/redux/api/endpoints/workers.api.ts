@@ -78,11 +78,16 @@ export type Worker = {
   is_profile_completed?: boolean;
   /** See `WORKER_STATUSES` — sent by the form, not yet stored by the API. */
   status?: WorkerStatus;
-  /** NOT ON THE API yet; the avatar uses it the moment the worker model carries one. */
+  /** Avatar URL from GET /worker/all-workers (`profile_image`); `profile_photo` is a legacy alias. */
   profile_photo?: string;
+  profile_image?: string | null;
   isDeleted?: boolean;
   worked_hours?: number;
   total_completed_work_hours?: number | string;
+  total_shift?: number;
+  total_late_check_ins?: number;
+  total_on_time_check_ins?: number;
+  total_absent?: number;
   total_earning?: number;
   total_paid?: number;
   pending_amount?: number;
@@ -124,6 +129,12 @@ export type WorkerListParams = ListParams & { worker_type?: WorkerType };
 /** A name to show for a worker that may not have one, so the UI never renders "undefined". */
 export function workerName(worker: Pick<Worker, "name" | "email">): string {
   return worker.name?.trim() || worker.email?.split("@")[0] || "Unnamed worker";
+}
+
+/** Prefer `profile_image` from the API; fall back to the older `profile_photo` field. */
+export function workerPhoto(worker?: Pick<Worker, "profile_image" | "profile_photo"> | null): string | undefined {
+  const src = worker?.profile_image || worker?.profile_photo;
+  return src?.trim() || undefined;
 }
 
 /**

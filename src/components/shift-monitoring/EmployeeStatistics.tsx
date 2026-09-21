@@ -65,4 +65,4 @@ export function EmployeeStatistics({ onWorkerSelect, selectedWorkerId }: Props) 
   );
 }
 
-function mapWorker(item: WorkerAttendanceListItem): WorkerInfo { return { id: item.worker_id, initials: '', name: item.name, role: item.worker_type.toLowerCase() === 'freelancer' ? 'Freelancer' : 'Employee', shiftId: '', location: '', checkIn: '', status: 'On Time', color: 'bg-sky-500', statusColor: 'text-sky-500', hoursWorked: item.hours_worked, totalShifts: item.total_shifts, lateDays: item.late_days, avgDuration: '0h' }; }
+function mapWorker(item: WorkerAttendanceListItem): WorkerInfo { return { id: item.worker_id, initials: '', name: item.name || item.worker_name || '', role: (item.worker_type || 'Employee').toLowerCase() === 'freelancer' ? 'Freelancer' : 'Employee', shiftId: '', location: '', checkIn: '', status: 'On Time', color: 'bg-sky-500', statusColor: 'text-sky-500', hoursWorked: item.hours_worked, totalShifts: item.total_shifts, lateDays: item.late_days, avgDuration: '0h' }; }

@@ -12,18 +12,11 @@ export type Location = {
   name: string;
   address: string;
   /**
-   * `type` IS validated by the API. Its enum is currently `'Hotel' | 'School' | 'Hospital' |
-   * 'Other'` — "Office" is offered here by product decision but the API rejects it with an
-   * invalid-enum error until it is added to the backend enum too. `description` is still not in
-   * the documented create/update schemas, so a Zod schema that strips unknown keys drops it and
-   * it reads back as undefined; persisting it needs the field added to the location model and
-   * its validation.
-   *
-   * The country is not collected separately — the address picked from Google Places already
-   * carries it.
+   * Free-text from the form. Presets are Hotel/School/Hospital/Office; a custom type is the
+   * typed label itself, not a separate `other_type` field.
    */
-  type?: LocationType;
-  /** Free-text type when `type` is `Other`. */
+  type?: string;
+  /** Legacy only — older records stored custom text here when `type` was `Other`. */
   other_type?: string;
   description?: string;
   is_active: boolean;
@@ -38,9 +31,7 @@ export type CreateLocationInput = {
   client: string;
   name: string;
   address: string;
-  /** See the note on `Location` — not persisted until the API accepts these. */
-  type?: LocationType;
-  other_type?: string;
+  type?: string;
   description?: string;
   is_active?: boolean;
   location?: GeoPoint;

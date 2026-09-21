@@ -143,6 +143,18 @@ export const chatApi = baseApi.injectEndpoints({
       providesTags: (_result, _error, id) => [{ type: tagTypes.chat, id: `members-${id}` }],
     }),
 
+    removeChatMember: builder.mutation<null, { chatId: string; workerId: string }>({
+      query: ({ chatId, workerId }) => ({
+        url: `/chat/${encodeURIComponent(chatId)}/members/${encodeURIComponent(workerId)}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: (_result, _error, { chatId }) => [
+        { type: tagTypes.chat, id: `members-${chatId}` },
+        { type: tagTypes.chat, id: chatId },
+        { type: tagTypes.chat, id: "LIST" },
+      ],
+    }),
+
     renameGroupChat: builder.mutation<ChatItem, { id: string; name: string }>({
       query: ({ id, name }) => ({
         url: `/chat/${encodeURIComponent(id)}/rename`,
@@ -174,6 +186,7 @@ export const chatApi = baseApi.injectEndpoints({
 export const {
   useGetMyChatsQuery,
   useGetChatMembersQuery,
+  useRemoveChatMemberMutation,
   useRenameGroupChatMutation,
   useGetChatMessagesQuery,
   useDeleteChatMessageMutation,

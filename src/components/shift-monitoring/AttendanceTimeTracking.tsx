@@ -4,13 +4,14 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { MdSearch, MdClose, MdFilterList } from 'react-icons/md';
 import { TbClock, TbCalendarStats, TbAlertTriangle, TbCircleCheck } from 'react-icons/tb';
 import { WorkerInfo } from './types';
-import type { AttendanceWorker, Period } from '@/redux/api/shiftsApi';
+import type { Period } from '@/redux/api/shiftsApi';
 import { useGetShiftAttendanceSummaryQuery } from '@/redux/api/shiftsApi';
-import { useGetWorkerListQuery, workerName } from '@/redux/api/endpoints/workers.api';
+import { useGetWorkerListQuery, workerName, workerPhoto, type Worker } from '@/redux/api/endpoints/workers.api';
 import { BackendPagination } from '@/components/shared/BackendPagination';
 import { Select } from '@/components/ui/select';
 import { TableSkeleton } from '@/components/shared/SkeletonLoader';
 import { SlidingTabs } from '@/components/ui/sliding-tabs';
+import { WorkerAvatar } from '@/components/workers/WorkerAvatar';
 
 export type TimeRange = 'Today' | 'Weekly' | 'Monthly';
 type SortOption = 'hours' | 'shifts' | 'late' | 'name';
@@ -45,23 +46,46 @@ interface Props {
   onTimeRangeChange: (value: TimeRange) => void;
 }
 
-const mapAttendanceWorker = (item: AttendanceWorker): WorkerInfo => ({
-  id: item.worker_id,
-  initials: item.worker_name ? item.worker_name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase() : 'W',
-  name: item.worker_name,
-  role: item.worker_type?.toLowerCase() === 'freelancer' ? 'Freelancer' : 'Employee',
-  shiftId: '',
-  location: '',
-  checkIn: '',
-  status: item.late_days > 0 ? 'Late' : 'On Time',
-  color: 'bg-sky-500',
-  statusColor: 'text-sky-500',
-  profilePicture: item.profile_picture || '/avatar-placeholder.svg',
-  hoursWorked: item.hours_worked_numeric || 0,
-  totalShifts: item.total_shifts || 0,
-  lateDays: item.late_days || 0,
-  avgDuration: '0h',
-});
+function asHours(value?: number | string | null): number {
+  const n = typeof value === 'string' ? Number.parseFloat(value) : Number(value ?? 0);
+  return Number.isFinite(n) ? n : 0;
+}
+
+function formatHoursLabel(n: number): string {
+  if (!n) return '0';
+  return String(Number(n.toFixed(2)));
+}
+
+function mapDirectoryWorker(worker: Worker): WorkerInfo {
+  const name = workerName(worker);
+  const lateDays = Number(worker.total_late_check_ins ?? 0);
+  return {
+    id: String(worker._id),
+    initials: name
+      ? name
+          .split(/\s+/)
+          .map((part) => part[0])
+          .join('')
+          .slice(0, 2)
+          .toUpperCase()
+      : 'W',
+    name,
+    role: worker.worker_type?.toLowerCase() === 'freelancer' ? 'Freelancer' : 'Employee',
+    shiftId: '',
+    location: worker.base_location || '',
+    checkIn: '',
+    status: lateDays > 0 ? 'Late' : 'On Time',
+    color: 'bg-sky-500',
+    statusColor: 'text-sky-500',
+    profilePicture: workerPhoto(worker),
+    hoursWorked: asHours(worker.total_completed_work_hours ?? worker.worked_hours),
+    totalShifts: Number(worker.total_shift ?? 0),
+    lateDays,
+    onTimeCheckIns: Number(worker.total_on_time_check_ins ?? 0),
+    absentDays: Number(worker.total_absent ?? 0),
+    avgDuration: '0h',
+  };
+}
 
 export function AttendanceTimeTracking({ onWorkerSelect, selectedWorkerId, timeRange, onTimeRangeChange }: Props) {
   const [roleFilter, setRoleFilter] = useState<'All' | 'Employee' | 'Freelancer'>('All');
@@ -80,9 +104,8 @@ export function AttendanceTimeTracking({ onWorkerSelect, selectedWorkerId, timeR
     refetch: refetchSummary,
   } = useGetShiftAttendanceSummaryQuery({ period: period as 'today' | 'weekly' | 'monthly' });
 
-  // 2. The rows come from the worker directory. Per-worker hours, shifts and late counts are
-  // read from /shift/attendance-summary/:workerId when a worker is opened, so no aggregated
-  // attendance-tracking call is made from this page.
+  // Rows come from GET /worker/all-workers, which now includes total_shift,
+  // total_late_check_ins, total_on_time_check_ins, total_absent, and hours.
   const {
     data: workerListRes,
     isLoading: loadingWorkerList,
@@ -94,30 +117,14 @@ export function AttendanceTimeTracking({ onWorkerSelect, selectedWorkerId, timeR
   });
   const loading = loadingWorkerList || loadingSummary;
 
-  const directoryWorkers = workerListRes?.result;
-
-  const rawWorkers = useMemo<AttendanceWorker[]>(() => {
-    if (!directoryWorkers?.length) return [];
-    // The directory carries no attendance figures, so the per-worker counters start at zero
-    // and are filled in by the detail view.
-    return directoryWorkers.map((w) => ({
-      worker_id: String(w._id),
-      worker_name: workerName(w),
-      profile_picture: w.profile_photo || '',
-      worker_type: w.worker_type || 'Employee',
-      hours_worked: '0h',
-      hours_worked_numeric: 0,
-      total_shifts: 0,
-      late_days: 0,
-    }));
-  }, [directoryWorkers]);
+  const directoryWorkers = workerListRes?.result ?? [];
 
   useEffect(() => {
     setPage(1);
   }, [search, roleFilter, sortBy, timeRange]);
 
   const workers: WorkerInfo[] = useMemo(() => {
-    let list = rawWorkers.map(mapAttendanceWorker);
+    let list = directoryWorkers.map(mapDirectoryWorker);
 
     if (roleFilter !== 'All') {
       list = list.filter((w) => w.role.toLowerCase() === roleFilter.toLowerCase());
@@ -135,7 +142,7 @@ export function AttendanceTimeTracking({ onWorkerSelect, selectedWorkerId, timeR
       if (sortBy === 'name') return a.name.localeCompare(b.name);
       return 0;
     });
-  }, [rawWorkers, roleFilter, search, sortBy]);
+  }, [directoryWorkers, roleFilter, search, sortBy]);
 
   // Aggregate Metrics for Top KPI Banner
   const summaryStats = useMemo(() => {
@@ -164,7 +171,7 @@ export function AttendanceTimeTracking({ onWorkerSelect, selectedWorkerId, timeR
   const sortOptions = [
     { value: 'hours', label: 'Hours Worked (High to Low)' },
     { value: 'shifts', label: 'Total Shifts (High to Low)' },
-    { value: 'late', label: 'Late Days (High to Low)' },
+    { value: 'late', label: 'Late Check-ins (High to Low)' },
     { value: 'name', label: 'Worker Name (A-Z)' },
   ];
 
@@ -410,16 +417,9 @@ export function AttendanceTimeTracking({ onWorkerSelect, selectedWorkerId, timeR
                       {/* Worker Info */}
                       <td className="px-6 py-3.5">
                         <div className="flex items-center gap-3">
-                          <img
-                            src={worker.profilePicture || '/avatar-placeholder.svg'}
-                            alt={worker.name}
-                            className="h-9 w-9 rounded-full border border-slate-200 object-cover group-hover:border-primary/50 transition-colors"
-                          />
-                          <div>
-                            <div className="font-semibold text-slate-900 group-hover:text-primary transition-colors text-sm">
-                              {worker.name}
-                            </div>
-                            <div className="font-mono text-[11px] text-slate-400">ID: #{worker.id}</div>
+                          <WorkerAvatar name={worker.name} src={worker.profilePicture} />
+                          <div className="font-semibold text-slate-900 group-hover:text-primary transition-colors text-sm">
+                            {worker.name}
                           </div>
                         </div>
                       </td>
@@ -441,7 +441,7 @@ export function AttendanceTimeTracking({ onWorkerSelect, selectedWorkerId, timeR
                       <td className="px-6 py-3.5">
                         <div className="w-36">
                           <div className="flex items-center justify-between text-xs">
-                            <span className="font-bold text-slate-900">{worker.hoursWorked}h</span>
+                            <span className="font-bold text-slate-900">{formatHoursLabel(worker.hoursWorked)}h</span>
                             <span className="text-[10px] text-slate-400 capitalize">{timeRange.toLowerCase()}</span>
                           </div>
                           <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
@@ -461,19 +461,26 @@ export function AttendanceTimeTracking({ onWorkerSelect, selectedWorkerId, timeR
                         </span>
                       </td>
 
-                      {/* Late Days & Punctuality */}
+                      {/* Late check-ins & punctuality from all-workers */}
                       <td className="px-6 py-3.5">
-                        {worker.lateDays > 0 ? (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-0.5 text-[11px] font-semibold text-amber-700 ring-1 ring-inset ring-amber-200">
-                            <TbAlertTriangle className="text-xs" />
-                            {worker.lateDays} Late Day{worker.lateDays > 1 ? 's' : ''}
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-200">
-                            <TbCircleCheck className="text-xs" />
-                            Punctual (0 Late)
-                          </span>
-                        )}
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          {worker.lateDays > 0 ? (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-0.5 text-[11px] font-semibold text-amber-700 ring-1 ring-inset ring-amber-200">
+                              <TbAlertTriangle className="text-xs" />
+                              {worker.lateDays} Late
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-200">
+                              <TbCircleCheck className="text-xs" />
+                              Punctual ({worker.onTimeCheckIns ?? 0} on time)
+                            </span>
+                          )}
+                          {(worker.absentDays ?? 0) > 0 ? (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2.5 py-0.5 text-[11px] font-semibold text-red-700 ring-1 ring-inset ring-red-200">
+                              {worker.absentDays} Absent
+                            </span>
+                          ) : null}
+                        </div>
                       </td>
 
                     </tr>

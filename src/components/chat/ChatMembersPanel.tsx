@@ -1,11 +1,12 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { usePathname } from "next/navigation";
 import { getLocale } from "@/lib/locale";
 import { getUiTranslation } from "@/lib/translations";
 import {
   MdBusiness,
+  MdDeleteOutline,
   MdEngineering,
   MdGroups,
   MdPerson,
@@ -13,8 +14,11 @@ import {
 } from "react-icons/md";
 import {
   useGetChatMembersQuery,
+  useRemoveChatMemberMutation,
   type ChatItem,
 } from "@/redux/api/endpoints/chat.api";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
+import { apiError } from "@/redux/api/apiError";
 
 function initials(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -32,11 +36,27 @@ export function ChatMembersPanel({
 }) {
   const ui = getUiTranslation(getLocale(usePathname()));
   const { data: members } = useGetChatMembersQuery(chat._id);
+  const [removeMember, { isLoading: removing }] = useRemoveChatMemberMutation();
+  const [removeTarget, setRemoveTarget] = useState<{ id: string; name: string } | null>(null);
+  const [removeError, setRemoveError] = useState("");
 
   const client = members?.client ?? chat.client;
   const workers = members?.workers ?? chat.workers ?? [];
+  const canRemoveWorkers = chat.type === "group";
 
   const isClientOnline = Boolean(client?._id && onlineProfileIds.has(client._id));
+
+  const confirmRemove = async () => {
+    if (!removeTarget) return;
+    setRemoveError("");
+    try {
+      await removeMember({ chatId: chat._id, workerId: removeTarget.id }).unwrap();
+      setRemoveTarget(null);
+    } catch (cause) {
+      setRemoveError(apiError(cause));
+      setRemoveTarget(null);
+    }
+  };
 
   return (
     <div className="flex h-full flex-col min-h-0 overflow-y-auto p-4 space-y-5">
@@ -130,12 +150,17 @@ export function ChatMembersPanel({
             </div>
           </div>
           <div className="space-y-1.5">
+            {removeError && (
+              <p className="rounded-lg border border-red-200 bg-red-50 px-2.5 py-1.5 text-[11px] text-red-700">
+                {removeError}
+              </p>
+            )}
             {workers.map((worker) => {
               const isWorkerOnline = Boolean(worker._id && onlineProfileIds.has(worker._id));
               return (
                 <div
                   key={worker._id}
-                  className="flex items-center gap-2.5 rounded-lg border border-slate-200/80 bg-slate-50/50 p-2.5 transition-colors"
+                  className="group flex items-center gap-2.5 rounded-lg border border-slate-200/80 bg-slate-50/50 p-2.5 transition-colors"
                 >
                   <div className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-white text-xs font-bold shadow-2xs">
                     {worker.user?.profile_photo ? (
@@ -167,6 +192,23 @@ export function ChatMembersPanel({
                       </p>
                     )}
                   </div>
+                  {canRemoveWorkers && worker._id ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setRemoveError("");
+                        setRemoveTarget({
+                          id: worker._id,
+                          name: worker.name || "this worker",
+                        });
+                      }}
+                      aria-label={`Remove ${worker.name || "worker"} from group`}
+                      title="Remove from group"
+                      className="flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-md text-slate-400 opacity-100 transition-colors hover:bg-red-50 hover:text-red-600 sm:opacity-0 sm:group-hover:opacity-100"
+                    >
+                      <MdDeleteOutline className="text-base" />
+                    </button>
+                  ) : null}
                 </div>
               );
             })}
@@ -198,6 +240,21 @@ export function ChatMembersPanel({
           </div>
         </div>
       </div>
+
+      {removeTarget && (
+        <ConfirmDialog
+          title="Remove participant"
+          description={`Remove ${removeTarget.name} from this group? They will no longer see this conversation.`}
+          confirmText="Remove"
+          loading={removing}
+          onConfirm={() => {
+            void confirmRemove();
+          }}
+          onClose={() => {
+            if (!removing) setRemoveTarget(null);
+          }}
+        />
+      )}
     </div>
   );
 }

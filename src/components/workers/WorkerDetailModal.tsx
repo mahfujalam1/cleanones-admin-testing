@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { MdEdit, MdOutlineClose } from "react-icons/md";
-import { useGetWorkerQuery, workerName, type Worker, type WorkingDay } from "@/redux/api/endpoints/workers.api";
+import { useGetWorkerQuery, workerName, workerPhoto, type Worker, type WorkingDay } from "@/redux/api/endpoints/workers.api";
 import { apiError } from "@/redux/api/apiError";
 import { ErrorNotice } from "@/components/shared/ListStates";
 import { WorkerAvatar } from "./WorkerAvatar";
@@ -174,7 +174,7 @@ export function WorkerDetailModal({
       >
         <header className="flex items-start justify-between gap-4 border-b border-slate-100 px-6 pb-4 pt-5">
           <div className="flex min-w-0 items-center gap-3">
-            <WorkerAvatar name={worker && workerName(worker)} src={worker?.profile_photo} size="lg" />
+            <WorkerAvatar name={worker && workerName(worker)} src={workerPhoto(worker)} size="lg" />
             <div className="min-w-0">
             <div className="flex items-center gap-2.5">
               <h2 className="truncate text-base font-semibold text-slate-900">

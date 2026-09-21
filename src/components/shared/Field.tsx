@@ -26,6 +26,7 @@ type TextFieldProps = {
   placeholder?: string;
   required?: boolean;
   autoComplete?: string;
+  inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"];
   min?: number;
   max?: number;
   disabled?: boolean;

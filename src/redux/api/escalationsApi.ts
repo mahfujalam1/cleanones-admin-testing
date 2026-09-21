@@ -1,5 +1,6 @@
 import { baseApi } from "./baseApi";
 import { tagTypes } from "../tagTypes";
+import { listQuery, type ListParams, type Paginated } from "./types";
 
 export type IssueReport = {
   _id: string;
@@ -16,15 +17,27 @@ export type IssueReport = {
 
 export type EscalationApi = IssueReport;
 
+function asIssueReports(response: unknown): IssueReport[] {
+  if (Array.isArray(response)) return response;
+  if (!response || typeof response !== "object") return [];
+  const rec = response as { result?: unknown; data?: unknown };
+  if (Array.isArray(rec.result)) return rec.result as IssueReport[];
+  if (Array.isArray(rec.data)) return rec.data as IssueReport[];
+  return [];
+}
+
+export function isPendingIssue(status?: string) {
+  const value = (status || "").toUpperCase();
+  return value === "PENDING" || value === "OPEN";
+}
+
 export const escalationsApi = baseApi.injectEndpoints({
   overrideExisting: true,
   endpoints: (builder) => ({
-    getEscalations: builder.query<IssueReport[], void>({
-      query: () => "/issue-report/all-issue-reports",
-      transformResponse: (response: { success: boolean; data: IssueReport[] } | IssueReport[]) => {
-        if (Array.isArray(response)) return response;
-        return response?.data ?? [];
-      },
+    getEscalations: builder.query<IssueReport[], ListParams | void>({
+      query: (params) => `/issue-report/all-issue-reports?${listQuery({ limit: 200, ...params })}`,
+      transformResponse: (response: IssueReport[] | Paginated<IssueReport> | { data?: IssueReport[] } | null) =>
+        asIssueReports(response),
       providesTags: (result) => [
         { type: tagTypes.escalations, id: "LIST" },
         ...(result ?? []).map((item) => ({ type: tagTypes.escalations, id: item._id })),

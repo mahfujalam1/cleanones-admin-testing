@@ -110,7 +110,7 @@ export function RoomForm({
       const populated = selectedLocation ? refDoc(selectedLocation.client) : null;
       options.push({
         value: selectedClientId,
-        label: populated ? clientCompanyLabel(populated) : "Current client",
+        label: populated ? clientCompanyLabel(populated) : "Current company",
       });
     }
     return options;
@@ -137,7 +137,7 @@ export function RoomForm({
 
   const submit = async () => {
     if (!selectedClientId) {
-      setError("Please select a client.");
+      setError("Please select a company.");
       return;
     }
     if (!selectedLocationId) {
@@ -196,13 +196,13 @@ export function RoomForm({
     >
       <div className="grid gap-4 sm:grid-cols-2">
         <SelectField
-          label="Client"
+          label="Company Name"
           value={selectedClientId}
           options={clientOptions}
           onChange={handleClientChange}
           required
           disabled={lockScope}
-          placeholder="Select Client"
+          placeholder="Select Company"
         />
 
         <SelectField
@@ -212,7 +212,7 @@ export function RoomForm({
           onChange={setSelectedLocationId}
           required
           disabled={lockScope}
-          placeholder={selectedClientId ? "Select Location" : "Select Client first"}
+          placeholder={selectedClientId ? "Select Location" : "Select Company first"}
         />
       </div>
 

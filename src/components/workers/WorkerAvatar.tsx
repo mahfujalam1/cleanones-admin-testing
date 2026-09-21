@@ -1,13 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 /**
  * Worker avatar.
  *
- * The API carries no photo yet, so this falls back to the worker's initials on a tinted disc —
- * a placeholder that still tells rows apart, unlike one shared silhouette repeated down the
- * column. Pass `src` and a real photo takes over; a broken URL falls back the same way.
+ * Prefers the photo URL from `profile_image`. A missing or broken URL falls back to initials
+ * so rows stay distinguishable without a shared silhouette.
  */
 
 const SIZES = {
@@ -34,6 +33,10 @@ export function WorkerAvatar({
 }) {
   const [failed, setFailed] = useState(false);
   const showPhoto = Boolean(src) && !failed;
+
+  useEffect(() => {
+    setFailed(false);
+  }, [src]);
 
   if (showPhoto) {
     return (

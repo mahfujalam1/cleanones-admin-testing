@@ -7,13 +7,15 @@ import { MdAccessTime, MdAdd, MdArrowForward, MdAssessment, MdBusiness, MdCalend
 import {
   useGetTodayLiveShiftMetaQuery,
   useGetTodayLiveShiftsQuery,
-  useGetWorkerAttendanceListQuery,
+  type TodayLiveShiftItem,
 } from "@/redux/api/shiftsApi";
+import { isPendingIssue, useGetEscalationsQuery } from "@/redux/api/escalationsApi";
 import { getLocale } from "@/lib/locale";
 import { getDashboardTranslation, getUiTranslation } from "@/lib/translations";
 import { apiError } from "@/redux/api/apiError";
+import { PlanDetailModal } from "@/components/cleaningPlans/PlanDetailModal";
+import type { PlanRosterAssignedWorker } from "@/redux/api/rosterApi";
 
-const normalizeStatus = (value: string) => value.toLowerCase().replaceAll(" ", "_");
 /**
  * Shapes the dashboard's zero state is built from. The current API has no endpoint that fills
  * them, so these lists stay empty until one lands.
@@ -63,9 +65,26 @@ type FallingBehindShift = {
  * Permanently empty until the endpoints that used to fill them land. They are module level so
  * their identity is stable across renders and the memos below do not re-run every time.
  */
-const NO_ATTENTION_PILLS: readonly AttentionPill[] = [];
 const NO_FALLING_BEHIND: readonly FallingBehindShift[] = [];
 
+
+function planIdOfLiveShift(shift: TodayLiveShiftItem) {
+  const plan = shift.cleaning_plan;
+  if (typeof plan === "string") return plan;
+  return plan?._id || "";
+}
+
+function dateOfLiveShift(shift: TodayLiveShiftItem) {
+  return (shift.date || shift.date_time || "").slice(0, 10);
+}
+
+function crewOfLiveShift(shift: TodayLiveShiftItem): PlanRosterAssignedWorker[] {
+  return (shift.assigned_workers ?? shift.workers ?? []).map((worker) => ({
+    worker_id: worker.worker_id,
+    name: worker.name,
+    role: worker.shift_role || worker.worker_type,
+  })).filter((worker) => worker.worker_id || worker.name);
+}
 
 function getInitials(name: string): string {
   if (!name) return "W";
@@ -92,16 +111,6 @@ function formatTimeToHHMM(value?: string): string {
   return value.slice(0, 5);
 }
 
-function formatLateDuration(start?: string, checkIn?: string): string {
-  if (!start) return "Late";
-  const from = new Date(start);
-  if (Number.isNaN(from.getTime())) return "Late";
-  const until = checkIn ? new Date(checkIn) : new Date();
-  if (Number.isNaN(until.getTime()) || until.getTime() <= from.getTime()) return "Late";
-  const totalMinutes = Math.floor((until.getTime() - from.getTime()) / 60_000);
-  return `${totalMinutes}m late`;
-}
-
 function dialHref(phone?: string) {
   const digits = phone?.replace(/[^\d+]/g, "");
   return digits ? `tel:${digits}` : "";
@@ -116,80 +125,10 @@ type LateWorkerChip = {
   photo?: string;
 };
 
-/** Merge late workers from attendance, overview pills, and live-shift status. */
-function collectLateWorkers(
-  attendanceToday: Array<{ worker_id: string; name: string; late_days: number }> | undefined,
-  pills: AttentionPill[],
-  behind: readonly FallingBehindShift[],
-  liveShifts: Array<{
-    date_time?: string;
-    date?: string;
-    assigned_workers?: Array<{
-      worker_id: string;
-      name: string;
-      attendance_status?: string;
-      status?: string;
-      check_in_time?: string;
-      checkin_time?: string;
-      profile_picture?: string;
-      profile_photo?: string;
-      phone?: string;
-      phone_number?: string;
-    }>;
-  }>,
-  lateLabel: string,
-): LateWorkerChip[] {
-  const found = new Map<string, LateWorkerChip>();
-  const remember = (
-    id?: string,
-    name?: string,
-    detail?: string,
-    extra?: { phone?: string; photo?: string },
-  ) => {
-    if (!id) return;
-    const prev = found.get(id);
-    found.set(id, {
-      id,
-      name: name || prev?.name || "",
-      detail: detail || prev?.detail || lateLabel,
-      phone: extra?.phone || prev?.phone,
-      photo: extra?.photo || prev?.photo,
-    });
-  };
-
-  (attendanceToday ?? [])
-    .filter((row) => row.late_days > 0)
-    .forEach((row) => remember(row.worker_id, row.name, lateLabel));
-  pills.forEach((pill) =>
-    remember(pill.worker_id, pill.worker_name, pill.late_duration_text, { phone: pill.phone_number }),
-  );
-  behind.forEach((shift) =>
-    remember(shift.worker_id, shift.worker_name, shift.checkin_status, { photo: shift.worker_profile_picture }),
-  );
-  liveShifts.forEach((shift) =>
-    (shift.assigned_workers ?? []).forEach((worker) => {
-      const status = normalizeStatus(worker.attendance_status || worker.status || "");
-      const scheduledAt = new Date(shift.date_time || shift.date || "");
-      const checkedAt = new Date(worker.check_in_time || worker.checkin_time || "");
-      const checkedInLate =
-        !Number.isNaN(scheduledAt.getTime()) &&
-        !Number.isNaN(checkedAt.getTime()) &&
-        checkedAt.getTime() > scheduledAt.getTime();
-      if (checkedInLate || status.includes("late") || status.includes("show") || status.includes("missing")) {
-        remember(
-          worker.worker_id,
-          worker.name,
-          formatLateDuration(shift.date_time || shift.date, worker.check_in_time || worker.checkin_time),
-          {
-            phone: worker.phone || worker.phone_number,
-            photo: worker.profile_picture || worker.profile_photo,
-          },
-        );
-      }
-    }),
-  );
-
-  return Array.from(found.values());
+function nameInitials(name: string) {
+  const cleaned = name.trim();
+  if (!cleaned) return "W";
+  return cleaned.slice(0, 2).toUpperCase();
 }
 
 export default function DashboardPage() {
@@ -200,29 +139,30 @@ export default function DashboardPage() {
 
   const [liveTab, setLiveTab] = useState<"all" | "upcoming" | "in_progress" | "completed">("all");
   const [selectedLateWorker, setSelectedLateWorker] = useState<LateWorkerChip | null>(null);
+  const [viewingLiveShift, setViewingLiveShift] = useState<{
+    planId: string;
+    date: string;
+    startTime?: string;
+    endTime?: string;
+    assignedWorkers?: PlanRosterAssignedWorker[];
+  } | null>(null);
   const {
     data: selectedWorkerDetails,
     isFetching: loadingWorkerDetails,
     error: workerDetailsError,
   } = useGetWorkerQuery(selectedLateWorker?.id ?? "", {
-    skip: !selectedLateWorker?.id,
+    skip: !selectedLateWorker?.id || selectedLateWorker.id.startsWith("name:"),
   });
 
-  const { data: todayLiveMeta } = useGetTodayLiveShiftMetaQuery();
-  // Names the late workers the meta only counts.
-  const { data: attendanceToday } = useGetWorkerAttendanceListQuery({ period: "today" });
+  const { data: todayLiveMeta, isFetching: loadingLiveMeta } = useGetTodayLiveShiftMetaQuery();
+  const { data: issueReports = [] } = useGetEscalationsQuery();
   // The Live Operations tabs are sent to the API as `status`, so each tab is its own request
   // rather than a slice of one cached list.
-  const { data: todayShiftsRes, isFetching: fetchingLiveShifts } = useGetTodayLiveShiftsQuery({
+  const { data: todayShiftsRes, isFetching: fetchingLiveShifts, refetch: refetchLiveShifts } = useGetTodayLiveShiftsQuery({
     limit: 100,
     page: 1,
     sort: "-date_time",
     status: liveTab === "all" ? undefined : liveTab,
-  });
-  const { data: todayAllShiftsRes } = useGetTodayLiveShiftsQuery({
-    limit: 100,
-    page: 1,
-    sort: "-date_time",
   });
 
   // The API's greeting is built from the server clock, so the time of day is taken from the
@@ -235,7 +175,6 @@ export default function DashboardPage() {
 
   // `?? []` would be a fresh array each render and re-run every memo that depends on it.
   const todayLiveShifts = useMemo(() => todayShiftsRes?.result ?? [], [todayShiftsRes]);
-  const todayAllShifts = useMemo(() => todayAllShiftsRes?.result ?? [], [todayAllShiftsRes]);
 
   /**
    * The dashboard overview route was dropped from the backend and the current API has no
@@ -257,54 +196,38 @@ export default function DashboardPage() {
       reviews_pending_count: 0,
     },
     live_operations_by_client: [] as LiveOperationsClient[],
-    open_escalations_banner: {
-      open_escalations_count: 0,
-      subtitle: t.dashboard.allEscalationsResolved,
-      action_url: "/escalations",
-    }
   };
 
-  const attentionPills = NO_ATTENTION_PILLS;
+  const pendingEscalations = issueReports.filter((issue) => isPendingIssue(issue.status)).length;
+
   const fallingBehind = NO_FALLING_BEHIND;
-  /**
-   * Three endpoints each know about late workers and none of them knows about all of them:
-   * the overview returns call pills, the in-progress feed flags check-in status, and the live
-   * shift list carries attendance per assigned worker. They are merged and de-duplicated by
-   * worker id so the banner shows one chip per person, whichever source spotted them.
-   */
-  const lateWorkers = collectLateWorkers(
-    attendanceToday,
-    [...attentionPills],
-    fallingBehind,
-    todayAllShifts,
-    t.dashboard.late,
-  );
-
   const cards = safeOverview.summary_cards;
-  const lateCallPills = lateWorkers;
-
-
 
   /**
-   * The banner used to trust `people_need_attention_count` alone, while the Late Workers card
-   * reads the live-shift meta. The two endpoints disagree, so a late worker could be counted
-   * on the card and still show "All on time" above it. The banner now takes the highest of
-   * every signal available: the overview count, the live late/no-show total, the pills the
-   * overview itself returned, and the in-progress shifts flagged late or missing.
+   * Absent pills come only from GET /shift/today-live-shift-meta `absent_workers`.
+   * Each chip is the first two letters of the name; click loads GET /worker/single-worker/{id}.
    */
-  const lateWorkerCount = todayLiveMeta?.today_total_worker_late ?? cards.late_no_show_count ?? 0;
+  const absentPills: LateWorkerChip[] = (todayLiveMeta?.absent_workers ?? [])
+    .filter((worker) => worker.worker_id || worker.name)
+    .map((worker) => ({
+      id: worker.worker_id,
+      name: worker.name?.trim() || "Worker",
+      detail: t.dashboard.absent,
+    }));
   const needAttentionCount = Math.max(
-    safeOverview.attention_banner.people_need_attention_count ?? 0,
-    lateWorkerCount,
-    attentionPills.length,
-    fallingBehind.length,
-    lateWorkers.length,
+    todayLiveMeta?.total_absent ?? 0,
+    absentPills.length,
   );
 
   const liveOperationsRows = useMemo(() => {
     if (todayLiveShifts.length > 0) {
       const rows: Array<{
         id: string;
+        planId: string;
+        date: string;
+        startTime?: string;
+        endTime?: string;
+        assignedWorkers: PlanRosterAssignedWorker[];
         worker_name: string;
         initials: string;
         profile_picture?: string;
@@ -322,6 +245,16 @@ export default function DashboardPage() {
           shift.client?.name ||
           "CleanOnes Location";
         const progress = Math.min(100, Math.max(0, shift.overall_progress_percent ?? (shift.status === "completed" ? 100 : 0)));
+        const planId = planIdOfLiveShift(shift);
+        const date = dateOfLiveShift(shift);
+        const assignedWorkers = crewOfLiveShift(shift);
+        const shiftFields = {
+          planId,
+          date,
+          startTime: shift.date_time,
+          endTime: undefined as string | undefined,
+          assignedWorkers,
+        };
 
         if (shift.assigned_workers && shift.assigned_workers.length > 0) {
           for (const w of shift.assigned_workers) {
@@ -343,6 +276,7 @@ export default function DashboardPage() {
 
             rows.push({
               id: `${shift._id}-${w.worker_id}`,
+              ...shiftFields,
               worker_name: w.name,
               initials: getInitials(w.name),
               profile_picture: w.profile_picture || w.profile_photo,
@@ -356,6 +290,7 @@ export default function DashboardPage() {
           const planTitle = typeof shift.cleaning_plan === "object" ? shift.cleaning_plan?.title : "Shift";
           rows.push({
             id: shift._id,
+            ...shiftFields,
             worker_name: planTitle || "Unassigned Shift",
             initials: getInitials(planTitle || "US"),
             location_name: locationName,
@@ -414,7 +349,7 @@ export default function DashboardPage() {
                 {needAttentionCount} {t.dashboard.peopleNeedAttention}
               </h2>
               <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold ${needAttentionCount > 0 ? "bg-red-100 text-red-600" : "bg-emerald-100 text-emerald-700"}`}>
-                {needAttentionCount > 0 ? `${needAttentionCount} ${t.dashboard.late.toLowerCase()}` : t.dashboard.allOnTime}
+                {needAttentionCount > 0 ? `${needAttentionCount} ${t.dashboard.absent.toLowerCase()}` : t.dashboard.allOnTime}
               </span>
             </div>
             <p className={`mt-0.5 text-xs sm:text-sm ${needAttentionCount > 0 ? "text-red-600" : "text-slate-500"}`}>
@@ -424,39 +359,22 @@ export default function DashboardPage() {
             </p>
           </div>
           <div className="flex flex-wrap items-center justify-end gap-2">
-            {lateCallPills.length > 0 ? (
-              lateCallPills.map((worker) => (
+            {absentPills.length > 0 ? (
+              absentPills.map((worker) => (
                   <button
                     type="button"
-                    key={worker.id}
+                    key={worker.id || worker.name}
                     onClick={() => setSelectedLateWorker(worker)}
-                    aria-label={`View ${worker.name || "late worker"}`}
-                    title={`${worker.name || "Worker"} · ${worker.detail || t.dashboard.late}`}
-                    className="group flex h-10 cursor-pointer items-center gap-2 rounded-full border border-red-100 bg-white py-1 pl-3 pr-1 shadow-sm transition-transform hover:-translate-y-0.5 hover:border-red-200 focus:outline-none focus:ring-2 focus:ring-red-200"
+                    aria-label={`View ${worker.name || "absent worker"}`}
+                    title={`${worker.name || "Worker"} · ${t.dashboard.absent}`}
+                    className="group relative flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-red-100 bg-white text-[11px] font-bold tracking-wide text-red-600 shadow-sm transition-transform hover:-translate-y-0.5 hover:border-red-200 focus:outline-none focus:ring-2 focus:ring-red-200"
                   >
-                    <span className="max-w-[110px] truncate text-[11px] font-semibold text-red-600">
-                      {worker.detail || t.dashboard.late}
-                    </span>
-                    <span className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full">
-                      {worker.photo ? (
-                        <img
-                          src={worker.photo}
-                          alt={worker.name || "Late worker"}
-                          className="h-full w-full rounded-full object-cover"
-                        />
-                      ) : (
-                        <span className="flex h-full w-full items-center justify-center rounded-full bg-sky-100 text-[10px] font-bold text-sky-700">
-                          {getInitials(worker.name)}
-                        </span>
-                      )}
-                      <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-white bg-red-500" />
-                      </span>
+                    {nameInitials(worker.name)}
+                    <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-white bg-red-500" />
                   </button>
               ))
-            ) : needAttentionCount > 0 ? (
-              <span className="rounded-lg border border-red-200/80 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-700">
-                {lateWorkerCount || needAttentionCount} {ui.lateWorkers}
-              </span>
+            ) : loadingLiveMeta && !todayLiveMeta ? (
+              <span className="h-10 w-10 animate-pulse rounded-full border border-red-100 bg-white" />
             ) : (
               <span className="rounded-lg border border-emerald-200/80 bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700">
                 {t.dashboard.allShiftsOnSchedule}
@@ -536,14 +454,14 @@ export default function DashboardPage() {
         />
         <Metric
           icon={<MdWarningAmber />}
-          value={todayLiveMeta?.today_total_worker_late ?? cards.late_no_show_count}
-          label={ui.lateWorkers}
+          value={needAttentionCount}
+          label={ui.absentWorkers}
           tone="bg-red-50 text-red-600"
           href="/shift-monitoring/attendance-and-time-tracking"
         />
         <Metric
           icon={<MdReportProblem />}
-          value={todayLiveMeta?.total_issue_report ?? cards.reviews_pending_count}
+          value={pendingEscalations}
           label={ui.issueReports}
           tone="bg-amber-50 text-amber-600"
           href="/escalations"
@@ -624,10 +542,20 @@ export default function DashboardPage() {
 
         <div className="divide-y divide-slate-100">
           {displayLiveRows.map((row) => (
-            <Link
+            <button
+              type="button"
               key={row.id}
-              href="/shift-monitoring"
-              className="flex items-center justify-between gap-3 p-3.5 sm:px-5 hover:bg-slate-50/70 transition-colors"
+              onClick={() => {
+                if (!row.planId) return;
+                setViewingLiveShift({
+                  planId: row.planId,
+                  date: row.date,
+                  startTime: row.startTime,
+                  endTime: row.endTime,
+                  assignedWorkers: row.assignedWorkers,
+                });
+              }}
+              className="group flex w-full cursor-pointer items-center justify-between gap-3 p-3.5 text-left sm:px-5 hover:bg-slate-50/70 transition-colors"
             >
               {/* Left: Avatar + Name + Location */}
               <div className="flex items-center gap-3 min-w-0 flex-1">
@@ -700,9 +628,9 @@ export default function DashboardPage() {
                 </div>
 
                 {/* Arrow */}
-                <MdChevronRight className="text-slate-300 text-lg hover:text-slate-600" />
+                <MdChevronRight className="text-slate-300 text-lg group-hover:text-slate-600" />
               </div>
-            </Link>
+            </button>
           ))}
 
           {displayLiveRows.length === 0 && (
@@ -713,13 +641,34 @@ export default function DashboardPage() {
 
       {/* Escalations Banner */}
       <Link href="/escalations" className="dashboard-card flex items-center gap-4 p-5 hover:border-amber-300 transition-colors">
-        <MdWarningAmber className="text-2xl text-amber-500" />
+        <MdWarningAmber className={`text-2xl ${pendingEscalations > 0 ? "text-amber-500" : "text-slate-400"}`} />
         <div>
-          <p className="font-bold text-slate-900">{safeOverview.open_escalations_banner.open_escalations_count} {t.dashboard.openEscalations}</p>
-          <p className="text-xs text-slate-500">{safeOverview.open_escalations_banner.subtitle || t.dashboard.allEscalationsResolved}</p>
+          <p className="font-bold text-slate-900">{pendingEscalations} {t.dashboard.openEscalations}</p>
+          <p className="text-xs text-slate-500">
+            {pendingEscalations > 0
+              ? `${pendingEscalations} pending ${pendingEscalations === 1 ? "report needs" : "reports need"} review.`
+              : t.dashboard.allEscalationsResolved}
+          </p>
         </div>
         <MdArrowForward className="ml-auto text-slate-400" />
       </Link>
+
+      {viewingLiveShift && (
+        <PlanDetailModal
+          planId={viewingLiveShift.planId}
+          shiftDate={viewingLiveShift.date || undefined}
+          assignedWorkers={viewingLiveShift.assignedWorkers}
+          shiftSchedule={{
+            date: viewingLiveShift.date,
+            startTime: viewingLiveShift.startTime,
+            endTime: viewingLiveShift.endTime,
+          }}
+          onClose={() => setViewingLiveShift(null)}
+          onAssigned={() => {
+            void refetchLiveShifts();
+          }}
+        />
+      )}
 
       {selectedLateWorker && (
         <div
@@ -732,13 +681,13 @@ export default function DashboardPage() {
           <div
             role="dialog"
             aria-modal="true"
-            aria-label="Late worker details"
+            aria-label="Absent worker details"
             className="w-full max-w-sm overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
           >
             <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
               <div>
-                <p className="text-sm font-bold text-slate-900">Late worker</p>
-                <p className="mt-0.5 text-xs font-medium text-red-500">{selectedLateWorker.detail || t.dashboard.late}</p>
+                <p className="text-sm font-bold text-slate-900">{t.dashboard.absent}</p>
+                <p className="mt-0.5 text-xs font-medium text-red-500">{selectedLateWorker.detail || t.dashboard.absent}</p>
               </div>
               <button
                 type="button"
@@ -771,7 +720,7 @@ export default function DashboardPage() {
                   />
                 ) : (
                   <span className="flex h-12 w-12 items-center justify-center rounded-full bg-sky-100 text-sm font-bold text-sky-700">
-                    {getInitials(modalWorkerName)}
+                    {nameInitials(modalWorkerName)}
                   </span>
                 )}
                 <div className="min-w-0">
