@@ -1,6 +1,6 @@
 "use client";
 
-import { clientLabel, CLIENT_LOOKUP_ARGS, useGetClientsQuery } from "@/redux/api/endpoints/clients.api";
+import { clientCompanyLabel, CLIENT_LOOKUP_ARGS, useGetClientsQuery } from "@/redux/api/endpoints/clients.api";
 import { useGetLocationCatalogQuery } from "@/redux/api/endpoints/catalog.api";
 import { refId } from "@/redux/api/types";
 import { Select } from "@/components/ui/select";
@@ -36,7 +36,7 @@ export function CatalogFilters({
           { value: "", label: "All clients" },
           ...(clients?.result ?? []).map((client) => ({
             value: client._id,
-            label: clientLabel(client),
+            label: clientCompanyLabel(client),
           })),
         ]}
       />

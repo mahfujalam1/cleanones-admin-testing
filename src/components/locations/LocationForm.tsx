@@ -14,11 +14,9 @@ import { AddressAutocompleteInput } from "./AddressAutocompleteInput";
 import { ClientPicker } from "@/components/shared/Pickers";
 import { apiError } from "@/redux/api/apiError";
 import {
-  LOCATION_TYPES,
   useCreateLocationMutation,
   useUpdateLocationMutation,
   type Location,
-  type LocationType,
 } from "@/redux/api/endpoints/locations.api";
 import type { GeoPoint } from "@/redux/api/types";
 
@@ -33,6 +31,14 @@ const fromGeoPoint = (point?: GeoPoint): Pin | null => {
   const [longitude, latitude] = point?.coordinates ?? [];
   return typeof latitude === "number" && typeof longitude === "number" ? { latitude, longitude } : null;
 };
+
+const PRESET_LOCATION_TYPES = ["Hotel", "School", "Hospital", "Office"] as const;
+const LOCATION_FORM_TYPES = [...PRESET_LOCATION_TYPES, "Custom"] as const;
+type LocationFormType = (typeof LOCATION_FORM_TYPES)[number];
+
+function isPresetLocationType(value?: string): value is (typeof PRESET_LOCATION_TYPES)[number] {
+  return PRESET_LOCATION_TYPES.includes(value as (typeof PRESET_LOCATION_TYPES)[number]);
+}
 
 export function LocationForm({
   clientId,
@@ -55,13 +61,14 @@ export function LocationForm({
 
   const [name, setName] = useState(location?.name ?? "");
   const [address, setAddress] = useState(location?.address ?? "");
-  const knownType = LOCATION_TYPES.includes((location?.type ?? "") as LocationType);
-  const [locationType, setLocationType] = useState<LocationType | "">(
-    knownType ? (location?.type as LocationType) : location?.type ? "Other" : "",
+  const [locationType, setLocationType] = useState<LocationFormType | "">(
+    isPresetLocationType(location?.type) ? location.type : location?.type ? "Custom" : "",
   );
-  const [otherType, setOtherType] = useState(
+  const [customType, setCustomType] = useState(
     location?.other_type
-      ?? (!knownType && location?.type ? location.type : ""),
+      ?? (!isPresetLocationType(location?.type) && location?.type && location.type !== "Other"
+        ? location.type
+        : ""),
   );
   const [description, setDescription] = useState(location?.description ?? "");
   const [pin, setPin] = useState<Pin | null>(() => fromGeoPoint(location?.location));
@@ -79,7 +86,7 @@ export function LocationForm({
       setError("Location Type is required.");
       return;
     }
-    if (locationType === "Other" && !otherType.trim()) {
+    if (locationType === "Custom" && !customType.trim()) {
       setError("Specify the location type.");
       return;
     }
@@ -91,8 +98,8 @@ export function LocationForm({
     const body = {
       name: name.trim(),
       address: address.trim(),
-      type: locationType,
-      other_type: locationType === "Other" ? otherType.trim() : undefined,
+      type: locationType === "Custom" ? "Other" : locationType,
+      other_type: locationType === "Custom" ? customType.trim() : undefined,
       description: description.trim() || undefined,
       is_active: location?.is_active ?? true,
       location: toGeoPoint(pin),
@@ -142,10 +149,10 @@ export function LocationForm({
         <SelectField
           label="Type"
           value={locationType}
-          options={LOCATION_TYPES}
+          options={LOCATION_FORM_TYPES}
           onChange={(val) => {
             setLocationType(val);
-            if (val !== "Other") setOtherType("");
+            if (val !== "Custom") setCustomType("");
             setError("");
           }}
           placeholder="Select type"
@@ -153,12 +160,12 @@ export function LocationForm({
         />
       </div>
 
-      {locationType === "Other" && (
+      {locationType === "Custom" && (
         <TextField
-          label="Specify type"
-          value={otherType}
+          label="Specify location type"
+          value={customType}
           onChange={(value) => {
-            setOtherType(value);
+            setCustomType(value);
             setError("");
           }}
           placeholder="e.g. Warehouse, Clinic, Restaurant"

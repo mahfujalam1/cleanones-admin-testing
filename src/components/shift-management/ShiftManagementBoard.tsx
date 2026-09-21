@@ -14,6 +14,7 @@ import { PlanForm } from "@/components/cleaningPlans/PlanForm";
 import { BackendPagination } from "@/components/shared/BackendPagination";
 import { ContentSkeleton } from "@/components/shared/SkeletonLoader";
 import { SearchInput } from "@/components/shared/ListStates";
+import { CatalogFilters } from "@/components/shared/CatalogFilters";
 import { DatePicker } from "@/components/ui/date-picker";
 import { SlidingTabs } from "@/components/ui/sliding-tabs";
 import { apiError } from "@/redux/api/apiError";
@@ -42,6 +43,8 @@ export function ShiftManagementBoard() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const searchTerm = useDebouncedValue(search.trim());
+  const [clientId, setClientId] = useState("");
+  const [locationId, setLocationId] = useState("");
   const [viewing, setViewing] = useState<{ planId: string; shift?: PlanRosterShift } | null>(null);
   const [editingPlan, setEditingPlan] = useState<CleaningPlan | null>(null);
 
@@ -56,6 +59,8 @@ export function ShiftManagementBoard() {
         year: currentDate.getFullYear(),
         month: currentDate.getMonth() + 1,
         search: searchTerm || undefined,
+        client: clientId || undefined,
+        location: locationId || undefined,
         page,
         limit: LIMIT,
       };
@@ -64,10 +69,12 @@ export function ShiftManagementBoard() {
       view,
       date: toDateKey(currentDate),
       search: searchTerm || undefined,
+      client: clientId || undefined,
+      location: locationId || undefined,
       page,
       limit: LIMIT,
     };
-  }, [view, currentDate, searchTerm, page]);
+  }, [view, currentDate, searchTerm, page, clientId, locationId]);
 
   const { data, isLoading, error, refetch } = useGetPlanRosterQuery(params);
   const plans = data?.cleaning_plans ?? [];
@@ -196,6 +203,21 @@ export function ShiftManagementBoard() {
         </div>
 
         <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
+          <div className="grid w-full grid-cols-2 gap-2 sm:w-[280px]">
+            <CatalogFilters
+              clientId={clientId}
+              locationId={locationId}
+              onClient={(id) => {
+                setClientId(id);
+                if (id) setLocationId("");
+                setPage(1);
+              }}
+              onLocation={(id) => {
+                setLocationId(id);
+                setPage(1);
+              }}
+            />
+          </div>
           <div className="w-full sm:w-48">
             <SearchInput
               value={search}

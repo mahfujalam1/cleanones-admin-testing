@@ -21,6 +21,7 @@ import { ContentSkeleton } from '@/components/shared/SkeletonLoader';
 import { BackendPagination } from '@/components/shared/BackendPagination';
 import { SlidingTabs } from '@/components/ui/sliding-tabs';
 import { DatePicker } from '@/components/ui/date-picker';
+import { CatalogFilters } from '@/components/shared/CatalogFilters';
 import { useGetShiftRosterQuery, type ShiftRosterParams } from '@/redux/api/rosterApi';
 import { apiError } from '@/redux/api/apiError';
 
@@ -36,6 +37,8 @@ export function RosterCalendar() {
   const [view, setView] = useState<'Day' | 'Week' | 'Month'>('Day');
   const [currentDate, setCurrentDate] = useState(new Date());
   const [page, setPage] = useState(1);
+  const [clientId, setClientId] = useState('');
+  const [locationId, setLocationId] = useState('');
   const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
   const [editingPlan, setEditingPlan] = useState<CleaningPlan | null>(null);
   const [deletingPlan, setDeletingPlan] = useState<CleaningPlan | null>(null);
@@ -66,6 +69,8 @@ export function RosterCalendar() {
         view: 'month',
         year: currentDate.getFullYear(),
         month: currentDate.getMonth() + 1,
+        client: clientId || undefined,
+        location: locationId || undefined,
         page,
         limit: 20,
       };
@@ -73,10 +78,12 @@ export function RosterCalendar() {
     return {
       view: apiView,
       day: formatYYYYMMDD(currentDate),
+      client: clientId || undefined,
+      location: locationId || undefined,
       page,
       limit: 20,
     };
-  }, [view, currentDate, page]);
+  }, [view, currentDate, page, clientId, locationId]);
 
   const {
     data: rosterRes,
@@ -270,6 +277,21 @@ export function RosterCalendar() {
         </div>
 
         <div className="flex w-full flex-wrap items-center gap-2 lg:w-auto">
+          <div className="grid w-full grid-cols-2 gap-2 sm:w-[280px]">
+            <CatalogFilters
+              clientId={clientId}
+              locationId={locationId}
+              onClient={(id) => {
+                setClientId(id);
+                if (id) setLocationId('');
+                setPage(1);
+              }}
+              onLocation={(id) => {
+                setLocationId(id);
+                setPage(1);
+              }}
+            />
+          </div>
           <SlidingTabs
             compact
             value={view}

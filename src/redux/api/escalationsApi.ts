@@ -9,6 +9,7 @@ export type IssueReport = {
   location?: string | { _id: string; name?: string; address?: string };
   description: string;
   status: "PENDING" | "IN_PROGRESS" | "RESOLVED" | string;
+  resolution_note?: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -39,6 +40,7 @@ export const escalationsApi = baseApi.injectEndpoints({
         severity?: string;
         location?: string;
         description?: string;
+        resolution_note?: string;
       }
     >({
       query: ({ id, ...body }) => ({

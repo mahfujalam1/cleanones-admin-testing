@@ -236,7 +236,10 @@ export function AssignWorkersPanel({
 
     const hasForced =
       [...picked].some((id) => forcedWorkers[id]) ||
-      visible.some(({ worker, is_conflict }) => is_conflict && picked.has(workerIdOf(worker)));
+      visible.some(({ worker, is_conflict, is_available }) => {
+        const id = workerIdOf(worker);
+        return picked.has(id) && (Boolean(is_conflict) || is_available === false);
+      });
 
     try {
       await assignWorkers({
@@ -257,9 +260,9 @@ export function AssignWorkersPanel({
     }
   };
 
-  const chosenConflicts = visible.filter(({ worker, is_conflict }) => {
+  const chosenOverrides = visible.filter(({ worker, is_conflict, is_available }) => {
     const id = workerIdOf(worker);
-    return is_conflict && picked.has(id);
+    return picked.has(id) && (Boolean(is_conflict) || is_available === false);
   });
 
   return (
@@ -354,6 +357,7 @@ export function AssignWorkersPanel({
             const isConflict = Boolean(is_conflict);
             const isForced = Boolean(forcedWorkers[id]);
             const unavailable = is_available === false;
+            const needsForce = isConflict || unavailable;
 
             return (
               <div
@@ -361,6 +365,8 @@ export function AssignWorkersPanel({
                 className={`rounded-lg border p-3 transition-colors ${
                   isForced && checked
                     ? "border-amber-300 bg-amber-50/40 ring-1 ring-amber-200"
+                    : unavailable
+                    ? "border-red-200 bg-red-50"
                     : checked
                     ? "border-primary/30 bg-sky-50/50"
                     : isConflict
@@ -386,7 +392,7 @@ export function AssignWorkersPanel({
                       <div className="flex flex-wrap items-center gap-2">
                         <p className="truncate text-sm font-semibold text-slate-900">{name}</p>
                         {unavailable && (
-                          <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
+                          <span className="shrink-0 rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-700">
                             Not available
                           </span>
                         )}
@@ -406,6 +412,11 @@ export function AssignWorkersPanel({
                         {worker.worker_type?.toLowerCase()} · {worker.email}
                       </p>
 
+                      {unavailable && (
+                        <p className="mt-1 text-xs font-medium text-red-700">
+                          This worker isn't available. You can still force assign them.
+                        </p>
+                      )}
                       {isConflict && (
                         <div className="mt-1 flex items-center gap-1.5 text-xs font-semibold text-red-600">
                           <MdWarningAmber className="shrink-0 text-sm text-red-600" />
@@ -416,14 +427,14 @@ export function AssignWorkersPanel({
                       )}
                       {isForced && (
                         <p className="mt-0.5 text-[11px] font-medium text-amber-700">
-                          Force enabled: Worker will be assigned despite the conflict.
+                          Force enabled: Worker will be assigned anyway.
                         </p>
                       )}
                     </div>
                   </div>
 
                   <div className="flex items-center gap-2 self-end sm:self-center">
-                    {isConflict && (
+                    {needsForce && (
                       <Button
                         type="button"
                         size="sm"
@@ -476,9 +487,9 @@ export function AssignWorkersPanel({
         <div className="flex items-center justify-between gap-3">
           <p className="text-xs text-slate-500">
             {picked.size} worker{picked.size === 1 ? "" : "s"} assigned
-            {chosenConflicts.length > 0 && (
+            {chosenOverrides.length > 0 && (
               <span className="ml-2 rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700">
-                {chosenConflicts.length} with conflict override
+                {chosenOverrides.length} with conflict override
               </span>
             )}
           </p>

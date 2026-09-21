@@ -167,10 +167,18 @@ export default function EscalationsPage() {
     return filtered.slice((page - 1) * LIMIT, page * LIMIT);
   }, [filtered, page]);
 
-  const handleUpdateStatus = async (id: string, status: "PENDING" | "IN_PROGRESS" | "RESOLVED") => {
+  const handleUpdateStatus = async (
+    id: string,
+    status: "PENDING" | "IN_PROGRESS" | "RESOLVED",
+    resolutionNote?: string,
+  ) => {
     setActionError("");
     try {
-      await updateReport({ id, status }).unwrap();
+      await updateReport({
+        id,
+        status,
+        ...(status === "RESOLVED" ? { resolution_note: resolutionNote?.trim() } : {}),
+      }).unwrap();
       setSelectedIssue(null);
     } catch (err) {
       console.error("Failed to update status:", err);
@@ -398,7 +406,9 @@ export default function EscalationsPage() {
           workerMap={workerMap}
           updating={updating}
           onClose={() => setSelectedIssue(null)}
-          onUpdateStatus={(status) => handleUpdateStatus(selectedIssue._id, status)}
+          onUpdateStatus={(status, resolutionNote) =>
+            handleUpdateStatus(selectedIssue._id, status, resolutionNote)
+          }
           onDelete={() => setDeleteTarget(selectedIssue)}
         />
       )}
@@ -433,12 +443,17 @@ function IssueDetailModal({
   workerMap: Map<string, string>;
   updating: boolean;
   onClose: () => void;
-  onUpdateStatus: (status: "PENDING" | "IN_PROGRESS" | "RESOLVED") => Promise<void>;
+  onUpdateStatus: (
+    status: "PENDING" | "IN_PROGRESS" | "RESOLVED",
+    resolutionNote?: string,
+  ) => Promise<void>;
   onDelete: () => void;
 }) {
   const ui = getUiTranslation(getLocale(usePathname()));
   const currentStatus = (issue.status || "PENDING").toUpperCase() as "PENDING" | "IN_PROGRESS" | "RESOLVED";
   const [selectedStatus, setSelectedStatus] = useState<"PENDING" | "IN_PROGRESS" | "RESOLVED">(currentStatus);
+  const [resolutionNote, setResolutionNote] = useState(issue.resolution_note ?? "");
+  const [noteError, setNoteError] = useState("");
 
   const sevKey = (issue.severity || "medium").toLowerCase();
   const sevStyle = SEVERITY_CONFIG[sevKey] ?? SEVERITY_CONFIG.medium;
@@ -567,7 +582,10 @@ function IssueDetailModal({
 
               <button
                 type="button"
-                onClick={() => setSelectedStatus("RESOLVED")}
+                onClick={() => {
+                  setSelectedStatus("RESOLVED");
+                  setNoteError("");
+                }}
                 className={`flex flex-col items-center justify-center rounded-lg border p-2.5 text-xs font-semibold transition-all cursor-pointer ${
                   selectedStatus === "RESOLVED"
                     ? "border-emerald-400 bg-emerald-50 text-emerald-800 shadow-xs ring-1 ring-emerald-300"
@@ -579,10 +597,38 @@ function IssueDetailModal({
               </button>
             </div>
 
+            {selectedStatus === "RESOLVED" && (
+              <div>
+                <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                  Resolution note <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  value={resolutionNote}
+                  onChange={(event) => {
+                    setResolutionNote(event.target.value);
+                    setNoteError("");
+                  }}
+                  rows={3}
+                  placeholder="e.g. Replaced the leaking hose and tested the scrubber."
+                  className="h-auto w-full resize-y rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm leading-relaxed text-slate-900 placeholder:text-slate-400 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                />
+                {noteError ? <p className="mt-1.5 text-[11px] font-medium text-red-600">{noteError}</p> : null}
+              </div>
+            )}
+
             <button
               type="button"
               disabled={updating || selectedStatus === currentStatus}
-              onClick={() => void onUpdateStatus(selectedStatus)}
+              onClick={() => {
+                if (selectedStatus === "RESOLVED" && !resolutionNote.trim()) {
+                  setNoteError("Add a resolution note before marking this resolved.");
+                  return;
+                }
+                void onUpdateStatus(
+                  selectedStatus,
+                  selectedStatus === "RESOLVED" ? resolutionNote.trim() : undefined,
+                );
+              }}
               className="mt-2 flex h-9.5 w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-primary text-xs font-semibold text-white shadow-xs transition-colors hover:bg-primary/90 disabled:opacity-50"
             >
               {updating ? "Saving Changes..." : "Apply Status Update"}

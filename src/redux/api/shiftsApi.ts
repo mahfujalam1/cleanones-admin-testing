@@ -99,6 +99,7 @@ export type TodayLiveShiftMeta = {
   today_total_completed_shift?: number;
   today_total_in_progress_shift?: number;
   today_total_pending_shift?: number;
+  today_total_upcoming_shift?: number;
   today_total_worker_late?: number;
   total_issue_report?: number;
   total_shift?: number;

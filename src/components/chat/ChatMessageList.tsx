@@ -118,9 +118,8 @@ export function ChatMessageList({
                       </div>
                     )}
 
-                    <div className="flex items-center gap-1.5">
-                      {/* Message Action Trigger */}
-                      {ownMessage && !message.is_deleted && (
+                    <div className={`flex items-center gap-1.5 ${ownMessage ? "" : "flex-row-reverse"}`}>
+                      {!message.is_deleted && (
                         <div className="relative">
                           <button
                             type="button"
@@ -136,7 +135,11 @@ export function ChatMessageList({
                           </button>
 
                           {activeMenuMsgId === message._id && (
-                            <div className="absolute right-0 top-full mt-1 z-30 w-32 rounded-lg bg-white p-1 shadow-lg border border-slate-200 animate-in fade-in zoom-in-95">
+                            <div
+                              className={`absolute top-full mt-1 z-30 w-32 rounded-lg bg-white p-1 shadow-lg border border-slate-200 animate-in fade-in zoom-in-95 ${
+                                ownMessage ? "right-0" : "left-0"
+                              }`}
+                            >
                               <button
                                 type="button"
                                 onClick={() => {

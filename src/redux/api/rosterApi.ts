@@ -58,6 +58,8 @@ export type ShiftRosterParams = {
   month?: number;
   search?: string;
   type?: "all" | "Employee" | "Freelancer";
+  client?: string;
+  location?: string;
   page?: number;
   limit?: number;
 };
@@ -315,6 +317,8 @@ export const rosterApi = baseApi.injectEndpoints({
         }
         if (params.search) q.set("search", params.search);
         if (params.type && params.type !== "all") q.set("type", params.type);
+        if (params.client) q.set("client", params.client);
+        if (params.location) q.set("location", params.location);
         if (params.page) q.set("page", String(params.page));
         if (params.limit) q.set("limit", String(params.limit));
         return `/shift/roster?${q.toString()}`;
