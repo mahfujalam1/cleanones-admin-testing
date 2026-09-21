@@ -33,6 +33,9 @@ import {
   type CleaningPlan,
 } from "@/redux/api/endpoints/cleaningPlans.api";
 import { useModalJump } from "@/hooks/useModalJump";
+import { getLocale } from "@/lib/locale";
+import { getScreenCopy } from "@/lib/screen-copy";
+import { usePathname } from "next/navigation";
 import {
   AssignWorkersPanel,
   formatAssignDateLabel,
@@ -142,6 +145,7 @@ function PlanBody({
   plan: CleaningPlan;
   assignedWorkers?: PlanRosterAssignedWorker[];
 }) {
+  const copy = getScreenCopy(getLocale(usePathname()));
   const { data: clientPage } = useGetClientsQuery(CLIENT_LOOKUP_ARGS);
   const populatedClient = refDoc<Client>(plan.client);
   const client =
@@ -198,28 +202,28 @@ function PlanBody({
         <Tile
           icon={<MdOutlineSchedule />}
           value={durationMinutes > 0 ? `${durationMinutes}m` : "—"}
-          label="Total duration"
+          label={copy.totalDuration}
         />
-        <Tile icon={<MdOutlineMeetingRoom />} value={rooms.length || counts.rooms} label="Rooms" />
-        <Tile icon={<MdOutlineAssignment />} value={totalTasksDisplay} label="Tasks" />
-        <Tile icon={<MdOutlinePhotoCamera />} value={totalPhotos} label="Photos" />
+        <Tile icon={<MdOutlineMeetingRoom />} value={rooms.length || counts.rooms} label={copy.rooms} />
+        <Tile icon={<MdOutlineAssignment />} value={totalTasksDisplay} label={copy.tasks} />
+        <Tile icon={<MdOutlinePhotoCamera />} value={totalPhotos} label={copy.photos} />
       </div>
 
       <div className={`grid gap-4 ${assignedWorkers || crew.length > 0 ? "lg:grid-cols-[1.4fr_1fr]" : ""}`}>
         <div className="space-y-4">
-          <Panel title="Client & location">
+          <Panel title={copy.clientAndLocation}>
             <div className="grid gap-4 sm:grid-cols-2">
-              <Detail icon={<MdOutlineBusinessCenter />} label="Client">
+              <Detail icon={<MdOutlineBusinessCenter />} label={copy.client}>
                 {clientDisplay}
               </Detail>
-              <Detail icon={<MdOutlinePlace />} label="Location">
+              <Detail icon={<MdOutlinePlace />} label={copy.location}>
                 {locationName}
               </Detail>
             </div>
 
             {(plan.description || plan.note) && (
               <div className="mt-4 border-t border-slate-100 pt-4">
-                <p className="text-[11px] uppercase tracking-wide text-slate-400">Description</p>
+                <p className="text-[11px] uppercase tracking-wide text-slate-400">{copy.description}</p>
                 <p className="mt-1 whitespace-pre-line text-sm leading-relaxed text-slate-600">
                   {plan.description || plan.note}
                 </p>
@@ -227,7 +231,7 @@ function PlanBody({
             )}
           </Panel>
 
-          <Panel title={`Rooms (${rooms.length || counts.rooms})`}>
+          <Panel title={`${copy.rooms} (${rooms.length || counts.rooms})`}>
             {rooms.length === 0 ? (
               <p className="text-xs text-slate-400">No rooms on this plan.</p>
             ) : (
@@ -254,7 +258,7 @@ function PlanBody({
 
                       {room.tasks && room.tasks.length > 0 && (
                         <span className="shrink-0 rounded-full bg-sky-50 px-2.5 py-0.5 text-[11px] font-semibold text-sky-700 border border-sky-100">
-                          {room.tasks.length} {room.tasks.length === 1 ? "task" : "tasks"}
+                          {room.tasks.length} {room.tasks.length === 1 ? copy.task : copy.tasks}
                         </span>
                       )}
                     </div>
@@ -279,7 +283,7 @@ function PlanBody({
                               )}
                               {task.is_photo_required && (
                                 <span className="flex items-center gap-0.5 text-amber-600 font-medium">
-                                  <MdOutlinePhotoCamera /> Photo
+                                  <MdOutlinePhotoCamera /> {copy.photo}
                                 </span>
                               )}
                             </div>
@@ -293,7 +297,7 @@ function PlanBody({
             )}
           </Panel>
 
-          <Panel title={`Additional tasks (${tasks.length || counts.tasks})`}>
+          <Panel title={`${copy.additionalTasks} (${tasks.length || counts.tasks})`}>
             {tasks.length === 0 ? (
               <p className="text-xs text-slate-400">No additional tasks yet.</p>
             ) : (
@@ -328,8 +332,8 @@ function PlanBody({
                         <span className="inline-flex items-center gap-1 text-amber-600">
                           <MdOutlinePhotoCamera className="text-xs" />
                           {task.photo_requirements?.length
-                            ? `${task.photo_requirements.length} photos`
-                            : "Photo required"}
+                            ? `${task.photo_requirements.length} ${copy.photos.toLowerCase()}`
+                            : copy.photoRequired}
                         </span>
                       )}
                       {task.status === "Rejected" ? (
@@ -359,7 +363,7 @@ function PlanBody({
         </div>
 
         {(assignedWorkers || (plan.assigned_workers ?? []).length > 0) && (
-        <Panel title={`Assigned workers (${crew.length})`}>
+        <Panel title={`${copy.assignedWorkers} (${crew.length})`}>
           {crew.length === 0 ? (
             <p className="text-xs text-slate-400">Nobody assigned yet. Staff each due date from Shift Management.</p>
           ) : (
@@ -371,7 +375,7 @@ function PlanBody({
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium text-slate-800">{assignment.name}</p>
-                    <p className="truncate text-xs text-slate-400">{assignment.role || "Worker"}</p>
+                    <p className="truncate text-xs text-slate-400">{assignment.role || copy.worker}</p>
                   </div>
                   {assignment.conflict && (
                     <span
@@ -403,6 +407,7 @@ function ShiftBody({
   onManage?: () => void;
   manageLabel?: string;
 }) {
+  const copy = getScreenCopy(getLocale(usePathname()));
   const rooms = shift.room_items ?? [];
   const tasks = shift.task_items ?? [];
   const extraTasks = tasks.filter((task) => !task.room_id || !rooms.some((room) => room.id === task.room_id));
@@ -428,27 +433,27 @@ function ShiftBody({
         <Tile
           icon={<MdOutlineSchedule />}
           value={durationMinutes > 0 ? `${durationMinutes}m` : "—"}
-          label="Total duration"
+          label={copy.totalDuration}
         />
-        <Tile icon={<MdOutlineMeetingRoom />} value={rooms.length || shift.rooms?.total || 0} label="Rooms" />
-        <Tile icon={<MdOutlineAssignment />} value={tasks.length || shift.tasks?.total || 0} label="Tasks" />
-        <Tile icon={<MdOutlinePhotoCamera />} value={photoCount} label="Photos" />
+        <Tile icon={<MdOutlineMeetingRoom />} value={rooms.length || shift.rooms?.total || 0} label={copy.rooms} />
+        <Tile icon={<MdOutlineAssignment />} value={tasks.length || shift.tasks?.total || 0} label={copy.tasks} />
+        <Tile icon={<MdOutlinePhotoCamera />} value={photoCount} label={copy.photos} />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
         <div className="space-y-4">
-          <Panel title="Client & location">
+          <Panel title={copy.clientAndLocation}>
             <div className="grid gap-4 sm:grid-cols-2">
-              <Detail icon={<MdOutlineBusinessCenter />} label="Client">
+              <Detail icon={<MdOutlineBusinessCenter />} label={copy.client}>
                 {clientName}
               </Detail>
-              <Detail icon={<MdOutlinePlace />} label="Location">
+              <Detail icon={<MdOutlinePlace />} label={copy.location}>
                 {locationName}
               </Detail>
-              <Detail icon={<MdOutlineSchedule />} label="Start time">
+              <Detail icon={<MdOutlineSchedule />} label={copy.startTime}>
                 {formatClock(schedule.startTime)}
               </Detail>
-              <Detail icon={<MdOutlineSchedule />} label="End time">
+              <Detail icon={<MdOutlineSchedule />} label={copy.endTime}>
                 {formatClock(schedule.endTime)
                   || formatPlanEnd(schedule.startTime ?? undefined, durationMinutes)}
               </Detail>
@@ -456,7 +461,7 @@ function ShiftBody({
 
             {shift.description && (
               <div className="mt-4 border-t border-slate-100 pt-4">
-                <p className="text-[11px] uppercase tracking-wide text-slate-400">Description</p>
+                <p className="text-[11px] uppercase tracking-wide text-slate-400">{copy.description}</p>
                 <p className="mt-1 whitespace-pre-line text-sm leading-relaxed text-slate-600">
                   {shift.description}
                 </p>
@@ -464,7 +469,7 @@ function ShiftBody({
             )}
           </Panel>
 
-          <Panel title={`Rooms (${rooms.length})`}>
+          <Panel title={`${copy.rooms} (${rooms.length})`}>
             {rooms.length === 0 ? (
               <p className="text-xs text-slate-400">No rooms on this shift.</p>
             ) : (
@@ -488,7 +493,7 @@ function ShiftBody({
                         </div>
                         {roomTasks.length > 0 && (
                           <span className="shrink-0 rounded-full border border-sky-100 bg-sky-50 px-2.5 py-0.5 text-[11px] font-semibold text-sky-700">
-                            {roomTasks.length} {roomTasks.length === 1 ? "task" : "tasks"}
+                            {roomTasks.length} {roomTasks.length === 1 ? copy.task : copy.tasks}
                           </span>
                         )}
                       </div>
@@ -506,7 +511,7 @@ function ShiftBody({
                                 )}
                                 {task.is_photo_required && (
                                   <span className="flex items-center gap-0.5 font-medium text-amber-600">
-                                    <MdOutlinePhotoCamera /> Photo
+                                    <MdOutlinePhotoCamera /> {copy.photo}
                                   </span>
                                 )}
                               </div>
@@ -522,7 +527,7 @@ function ShiftBody({
           </Panel>
 
           {extraTasks.length > 0 && (
-            <Panel title={`Additional tasks (${extraTasks.length})`}>
+            <Panel title={`${copy.additionalTasks} (${extraTasks.length})`}>
               <ul className="space-y-2.5">
                 {extraTasks.map((task) => (
                   <li key={task.id || task.name} className="rounded-lg border border-slate-200 p-3">
@@ -542,8 +547,8 @@ function ShiftBody({
                         <span className="inline-flex items-center gap-1 text-amber-600">
                           <MdOutlinePhotoCamera className="text-xs" />
                           {task.photo_requirements?.length
-                            ? `${task.photo_requirements.length} photos`
-                            : "Photo required"}
+                            ? `${task.photo_requirements.length} ${copy.photos.toLowerCase()}`
+                            : copy.photoRequired}
                         </span>
                       )}
                     </div>
@@ -554,7 +559,7 @@ function ShiftBody({
           )}
         </div>
 
-        <Panel title={`Assigned workers (${crew.length})`}>
+        <Panel title={`${copy.assignedWorkers} (${crew.length})`}>
           {crew.length === 0 ? (
             <p className="text-xs text-slate-400">Nobody assigned yet. Staff each due date from Shift Management.</p>
           ) : (
@@ -566,7 +571,7 @@ function ShiftBody({
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium text-slate-800">{assignment.name}</p>
-                    <p className="truncate text-xs text-slate-400">{assignment.role || "Worker"}</p>
+                    <p className="truncate text-xs text-slate-400">{assignment.role || copy.worker}</p>
                   </div>
                 </li>
               ))}

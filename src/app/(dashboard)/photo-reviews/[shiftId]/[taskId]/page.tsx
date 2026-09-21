@@ -5,6 +5,7 @@ import { PhotoReviewDetail } from "@/components/photoReviews/ReviewDetail";
 import { useGetShiftPhotoReviewsQuery } from "@/redux/api/photoReviewsApi";
 import { apiError } from "@/redux/api/apiError";
 import { getLocale, localizePath } from "@/lib/locale";
+import { getScreenCopy } from "@/lib/screen-copy";
 
 export default function PhotoReviewDetailsPage() {
   const params = useParams<{ shiftId: string; taskId: string }>();
@@ -12,6 +13,7 @@ export default function PhotoReviewDetailsPage() {
   const pathname = usePathname();
   const router = useRouter();
   const locale = getLocale(pathname);
+  const copy = getScreenCopy(locale);
   const date = searchParams.get("date") ?? "";
 
   const { data: reviews = [], isLoading, error } = useGetShiftPhotoReviewsQuery({
@@ -28,7 +30,7 @@ export default function PhotoReviewDetailsPage() {
   if (isLoading) {
     return (
       <div className="flex min-h-64 items-center justify-center rounded-xl border border-slate-200 bg-white text-sm text-slate-500">
-        Loading photo review…
+        {copy.loadingPhotoReview}
       </div>
     );
   }
@@ -38,7 +40,7 @@ export default function PhotoReviewDetailsPage() {
       <div className="rounded-xl border border-red-200 bg-red-50 p-5">
         <p className="text-sm font-medium text-red-700">{apiError(error)}</p>
         <button type="button" onClick={goBack} className="mt-3 text-xs font-semibold text-red-700 underline">
-          Back to photo reviews
+          {copy.backToPhotoReviews}
         </button>
       </div>
     );
@@ -47,9 +49,9 @@ export default function PhotoReviewDetailsPage() {
   if (!review) {
     return (
       <div className="rounded-xl border border-slate-200 bg-white p-8 text-center">
-        <p className="text-sm font-semibold text-slate-700">Photo review not found.</p>
+        <p className="text-sm font-semibold text-slate-700">{copy.photoReviewNotFound}</p>
         <button type="button" onClick={goBack} className="mt-3 text-xs font-semibold text-primary hover:underline">
-          Back to photo reviews
+          {copy.backToPhotoReviews}
         </button>
       </div>
     );

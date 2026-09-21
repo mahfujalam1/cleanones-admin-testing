@@ -1,6 +1,11 @@
+"use client";
+
 import React from "react";
+import { usePathname } from "next/navigation";
 import { MdLocationOn } from "react-icons/md";
 import { Shift, formatHour12, formatTime12 } from "./types";
+import { getLocale } from "@/lib/locale";
+import { getScreenCopy } from "@/lib/screen-copy";
 
 interface DayViewProps {
   currentDate: Date;
@@ -18,6 +23,7 @@ const MIN_SHIFT_WIDTH = 104;
 const colors = ["#0ea5e9", "#0284c7", "#06a7df", "#0891b2", "#38a9db", "#0369a1", "#0b9fd3", "#0284c7"];
 
 export function DayView({ currentDate, shifts, teamMembers, onShiftClick }: DayViewProps) {
+  const copy = getScreenCopy(getLocale(usePathname()));
   const dateKey = toDateKey(currentDate);
   const dayShifts = shifts.filter((shift) => shift.date === dateKey);
   const rows = teamMembers && teamMembers.length > 0
@@ -90,7 +96,7 @@ export function DayView({ currentDate, shifts, teamMembers, onShiftClick }: DayV
         </div>
       </div>
     </div>
-    <div className="flex shrink-0 flex-wrap items-center gap-4 border-t border-slate-200 bg-slate-50 px-4 py-2 text-[10px] text-slate-500"><span className="flex items-center gap-1.5"><i className="h-2 w-2 rounded-full bg-sky-500" /> Scheduled shift</span>{isToday && <span className="flex items-center gap-1.5"><i className="h-3 w-0.5 bg-red-500" /> Current time</span>}<span className="ml-auto hidden text-slate-400 sm:block">Scroll horizontally to view the full working day</span></div>
+    <div className="flex shrink-0 flex-wrap items-center gap-4 border-t border-slate-200 bg-slate-50 px-4 py-2 text-[10px] text-slate-500"><span className="flex items-center gap-1.5"><i className="h-2 w-2 rounded-full bg-sky-500" /> {copy.scheduledShift}</span>{isToday && <span className="flex items-center gap-1.5"><i className="h-3 w-0.5 bg-red-500" /> {copy.currentTime}</span>}<span className="ml-auto hidden text-slate-400 sm:block">{copy.scrollFullDay}</span></div>
   </section>;
 }
 

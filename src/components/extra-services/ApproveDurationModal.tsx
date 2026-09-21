@@ -1,8 +1,11 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import React, { useState } from "react";
 import { createPortal } from "react-dom";
 import { MdCheck, MdOutlineClose, MdOutlineTimer } from "react-icons/md";
+import { getLocale } from "@/lib/locale";
+import { getScreenCopy } from "@/lib/screen-copy";
 import type { PhotoRequirement } from "@/redux/api/endpoints/additionalTasks.api";
 
 export type ApproveDurationCopy = {
@@ -71,6 +74,7 @@ export function ApproveDurationModal({
   onCancel: () => void;
   onConfirm: (decision: ApproveDecision) => Promise<string | null>;
 }) {
+  const screen = getScreenCopy(getLocale(usePathname()));
   const [value, setValue] = useState(
     initialMinutes && initialMinutes > 0 ? String(initialMinutes) : ""
   );
@@ -230,9 +234,9 @@ export function ApproveDurationModal({
             {photoRequired && (
               <div className="mt-4 space-y-4 rounded-xl border border-slate-200 bg-slate-50/60 p-4">
                 <div>
-                  <p className="text-sm font-semibold text-slate-800">Photo instructions</p>
+                  <p className="text-sm font-semibold text-slate-800">{screen.photoInstructions}</p>
                   <p className="mt-1 text-xs leading-5 text-slate-500">
-                    Add each photo the worker may be asked to capture. Description and example image are optional.
+                    {screen.photoInstructionsHint}
                   </p>
                 </div>
 
@@ -240,7 +244,7 @@ export function ApproveDurationModal({
                   <div key={index} className="rounded-lg border border-slate-200 bg-white p-3 shadow-2xs">
                     <div className="mb-3 flex items-center justify-between gap-3">
                       <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                        Required photo {index + 1}
+                        {screen.requiredPhoto} {index + 1}
                       </span>
                       <button
                         type="button"
@@ -258,7 +262,7 @@ export function ApproveDurationModal({
                     <div className="grid gap-3">
                       <label className="block">
                         <span className="mb-1.5 block text-xs font-semibold text-slate-700">
-                          Title <span className="text-red-500">*</span>
+                          {screen.title} <span className="text-red-500">*</span>
                         </span>
                         <input
                           type="text"
@@ -272,21 +276,21 @@ export function ApproveDurationModal({
 
                       <label className="block">
                         <span className="mb-1.5 block text-xs font-semibold text-slate-700">
-                          Worker instruction
+                          {screen.workerInstruction}
                         </span>
                         <textarea
                           value={req.description ?? ""}
                           disabled={busy}
                           onChange={(e) => updateRequirement(index, { description: e.target.value })}
                           rows={2}
-                          placeholder="Explain what must be visible and where to take the photo from."
+                          placeholder={screen.workerInstructionPlaceholder}
                           className="w-full resize-y rounded-lg border border-slate-200 px-3 py-2 text-sm leading-5 outline-none transition-all placeholder:text-slate-400 hover:border-slate-300 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 disabled:bg-slate-50"
                         />
                       </label>
 
                       <label className="block">
                         <span className="mb-1.5 block text-xs font-semibold text-slate-700">
-                          Example image URL
+                          {screen.exampleImageUrl}
                         </span>
                         <div className="flex items-center gap-3">
                           {req.reference_image_url?.trim() ? (

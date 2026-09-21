@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { usePathname } from "next/navigation";
 import { FormModal } from "@/components/shared/FormModal";
 import { CheckboxField, SelectField, TextField } from "@/components/shared/Field";
 import { ClientLocationPicker, ClientPicker, RoomPicker } from "@/components/shared/Pickers";
@@ -17,6 +18,8 @@ import {
   type PhotoRequirement,
 } from "@/redux/api/endpoints/tasks.api";
 import { DayPicker, DAY_LABELS, MONTH_DAYS, toggleDay } from "./DayPicker";
+import { getLocale } from "@/lib/locale";
+import { getScreenCopy } from "@/lib/screen-copy";
 
 export function TaskForm({
   roomId,
@@ -29,6 +32,7 @@ export function TaskForm({
   task?: Task;
   onClose: () => void;
 }) {
+  const copy = getScreenCopy(getLocale(usePathname()));
   const isEdit = task !== undefined;
   const picksRoom = !isEdit && !roomId;
   const [chosenClient, setChosenClient] = useState("");
@@ -155,9 +159,9 @@ export function TaskForm({
 
   return (
     <FormModal
-      title={isEdit ? "Edit task" : "Add task"}
+      title={isEdit ? copy.editTask : copy.addTask}
       subtitle={isEdit ? task.name : undefined}
-      submitLabel={isEdit ? "Save changes" : "Add task"}
+      submitLabel={isEdit ? copy.saveChanges : copy.addTask}
       saving={creating || updating}
       error={error}
       onClose={onClose}
@@ -197,13 +201,16 @@ export function TaskForm({
         </div>
       )}
 
-      <TextField label="Task Name" value={name} onChange={setName} required />
+      <TextField label={copy.taskName} value={name} onChange={setName} placeholder={copy.enterTaskName} required />
 
       <div className="grid gap-4 sm:grid-cols-2">
         <SelectField
-          label="Frequency Type"
+          label={copy.frequencyType}
           value={frequency}
-          options={FREQUENCY_TYPES.map((value) => ({ value, label: value[0].toUpperCase() + value.slice(1) }))}
+          options={FREQUENCY_TYPES.map((value) => ({
+            value,
+            label: value === "daily" ? copy.daily : value === "weekly" ? copy.weekly : copy.monthly,
+          }))}
           onChange={(value) => {
             setFrequency(value);
             setError("");
@@ -211,12 +218,13 @@ export function TaskForm({
           required
         />
         <TextField
-          label="Duration (min)"
+          label={copy.durationMin}
           type="number"
           value={duration}
           onChange={setDuration}
           min={1}
           required
+          placeholder={copy.enterDurationMin}
         />
       </div>
 
@@ -249,7 +257,7 @@ export function TaskForm({
       <div className="border-t border-slate-100 pt-4">
         <div>
           <CheckboxField
-            label="Photo required"
+            label={copy.photoRequired}
             checked={photoRequired}
             onChange={(checked) => {
               setPhotoRequired(checked);
@@ -261,14 +269,14 @@ export function TaskForm({
             <div className="mt-4 space-y-4 rounded-xl border border-slate-200 bg-slate-50/60 p-4">
               <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_180px] sm:items-end">
                 <div>
-                  <p className="text-sm font-semibold text-slate-800">Photo instructions</p>
+                  <p className="text-sm font-semibold text-slate-800">{copy.photoInstructions}</p>
                   <p className="mt-1 text-xs leading-5 text-slate-500">
-                    Add each photo the worker may be asked to capture. Description and example image are optional.
+                    {copy.photoInstructionsHint}
                   </p>
                 </div>
                 <div>
                   <TextField
-                    label="Daily random count"
+                    label={copy.dailyRandomCount}
                     type="number"
                     value={requiredPhotoCount}
                     onChange={(value) => {
@@ -287,7 +295,7 @@ export function TaskForm({
                 <div key={index} className="rounded-lg border border-slate-200 bg-white p-3 shadow-2xs">
                   <div className="mb-3 flex items-center justify-between gap-3">
                     <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      Required photo {index + 1}
+                      {copy.requiredPhoto} {index + 1}
                     </span>
                     <button
                       type="button"
@@ -298,14 +306,14 @@ export function TaskForm({
                       className="text-xs font-semibold text-red-500 transition-colors hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-40"
                       disabled={photoRequirements.length === 1}
                     >
-                      Remove
+                      {copy.remove}
                     </button>
                   </div>
 
                   <div className="grid gap-3">
                     <div>
                       <label className="mb-1.5 block text-xs font-semibold text-slate-700">
-                        Title <span className="text-red-500">*</span>
+                        {copy.title} <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="text"
@@ -316,14 +324,14 @@ export function TaskForm({
                           setPhotoRequirements(newReqs);
                           setError("");
                         }}
-                        placeholder="e.g. Bathroom after cleaning"
+                        placeholder={copy.photoTitlePlaceholder}
                         className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm outline-none transition-all placeholder:text-slate-400 hover:border-slate-300 focus:border-primary focus:ring-1 focus:ring-primary"
                       />
                     </div>
 
                     <div>
                       <label className="mb-1.5 block text-xs font-semibold text-slate-700">
-                        Worker instruction
+                        {copy.workerInstruction}
                       </label>
                       <textarea
                         value={req.description ?? ""}
@@ -334,14 +342,14 @@ export function TaskForm({
                           setError("");
                         }}
                         rows={2}
-                        placeholder="Explain what must be visible and where to take the photo from."
+                        placeholder={copy.workerInstructionPlaceholder}
                         className="w-full resize-y rounded-lg border border-slate-200 px-3 py-2 text-sm leading-5 outline-none transition-all placeholder:text-slate-400 hover:border-slate-300 focus:border-primary focus:ring-1 focus:ring-primary"
                       />
                     </div>
 
                     <div>
                       <label className="mb-1.5 block text-xs font-semibold text-slate-700">
-                        Example image URL
+                        {copy.exampleImageUrl}
                       </label>
                       <div className="flex items-center gap-3">
                         {req.reference_image_url?.trim() ? (
@@ -385,7 +393,7 @@ export function TaskForm({
                 }}
                 className="inline-flex h-9 items-center justify-center rounded-lg border border-primary/30 bg-white px-3 text-xs font-semibold text-primary transition-colors hover:bg-sky-50"
               >
-                + Add another photo
+                {copy.addAnotherPhoto}
               </button>
             </div>
           )}

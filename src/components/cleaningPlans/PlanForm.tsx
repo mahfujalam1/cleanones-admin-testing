@@ -29,6 +29,9 @@ import {
 } from "@/redux/api/endpoints/additionalTasks.api";
 import { refDoc, refId } from "@/redux/api/types";
 import { todayIso } from "@/components/ui/date-picker";
+import { usePathname } from "next/navigation";
+import { getLocale } from "@/lib/locale";
+import { getScreenCopy } from "@/lib/screen-copy";
 
 
 const taskLabel = (room: Parameters<typeof roomTaskCount>[0] & { room_type: string }) => {
@@ -111,6 +114,7 @@ export function PlanForm({ plan, onClose, onCreated }: {
   
   onCreated?: (plan: CleaningPlan) => void;
 }) {
+  const copy = getScreenCopy(getLocale(usePathname()));
   const isEdit = plan !== undefined;
 
   
@@ -527,7 +531,7 @@ export function PlanForm({ plan, onClose, onCreated }: {
 
                   <div className="grid gap-3 sm:grid-cols-2">
                     <TextField
-                      label="Task name"
+                      label={copy.taskName}
                       value={draft.name}
                       onChange={(value) =>
                         setDrafts((current) =>
@@ -550,7 +554,7 @@ export function PlanForm({ plan, onClose, onCreated }: {
 
                   <div className="mt-3">
                     <TextField
-                      label="Duration (minutes)"
+                      label={copy.durationMin}
                       type="number"
                       min={1}
                       required
@@ -567,7 +571,7 @@ export function PlanForm({ plan, onClose, onCreated }: {
 
                   <div className="mt-3">
                     <CheckboxField
-                      label="Photo required"
+                      label={copy.photoRequired}
                       checked={draft.is_photo_required}
                       onChange={(checked) => {
                         editDraft(draft.key, {
@@ -584,9 +588,9 @@ export function PlanForm({ plan, onClose, onCreated }: {
                   {draft.is_photo_required && (
                     <div className="mt-4 space-y-4 rounded-xl border border-slate-200 bg-slate-50/60 p-4">
                       <div>
-                        <p className="text-sm font-semibold text-slate-800">Photo instructions</p>
+                        <p className="text-sm font-semibold text-slate-800">{copy.photoInstructions}</p>
                         <p className="mt-1 text-xs leading-5 text-slate-500">
-                          Add each photo the worker may be asked to capture. Description and example image are optional.
+                          {copy.photoInstructionsHint}
                         </p>
                       </div>
 
@@ -594,7 +598,7 @@ export function PlanForm({ plan, onClose, onCreated }: {
                         <div key={photoIndex} className="rounded-lg border border-slate-200 bg-white p-3 shadow-2xs">
                           <div className="mb-3 flex items-center justify-between gap-3">
                             <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                              Required photo {photoIndex + 1}
+                              {copy.requiredPhoto} {photoIndex + 1}
                             </span>
                             <button
                               type="button"
@@ -609,14 +613,14 @@ export function PlanForm({ plan, onClose, onCreated }: {
                               }}
                               className="cursor-pointer text-xs font-semibold text-red-500 transition-colors hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-40"
                             >
-                              Remove
+                              {copy.remove}
                             </button>
                           </div>
 
                           <div className="grid gap-3">
                             <label className="block">
                               <span className="mb-1.5 block text-xs font-semibold text-slate-700">
-                                Title <span className="text-red-500">*</span>
+                                {copy.title} <span className="text-red-500">*</span>
                               </span>
                               <input
                                 type="text"
@@ -629,14 +633,14 @@ export function PlanForm({ plan, onClose, onCreated }: {
                                   });
                                   setError("");
                                 }}
-                                placeholder="e.g. Bathroom after cleaning"
+                                placeholder={copy.photoTitlePlaceholder}
                                 className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm outline-none transition-all placeholder:text-slate-400 hover:border-slate-300 focus:border-primary focus:ring-1 focus:ring-primary"
                               />
                             </label>
 
                             <label className="block">
                               <span className="mb-1.5 block text-xs font-semibold text-slate-700">
-                                Worker instruction
+                                {copy.workerInstruction}
                               </span>
                               <textarea
                                 value={req.description ?? ""}
@@ -651,14 +655,14 @@ export function PlanForm({ plan, onClose, onCreated }: {
                                   setError("");
                                 }}
                                 rows={2}
-                                placeholder="Explain what must be visible and where to take the photo from."
+                                placeholder={copy.workerInstructionPlaceholder}
                                 className="w-full resize-y rounded-lg border border-slate-200 px-3 py-2 text-sm leading-5 outline-none transition-all placeholder:text-slate-400 hover:border-slate-300 focus:border-primary focus:ring-1 focus:ring-primary"
                               />
                             </label>
 
                             <label className="block">
                               <span className="mb-1.5 block text-xs font-semibold text-slate-700">
-                                Example image URL
+                                {copy.exampleImageUrl}
                               </span>
                               <div className="flex items-center gap-3">
                                 {req.reference_image_url?.trim() ? (
@@ -700,7 +704,7 @@ export function PlanForm({ plan, onClose, onCreated }: {
                         }}
                         className="inline-flex h-9 cursor-pointer items-center justify-center rounded-lg border border-primary/30 bg-white px-3 text-xs font-semibold text-primary transition-colors hover:bg-sky-50"
                       >
-                        + Add another photo
+                        {copy.addAnotherPhoto}
                       </button>
                     </div>
                   )}

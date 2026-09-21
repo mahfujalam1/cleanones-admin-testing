@@ -8,6 +8,9 @@ import { PhotoReview } from "./types";
 import { ScoreBar } from "./Aiscorebar";
 import { imgUrl } from "@/utils/baseUrl";
 import { apiError } from "@/redux/api/apiError";
+import { getLocale } from "@/lib/locale";
+import { getScreenCopy, type ScreenCopy } from "@/lib/screen-copy";
+import { usePathname } from "next/navigation";
 import {
   useRecordPhotoVerdictMutation,
   type PhotoReviewTask,
@@ -34,14 +37,14 @@ const SUGGESTION_COLOR: Record<string, string> = {
     Review: "text-amber-500",
 };
 
-const apiPhotoStatus = (photo: UploadedPhoto) => {
-  if (photo.ai_subject_matches === false) return { label: "Wrong subject", tone: "border-red-200 bg-red-50 text-red-700" };
-  if (photo.audit_sampled) return { label: "Spot check", tone: "border-violet-200 bg-violet-50 text-violet-700" };
-  if (photo.ai_status === "pending") return { label: "Checking…", tone: "border-sky-200 bg-sky-50 text-sky-700" };
-  if (photo.ai_status === "passed") return { label: "Looks good", tone: "border-emerald-200 bg-emerald-50 text-emerald-700" };
-  if (photo.ai_status === "failed") return { label: "Problem found", tone: "border-red-200 bg-red-50 text-red-700" };
-  if (photo.ai_status === "review") return { label: "Needs review", tone: "border-amber-200 bg-amber-50 text-amber-700" };
-  return { label: "Not checked", tone: "border-slate-200 bg-slate-50 text-slate-600" };
+const apiPhotoStatus = (photo: UploadedPhoto, copy: ScreenCopy) => {
+  if (photo.ai_subject_matches === false) return { label: copy.wrongSubject, tone: "border-red-200 bg-red-50 text-red-700" };
+  if (photo.audit_sampled) return { label: copy.spotCheck, tone: "border-violet-200 bg-violet-50 text-violet-700" };
+  if (photo.ai_status === "pending") return { label: copy.checking, tone: "border-sky-200 bg-sky-50 text-sky-700" };
+  if (photo.ai_status === "passed") return { label: copy.looksGood, tone: "border-emerald-200 bg-emerald-50 text-emerald-700" };
+  if (photo.ai_status === "failed") return { label: copy.problemFound, tone: "border-red-200 bg-red-50 text-red-700" };
+  if (photo.ai_status === "review") return { label: copy.needsReview, tone: "border-amber-200 bg-amber-50 text-amber-700" };
+  return { label: copy.notChecked, tone: "border-slate-200 bg-slate-50 text-slate-600" };
 };
 
 export function ReviewDetail({ review, onClose, onApprove, onReject }: ReviewDetailProps) {
@@ -241,6 +244,7 @@ export function PhotoReviewDetail({
   task: PhotoReviewTask;
   onClose: () => void;
 }) {
+  const copy = getScreenCopy(getLocale(usePathname()));
   const photos = task.uploaded_photos ?? [];
   const shiftDate = new Date(task.shift_date);
   const [recordVerdict, { isLoading: savingVerdict }] = useRecordPhotoVerdictMutation();
@@ -280,7 +284,7 @@ export function PhotoReviewDetail({
         onClick={onClose}
         className="inline-flex cursor-pointer items-center gap-1 text-xs font-semibold text-slate-500 transition-colors hover:text-sky-600"
       >
-        <MdArrowBack /> Back to photo reviews
+        <MdArrowBack /> {copy.backToPhotoReviews}
       </button>
 
       <header className="rounded-lg border border-slate-200 bg-white p-5">
@@ -291,41 +295,41 @@ export function PhotoReviewDetail({
 
         <dl className="mt-4 grid grid-cols-2 gap-3 border-t border-slate-100 pt-4 text-xs sm:grid-cols-4">
           <div>
-            <dt className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Location</dt>
+            <dt className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">{copy.location}</dt>
             <dd className="mt-0.5 font-semibold text-slate-800">{task.location_name}</dd>
             {task.address && <dd className="text-[11px] text-slate-400">{task.address}</dd>}
           </div>
           <div>
-            <dt className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Shift date</dt>
+            <dt className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">{copy.shiftDate}</dt>
             <dd className="mt-0.5 font-semibold text-slate-800">
               {Number.isNaN(shiftDate.getTime()) ? "—" : shiftDate.toLocaleDateString()}
             </dd>
           </div>
           <div>
-            <dt className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Duration</dt>
+            <dt className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">{copy.duration}</dt>
             <dd className="mt-0.5 font-semibold text-slate-800">{task.duration_minutes}m</dd>
           </div>
           <div>
-            <dt className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Photos</dt>
+            <dt className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">{copy.photos}</dt>
             <dd className="mt-0.5 font-semibold text-slate-800">{photos.length}</dd>
           </div>
         </dl>
       </header>
 
       <section className="rounded-lg border border-slate-200 bg-white p-5">
-        <h2 className="mb-3 text-sm font-bold text-slate-900">Uploaded photos</h2>
+        <h2 className="mb-3 text-sm font-bold text-slate-900">{copy.uploadedPhotos}</h2>
         {decisionSuccess ? (
           <p className="mb-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700">
             {decisionSuccess}
           </p>
         ) : null}
         {photos.length === 0 ? (
-          <p className="py-10 text-center text-xs text-slate-400">No photos uploaded for this task.</p>
+          <p className="py-10 text-center text-xs text-slate-400">{copy.noPhotosUploaded}</p>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {photos.map((photo, index) => {
               const url = photo.photo_url ? imgUrl(photo.photo_url) : null;
-              const status = apiPhotoStatus(photo);
+              const status = apiPhotoStatus(photo, copy);
               const managerVerdict = localVerdicts[photo.title] ?? photo.manager_verdict;
               return (
                 <figure
@@ -459,7 +463,7 @@ export function PhotoReviewDetail({
                               value={managerNote}
                               onChange={(event) => setManagerNote(event.target.value)}
                               rows={2}
-                              placeholder="Reason for rejection"
+                              placeholder={copy.rejectReason}
                               className="w-full resize-y rounded-lg border border-slate-200 px-3 py-2 text-xs outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                             />
                             <div className="flex gap-2">
@@ -469,7 +473,7 @@ export function PhotoReviewDetail({
                                 disabled={savingVerdict}
                                 className="flex-1 rounded-lg bg-red-600 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
                               >
-                                Confirm reject
+                                {copy.confirmReject}
                               </button>
                               <button
                                 type="button"
@@ -477,7 +481,7 @@ export function PhotoReviewDetail({
                                 disabled={savingVerdict}
                                 className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600"
                               >
-                                Cancel
+                                {copy.cancel}
                               </button>
                             </div>
                           </div>
@@ -489,7 +493,7 @@ export function PhotoReviewDetail({
                               disabled={savingVerdict}
                               className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-emerald-700 disabled:opacity-50"
                             >
-                              Approve
+                              {copy.approve}
                             </button>
                             <button
                               type="button"
@@ -497,7 +501,7 @@ export function PhotoReviewDetail({
                               disabled={savingVerdict}
                               className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-600 transition-colors hover:bg-red-100 disabled:opacity-50"
                             >
-                              Reject
+                              {copy.reject}
                             </button>
                           </div>
                         )}

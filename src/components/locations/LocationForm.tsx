@@ -1,6 +1,7 @@
 "use client";
 
 import { useId, useState } from "react";
+import { usePathname } from "next/navigation";
 import { MdMyLocation } from "react-icons/md";
 import { FormModal } from "@/components/shared/FormModal";
 import {
@@ -19,6 +20,8 @@ import {
   type Location,
 } from "@/redux/api/endpoints/locations.api";
 import type { GeoPoint } from "@/redux/api/types";
+import { getLocale } from "@/lib/locale";
+import { getScreenCopy } from "@/lib/screen-copy";
 
 
 type Pin = { latitude: number; longitude: number };
@@ -51,6 +54,7 @@ export function LocationForm({
   location?: Location;
   onClose: () => void;
 }) {
+  const copy = getScreenCopy(getLocale(usePathname()));
   const isEdit = location !== undefined;
   const addressId = useId();
   const picksClient = !isEdit && !clientId;
@@ -120,9 +124,9 @@ export function LocationForm({
 
   return (
     <FormModal
-      title={isEdit ? "Edit Location" : "Add Location"}
+      title={isEdit ? copy.editLocation : copy.addLocation}
       subtitle={isEdit ? location.name : undefined}
-      submitLabel={isEdit ? "Save Changes" : "Add Location"}
+      submitLabel={isEdit ? copy.saveChanges : copy.addLocation}
       saving={creating || updating}
       error={error}
       onClose={onClose}
@@ -131,7 +135,7 @@ export function LocationForm({
       {picksClient && (
         <ClientPicker
           value={chosenClient}
-          label="Company Name"
+          label={copy.companyName}
           showCompanyName
           onChange={(value) => {
             setChosenClient(value);
@@ -142,9 +146,9 @@ export function LocationForm({
       )}
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <TextField label="Location Name" value={name} onChange={setName} required />
+        <TextField label={copy.locationName} value={name} onChange={setName} placeholder={copy.enterLocationName} required />
         <SelectField
-          label="Type"
+          label={copy.type}
           value={locationType}
           options={LOCATION_FORM_TYPES}
           onChange={(val) => {
@@ -152,7 +156,7 @@ export function LocationForm({
             if (val !== "Custom") setCustomType("");
             setError("");
           }}
-          placeholder="Select type"
+          placeholder={copy.selectType}
           required
         />
       </div>
@@ -171,7 +175,7 @@ export function LocationForm({
       )}
 
       <div>
-        <FieldLabel htmlFor={addressId} label="Address" required />
+        <FieldLabel htmlFor={addressId} label={copy.address} required />
         <AddressAutocompleteInput
           value={address}
           onChange={setAddress}
@@ -188,7 +192,7 @@ export function LocationForm({
           
           onCoordinatesCleared={() => setPin(null)}
           required
-          placeholder="Search an address"
+          placeholder={copy.searchAddress}
           className={CONTROL_CLASS}
         />
 
@@ -199,16 +203,16 @@ export function LocationForm({
           </p>
         ) : (
           <p className="mt-1.5 text-[11px] text-slate-400">
-            Pick a suggestion to save the GPS pin with this location.
+            {copy.gpsPinHint}
           </p>
         )}
       </div>
 
       <TextareaField
-        label="Description"
+        label={copy.description}
         value={description}
         onChange={setDescription}
-        placeholder="Anything the cleaning team should know about this location"
+        placeholder={copy.locationDescriptionPlaceholder}
         rows={3}
       />
     </FormModal>

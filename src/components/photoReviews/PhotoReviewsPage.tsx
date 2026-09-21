@@ -5,6 +5,7 @@ import { Search, Eye, Image as ImageIcon, RefreshCw, SlidersHorizontal } from "l
 import { usePathname, useRouter } from "next/navigation";
 import { getLocale, localizePath } from "@/lib/locale";
 import { getDashboardTranslation } from "@/lib/translations";
+import { getScreenCopy, type ScreenCopy } from "@/lib/screen-copy";
 import { TableSkeleton } from "@/components/shared/SkeletonLoader";
 import { BackendPagination } from "@/components/shared/BackendPagination";
 import { DatePicker } from "@/components/ui/date-picker";
@@ -60,16 +61,16 @@ const photoPriority = (photo?: UploadedPhoto) => {
 const headlinePhoto = (task: PhotoReviewTask) =>
   [...(task.uploaded_photos ?? [])].sort((a, b) => photoPriority(a) - photoPriority(b))[0];
 
-const statusDetails = (photo?: UploadedPhoto) => {
-  if (!photo) return { label: "Not checked", className: "border-slate-200 bg-slate-50 text-slate-600" };
-  if (photo.forced_accept) return { label: "3 retries", className: "border-orange-200 bg-orange-50 text-orange-700" };
-  if (photo.ai_subject_matches === false) return { label: "Wrong subject", className: "border-red-200 bg-red-50 text-red-700" };
-  if (photo.audit_sampled) return { label: "Spot check", className: "border-violet-200 bg-violet-50 text-violet-700" };
-  if (photo.ai_status === "pending") return { label: "Checking…", className: "border-sky-200 bg-sky-50 text-sky-700" };
-  if (photo.ai_status === "passed") return { label: "Looks good", className: "border-emerald-200 bg-emerald-50 text-emerald-700" };
-  if (photo.ai_status === "failed") return { label: "Problem found", className: "border-red-200 bg-red-50 text-red-700" };
-  if (photo.ai_status === "review") return { label: "Needs review", className: "border-amber-200 bg-amber-50 text-amber-700" };
-  return { label: "Not checked", className: "border-slate-200 bg-slate-50 text-slate-600" };
+const statusDetails = (photo: UploadedPhoto | undefined, copy: ScreenCopy) => {
+  if (!photo) return { label: copy.notChecked, className: "border-slate-200 bg-slate-50 text-slate-600" };
+  if (photo.forced_accept) return { label: copy.threeRetries, className: "border-orange-200 bg-orange-50 text-orange-700" };
+  if (photo.ai_subject_matches === false) return { label: copy.wrongSubject, className: "border-red-200 bg-red-50 text-red-700" };
+  if (photo.audit_sampled) return { label: copy.spotCheck, className: "border-violet-200 bg-violet-50 text-violet-700" };
+  if (photo.ai_status === "pending") return { label: copy.checking, className: "border-sky-200 bg-sky-50 text-sky-700" };
+  if (photo.ai_status === "passed") return { label: copy.looksGood, className: "border-emerald-200 bg-emerald-50 text-emerald-700" };
+  if (photo.ai_status === "failed") return { label: copy.problemFound, className: "border-red-200 bg-red-50 text-red-700" };
+  if (photo.ai_status === "review") return { label: copy.needsReview, className: "border-amber-200 bg-amber-50 text-amber-700" };
+  return { label: copy.notChecked, className: "border-slate-200 bg-slate-50 text-slate-600" };
 };
 
 const belongsToQueue = (task: PhotoReviewTask, queue: QueueFilter) => {
@@ -94,6 +95,7 @@ export function PhotoReviewsPage() {
   const locale = getLocale(pathname);
   const t = getDashboardTranslation(locale);
   const ui = getUiTranslation(locale);
+  const copy = getScreenCopy(locale);
 
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -149,7 +151,7 @@ export function PhotoReviewsPage() {
     t.roster.date,
     t.common.duration,
     t.common.photos,
-    "Review status",
+    copy.reviewStatus,
     t.common.actions || t.photoReviews.actions,
   ];
 
@@ -168,8 +170,8 @@ export function PhotoReviewsPage() {
               <SlidersHorizontal className="h-4 w-4" />
             </span>
             <div>
-              <h1 className="text-sm font-semibold text-slate-900">Manager photo review</h1>
-              <p className="text-[11px] text-slate-500">Prioritized photos that need a manager check.</p>
+              <h1 className="text-sm font-semibold text-slate-900">{copy.managerPhotoReview}</h1>
+              <p className="text-[11px] text-slate-500">{copy.managerPhotoReviewHint}</p>
             </div>
           </div>
           <button
@@ -178,28 +180,28 @@ export function PhotoReviewsPage() {
             disabled={isFetching}
             className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-50 disabled:opacity-50"
           >
-            <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? "animate-spin" : ""}`} /> Refresh
+            <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? "animate-spin" : ""}`} /> {copy.refresh}
           </button>
         </div>
 
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
-          <DatePicker value={from} onValueChange={(value) => { setFrom(value); setPage(1); }} placeholder="From date" clearable max={to || undefined} />
-          <DatePicker value={to} onValueChange={(value) => { setTo(value); setPage(1); }} placeholder="To date" clearable min={from || undefined} />
+          <DatePicker value={from} onValueChange={(value) => { setFrom(value); setPage(1); }} placeholder={copy.fromDate} clearable max={to || undefined} />
+          <DatePicker value={to} onValueChange={(value) => { setTo(value); setPage(1); }} placeholder={copy.toDate} clearable min={from || undefined} />
           <Select
             value={planId}
             onValueChange={(value) => { setPlanId(value); setPage(1); }}
-            placeholder="All cleaning plans"
+            placeholder={copy.allCleaningPlans}
             options={[
-              { value: "", label: "All cleaning plans" },
+              { value: "", label: copy.allCleaningPlans },
               ...(planData?.result ?? []).map((plan) => ({ value: plan._id, label: plan.title })),
             ]}
           />
           <Select
             value={locationId}
             onValueChange={(value) => { setLocationId(value); setPage(1); }}
-            placeholder="All locations"
+            placeholder={copy.allLocations}
             options={[
-              { value: "", label: "All locations" },
+              { value: "", label: copy.allLocations },
               ...locations.map((location) => ({ value: location._id, label: location.name })),
             ]}
           />
@@ -215,7 +217,7 @@ export function PhotoReviewsPage() {
             }}
             className="h-10 rounded-lg border border-slate-200 px-3 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-50"
           >
-            Reset filters
+            {copy.resetFilters}
           </button>
         </div>
 
@@ -225,11 +227,11 @@ export function PhotoReviewsPage() {
             value={queue}
             onValueChange={(value) => { setQueue(value as QueueFilter); setPage(1); }}
             options={[
-              { value: "needs", label: "Needs my decision", count: counts.needs },
-              { value: "spot", label: "Spot checks", count: counts.spot },
-              { value: "not-checked", label: "Not checked", count: counts["not-checked"] },
-              { value: "passed", label: "Passed", count: counts.passed },
-              { value: "all", label: "All", count: counts.all },
+              { value: "needs", label: copy.needsMyDecision, count: counts.needs },
+              { value: "spot", label: copy.spotChecks, count: counts.spot },
+              { value: "not-checked", label: copy.notChecked, count: counts["not-checked"] },
+              { value: "passed", label: copy.passed, count: counts.passed },
+              { value: "all", label: copy.all, count: counts.all },
             ]}
           />
           <div className="relative w-full lg:w-72">
@@ -316,7 +318,7 @@ export function PhotoReviewsPage() {
                     </td>
                     <td className="px-5 py-4">
                       {(() => {
-                        const status = statusDetails(headlinePhoto(task));
+                        const status = statusDetails(headlinePhoto(task), copy);
                         return (
                           <span className={`inline-flex whitespace-nowrap rounded-full border px-2.5 py-1 text-[10px] font-semibold ${status.className}`}>
                             {status.label}
@@ -338,7 +340,7 @@ export function PhotoReviewsPage() {
                         className="flex cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-lg border border-sky-200 bg-sky-50 px-3.5 py-2 text-sm font-semibold text-[#0ea5e9] transition-colors hover:border-sky-300 hover:bg-sky-100"
                       >
                         <Eye className="h-4 w-4" />
-                        View
+                        {ui.view}
                       </button>
                     </td>
                   </tr>

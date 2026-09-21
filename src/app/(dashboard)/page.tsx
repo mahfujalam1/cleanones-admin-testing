@@ -12,6 +12,7 @@ import {
 import { isPendingIssue, useGetEscalationsQuery } from "@/redux/api/escalationsApi";
 import { getLocale } from "@/lib/locale";
 import { getDashboardTranslation, getUiTranslation } from "@/lib/translations";
+import { getScreenCopy } from "@/lib/screen-copy";
 import { apiError } from "@/redux/api/apiError";
 import { PlanDetailModal } from "@/components/cleaningPlans/PlanDetailModal";
 import type { PlanRosterAssignedWorker } from "@/redux/api/rosterApi";
@@ -132,6 +133,7 @@ export default function DashboardPage() {
   const locale = getLocale(pathname);
   const t = getDashboardTranslation(locale);
   const ui = getUiTranslation(locale);
+  const copy = getScreenCopy(locale);
 
   const [liveTab, setLiveTab] = useState<"all" | "upcoming" | "in_progress" | "completed">("all");
   const [selectedLateWorker, setSelectedLateWorker] = useState<LateWorkerChip | null>(null);
@@ -346,7 +348,7 @@ export default function DashboardPage() {
             </div>
             <p className={`mt-0.5 text-xs sm:text-sm ${needAttentionCount > 0 ? "text-red-600" : "text-slate-500"}`}>
               {needAttentionCount > 0
-                ? "Contact them now or arrange a replacement."
+                ? copy.contactThemNow
                 : t.dashboard.noWorkersRequireAttention}
             </p>
           </div>
@@ -463,17 +465,17 @@ export default function DashboardPage() {
       <section className="dashboard-card p-4">
         <div className="mb-3 flex items-center gap-2">
           <span className="text-base text-sky-500">⚡</span>
-          <h2 className="text-sm font-bold text-slate-800">Quick Actions</h2>
+          <h2 className="text-sm font-bold text-slate-800">{ui.quickActions}</h2>
         </div>
         <div className="flex w-full flex-wrap gap-2">
           {[
-            { label: "Create plan", href: "/cleaning-plans", icon: <MdAdd />, tone: "bg-sky-500 hover:bg-sky-600" },
-            { label: "Clients", href: "/clients", icon: <MdBusiness />, tone: "bg-violet-500 hover:bg-violet-600" },
-            { label: "Locations", href: "/locations", icon: <MdLocationOn />, tone: "bg-cyan-500 hover:bg-cyan-600" },
-            { label: "Review photos", href: "/photo-reviews", icon: <MdPhotoCamera />, tone: "bg-pink-500 hover:bg-pink-600" },
-            { label: "Roster", href: "/roster", icon: <MdViewWeek />, tone: "bg-emerald-500 hover:bg-emerald-600" },
-            { label: "Workers", href: "/workers", icon: <MdGroups />, tone: "bg-amber-500 hover:bg-amber-600" },
-            { label: "Reports", href: "/reports", icon: <MdAssessment />, tone: "bg-slate-600 hover:bg-slate-700" },
+            { label: t.plans.createPlan, href: "/cleaning-plans", icon: <MdAdd />, tone: "bg-sky-500 hover:bg-sky-600" },
+            { label: t.nav.clients, href: "/clients", icon: <MdBusiness />, tone: "bg-violet-500 hover:bg-violet-600" },
+            { label: t.nav.locations, href: "/locations", icon: <MdLocationOn />, tone: "bg-cyan-500 hover:bg-cyan-600" },
+            { label: t.nav.photoReviews, href: "/photo-reviews", icon: <MdPhotoCamera />, tone: "bg-pink-500 hover:bg-pink-600" },
+            { label: t.nav.roster, href: "/roster", icon: <MdViewWeek />, tone: "bg-emerald-500 hover:bg-emerald-600" },
+            { label: t.nav.workers, href: "/workers", icon: <MdGroups />, tone: "bg-amber-500 hover:bg-amber-600" },
+            { label: t.nav.reports, href: "/reports", icon: <MdAssessment />, tone: "bg-slate-600 hover:bg-slate-700" },
           ].map((action) => (
             <Link
               key={action.label}
@@ -527,7 +529,7 @@ export default function DashboardPage() {
               href="/shift-monitoring"
               className="text-xs font-semibold text-sky-600 hover:text-sky-700 hover:underline inline-flex items-center gap-0.5 ml-1"
             >
-              View all &gt;
+              {ui.viewAll} &gt;
             </Link>
           </div>
         </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
 import { FormModal } from "@/components/shared/FormModal";
 import { SelectField, TextField } from "@/components/shared/Field";
 import { apiError } from "@/redux/api/apiError";
@@ -19,6 +20,8 @@ import {
   type Room,
 } from "@/redux/api/endpoints/rooms.api";
 import { refId, refDoc } from "@/redux/api/types";
+import { getLocale } from "@/lib/locale";
+import { getScreenCopy } from "@/lib/screen-copy";
 
 export function RoomForm({
   clientId,
@@ -36,6 +39,7 @@ export function RoomForm({
   room?: Room;
   onClose: () => void;
 }) {
+  const copy = getScreenCopy(getLocale(usePathname()));
   const isEdit = room !== undefined;
 
   const { data: clientsData } = useGetClientsQuery(CLIENT_LOOKUP_ARGS);
@@ -184,9 +188,9 @@ export function RoomForm({
 
   return (
     <FormModal
-      title={isEdit ? "Edit Room" : "Add Room"}
+      title={isEdit ? copy.editRoom : copy.addRoom}
       subtitle={locationOptions.find((l) => l.value === selectedLocationId)?.label}
-      submitLabel={isEdit ? "Save Changes" : "Add Room"}
+      submitLabel={isEdit ? copy.saveChanges : copy.addRoom}
       saving={creating || updating}
       error={error}
       onClose={onClose}
@@ -194,29 +198,29 @@ export function RoomForm({
     >
       <div className="grid gap-4 sm:grid-cols-2">
         <SelectField
-          label="Company Name"
+          label={copy.companyName}
           value={selectedClientId}
           options={clientOptions}
           onChange={handleClientChange}
           required
           disabled={lockScope}
-          placeholder="Select Company"
+          placeholder={copy.selectCompany}
         />
 
         <SelectField
-          label="Location"
+          label={copy.location}
           value={selectedLocationId}
           options={locationOptions}
           onChange={setSelectedLocationId}
           required
           disabled={lockScope}
-          placeholder={selectedClientId ? "Select Location" : "Select Company first"}
+          placeholder={selectedClientId ? copy.selectLocation : copy.selectCompanyFirst}
         />
       </div>
 
       <TextField
-        label="Room Name"
-        placeholder="Enter Room Name"
+        label={copy.roomName}
+        placeholder={copy.enterRoomName}
         value={name}
         onChange={setName}
         required
@@ -224,7 +228,7 @@ export function RoomForm({
 
       <div className="grid gap-4 sm:grid-cols-2">
         <SelectField
-          label="Room Type"
+          label={copy.roomType}
           value={roomType}
           options={ROOM_TYPES}
           onChange={(value) => {
@@ -233,10 +237,10 @@ export function RoomForm({
             setError("");
           }}
           required
-          placeholder="Select Room Type"
+          placeholder={copy.selectRoomType}
         />
         <SelectField
-          label="Cleaning Type"
+          label={copy.cleaningType}
           value={cleaningType}
           options={CLEANING_TYPES}
           onChange={(value) => {
@@ -245,7 +249,7 @@ export function RoomForm({
             setError("");
           }}
           required
-          placeholder="Select Cleaning Type"
+          placeholder={copy.selectCleaningType}
         />
       </div>
 

@@ -26,6 +26,7 @@ import {
 import { usePathname } from "next/navigation";
 import { getLocale } from "@/lib/locale";
 import { getDashboardTranslation } from "@/lib/translations";
+import { getScreenCopy } from "@/lib/screen-copy";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import type { CleaningPlan } from "@/redux/api/endpoints/cleaningPlans.api";
 import { PlanShiftCell } from "./PlanShiftCell";
@@ -37,6 +38,7 @@ const PLAN_COL = 200;
 export function ShiftManagementBoard() {
   const locale = getLocale(usePathname());
   const t = getDashboardTranslation(locale);
+  const copy = getScreenCopy(locale);
 
   const [view, setView] = useState<"day" | "week" | "month">("week");
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -342,7 +344,7 @@ export function ShiftManagementBoard() {
             <div className="flex shrink-0 flex-wrap items-center gap-3 border-t border-slate-200 bg-slate-50 px-4 py-2 text-[9px] text-slate-400">
               <span className="flex items-center gap-1.5"><i className="h-2 w-2 rounded-full bg-amber-400" /> Worker not assigned</span>
               <span className="flex items-center gap-1.5"><i className="h-2 w-2 rounded-full bg-sky-500" /> Staffed</span>
-              <span className="ml-auto hidden items-center gap-1 sm:flex"><MdAccessTime /> Scroll horizontally to compare the full working period.</span>
+              <span className="ml-auto hidden items-center gap-1 sm:flex"><MdAccessTime /> {copy.scrollFullPeriod}</span>
             </div>
           </section>
         )}
