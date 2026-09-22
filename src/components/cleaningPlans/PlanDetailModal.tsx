@@ -168,13 +168,15 @@ function PlanBody({
 
   const allRoomTasks = rooms.flatMap((r) => r.tasks ?? []);
   const roomPhotos = rooms.reduce(
-    (sum, r) => sum + (r.tasks ?? []).reduce((tsum, t) => tsum + (t.photo_requirements?.length ?? 0), 0),
+    (sum, r) => sum + (r.tasks ?? []).reduce((tsum, t) => tsum + (t.photo_requirements?.filter((photo) => photo.title)?.length ?? 0), 0),
     0
   );
-  const additionalPhotos = tasks.reduce((total, task) => total + (task.photo_requirements?.length ?? 0), 0);
+  const additionalPhotos = tasks.reduce(
+    (total, task) => total + (task.photo_requirements?.filter((photo) => photo.title)?.length ?? 0),
+    0,
+  );
   const totalPhotos = roomPhotos + additionalPhotos;
-  const totalTasksDisplay =
-    allRoomTasks.length > 0 ? allRoomTasks.length + (tasks.length || counts.tasks) : (tasks.length || counts.tasks);
+  const totalTasksDisplay = allRoomTasks.length + tasks.length || counts.tasks;
 
   const crew = assignedWorkers
     ? assignedWorkers
@@ -266,30 +268,51 @@ function PlanBody({
 
                     
                     {room.tasks && room.tasks.length > 0 && (
-                      <div className="mt-2 space-y-1.5 border-t border-slate-200/60 pt-2">
-                        {room.tasks.map((task, taskIdx) => (
-                          <div
-                            key={task._id || taskIdx}
-                            className="flex items-center justify-between gap-2 rounded-lg bg-white px-2.5 py-1.5 text-xs text-slate-700 ring-1 ring-slate-200/60"
-                          >
-                            <span className="truncate font-medium">{task.name}</span>
-                            <div className="flex shrink-0 items-center gap-2 text-[10px] text-slate-500">
-                              {task.frequency_type && (
-                                <span className="rounded bg-slate-100 px-1.5 py-0.5 capitalize">
-                                  {task.frequency_type}
-                                </span>
-                              )}
-                              {typeof task.duration_minutes === "number" && task.duration_minutes > 0 && (
-                                <span>{task.duration_minutes}m</span>
-                              )}
-                              {task.is_photo_required && (
-                                <span className="flex items-center gap-0.5 text-amber-600 font-medium">
-                                  <MdOutlinePhotoCamera /> {copy.photo}
-                                </span>
-                              )}
+                      <div className="mt-2 space-y-2 border-t border-slate-200/60 pt-2">
+                        {room.tasks.map((task, taskIdx) => {
+                          const photos = (task.photo_requirements ?? []).filter((photo) => photo.title);
+                          return (
+                            <div
+                              key={task._id || taskIdx}
+                              className="rounded-lg bg-white px-2.5 py-2 text-xs text-slate-700 ring-1 ring-slate-200/60"
+                            >
+                              <div className="flex items-start justify-between gap-2">
+                                <span className="min-w-0 truncate font-medium">{task.name}</span>
+                                <div className="flex shrink-0 items-center gap-2 text-[10px] text-slate-500">
+                                  {task.frequency_type && (
+                                    <span className="rounded bg-slate-100 px-1.5 py-0.5 capitalize">
+                                      {task.frequency_type}
+                                    </span>
+                                  )}
+                                  {typeof task.duration_minutes === "number" && task.duration_minutes > 0 && (
+                                    <span>{task.duration_minutes}m</span>
+                                  )}
+                                  {task.is_photo_required && (
+                                    <span className="flex items-center gap-0.5 font-medium text-amber-600">
+                                      <MdOutlinePhotoCamera />
+                                      {photos.length ? `${photos.length} ${copy.photos.toLowerCase()}` : copy.photo}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                              {photos.length > 0 ? (
+                                <ul className="mt-2 space-y-1">
+                                  {photos.map((photo, photoIndex) => (
+                                    <li
+                                      key={`${photo.title}-${photoIndex}`}
+                                      className="rounded bg-slate-50 px-2 py-1.5 text-[11px]"
+                                    >
+                                      <span className="font-medium text-slate-700">{photo.title}</span>
+                                      {photo.description ? (
+                                        <span className="mt-0.5 block text-slate-500">{photo.description}</span>
+                                      ) : null}
+                                    </li>
+                                  ))}
+                                </ul>
+                              ) : null}
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     )}
                   </li>
@@ -298,11 +321,9 @@ function PlanBody({
             )}
           </Panel>
 
-          <Panel title={`${copy.additionalTasks} (${tasks.length || counts.tasks})`}>
-            {tasks.length === 0 ? (
-              <p className="text-xs text-slate-400">No additional tasks yet.</p>
-            ) : (
-              <ul className="space-y-2.5">
+          {tasks.length > 0 && (
+          <Panel title={`${copy.additionalTasks} (${tasks.length})`}>
+            <ul className="space-y-2.5">
                 {tasks.map((task) => (
                   <li key={task._id} className="rounded-lg border border-slate-200 p-3">
                     <div className="flex items-start justify-between gap-3">
@@ -339,28 +360,31 @@ function PlanBody({
                       )}
                       {task.status === "Rejected" ? (
                         <span className="text-red-600">Rejected</span>
-                      ) : task.status !== "Approved" ? (
+                      ) : task.status && task.status !== "Approved" ? (
                         <span className="text-amber-600">Awaiting approval</span>
                       ) : null}
                     </div>
 
-                    {task.photo_requirements?.length ? (
-                      <div className="mt-2 flex flex-wrap gap-1.5">
-                        {task.photo_requirements.map((photo, index) => (
-                          <span
+                    {task.photo_requirements?.some((photo) => photo.title) ? (
+                      <ul className="mt-2 space-y-1">
+                        {task.photo_requirements.filter((photo) => photo.title).map((photo, index) => (
+                          <li
                             key={`${photo.title}-${index}`}
-                            className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] text-slate-600"
+                            className="rounded bg-slate-50 px-2 py-1.5 text-[11px]"
                           >
-                            {photo.title}
-                          </span>
+                            <span className="font-medium text-slate-700">{photo.title}</span>
+                            {photo.description ? (
+                              <span className="mt-0.5 block text-slate-500">{photo.description}</span>
+                            ) : null}
+                          </li>
                         ))}
-                      </div>
+                      </ul>
                     ) : null}
                   </li>
                 ))}
-              </ul>
-            )}
+            </ul>
           </Panel>
+          )}
         </div>
 
         {(assignedWorkers || (plan.assigned_workers ?? []).length > 0) && (
@@ -723,9 +747,9 @@ export function PlanDetailModal({
         role="dialog"
         aria-modal="true"
         aria-label={assigning ? "Assign workers" : "Cleaning plan"}
-        className={`flex w-full max-w-4xl flex-col overflow-hidden rounded-xl bg-slate-50 shadow-2xl animate-in fade-in zoom-in-95 duration-200 ${liveAssignTarget ? "h-[88vh]" : "max-h-[88vh]"} ${jumpClassName}`}
+        className={`flex h-[88vh] max-h-[88vh] min-h-0 w-full max-w-4xl flex-col overflow-hidden rounded-xl bg-slate-50 shadow-2xl animate-in fade-in zoom-in-95 duration-200 ${jumpClassName}`}
       >
-        <header className="flex items-start justify-between gap-4 border-b border-slate-200 bg-white px-5 py-4">
+        <header className="flex shrink-0 items-start justify-between gap-4 border-b border-slate-200 bg-white px-5 py-4">
           <div className="flex min-w-0 items-start gap-3">
             {assigning ? (
               <button
@@ -808,7 +832,7 @@ export function PlanDetailModal({
             style={{ transform: assigning ? "translateX(-50%)" : "translateX(0)" }}
           >
             <div className="flex h-full w-1/2 flex-col">
-              <div className="min-h-0 flex-1 overflow-y-auto p-5">
+              <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-5">
                 {isLoading ? (
                   <div className="space-y-3">
                     <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
