@@ -2,13 +2,15 @@
 
 import React from "react";
 import { X, Info, Check, CheckCircle2, XCircle, MinusCircle, LoaderCircle, AlertTriangle } from "lucide-react";
-import { MdArrowBack } from "react-icons/md";
+import { MdArrowBack, MdOutlineClose } from "react-icons/md";
+import { createPortal } from "react-dom";
 import { CleanerAvatar } from "./CleanerAvatar";
 import { PhotoReview } from "./types";
 import { ScoreBar } from "./Aiscorebar";
 import { imgUrl } from "@/utils/baseUrl";
 import { apiError } from "@/redux/api/apiError";
 import { getLocale } from "@/lib/locale";
+import { getUiTranslation } from "@/lib/translations";
 import { getScreenCopy, type ScreenCopy } from "@/lib/screen-copy";
 import { usePathname } from "next/navigation";
 import {
@@ -244,7 +246,9 @@ export function PhotoReviewDetail({
   task: PhotoReviewTask;
   onClose: () => void;
 }) {
-  const copy = getScreenCopy(getLocale(usePathname()));
+  const locale = getLocale(usePathname());
+  const copy = getScreenCopy(locale);
+  const ui = getUiTranslation(locale);
   const photos = task.uploaded_photos ?? [];
   const shiftDate = new Date(task.shift_date);
   const [recordVerdict, { isLoading: savingVerdict }] = useRecordPhotoVerdictMutation();
@@ -253,6 +257,16 @@ export function PhotoReviewDetail({
   const [decisionError, setDecisionError] = React.useState("");
   const [decisionSuccess, setDecisionSuccess] = React.useState("");
   const [localVerdicts, setLocalVerdicts] = React.useState<Record<string, "approved" | "rejected">>({});
+  const [preview, setPreview] = React.useState<{ url: string; title: string } | null>(null);
+
+  React.useEffect(() => {
+    if (!preview) return;
+    const close = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setPreview(null);
+    };
+    window.addEventListener("keydown", close);
+    return () => window.removeEventListener("keydown", close);
+  }, [preview]);
 
   const submitVerdict = async (photo: UploadedPhoto, verdict: "approved" | "rejected") => {
     if (!task.plan_id || !task.task_id) {
@@ -280,18 +294,23 @@ export function PhotoReviewDetail({
 
   return (
     <div className="space-y-4">
-      <button
-        onClick={onClose}
-        className="inline-flex cursor-pointer items-center gap-1 text-xs font-semibold text-slate-500 transition-colors hover:text-sky-600"
-      >
-        <MdArrowBack /> {copy.backToPhotoReviews}
-      </button>
-
       <header className="rounded-lg border border-slate-200 bg-white p-5">
-        <h1 className="text-lg font-bold text-slate-900">{task.task_name}</h1>
-        <p className="mt-0.5 text-xs text-slate-500">
-          {task.room_name} · {task.cleaning_name}
-        </p>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label={copy.backToPhotoReviews}
+            className="cursor-pointer rounded border border-slate-200 p-2"
+          >
+            <MdArrowBack />
+          </button>
+          <div>
+            <h1 className="text-lg font-bold text-slate-900">{task.task_name}</h1>
+            <p className="mt-0.5 text-xs text-slate-500">
+              {task.room_name} · {task.cleaning_name}
+            </p>
+          </div>
+        </div>
 
         <dl className="mt-4 grid grid-cols-2 gap-3 border-t border-slate-100 pt-4 text-xs sm:grid-cols-4">
           <div>
@@ -343,13 +362,17 @@ export function PhotoReviewDetail({
                     </div>
                   ) : null}
                   {url ? (
-                    <a href={url} target="_blank" rel="noreferrer">
+                    <button
+                      type="button"
+                      onClick={() => setPreview({ url, title: photo.title })}
+                      className="block w-full cursor-pointer"
+                    >
                       <img
                         src={url}
                         alt={photo.title}
                         className="h-48 w-full bg-white object-cover transition-opacity hover:opacity-90"
                       />
-                    </a>
+                    </button>
                   ) : (
                     <div className="flex h-48 items-center justify-center text-xs text-slate-400">
                       No image
@@ -515,6 +538,34 @@ export function PhotoReviewDetail({
           </div>
         )}
       </section>
+
+      {preview &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label={preview.title || copy.photo}
+            onClick={() => setPreview(null)}
+            className="modal-backdrop fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/80 p-4 animate-in fade-in duration-150"
+          >
+            <button
+              type="button"
+              onClick={() => setPreview(null)}
+              aria-label={ui.close}
+              className="absolute right-4 top-4 flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
+            >
+              <MdOutlineClose className="text-2xl" />
+            </button>
+            <img
+              src={preview.url}
+              alt={preview.title || copy.photo}
+              onClick={(event) => event.stopPropagation()}
+              className="max-h-[88vh] max-w-full rounded-lg object-contain shadow-2xl animate-in zoom-in-95 duration-150"
+            />
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }

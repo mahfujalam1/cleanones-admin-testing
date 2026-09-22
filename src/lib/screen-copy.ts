@@ -101,6 +101,22 @@ export type ScreenCopy = {
   cancel: string;
   confirmReject: string;
   rejectReason: string;
+  addCleaningPlan: string;
+  editCleaningPlan: string;
+  createPlan: string;
+  planName: string;
+  planNotesPlaceholder: string;
+  pickLocationFirst: string;
+  loadingRooms: string;
+  noRoomsAtLocation: string;
+  companyHasNoLocations: string;
+  pickCompanyAndLocation: string;
+  planCreated: string;
+  addTasksPrompt: string;
+  addTasks: string;
+  notNow: string;
+  deleteCleaningPlan: string;
+  planWillBeRemoved: string;
 };
 
 const en: ScreenCopy = {
@@ -205,6 +221,22 @@ const en: ScreenCopy = {
   cancel: "Cancel",
   confirmReject: "Confirm reject",
   rejectReason: "Reason for rejection",
+  addCleaningPlan: "Add cleaning plan",
+  editCleaningPlan: "Edit cleaning plan",
+  createPlan: "Create plan",
+  planName: "Plan name",
+  planNotesPlaceholder: "Add notes or instructions…",
+  pickLocationFirst: "Pick a location first",
+  loadingRooms: "Loading rooms…",
+  noRoomsAtLocation: "This location has no rooms",
+  companyHasNoLocations: "This company has no locations",
+  pickCompanyAndLocation: "Pick a company and location.",
+  planCreated: "Plan created",
+  addTasksPrompt: "Do you want to add additional tasks to {title}?",
+  addTasks: "Add tasks",
+  notNow: "Not now",
+  deleteCleaningPlan: "Delete cleaning plan?",
+  planWillBeRemoved: "{title} will be removed.",
 };
 
 const nl: ScreenCopy = {
@@ -310,6 +342,22 @@ const nl: ScreenCopy = {
   cancel: "Annuleren",
   confirmReject: "Afwijzing bevestigen",
   rejectReason: "Reden voor afwijzing",
+  addCleaningPlan: "Schoonmaakplan toevoegen",
+  editCleaningPlan: "Schoonmaakplan bewerken",
+  createPlan: "Plan aanmaken",
+  planName: "Plannaam",
+  planNotesPlaceholder: "Voeg notities of instructies toe…",
+  pickLocationFirst: "Kies eerst een locatie",
+  loadingRooms: "Kamers laden…",
+  noRoomsAtLocation: "Deze locatie heeft geen kamers",
+  companyHasNoLocations: "Dit bedrijf heeft geen locaties",
+  pickCompanyAndLocation: "Kies een bedrijf en een locatie.",
+  planCreated: "Plan aangemaakt",
+  addTasksPrompt: "Wilt u extra taken toevoegen aan {title}?",
+  addTasks: "Taken toevoegen",
+  notNow: "Niet nu",
+  deleteCleaningPlan: "Schoonmaakplan verwijderen?",
+  planWillBeRemoved: "{title} wordt verwijderd.",
 };
 
 const fr: ScreenCopy = {
@@ -415,6 +463,22 @@ const fr: ScreenCopy = {
   cancel: "Annuler",
   confirmReject: "Confirmer le refus",
   rejectReason: "Motif du refus",
+  addCleaningPlan: "Ajouter un plan de nettoyage",
+  editCleaningPlan: "Modifier le plan de nettoyage",
+  createPlan: "Créer le plan",
+  planName: "Nom du plan",
+  planNotesPlaceholder: "Ajouter des notes ou des instructions…",
+  pickLocationFirst: "Choisissez d’abord un site",
+  loadingRooms: "Chargement des pièces…",
+  noRoomsAtLocation: "Ce site n’a aucune pièce",
+  companyHasNoLocations: "Cette entreprise n’a aucun site",
+  pickCompanyAndLocation: "Choisissez une entreprise et un site.",
+  planCreated: "Plan créé",
+  addTasksPrompt: "Voulez-vous ajouter des tâches supplémentaires à {title} ?",
+  addTasks: "Ajouter des tâches",
+  notNow: "Pas maintenant",
+  deleteCleaningPlan: "Supprimer le plan de nettoyage ?",
+  planWillBeRemoved: "{title} sera supprimé.",
 };
 
 const es: ScreenCopy = {
@@ -520,6 +584,22 @@ const es: ScreenCopy = {
   cancel: "Cancelar",
   confirmReject: "Confirmar rechazo",
   rejectReason: "Motivo del rechazo",
+  addCleaningPlan: "Añadir plan de limpieza",
+  editCleaningPlan: "Editar plan de limpieza",
+  createPlan: "Crear plan",
+  planName: "Nombre del plan",
+  planNotesPlaceholder: "Añadir notas o instrucciones…",
+  pickLocationFirst: "Elija primero una ubicación",
+  loadingRooms: "Cargando habitaciones…",
+  noRoomsAtLocation: "Esta ubicación no tiene habitaciones",
+  companyHasNoLocations: "Esta empresa no tiene ubicaciones",
+  pickCompanyAndLocation: "Elija una empresa y una ubicación.",
+  planCreated: "Plan creado",
+  addTasksPrompt: "¿Quiere añadir tareas adicionales a {title}?",
+  addTasks: "Añadir tareas",
+  notNow: "Ahora no",
+  deleteCleaningPlan: "¿Eliminar plan de limpieza?",
+  planWillBeRemoved: "{title} se eliminará.",
 };
 
 const pl: ScreenCopy = {
@@ -625,6 +705,22 @@ const pl: ScreenCopy = {
   cancel: "Anuluj",
   confirmReject: "Potwierdź odrzucenie",
   rejectReason: "Powód odrzucenia",
+  addCleaningPlan: "Dodaj plan sprzątania",
+  editCleaningPlan: "Edytuj plan sprzątania",
+  createPlan: "Utwórz plan",
+  planName: "Nazwa planu",
+  planNotesPlaceholder: "Dodaj notatki lub instrukcje…",
+  pickLocationFirst: "Najpierw wybierz lokalizację",
+  loadingRooms: "Ładowanie pomieszczeń…",
+  noRoomsAtLocation: "Ta lokalizacja nie ma pomieszczeń",
+  companyHasNoLocations: "Ta firma nie ma lokalizacji",
+  pickCompanyAndLocation: "Wybierz firmę i lokalizację.",
+  planCreated: "Plan utworzony",
+  addTasksPrompt: "Czy chcesz dodać dodatkowe zadania do {title}?",
+  addTasks: "Dodaj zadania",
+  notNow: "Nie teraz",
+  deleteCleaningPlan: "Usunąć plan sprzątania?",
+  planWillBeRemoved: "{title} zostanie usunięty.",
 };
 
 const uk: ScreenCopy = {
@@ -730,6 +826,22 @@ const uk: ScreenCopy = {
   cancel: "Скасувати",
   confirmReject: "Підтвердити відхилення",
   rejectReason: "Причина відхилення",
+  addCleaningPlan: "Додати план прибирання",
+  editCleaningPlan: "Редагувати план прибирання",
+  createPlan: "Створити план",
+  planName: "Назва плану",
+  planNotesPlaceholder: "Додайте нотатки або інструкції…",
+  pickLocationFirst: "Спочатку виберіть локацію",
+  loadingRooms: "Завантаження кімнат…",
+  noRoomsAtLocation: "У цій локації немає кімнат",
+  companyHasNoLocations: "У цієї компанії немає локацій",
+  pickCompanyAndLocation: "Виберіть компанію та локацію.",
+  planCreated: "План створено",
+  addTasksPrompt: "Додати додаткові завдання до {title}?",
+  addTasks: "Додати завдання",
+  notNow: "Не зараз",
+  deleteCleaningPlan: "Видалити план прибирання?",
+  planWillBeRemoved: "{title} буде видалено.",
 };
 
 const pt: ScreenCopy = {
@@ -835,6 +947,22 @@ const pt: ScreenCopy = {
   cancel: "Cancelar",
   confirmReject: "Confirmar rejeição",
   rejectReason: "Motivo da rejeição",
+  addCleaningPlan: "Adicionar plano de limpeza",
+  editCleaningPlan: "Editar plano de limpeza",
+  createPlan: "Criar plano",
+  planName: "Nome do plano",
+  planNotesPlaceholder: "Adicione notas ou instruções…",
+  pickLocationFirst: "Escolha primeiro um local",
+  loadingRooms: "A carregar salas…",
+  noRoomsAtLocation: "Este local não tem salas",
+  companyHasNoLocations: "Esta empresa não tem locais",
+  pickCompanyAndLocation: "Escolha uma empresa e um local.",
+  planCreated: "Plano criado",
+  addTasksPrompt: "Pretende adicionar tarefas adicionais a {title}?",
+  addTasks: "Adicionar tarefas",
+  notNow: "Agora não",
+  deleteCleaningPlan: "Eliminar plano de limpeza?",
+  planWillBeRemoved: "{title} será removido.",
 };
 
 const ar: ScreenCopy = {
@@ -939,6 +1067,22 @@ const ar: ScreenCopy = {
   cancel: "إلغاء",
   confirmReject: "تأكيد الرفض",
   rejectReason: "سبب الرفض",
+  addCleaningPlan: "إضافة خطة تنظيف",
+  editCleaningPlan: "تعديل خطة التنظيف",
+  createPlan: "إنشاء الخطة",
+  planName: "اسم الخطة",
+  planNotesPlaceholder: "أضف ملاحظات أو تعليمات…",
+  pickLocationFirst: "اختر موقعًا أولًا",
+  loadingRooms: "جارٍ تحميل الغرف…",
+  noRoomsAtLocation: "هذا الموقع لا يحتوي على غرف",
+  companyHasNoLocations: "هذه الشركة ليس لها مواقع",
+  pickCompanyAndLocation: "اختر شركة وموقعًا.",
+  planCreated: "تم إنشاء الخطة",
+  addTasksPrompt: "هل تريد إضافة مهام إضافية إلى {title}؟",
+  addTasks: "إضافة مهام",
+  notNow: "ليس الآن",
+  deleteCleaningPlan: "حذف خطة التنظيف؟",
+  planWillBeRemoved: "سيتم حذف {title}.",
 };
 
 const screenCopy: Record<SupportedLocale, ScreenCopy> = { en, nl, pl, uk, pt, ar, fr, es };

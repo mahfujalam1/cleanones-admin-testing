@@ -45,25 +45,6 @@ type LiveOperationsClient = {
   }>;
 };
 
-type FallingBehindShift = {
-  shift_id: string;
-  worker_id: string;
-  worker_name: string;
-  worker_profile_picture: string;
-  location_id: string;
-  location_name: string;
-  worker_checkin_time: string;
-  shift_start_time: string;
-  shift_end_time: string;
-  progress: number;
-  progress_percentage: string;
-  checkin_status: string;
-};
-
-
-
-const NO_FALLING_BEHIND: readonly FallingBehindShift[] = [];
-
 
 function planIdOfLiveShift(shift: TodayLiveShiftItem) {
   const plan = shift.cleaning_plan;
@@ -154,6 +135,12 @@ export default function DashboardPage() {
 
   const { data: todayLiveMeta, isFetching: loadingLiveMeta } = useGetTodayLiveShiftMetaQuery();
   const { data: issueReports = [] } = useGetEscalationsQuery();
+  const { data: inProgressRes } = useGetTodayLiveShiftsQuery({
+    status: "in_progress",
+    page: 1,
+    limit: 10,
+    sort: "-date_time",
+  });
   
   
   const { data: todayShiftsRes, isFetching: fetchingLiveShifts, refetch: refetchLiveShifts } = useGetTodayLiveShiftsQuery({
@@ -195,8 +182,8 @@ export default function DashboardPage() {
   };
 
   const pendingEscalations = issueReports.filter((issue) => isPendingIssue(issue.status)).length;
-
-  const fallingBehind = NO_FALLING_BEHIND;
+  const inProgressShifts = inProgressRes?.result ?? [];
+  const inProgressTotal = inProgressRes?.meta.total ?? inProgressShifts.length;
   const cards = safeOverview.summary_cards;
 
 
@@ -379,37 +366,63 @@ export default function DashboardPage() {
       </section>
 
       
-      <section className={`rounded-xl border p-4 ${fallingBehind.length > 0 ? "border-sky-200 bg-sky-50/50" : "border-slate-200 bg-white"}`}>
+      <section className={`rounded-xl border p-4 ${inProgressShifts.length > 0 ? "border-sky-200 bg-sky-50/50" : "border-slate-200 bg-white"}`}>
         <div className="flex items-center gap-2">
-          <MdAccessTime className={`text-lg ${fallingBehind.length > 0 ? "text-sky-600" : "text-slate-400"}`} />
+          <MdAccessTime className={`text-lg ${inProgressShifts.length > 0 ? "text-sky-600" : "text-slate-400"}`} />
           <h2 className="font-bold text-sm sm:text-base text-slate-900">
             {t.dashboard.fallingBehindSchedule}
           </h2>
-          <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${fallingBehind.length > 0 ? "bg-sky-100 text-sky-800 border border-sky-200" : "bg-slate-100 text-slate-600"}`}>
-            {fallingBehind.length} {t.dashboard.alerts}
+          <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${inProgressShifts.length > 0 ? "bg-sky-100 text-sky-800 border border-sky-200" : "bg-slate-100 text-slate-600"}`}>
+            {inProgressTotal} {t.dashboard.alerts}
           </span>
         </div>
         <p className="text-xs text-slate-500 mt-1">
-          {fallingBehind.length > 0 ? t.dashboard.shiftNearlyOver : t.dashboard.allActiveShiftsProgressing}
+          {inProgressShifts.length > 0 ? t.dashboard.shiftNearlyOver : t.dashboard.allActiveShiftsProgressing}
         </p>
-        {fallingBehind.length > 0 && (
+        {inProgressShifts.length > 0 && (
           <div className="mt-3 grid gap-2.5 lg:grid-cols-2">
-            {fallingBehind.slice(0, 6).map((item) => {
-              const progress = Number.parseFloat(item.progress_percentage) || item.progress;
+            {inProgressShifts.map((shift) => {
+              const progress = Math.min(100, Math.max(0, shift.overall_progress_percent ?? 0));
+              const planTitle =
+                typeof shift.cleaning_plan === "object"
+                  ? shift.cleaning_plan?.title
+                  : shift.cleaning_plan || "Shift";
+              const locationName = shift.location?.name || shift.client?.name || "—";
+              const startTime = formatTimeToHHMM(shift.date_time || shift.date);
+              const endTime = formatTimeToHHMM(shift.end_time);
+              const planId = planIdOfLiveShift(shift);
               return (
-                <div key={`${item.shift_id}-${item.worker_id}`} className="rounded-lg border border-sky-100 bg-white p-3 shadow-2xs">
+                <button
+                  type="button"
+                  key={shift._id}
+                  onClick={() => {
+                    if (!planId) return;
+                    setViewingLiveShift({
+                      planId,
+                      date: dateOfLiveShift(shift),
+                      startTime: shift.date_time,
+                      endTime: shift.end_time,
+                      assignedWorkers: crewOfLiveShift(shift),
+                    });
+                  }}
+                  className="cursor-pointer rounded-lg border border-sky-100 bg-white p-3 text-left shadow-2xs transition-colors hover:border-sky-200"
+                >
                   <div className="flex items-center gap-3">
-                    <img src={item.worker_profile_picture || "/avatar-placeholder.svg"} alt={item.worker_name} className="h-9 w-9 rounded-full object-cover border border-slate-100" />
-                    <div className="flex-1 min-w-0">
-                      <b className="block text-sm truncate text-slate-900">{item.worker_name}</b>
-                      <p className="text-xs text-slate-500 truncate">{item.location_name} · {item.shift_start_time}–{item.shift_end_time}</p>
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-sky-500 text-[11px] font-bold text-white">
+                      {getInitials(planTitle || "S")}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <b className="block truncate text-sm text-slate-900">{planTitle}</b>
+                      <p className="truncate text-xs text-slate-500">
+                        {locationName} · {startTime}–{endTime}
+                      </p>
                     </div>
-                    <span className="text-xs font-bold text-sky-600 shrink-0">{item.progress_percentage || `${progress}%`}</span>
+                    <span className="shrink-0 text-xs font-bold text-sky-600">{progress}%</span>
                   </div>
-                  <div className="mt-2.5 h-1.5 rounded-full bg-slate-100 overflow-hidden">
-                    <div className="h-full rounded-full bg-sky-500 transition-all" style={{ width: `${Math.min(progress, 100)}%` }} />
+                  <div className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-slate-100">
+                    <div className="h-full rounded-full bg-sky-500 transition-all" style={{ width: `${progress}%` }} />
                   </div>
-                </div>
+                </button>
               );
             })}
           </div>

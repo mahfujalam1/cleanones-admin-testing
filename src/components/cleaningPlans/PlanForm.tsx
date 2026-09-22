@@ -34,12 +34,6 @@ import { getLocale } from "@/lib/locale";
 import { getScreenCopy } from "@/lib/screen-copy";
 
 
-const taskLabel = (room: Parameters<typeof roomTaskCount>[0] & { room_type: string }) => {
-  const count = roomTaskCount(room);
-  return count === null ? room.room_type : `${count} ${count === 1 ? "task" : "tasks"}`;
-};
-
-
 const toTimestamp = (date: string, time: string) => {
   const [hours, minutes] = time.split(":").map(Number);
   const parsed = new Date(date);
@@ -239,7 +233,7 @@ export function PlanForm({ plan, onClose, onCreated }: {
 
   const submit = async () => {
     if (!client || !location) {
-      setError("Pick a client and location.");
+      setError(copy.pickCompanyAndLocation);
       return;
     }
     if (rooms.length === 0) {
@@ -318,9 +312,9 @@ export function PlanForm({ plan, onClose, onCreated }: {
 
   return (
     <FormModal
-      title={isEdit ? "Edit cleaning plan" : "Add cleaning plan"}
-      subtitle={isEdit ? (singlePlan?.title || plan?.title || "Cleaning Plan") : "Cleaning Plans"}
-      submitLabel={isEdit ? "Save changes" : "Create plan"}
+      title={isEdit ? copy.editCleaningPlan : copy.addCleaningPlan}
+      subtitle={isEdit ? (singlePlan?.title || plan?.title || copy.addCleaningPlan) : copy.addCleaningPlan}
+      submitLabel={isEdit ? copy.saveChanges : copy.createPlan}
       saving={creating || updating || savingTasks}
       error={error}
       onClose={onClose}
@@ -344,6 +338,8 @@ export function PlanForm({ plan, onClose, onCreated }: {
             <ClientPicker
               value={client}
               showCompanyName
+              label={copy.companyName}
+              placeholder={copy.selectCompany}
               onChange={(value) => {
                 setClient(value);
                 setLocation("");
@@ -355,6 +351,10 @@ export function PlanForm({ plan, onClose, onCreated }: {
             <ClientLocationPicker
               clientId={client}
               value={location}
+              label={copy.location}
+              selectPlaceholder={copy.selectLocation}
+              noClientPlaceholder={copy.selectCompanyFirst}
+              noLocationsPlaceholder={copy.companyHasNoLocations}
               onChange={(value) => {
                 setLocation(value);
                 setRooms([]);
@@ -365,17 +365,17 @@ export function PlanForm({ plan, onClose, onCreated }: {
           </div>
 
           <div>
-            <FieldLabel htmlFor="plan-rooms" label="Rooms" required />
+            <FieldLabel htmlFor="plan-rooms" label={copy.rooms} required />
             <div
               id="plan-rooms"
               className="max-h-44 overflow-y-auto rounded-lg border border-slate-200 bg-white p-1"
             >
               {!location ? (
-                <p className="px-3 py-6 text-center text-xs text-slate-400">Pick a location first</p>
+                <p className="px-3 py-6 text-center text-xs text-slate-400">{copy.pickLocationFirst}</p>
               ) : loadingRooms && available.length === 0 ? (
-                <p className="px-3 py-6 text-center text-xs text-slate-400">Loading rooms…</p>
+                <p className="px-3 py-6 text-center text-xs text-slate-400">{copy.loadingRooms}</p>
               ) : available.length === 0 ? (
-                <p className="px-3 py-6 text-center text-xs text-slate-400">This location has no rooms</p>
+                <p className="px-3 py-6 text-center text-xs text-slate-400">{copy.noRoomsAtLocation}</p>
               ) : (
                 available.map((room) => (
                   <label
@@ -392,20 +392,25 @@ export function PlanForm({ plan, onClose, onCreated }: {
                       className="h-4 w-4 rounded border-slate-300 accent-primary"
                     />
                     <span className="min-w-0 flex-1 truncate text-sm text-slate-800">{room.name}</span>
-                    <span className="shrink-0 text-[11px] text-slate-400">{taskLabel(room)}</span>
+                    <span className="shrink-0 text-[11px] text-slate-400">
+                      {(() => {
+                        const count = roomTaskCount(room);
+                        return count === null ? room.room_type : `${count} ${count === 1 ? copy.task : copy.tasks}`;
+                      })()}
+                    </span>
                   </label>
                 ))
               )}
             </div>
           </div>
 
-          <TextField label="Plan name" value={title} onChange={setTitle} required />
+          <TextField label={copy.planName} value={title} onChange={setTitle} required />
 
           <TextareaField
-            label="Description"
+            label={copy.description}
             value={description}
             onChange={setDescription}
-            placeholder="Add notes or instructions…"
+            placeholder={copy.planNotesPlaceholder}
             rows={3}
             required
           />
@@ -416,7 +421,7 @@ export function PlanForm({ plan, onClose, onCreated }: {
               <div className="flex items-center justify-between gap-3">
                 <div className="min-w-0">
                   <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-600">
-                    Additional tasks
+                    {copy.additionalTasks}
                   </h3>
                   <p className="mt-0.5 text-[11px] text-slate-400">
                     {drafts.length === 0 ? "None added yet" : `${drafts.length} to add on save`}
@@ -427,7 +432,7 @@ export function PlanForm({ plan, onClose, onCreated }: {
                   onClick={() => setDrafts((current) => [...current, newDraft(taskDateFloor)])}
                   className="inline-flex shrink-0 cursor-pointer items-center gap-1 rounded-lg border border-primary/40 bg-white px-3 py-1.5 text-xs font-semibold text-primary transition-colors hover:bg-sky-50"
                 >
-                  <MdAdd className="text-sm" /> Task
+                  <MdAdd className="text-sm" /> {copy.task}
                 </button>
               </div>
 
@@ -456,7 +461,7 @@ export function PlanForm({ plan, onClose, onCreated }: {
                                 [task._id]: { ...value, name: event.target.value },
                               }))
                             }
-                            placeholder="Task name"
+                            placeholder={copy.taskName}
                             className="h-8 min-w-40 flex-1 rounded border border-slate-200 bg-white px-2 text-xs text-slate-800 outline-none focus:border-primary focus:ring-1 focus:ring-primary disabled:bg-slate-100"
                           />
                           <div className="relative w-24 shrink-0">

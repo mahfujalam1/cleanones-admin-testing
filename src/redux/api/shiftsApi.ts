@@ -481,6 +481,7 @@ export type TodayLiveShiftItem = {
   cleaning_plan?: string | { _id: string; title: string };
   date?: string;
   date_time?: string;
+  end_time?: string;
   location?: {
     location?: string;
     name?: string;

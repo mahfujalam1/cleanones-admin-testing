@@ -77,7 +77,7 @@ export function RosterCalendar() {
     }
     return {
       view: apiView,
-      day: formatYYYYMMDD(currentDate),
+      date: formatYYYYMMDD(currentDate),
       client: clientId || undefined,
       location: locationId || undefined,
       page,

@@ -23,6 +23,7 @@ import {
 import { apiError } from "@/redux/api/apiError";
 import { getLocale, localizePath } from "@/lib/locale";
 import { getUiTranslation } from "@/lib/translations";
+import { getScreenCopy } from "@/lib/screen-copy";
 
 const LIMIT = 12;
 const PICKER_LIMIT = 100;
@@ -30,7 +31,8 @@ const PICKER_LIMIT = 100;
 function CleaningPlansView() {
   const router = useRouter();
   const locale = getLocale(usePathname());
-  const ui = getUiTranslation(getLocale(usePathname()));
+  const ui = getUiTranslation(locale);
+  const copy = getScreenCopy(locale);
   const query = useSearchParams();
 
   const clientId = query.get("client") ?? "";
@@ -220,10 +222,10 @@ function CleaningPlansView() {
 
       {justCreated && (
         <ConfirmDialog
-          title="Plan created"
-          description={`Do you want to add additional tasks to ${justCreated.title}?`}
-          confirmText="Add tasks"
-          cancelText="Not now"
+          title={copy.planCreated}
+          description={copy.addTasksPrompt.replace("{title}", justCreated.title)}
+          confirmText={copy.addTasks}
+          cancelText={copy.notNow}
           destructive={false}
           onConfirm={() => {
             const plan = justCreated;
@@ -236,8 +238,8 @@ function CleaningPlansView() {
 
       {deleteTarget && (
         <ConfirmDialog
-          title="Delete cleaning plan?"
-          description={`${deleteTarget.title} will be removed.`}
+          title={copy.deleteCleaningPlan}
+          description={copy.planWillBeRemoved.replace("{title}", deleteTarget.title)}
           confirmText={ui.delete}
           loading={deleting}
           onConfirm={() => void confirmDelete()}

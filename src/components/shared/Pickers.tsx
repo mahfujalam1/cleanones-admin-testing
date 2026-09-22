@@ -15,13 +15,14 @@ export function ClientPicker({
   required,
   showCompanyName = false,
   label = "Client",
+  placeholder,
 }: {
   value: string;
   onChange: (clientId: string) => void;
   required?: boolean;
   showCompanyName?: boolean;
-  
   label?: string;
+  placeholder?: string;
 }) {
   const { data, isFetching } = useGetClientsQuery(CLIENT_LOOKUP_ARGS);
   const clients = data?.result ?? [];
@@ -33,7 +34,7 @@ export function ClientPicker({
       value={value}
       required={required}
       disabled={isFetching && clients.length === 0}
-      placeholder={isFetching && clients.length === 0 ? "Loading clients…" : "Select a client"}
+      placeholder={placeholder ?? (isFetching && clients.length === 0 ? "Loading clients…" : "Select a client")}
       options={clients.map((client) => ({ value: client._id, label: labelOf(client) }))}
       onChange={onChange}
     />
@@ -71,12 +72,18 @@ export function ClientLocationPicker({
   onChange,
   label = "Location",
   required,
+  selectPlaceholder,
+  noClientPlaceholder,
+  noLocationsPlaceholder,
 }: {
   clientId: string;
   value: string;
   onChange: (locationId: string) => void;
   label?: string;
   required?: boolean;
+  selectPlaceholder?: string;
+  noClientPlaceholder?: string;
+  noLocationsPlaceholder?: string;
 }) {
   const { data, isFetching } = useGetClientLocationsQuery(
     { clientId, limit: PICKER_LIMIT, sort: "name" },
@@ -85,12 +92,12 @@ export function ClientLocationPicker({
   const locations = data?.result ?? [];
 
   const placeholder = !clientId
-    ? "Select a client first"
+    ? (noClientPlaceholder ?? "Select a client first")
     : isFetching && locations.length === 0
       ? "Loading locations…"
       : locations.length === 0
-        ? "This client has no locations"
-        : "Select a location";
+        ? (noLocationsPlaceholder ?? "This client has no locations")
+        : (selectPlaceholder ?? "Select a location");
 
   return (
     <SelectField

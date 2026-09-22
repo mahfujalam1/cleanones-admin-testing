@@ -53,7 +53,7 @@ export type ShiftRosterData = {
 
 export type ShiftRosterParams = {
   view: "day" | "week" | "month";
-  day?: string;
+  date?: string;
   year?: number;
   month?: number;
   search?: string;
@@ -312,8 +312,8 @@ export const rosterApi = baseApi.injectEndpoints({
         if (params.view === "month") {
           if (params.year) q.set("year", String(params.year));
           if (params.month) q.set("month", String(params.month));
-        } else if (params.day) {
-          q.set("day", params.day);
+        } else if (params.date) {
+          q.set("date", params.date);
         }
         if (params.search) q.set("search", params.search);
         if (params.type && params.type !== "all") q.set("type", params.type);

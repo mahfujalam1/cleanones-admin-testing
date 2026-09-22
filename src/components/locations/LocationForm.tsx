@@ -137,6 +137,7 @@ export function LocationForm({
           value={chosenClient}
           label={copy.companyName}
           showCompanyName
+          placeholder={copy.selectCompany}
           onChange={(value) => {
             setChosenClient(value);
             setError("");
