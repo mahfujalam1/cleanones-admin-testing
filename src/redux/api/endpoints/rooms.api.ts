@@ -41,7 +41,13 @@ export type RoomTask = {
   name: string;
   frequency_type?: string;
   is_photo_required?: boolean;
-  photo_requirements?: Array<{ title?: string; photo_url?: string; is_uploaded?: boolean }>;
+  photo_requirements?: Array<{
+    title?: string;
+    description?: string;
+    reference_image_url?: string;
+    photo_url?: string;
+    is_uploaded?: boolean;
+  }>;
   duration_minutes?: number;
   days_of_week?: string[];
   days_of_month?: number[];

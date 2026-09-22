@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -14,54 +14,20 @@ import {
 import { TbSparkles, TbChecklist, TbCamera } from "react-icons/tb";
 import type { ExtraServiceModalProps } from "./types";
 import { useModalJump } from "@/hooks/useModalJump";
-import { getCleaningPlan, type PlanDetails } from "@/services/actions/cleaningPlans";
-import { type ExtraServiceRequest, type ExtraServiceTaskDetail } from "@/services/actions/extraServices";
+import { toPlanDetails, type SingleCleaningPlan } from "@/services/actions/cleaningPlans";
+import { type ExtraServiceTaskDetail } from "@/services/actions/extraServices";
 import { statusColor } from "./ExtraServiceCard";
 import {
   additionalTaskStatus,
   useGetAdditionalTaskQuery,
   type AdditionalTask,
 } from "@/redux/api/endpoints/additionalTasks.api";
-import {
-  useGetClientsQuery,
-  CLIENT_LOOKUP_ARGS,
-  clientLabel,
-  type Client,
-} from "@/redux/api/endpoints/clients.api";
-import { useLazyGetCleaningPlanListQuery } from "@/redux/api/endpoints/cleaningPlans.api";
+import { clientLabel } from "@/redux/api/endpoints/clients.api";
 import { refDoc, refId, refLabel } from "@/redux/api/types";
 import { ExtraServicePlanSection } from "./ExtraServicePlanSection";
 import { ExtraServiceActionFooter } from "./ExtraServiceActionFooter";
 import { getLocale } from "@/lib/locale";
 import { getDashboardTranslation } from "@/lib/translations";
-
-
-function findClient(
-  clients: Client[] | undefined,
-  clientId: string,
-  clientName: string,
-): Client | undefined {
-  if (!clients) return undefined;
-  if (clientId) {
-    const byId = clients.find((candidate) => candidate._id === clientId);
-    if (byId) return byId;
-  }
-  if (clientName) {
-    const normalised = clientName.trim().toLowerCase();
-    return clients.find((candidate) =>
-      [candidate.name, candidate.company_name, candidate.email].some(
-        (value) => value?.trim().toLowerCase() === normalised,
-      ),
-    );
-  }
-  return undefined;
-}
-
-const TONES = {
-  Active: "bg-emerald-50 text-emerald-700 ring-emerald-200",
-  Pending: "bg-amber-50 text-amber-700 ring-amber-200",
-  Inactive: "bg-slate-100 text-slate-600 ring-slate-200",
-} as const;
 
 function getClientInitials(name: string) {
   const words = name.trim().split(/\s+/).filter(Boolean);
@@ -73,7 +39,6 @@ function getClientInitials(name: string) {
 const formatDate = (value?: string) =>
   value ? new Date(value).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : null;
 
-
 function additionalTaskToDetail(task: AdditionalTask): ExtraServiceTaskDetail {
   return {
     id: task._id,
@@ -81,7 +46,10 @@ function additionalTaskToDetail(task: AdditionalTask): ExtraServiceTaskDetail {
     description: task.description ?? null,
     duration_minutes: task.duration_minutes ?? null,
     is_photo_req: task.is_photo_required,
-    photo: (task.photo_requirements ?? []).map((photo) => ({ name: photo.title })),
+    photo: (task.photo_requirements ?? []).map((photo) => ({
+      name: photo.title,
+      description: photo.description,
+    })),
     total_photos_required: task.photo_requirements?.length,
     is_completed: task.is_completed,
     fixed_date: task.date_time ? task.date_time.slice(0, 10) : null,
@@ -90,154 +58,49 @@ function additionalTaskToDetail(task: AdditionalTask): ExtraServiceTaskDetail {
 
 export function ExtraServiceModal({ request, onClose, onDone, onError }: ExtraServiceModalProps) {
   const t = getDashboardTranslation(getLocale(usePathname()));
-  const [plan, setPlan] = useState<PlanDetails | null>(null);
-  const [loadingPlan, setLoadingPlan] = useState(false);
-  const [extraDetails] = useState<ExtraServiceRequest | null>(null);
-
-  
-  
   const listedTask = request.rawAdditionalTask;
-  const { data: fetchedTask, isFetching: loadingTask } = useGetAdditionalTaskQuery(listedTask?._id ?? "", {
-    skip: !listedTask,
+  const taskId = listedTask?._id || request.taskId || request.id;
+  const { data: fetchedTask, isFetching: loadingTask } = useGetAdditionalTaskQuery(taskId, {
+    skip: !taskId,
   });
   const taskRecord = fetchedTask ?? listedTask;
-
   const taskPlan = refDoc(taskRecord?.cleaning_plan_id);
-  const taskPlanClient = taskPlan ? refDoc(taskPlan.client) : null;
-  const initialPlanId = request.planId || refId(taskRecord?.cleaning_plan_id);
-  const [resolvedPlanId, setResolvedPlanId] = useState<string>(initialPlanId);
-
-  
-  const { data: clientsData } = useGetClientsQuery(CLIENT_LOOKUP_ARGS);
-  const [fetchCleaningPlans] = useLazyGetCleaningPlanListQuery();
-
-  useEffect(() => {
-    let active = true;
-
-    async function loadData() {
-      let currentPlanId = request.planId || refId(taskRecord?.cleaning_plan_id);
-      const locationId = request.location_id;
-
-      if (!currentPlanId && locationId) {
-        try {
-          const page = await fetchCleaningPlans({ location: locationId, limit: 1 }, true).unwrap();
-          if (active) currentPlanId = page.result[0]?._id ?? "";
-        } catch {
-          
-        }
-      }
-
-      if (active) setResolvedPlanId(currentPlanId);
-
-      if (currentPlanId) {
-        setLoadingPlan(true);
-        const planRes = await getCleaningPlan(currentPlanId);
-        if (active) {
-          setLoadingPlan(false);
-          if (planRes.success) setPlan(planRes.data);
-        }
-      }
-    }
-
-    void loadData();
-    return () => {
-      active = false;
-    };
-  }, [fetchCleaningPlans, request.id, request.planId, request.location_id, request.isCleaningPlanTask, taskRecord]);
-
-  
-  const targetClientId =
-    request.client_id ||
-    extraDetails?.client_id ||
-    extraDetails?.client?.id ||
-    request.rawExtraService?.client_id ||
-    request.rawExtraService?.client?.id ||
-    plan?.client_id ||
-    plan?.clients?.[0]?.client_id ||
-    (taskPlan ? refId(taskPlan.client) : "");
-
-  const targetClientName =
-    request.client_name ||
-    extraDetails?.client_name ||
-    extraDetails?.client?.name ||
-    request.rawExtraService?.client_name ||
-    request.rawExtraService?.client?.name ||
-    plan?.clients?.[0]?.company_name ||
-    plan?.client_names?.[0] ||
-    (taskPlanClient ? clientLabel(taskPlanClient) : undefined) ||
-    "";
-
-  const clientList = clientsData?.result;
-  
-  const matchedClient: Client | undefined = findClient(clientList, targetClientId, targetClientName);
+  const plan = taskPlan ? toPlanDetails(taskPlan as unknown as SingleCleaningPlan) : null;
+  const nestedClient = taskPlan ? refDoc(taskPlan.client) : null;
+  const nestedLocation = taskPlan ? refDoc(taskPlan.location) : null;
+  const planId = refId(taskRecord?.cleaning_plan_id) || request.planId || "";
 
   const clientDisplayName =
-    (matchedClient && clientLabel(matchedClient)) ||
-    targetClientName ||
+    (nestedClient ? clientLabel(nestedClient) : "") ||
+    request.client_name ||
+    request.rawExtraService?.client_name ||
+    request.rawExtraService?.client?.name ||
     "Client";
 
-  const companyName =
-    matchedClient?.company_name ||
-    plan?.company_name ||
-    plan?.clients?.[0]?.company_name ||
-    taskPlanClient?.company_name ||
-    "";
-
-  const clientEmail =
-    matchedClient?.email ||
-    plan?.clients?.[0]?.email ||
-    taskPlanClient?.email ||
-    "";
-
-  const clientPhone =
-    matchedClient?.phone ||
-    plan?.clients?.[0]?.phone ||
-    taskPlanClient?.phone ||
-    "";
-
-  const licenceExpiry =
-    formatDate(matchedClient?.licence_expiration_date) ||
-    (plan?.repeat_until ? formatDate(plan.repeat_until) : null);
-
-  const contractStatus =
-    matchedClient?.contract_status ||
-    "Active";
-
+  const companyName = nestedClient?.company_name || plan?.company_name || "";
+  const clientEmail = nestedClient?.email || "";
+  const clientPhone = nestedClient?.phone || "";
+  const licenceExpiry = formatDate(nestedClient?.licence_expiration_date);
   const clientInitials = getClientInitials(clientDisplayName);
 
-  const rawTasks: ExtraServiceTaskDetail[] = (
-    taskRecord
-      ? [additionalTaskToDetail(taskRecord)]
-      : extraDetails?.tasks?.length
-        ? extraDetails.tasks
-        : request.rawPendingTask
-        ? [request.rawPendingTask as unknown as ExtraServiceTaskDetail]
-        : request.rawExtraService?.tasks?.length
-          ? request.rawExtraService.tasks
-          : [{ name: request.title, description: request.description }]
-  ) as ExtraServiceTaskDetail[];
+  const rawTasks: ExtraServiceTaskDetail[] = taskRecord
+    ? [additionalTaskToDetail(taskRecord)]
+    : request.rawPendingTask
+      ? [request.rawPendingTask as unknown as ExtraServiceTaskDetail]
+      : request.rawExtraService?.tasks?.length
+        ? request.rawExtraService.tasks
+        : [{ id: request.id, name: request.title, description: request.description }];
 
-  const displayTitle = taskRecord?.name || extraDetails?.title || request.title;
-  const displayStatus = taskRecord ? additionalTaskStatus(taskRecord) : extraDetails?.status || request.status;
-  const displayDescription = taskRecord?.description || extraDetails?.description || request.description;
-
-  const planDisplayName: string =
-    extraDetails?.plan_name ||
-    plan?.title ||
-    refLabel(taskRecord?.cleaning_plan_id) ||
-    resolvedPlanId ||
-    "";
-
-  const locationDisplayName: string =
-    extraDetails?.location_name ||
-    request.location_name ||
+  const displayTitle = taskRecord?.name || request.title;
+  const displayStatus = taskRecord ? additionalTaskStatus(taskRecord) : request.status;
+  const displayDescription = taskRecord?.description || request.description;
+  const planDisplayName = plan?.title || refLabel(taskRecord?.cleaning_plan_id) || "";
+  const locationDisplayName =
+    nestedLocation?.name ||
     (taskPlan ? refLabel(taskPlan.location) : undefined) ||
+    request.location_name ||
     "—";
-
-  const roomDisplayName: string =
-    extraDetails?.room_name ||
-    request.room_name ||
-    "";
+  const roomDisplayName = request.room_name || "";
   const { triggerJump, jumpClassName } = useModalJump();
 
   return (
@@ -251,9 +114,8 @@ export function ExtraServiceModal({ request, onClose, onDone, onError }: ExtraSe
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className={`flex max-h-[92vh] w-full max-w-4xl flex-col rounded-2xl bg-white shadow-2xl overflow-hidden border border-slate-200 animate-in zoom-in-95 duration-200 ${jumpClassName}`}
+        className={`flex h-[92vh] max-h-[92vh] min-h-0 w-full max-w-4xl flex-col rounded-2xl bg-white shadow-2xl overflow-hidden border border-slate-200 animate-in zoom-in-95 duration-200 ${jumpClassName}`}
       >
-        
         <header className="flex items-center justify-between border-b border-slate-200 px-6 py-4 bg-white shrink-0">
           <div className="flex items-center gap-3">
             <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-50 text-sky-600">
@@ -287,14 +149,11 @@ export function ExtraServiceModal({ request, onClose, onDone, onError }: ExtraSe
           </button>
         </header>
 
-        
         <div
-          className={`flex-1 overflow-y-auto p-6 space-y-4 text-xs text-slate-700 transition-opacity ${loadingTask ? "opacity-60" : "opacity-100"
+          className={`min-h-0 flex-1 overflow-y-auto overscroll-contain p-6 space-y-4 text-xs text-slate-700 transition-opacity ${loadingTask ? "opacity-60" : "opacity-100"
             }`}
         >
-          
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            
             <div className="flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-4 shadow-2xs space-y-3">
               <div>
                 <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
@@ -312,41 +171,45 @@ export function ExtraServiceModal({ request, onClose, onDone, onError }: ExtraSe
               </div>
 
               <div className="grid grid-cols-2 gap-3 pt-3 border-t border-slate-100 text-xs text-slate-600">
+                {locationDisplayName && locationDisplayName !== "—" && (
                 <div>
-                  <span className="text-[10px] text-slate-400 block font-semibold">{t.extraServices.location} / {t.extraServices.room}</span>
+                  <span className="text-[10px] text-slate-400 block font-semibold">
+                    {t.extraServices.location}{roomDisplayName ? ` / ${t.extraServices.room}` : ""}
+                  </span>
                   <span className="font-medium text-slate-800">
                     {locationDisplayName}
                     {roomDisplayName ? ` · ${roomDisplayName}` : ""}
                   </span>
                 </div>
+                )}
+                {(taskRecord?.date_time || request.preferred_date) && (
                 <div>
                   <span className="text-[10px] text-slate-400 block font-semibold">{t.extraServices.preferredDate}</span>
                   <span className="font-medium text-slate-800">
                     {(taskRecord?.date_time ? taskRecord.date_time.slice(0, 10) : "") ||
-                      extraDetails?.preferred_date ||
-                      request.preferred_date ||
-                      extraDetails?.date_submitted ||
-                      "—"}
+                      request.preferred_date}
                   </span>
                 </div>
+                )}
+                {taskRecord?.duration_minutes ? (
                 <div>
                   <span className="text-[10px] text-slate-400 block font-semibold">{t.common.duration}</span>
                   <span className="font-medium text-slate-800">
-                    {taskRecord?.duration_minutes
-                      ? `${taskRecord.duration_minutes}m`
-                      : extraDetails?.duration || (extraDetails?.duration_minutes ? `${extraDetails.duration_minutes}m` : "—")}
+                    {`${taskRecord.duration_minutes}m`}
                   </span>
                 </div>
+                ) : null}
+                {request.priority && (
                 <div>
                   <span className="text-[10px] text-slate-400 block font-semibold">Priority</span>
                   <span className="font-medium capitalize text-slate-800">
-                    {extraDetails?.priority || request.priority || "Normal"}
+                    {request.priority}
                   </span>
                 </div>
+                )}
               </div>
             </div>
 
-            
             <div className="flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-4 shadow-2xs">
               <div>
                 <div className="flex items-center justify-between border-b border-slate-100 pb-2">
@@ -356,7 +219,7 @@ export function ExtraServiceModal({ request, onClose, onDone, onError }: ExtraSe
                       Client Information
                     </h4>
                   </div>
-                  {matchedClient && (
+                  {nestedClient && (
                     <Link
                       href={`/clients`}
                       className="text-[11px] font-semibold text-sky-600 hover:text-sky-700 flex items-center gap-1 transition-colors"
@@ -378,7 +241,7 @@ export function ExtraServiceModal({ request, onClose, onDone, onError }: ExtraSe
                     <h3 className="truncate text-[15px] font-bold leading-tight text-slate-900">
                       {clientDisplayName}
                     </h3>
-                    {companyName && (
+                    {companyName && companyName !== clientDisplayName && (
                       <p className="mt-1 flex items-center gap-1.5 truncate text-xs text-slate-500 font-medium">
                         <MdBadge className="shrink-0 text-sm text-slate-400" />
                         {companyName}
@@ -388,14 +251,18 @@ export function ExtraServiceModal({ request, onClose, onDone, onError }: ExtraSe
                 </div>
 
                 <dl className="mt-3.5 space-y-2 text-xs text-slate-500">
+                  {clientEmail && (
                   <div className="flex items-center gap-2">
                     <MdMailOutline className="shrink-0 text-sm text-slate-400" />
-                    <dd className="truncate font-medium text-slate-700">{clientEmail || "—"}</dd>
+                    <dd className="truncate font-medium text-slate-700">{clientEmail}</dd>
                   </div>
+                  )}
+                  {clientPhone && (
                   <div className="flex items-center gap-2">
                     <MdPhone className="shrink-0 text-sm text-slate-400" />
-                    <dd className="truncate font-medium text-slate-700">{clientPhone || "—"}</dd>
+                    <dd className="truncate font-medium text-slate-700">{clientPhone}</dd>
                   </div>
+                  )}
                   {licenceExpiry && (
                     <div className="flex items-center gap-2">
                       <MdEventAvailable className="shrink-0 text-sm text-slate-400" />
@@ -405,22 +272,16 @@ export function ExtraServiceModal({ request, onClose, onDone, onError }: ExtraSe
                 </dl>
               </div>
 
-              <div className="mt-3.5 flex items-center justify-between gap-2 border-t border-slate-100 pt-2.5">
-                <span
-                  className={`rounded-md px-2 py-0.5 text-[11px] font-semibold ring-1 ring-inset ${
-                    TONES[contractStatus as keyof typeof TONES] ?? TONES.Active
-                  }`}
-                >
-                  {contractStatus}
-                </span>
-                <span className="text-[10px] text-slate-400 font-mono">
-                  {matchedClient?._id ? `ID: #${matchedClient._id.slice(-6)}` : ""}
-                </span>
-              </div>
+              {nestedClient?._id && (
+                <div className="mt-3.5 flex items-center justify-end border-t border-slate-100 pt-2.5">
+                  <span className="text-[10px] text-slate-400 font-mono">
+                    ID: #{nestedClient._id.slice(-6)}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 
-          
           <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-3">
             <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
               <TbChecklist className="text-sky-600 text-base" />
@@ -446,15 +307,20 @@ export function ExtraServiceModal({ request, onClose, onDone, onError }: ExtraSe
                   )}
 
                   {task.is_photo_req && task.photo && task.photo.length > 0 && (
-                    <div className="pt-1 flex flex-wrap items-center gap-1.5">
+                    <div className="pt-1 space-y-1.5">
                       <span className="flex items-center gap-1 text-[10px] font-semibold text-slate-400">
                         <TbCamera /> {t.common.photos}:
                       </span>
-                      {task.photo.map((p, pIdx) => (
-                        <span key={p.id || pIdx} className="rounded bg-sky-50 px-2 py-0.5 text-[10px] font-semibold text-sky-700 border border-sky-100">
-                          {p.name}
-                        </span>
-                      ))}
+                      <div className="space-y-1">
+                        {task.photo.map((p, pIdx) => (
+                          <div key={p.id || pIdx} className="rounded border border-sky-100 bg-sky-50/70 px-2.5 py-1.5">
+                            <p className="text-[11px] font-semibold text-sky-800">{p.name}</p>
+                            {p.description && (
+                              <p className="text-[10px] text-slate-500 mt-0.5">{p.description}</p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -462,25 +328,21 @@ export function ExtraServiceModal({ request, onClose, onDone, onError }: ExtraSe
             </div>
           </div>
 
-          
-          <ExtraServicePlanSection plan={plan} loading={loadingPlan} planId={resolvedPlanId} />
+          <ExtraServicePlanSection plan={plan} loading={loadingTask && !plan} planId={planId} />
         </div>
 
-        
         <ExtraServiceActionFooter
           request={{
             ...request,
-            planId: refId(taskRecord?.cleaning_plan_id) || resolvedPlanId,
+            planId,
             status: displayStatus,
             rawAdditionalTask: taskRecord,
-            
-            
             taskIds: taskRecord
               ? [taskRecord._id]
               : (Array.from(
                   new Set([
                     ...(request.taskId ? [request.taskId] : []),
-                    ...rawTasks.map((t) => t.id).filter(Boolean),
+                    ...rawTasks.map((item) => item.id).filter(Boolean),
                     ...(plan?.pending_additional_tasks || []).map((pt) => pt.id).filter(Boolean),
                   ])
                 ) as string[]),
