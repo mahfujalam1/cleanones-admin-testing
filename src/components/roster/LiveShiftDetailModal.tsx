@@ -110,7 +110,7 @@ export function LiveShiftDetailModal({
       }}
     >
       <div
-        className={`flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-lg border border-slate-200 bg-white shadow-xl animate-in fade-in zoom-in-95 duration-150 ${jumpClassName}`}
+        className={`flex h-[92vh] max-h-[92vh] min-h-0 w-full max-w-3xl flex-col overflow-hidden rounded-lg border border-slate-200 bg-white shadow-xl animate-in fade-in zoom-in-95 duration-150 ${jumpClassName}`}
         onMouseDown={(event) => event.stopPropagation()}
       >
         <header className="flex shrink-0 items-start justify-between gap-3 border-b border-slate-200 px-5 py-4">
@@ -148,7 +148,7 @@ export function LiveShiftDetailModal({
           </button>
         </header>
 
-        <div className="min-h-0 flex-1 overflow-y-auto p-5">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-5">
           {isLoading ? (
             <DetailSkeleton blocks={5} />
           ) : error ? (

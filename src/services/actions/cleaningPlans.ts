@@ -17,7 +17,7 @@ export type PlanTaskInput = {
     duration?: number;
     duration_minutes?: number;
     is_photo_req: boolean;
-    photo: Array<{ id?: string; name: string }>;
+    photo: Array<{ id?: string; name: string; description?: string }>;
     total_photos_required?: number;
     weekly_days?: string[] | null;
     monthly_dates?: number[] | null;
@@ -104,7 +104,7 @@ export type PlanDetails = PlanSummary & {
         monthly_cleaning_frequency?: number;
         clean_type?: string;
         tasks: Array<PlanTaskInput & { id: string; total_photos_required?: number }>;
-        required_photos?: Array<{ id: string; name: string }>;
+        required_photos?: Array<{ id: string; name: string; description?: string }>;
     }>;
     worker_ids: string[];
     workers: Array<{
@@ -157,12 +157,20 @@ export async function getCleaningPlan(planId: string) {
 
 
 type PlanRef<T> = string | T;
-type SingleCleaningPlan = {
+export type SingleCleaningPlan = {
     _id: string;
     title?: string;
     description?: string;
     note?: string;
-    client?: PlanRef<{ _id: string; name?: string; company_name?: string; email?: string; phone?: string }>;
+    client?: PlanRef<{
+        _id: string;
+        name?: string;
+        company_name?: string;
+        email?: string;
+        phone?: string;
+        licence_expiration_date?: string;
+        contract_status?: string;
+    }>;
     location?: PlanRef<{ _id: string; name?: string }>;
     rooms?: Array<PlanRef<{
         _id: string;
@@ -175,7 +183,7 @@ type SingleCleaningPlan = {
             name?: string;
             frequency_type?: string;
             is_photo_required?: boolean;
-            photo_requirements?: Array<{ title: string }>;
+            photo_requirements?: Array<{ title: string; description?: string }>;
             required_photo_count?: number;
             duration_minutes?: number;
         }>;
@@ -192,7 +200,7 @@ type SingleCleaningPlan = {
         description?: string;
         duration_minutes?: number;
         is_photo_required?: boolean;
-        photo_requirements?: Array<{ title: string }>;
+        photo_requirements?: Array<{ title: string; description?: string }>;
         date_time?: string;
         status?: string;
         reject_reason?: string | null;
@@ -205,7 +213,7 @@ type SingleCleaningPlan = {
     total_duration?: number;
     status?: string;
     is_active?: boolean;
-    manager?: string;
+    manager?: PlanRef<{ _id: string; name?: string; email?: string; phone?: string; profile_image?: string | null }>;
     createdAt?: string;
     updatedAt?: string;
 };
@@ -217,9 +225,10 @@ const idOf = (ref: PlanRef<{ _id: string }> | undefined | null): string =>
     typeof ref === "string" ? ref : ref?._id ?? "";
 const dayOf = (value?: string) => (value ? value.slice(0, 10) : "");
 
-function toPlanDetails(plan: SingleCleaningPlan): PlanDetails {
+export function toPlanDetails(plan: SingleCleaningPlan): PlanDetails {
     const client = populated(plan.client);
     const location = populated(plan.location);
+    const manager = populated(plan.manager);
     type RoomDoc = NonNullable<ReturnType<typeof populated<{
         _id: string;
         name?: string;
@@ -231,7 +240,7 @@ function toPlanDetails(plan: SingleCleaningPlan): PlanDetails {
             name?: string;
             frequency_type?: string;
             is_photo_required?: boolean;
-            photo_requirements?: Array<{ title: string }>;
+            photo_requirements?: Array<{ title: string; description?: string }>;
             required_photo_count?: number;
             duration_minutes?: number;
         }>;
@@ -251,7 +260,7 @@ function toPlanDetails(plan: SingleCleaningPlan): PlanDetails {
         description?: string;
         duration_minutes?: number;
         is_photo_required?: boolean;
-        photo_requirements?: Array<{ title: string }>;
+        photo_requirements?: Array<{ title: string; description?: string }>;
         date_time?: string;
     }>;
 
@@ -264,7 +273,10 @@ function toPlanDetails(plan: SingleCleaningPlan): PlanDetails {
         fixed_date: dayOf(task.date_time),
         duration_minutes: task.duration_minutes,
         is_photo_req: Boolean(task.is_photo_required),
-        photo: (task.photo_requirements ?? []).map((photo) => ({ name: photo.title })),
+        photo: (task.photo_requirements ?? []).map((photo) => ({
+            name: photo.title,
+            description: photo.description,
+        })),
         total_photos_required: task.photo_requirements?.length ?? 0,
     }));
 
@@ -276,7 +288,13 @@ function toPlanDetails(plan: SingleCleaningPlan): PlanDetails {
         client_id: idOf(plan.client),
         company_name: clientName,
         clients: client
-            ? [{ client_id: client._id, company_name: clientName, email: client.email, phone: client.phone }]
+            ? [{
+                client_id: client._id,
+                company_name: clientName,
+                primary_contact_name: client.name,
+                email: client.email,
+                phone: client.phone,
+            }]
             : [],
         location_name: location?.name,
         location_names: location?.name ? [location.name] : [],
@@ -306,13 +324,17 @@ function toPlanDetails(plan: SingleCleaningPlan): PlanDetails {
                     frequency_type: task.frequency_type ?? "",
                     duration_minutes: task.duration_minutes,
                     is_photo_req: Boolean(task.is_photo_required),
-                    photo: (task.photo_requirements ?? []).map((photo) => ({ name: photo.title })),
+                    photo: (task.photo_requirements ?? []).map((photo) => ({
+                        name: photo.title,
+                        description: photo.description,
+                    })),
                     total_photos_required: task.photo_requirements?.length ?? 0,
                 })),
                 required_photos: roomTasks.flatMap((task) =>
                     (task.photo_requirements ?? []).map((photo, index) => ({
                         id: `${task._id}-${index}`,
                         name: photo.title,
+                        description: photo.description,
                     })),
                 ),
             };
@@ -357,5 +379,14 @@ function toPlanDetails(plan: SingleCleaningPlan): PlanDetails {
         repeat_until: dayOf(plan.end_date),
         working_days: [],
         shift_notes: plan.note ?? plan.description ?? "",
+        manager: manager
+            ? {
+                manager_id: manager._id,
+                name: manager.name ?? "",
+                email: manager.email,
+                phone: manager.phone,
+                profile_photo: manager.profile_image ?? null,
+            }
+            : undefined,
     };
 }
