@@ -81,7 +81,7 @@ export type ExtraServiceTaskDetail = {
   name: string;
   frequency_type?: string;
   is_photo_req?: boolean;
-  photo?: Array<{ id?: string; name: string }>;
+  photo?: Array<{ id?: string; name: string; description?: string }>;
   total_photos_required?: number;
   is_completed?: boolean;
   completed_at?: string | null;

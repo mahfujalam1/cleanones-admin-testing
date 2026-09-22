@@ -95,13 +95,11 @@ export type AdditionalTaskListResponse = {
 };
 
 export type AdditionalTasksQuery = {
-  
   planId?: string;
+  client?: string;
   page?: number;
   limit?: number;
-  
   searchTerm?: string;
-  
   sort?: string;
   status?: AdditionalTaskDecision | "Pending";
   is_completed?: boolean;
@@ -129,8 +127,9 @@ export const additionalTasksApi = baseApi.injectEndpoints({
     getAdditionalTasks: builder.query<AdditionalTaskListResponse, AdditionalTasksQuery | void>({
       query: (args) => {
         const params = new URLSearchParams();
-        const { planId, page, limit, searchTerm, sort, status, ...flags } = args ?? {};
+        const { planId, client, page, limit, searchTerm, sort, status, ...flags } = args ?? {};
         if (planId) params.set("planId", planId);
+        if (client) params.set("client", client);
         if (status) params.set("status", status);
         params.set("page", String(page ?? 1));
         params.set("limit", String(limit ?? 10));

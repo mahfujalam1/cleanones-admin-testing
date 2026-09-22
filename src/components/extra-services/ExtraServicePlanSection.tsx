@@ -64,7 +64,8 @@ export function ExtraServicePlanSection({ plan, loading, planId }: ExtraServiceP
     primary_contact_name: "",
   };
 
-  const workingDaysSet = new Set((plan.working_days || []).map((d) => d.toLowerCase()));
+  const workingDaysSet = new Set((plan.working_days || []).map((d) => d.toLowerCase()).filter(Boolean));
+  const hasSidebar = workers.length > 0 || Boolean(plan.manager) || workingDaysSet.size > 0;
 
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-4 text-xs">
@@ -138,9 +139,9 @@ export function ExtraServicePlanSection({ plan, loading, planId }: ExtraServiceP
       </div>
 
       
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className={`grid gap-4 ${hasSidebar ? "lg:grid-cols-3" : ""}`}>
         
-        <div className="space-y-4 lg:col-span-2">
+        <div className={`space-y-4 ${hasSidebar ? "lg:col-span-2" : ""}`}>
           
           <div className="rounded-xl border border-slate-200 bg-white p-3.5 space-y-3">
             <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
@@ -167,9 +168,11 @@ export function ExtraServicePlanSection({ plan, loading, planId }: ExtraServiceP
                 <div>
                   <p className="text-[10px] font-semibold text-slate-400 uppercase">{t.extraServices.location}</p>
                   <p className="font-bold text-slate-900">{plan.location_name || "Location"}</p>
-                  <p className="text-[11px] text-sky-600 font-medium">
-                    {t.roster.title}: {(plan.repeat_shift || "Does not repeat").replaceAll("_", " ")}
-                  </p>
+                  {plan.repeat_shift ? (
+                    <p className="text-[11px] text-sky-600 font-medium">
+                      {t.roster.title}: {plan.repeat_shift.replaceAll("_", " ")}
+                    </p>
+                  ) : null}
                 </div>
               </div>
             </div>
@@ -202,8 +205,8 @@ export function ExtraServicePlanSection({ plan, loading, planId }: ExtraServiceP
                         <div>
                           <h5 className="font-bold text-slate-900">{room.room_name}</h5>
                           <p className="text-[10px] text-sky-600 font-medium capitalize">
-                            {room.clean_type || room.room_type || "Standard"}{" "}
-                            {room.floor ? `· Floor ${room.floor}` : ""}
+                            {[room.clean_type, room.room_type].filter(Boolean).join(" · ")}
+                            {room.floor ? ` · Floor ${room.floor}` : ""}
                           </p>
                         </div>
                       </div>
@@ -233,9 +236,11 @@ export function ExtraServicePlanSection({ plan, loading, planId }: ExtraServiceP
                             >
                               <span className="font-medium text-slate-800">{task.name}</span>
                               <div className="flex items-center gap-1 text-[9px]">
-                                <span className="rounded bg-sky-50 px-1.5 py-0.5 font-semibold text-sky-700 border border-sky-100">
-                                  {task.frequency_type || "Daily"}
-                                </span>
+                                {task.frequency_type && (
+                                  <span className="rounded bg-sky-50 px-1.5 py-0.5 font-semibold text-sky-700 border border-sky-100">
+                                    {task.frequency_type}
+                                  </span>
+                                )}
                                 {task.is_photo_req && (
                                   <span className="rounded bg-slate-100 px-1.5 py-0.5 font-semibold text-slate-600">
                                     Photo
@@ -250,18 +255,23 @@ export function ExtraServicePlanSection({ plan, loading, planId }: ExtraServiceP
 
                     
                     {room.required_photos && room.required_photos.length > 0 && (
-                      <div className="pt-1 flex flex-wrap items-center gap-1">
+                      <div className="pt-1 space-y-1.5">
                         <span className="text-[10px] font-semibold text-slate-400 flex items-center gap-1">
                           <TbCamera /> Required Photos:
                         </span>
-                        {room.required_photos.map((p, pIdx) => (
-                          <span
-                            key={p.id || pIdx}
-                            className="rounded bg-sky-50 px-2 py-0.5 text-[10px] font-semibold text-sky-700 border border-sky-100"
-                          >
-                            {p.name}
-                          </span>
-                        ))}
+                        <div className="space-y-1">
+                          {room.required_photos.map((p, pIdx) => (
+                            <div
+                              key={p.id || pIdx}
+                              className="rounded border border-sky-100 bg-sky-50/70 px-2.5 py-1.5"
+                            >
+                              <p className="text-[11px] font-semibold text-sky-800">{p.name}</p>
+                              {"description" in p && p.description ? (
+                                <p className="text-[10px] text-slate-500 mt-0.5">{p.description}</p>
+                              ) : null}
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     )}
                   </div>
@@ -288,9 +298,6 @@ export function ExtraServicePlanSection({ plan, loading, planId }: ExtraServiceP
                             ⏱️ {t.duration_minutes || t.duration}m
                           </span>
                         )}
-                        <span className="rounded bg-sky-100 px-2 py-0.5 text-[10px] font-semibold text-sky-700 uppercase">
-                          {(t.frequency_type || "fixed_date").replaceAll("_", " ")}
-                        </span>
                       </div>
                     </div>
 
@@ -301,18 +308,23 @@ export function ExtraServicePlanSection({ plan, loading, planId }: ExtraServiceP
                     )}
 
                     {t.is_photo_req && t.photo && t.photo.length > 0 && (
-                      <div className="pt-1 flex flex-wrap items-center gap-1.5">
+                      <div className="pt-1 space-y-1.5">
                         <span className="flex items-center gap-1 text-[10px] font-semibold text-slate-400">
                           <TbCamera /> Photos:
                         </span>
-                        {t.photo.map((p, pIdx) => (
-                          <span
-                            key={p.id || pIdx}
-                            className="rounded bg-sky-50 px-2 py-0.5 text-[10px] font-semibold text-sky-700 border border-sky-100"
-                          >
-                            {p.name}
-                          </span>
-                        ))}
+                        <div className="space-y-1">
+                          {t.photo.map((p, pIdx) => (
+                            <div
+                              key={p.id || pIdx}
+                              className="rounded border border-sky-100 bg-sky-50/70 px-2.5 py-1.5"
+                            >
+                              <p className="text-[11px] font-semibold text-sky-800">{p.name}</p>
+                              {p.description && (
+                                <p className="text-[10px] text-slate-500 mt-0.5">{p.description}</p>
+                              )}
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     )}
                   </div>
@@ -323,18 +335,14 @@ export function ExtraServicePlanSection({ plan, loading, planId }: ExtraServiceP
         </div>
 
         
+        {hasSidebar && (
         <div className="space-y-4">
           
+          {workers.length > 0 && (
           <div className="rounded-xl border border-slate-200 bg-white p-3.5 space-y-3">
             <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
               <TbUsers className="text-sky-600" /> Assigned Workers ({workers.length})
             </h4>
-            {workers.length === 0 ? (
-              <div className="py-6 text-center border border-dashed rounded-lg bg-slate-50 space-y-1">
-                <TbUsers className="mx-auto text-2xl text-slate-300" />
-                <p className="text-xs font-medium text-slate-500">No workers assigned</p>
-              </div>
-            ) : (
               <div className="space-y-2">
                 {workers.map((w) => (
                   <div key={w.worker_id} className="flex items-center gap-2.5 rounded-lg border border-slate-100 bg-slate-50/70 p-2">
@@ -351,13 +359,15 @@ export function ExtraServicePlanSection({ plan, loading, planId }: ExtraServiceP
                     )}
                     <div className="min-w-0 flex-1">
                       <p className="font-semibold text-slate-900 truncate">{w.name}</p>
-                      <p className="text-[10px] text-slate-400 truncate">{w.position || "Cleaner"}</p>
+                      {w.position && (
+                        <p className="text-[10px] text-slate-400 truncate">{w.position}</p>
+                      )}
                     </div>
                   </div>
                 ))}
               </div>
-            )}
           </div>
+          )}
 
           
           {plan.manager && (
@@ -386,6 +396,7 @@ export function ExtraServicePlanSection({ plan, loading, planId }: ExtraServiceP
           )}
 
           
+          {workingDaysSet.size > 0 && (
           <div className="rounded-xl border border-slate-200 bg-white p-3.5 space-y-2.5">
             <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
               <TbCalendar className="text-sky-600" /> Working Days
@@ -407,7 +418,9 @@ export function ExtraServicePlanSection({ plan, loading, planId }: ExtraServiceP
               })}
             </div>
           </div>
+          )}
         </div>
+        )}
       </div>
     </div>
   );

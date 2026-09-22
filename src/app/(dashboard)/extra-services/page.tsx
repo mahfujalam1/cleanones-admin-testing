@@ -8,8 +8,12 @@ import { usePathname } from "next/navigation";
 import { getLocale } from "@/lib/locale";
 import { getUiTranslation } from "@/lib/translations";
 
-import { CLIENT_LOOKUP_ARGS, clientLabel, useGetClientsQuery } from "@/redux/api/endpoints/clients.api";
-import { additionalTaskStatus, useGetAdditionalTasksQuery } from "@/redux/api/endpoints/additionalTasks.api";
+import { CLIENT_LOOKUP_ARGS, clientCompanyLabel, clientLabel, useGetClientsQuery } from "@/redux/api/endpoints/clients.api";
+import {
+  additionalTaskStatus,
+  useGetAdditionalTasksQuery,
+  type AdditionalTaskDecision,
+} from "@/redux/api/endpoints/additionalTasks.api";
 import { useGetCleaningPlanListQuery, type CleaningPlan } from "@/redux/api/endpoints/cleaningPlans.api";
 import { refDoc, refId, refLabel } from "@/redux/api/types";
 import { ExtraServiceCard } from "@/components/extra-services/ExtraServiceCard";
@@ -21,20 +25,12 @@ import { Select } from "@/components/ui/select";
 const TASK_PAGE_SIZE = 100;
 const LIMIT = 12;
 
-const STATUS_OPTIONS = [
-  { value: "", label: "All Statuses" },
-  { value: "pending", label: "Pending" },
-  { value: "under_review", label: "Under Review" },
-  { value: "approved", label: "Approved" },
-  { value: "in_progress", label: "In Progress" },
-  { value: "completed", label: "Completed" },
-  { value: "rejected", label: "Rejected" },
-];
+type TaskStatusFilter = "" | "Pending" | AdditionalTaskDecision;
 
 export default function ExtraServicesPage() {
   const ui = getUiTranslation(getLocale(usePathname()));
   const [search, setSearch] = useState("");
-  const [status, setStatus] = useState("");
+  const [status, setStatus] = useState<TaskStatusFilter>("");
   const [clientId, setClientId] = useState("");
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<UnifiedServiceRequest | null>(null);
@@ -60,6 +56,8 @@ export default function ExtraServicesPage() {
     limit: TASK_PAGE_SIZE,
     searchTerm: search.trim() || undefined,
     sort: "-createdAt",
+    status: status || undefined,
+    client: clientId || undefined,
   });
 
   const refetchAll = () => {
@@ -85,7 +83,6 @@ export default function ExtraServicesPage() {
       const planClient = plan ? refDoc(plan.client) : null;
       const planClientId = plan ? refId(plan.client) : "";
       const planClientName = planClient ? clientLabel(planClient) : refLabel(task.cleaning_plan_id);
-      if (clientId && planClientId !== clientId) continue;
 
       list.push({
         id: task._id,
@@ -105,21 +102,8 @@ export default function ExtraServicesPage() {
       });
     }
 
-    
-    return list.filter((item) => {
-      const matchesSearch =
-        !search.trim() ||
-        item.title.toLowerCase().includes(search.toLowerCase()) ||
-        item.description.toLowerCase().includes(search.toLowerCase()) ||
-        (item.location_name && item.location_name.toLowerCase().includes(search.toLowerCase())) ||
-        (item.client_name && item.client_name.toLowerCase().includes(search.toLowerCase()));
-
-      const matchesStatus =
-        !status || item.status.toLowerCase() === status.toLowerCase();
-
-      return matchesSearch && matchesStatus;
-    });
-  }, [tasksRes, plansById, search, status, clientId]);
+    return list;
+  }, [tasksRes, plansById]);
 
   const pagedItems = useMemo(() => {
     return items.slice((page - 1) * LIMIT, page * LIMIT);
@@ -149,9 +133,9 @@ export default function ExtraServicesPage() {
             placeholder={ui.allClients}
             options={[
               { value: "", label: ui.allClients },
-              ...(clientsRes?.result ?? []).map((c) => ({
-                value: c._id,
-                label: clientLabel(c),
+              ...(clientsRes?.result ?? []).map((client) => ({
+                value: client._id,
+                label: clientCompanyLabel(client),
               })),
             ]}
           />
@@ -161,9 +145,14 @@ export default function ExtraServicesPage() {
         <div className="w-full sm:w-44">
           <Select
             value={status}
-            onValueChange={setStatus}
+            onValueChange={(value) => setStatus((value as TaskStatusFilter) || "")}
             placeholder={ui.allStatuses}
-            options={STATUS_OPTIONS}
+            options={[
+              { value: "", label: ui.allStatuses },
+              { value: "Pending", label: "Pending" },
+              { value: "Approved", label: "Approved" },
+              { value: "Rejected", label: "Rejected" },
+            ]}
           />
         </div>
       </div>
