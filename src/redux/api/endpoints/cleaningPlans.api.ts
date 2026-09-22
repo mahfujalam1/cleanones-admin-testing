@@ -34,6 +34,7 @@ export type CleaningPlan = {
   total_task_duration?: number;
   total_additional_task_duration?: number;
   total_tasks?: number;
+  total_task?: number;
   status?: PlanStatus;
   is_active?: boolean;
   manager?: string;
@@ -52,10 +53,16 @@ export type CleaningPlan = {
 
 
 export function planCounts(plan: CleaningPlan) {
+  const roomTasks = plan.total_tasks ?? plan.total_task ?? 0;
+  const extraTasks = plan.total_additional_task ?? plan.additional_tasks?.length ?? 0;
+  const listedRoomTasks = (plan.rooms ?? []).reduce((sum, room) => {
+    const doc = refDoc<Room>(room);
+    return sum + (doc?.tasks?.length ?? 0);
+  }, 0);
   return {
     rooms: plan.total_room ?? plan.total_rooms ?? plan.rooms?.length ?? 0,
     workers: plan.total_assigned_worker ?? plan.total_assigned_workers ?? plan.assigned_workers?.length ?? 0,
-    tasks: plan.total_additional_task ?? plan.additional_tasks?.length ?? 0,
+    tasks: listedRoomTasks || roomTasks || extraTasks,
   };
 }
 
