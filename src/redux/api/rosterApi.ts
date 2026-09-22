@@ -147,7 +147,12 @@ export type PlanShiftTask = {
   name: string;
   duration_minutes?: number;
   is_photo_required?: boolean;
-  photo_requirements?: Array<{ title?: string }>;
+  photo_requirements?: Array<{
+    title?: string;
+    description?: string;
+    photo_url?: string | null;
+    is_uploaded?: boolean;
+  }>;
   is_completed?: boolean;
 };
 
@@ -221,7 +226,17 @@ function normalizeTaskItems(raw: unknown): PlanShiftTask[] {
         duration_minutes: Number(row.duration_minutes ?? nested?.duration_minutes ?? 0) || undefined,
         is_photo_required: Boolean(row.is_photo_required ?? nested?.is_photo_required),
         photo_requirements: Array.isArray(row.photo_requirements)
-          ? (row.photo_requirements as Array<{ title?: string }>)
+          ? (row.photo_requirements as unknown[])
+              .map((photo) => {
+                const item = asRecord(photo) ?? {};
+                return {
+                  title: item.title != null ? String(item.title) : "",
+                  description: item.description != null ? String(item.description) : undefined,
+                  photo_url: item.photo_url != null && String(item.photo_url) ? String(item.photo_url) : null,
+                  is_uploaded: Boolean(item.is_uploaded),
+                };
+              })
+              .filter((photo) => photo.title)
           : [],
         is_completed: Boolean(row.is_completed),
       };
@@ -240,6 +255,7 @@ export function normalizePlanShift(raw: unknown): PlanShiftDetail {
   const start = startRaw ? new Date(String(startRaw)) : null;
   const calculatedEnd = start ? endFromStart(start, duration) : null;
   const planRef = nested.cleaning_plan ?? nested.plan_id ?? data.cleaning_plan ?? data.plan_id;
+  const planDoc = asRecord(planRef);
   const roomItems = normalizeRoomItems(nested.rooms ?? data.rooms);
   const taskItems = normalizeTaskItems(nested.tasks ?? data.tasks);
   return {
@@ -255,8 +271,15 @@ export function normalizePlanShift(raw: unknown): PlanShiftDetail {
     room_items: roomItems,
     task_items: taskItems,
     assigned_workers: workersRaw.map(normalizeAssignedWorker).filter((worker) => worker.worker_id || worker.name),
-    plan_id: planRef != null ? String(planRef) : undefined,
-    plan_title: nested.plan_title != null ? String(nested.plan_title) : data.plan_title != null ? String(data.plan_title) : undefined,
+    plan_id: typeof planRef === "string" ? planRef : planDoc?._id != null ? String(planDoc._id) : undefined,
+    plan_title:
+      nested.plan_title != null
+        ? String(nested.plan_title)
+        : data.plan_title != null
+          ? String(data.plan_title)
+          : planDoc?.title != null
+            ? String(planDoc.title)
+            : undefined,
     client_name:
       client?.name != null
         ? String(client.name)

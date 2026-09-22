@@ -42,9 +42,10 @@ import {
   type ShiftAssignTarget,
 } from "@/components/cleaningPlans/AssignWorkersModal";
 import type { PlanRosterAssignedWorker, PlanShiftDetail } from "@/redux/api/rosterApi";
-import { useGetPlanShiftQuery } from "@/redux/api/rosterApi";
+import { normalizePlanShift, useGetPlanShiftQuery } from "@/redux/api/rosterApi";
+import { useGetSingleLiveShiftQuery } from "@/redux/api/shiftsApi";
 import {
-  canStaff,
+  canReassign,
   endFromStart,
   formatClock,
   hasShiftStarted,
@@ -410,9 +411,8 @@ function ShiftBody({
   const copy = getScreenCopy(getLocale(usePathname()));
   const rooms = shift.room_items ?? [];
   const tasks = shift.task_items ?? [];
-  const extraTasks = tasks.filter((task) => !task.room_id || !rooms.some((room) => room.id === task.room_id));
   const photoCount = tasks.reduce((total, task) => {
-    const required = task.photo_requirements?.length ?? 0;
+    const required = task.photo_requirements?.filter((photo) => photo.title)?.length ?? 0;
     if (required > 0) return total + required;
     return total + (task.is_photo_required ? 1 : 0);
   }, 0);
@@ -425,7 +425,8 @@ function ShiftBody({
     }));
   const durationMinutes = shift.duration_minutes ?? 0;
   const locationName = shift.location_name;
-  const clientName = shift.client_name || locationName;
+  const clientName = shift.client_name;
+  const dateLabel = schedule.date ? formatAssignDateLabel(schedule.date) : "";
 
   return (
     <div className="space-y-4">
@@ -444,18 +445,26 @@ function ShiftBody({
         <div className="space-y-4">
           <Panel title={copy.clientAndLocation}>
             <div className="grid gap-4 sm:grid-cols-2">
-              <Detail icon={<MdOutlineBusinessCenter />} label={copy.client}>
-                {clientName}
-              </Detail>
+              {dateLabel ? (
+                <Detail icon={<MdOutlineSchedule />} label="Date">
+                  {dateLabel}
+                </Detail>
+              ) : null}
               <Detail icon={<MdOutlinePlace />} label={copy.location}>
                 {locationName}
               </Detail>
+              {clientName ? (
+                <Detail icon={<MdOutlineBusinessCenter />} label={copy.client}>
+                  {clientName}
+                </Detail>
+              ) : null}
               <Detail icon={<MdOutlineSchedule />} label={copy.startTime}>
-                {formatClock(schedule.startTime)}
+                {formatClock(schedule.startTime) || "—"}
               </Detail>
               <Detail icon={<MdOutlineSchedule />} label={copy.endTime}>
                 {formatClock(schedule.endTime)
-                  || formatPlanEnd(schedule.startTime ?? undefined, durationMinutes)}
+                  || formatPlanEnd(schedule.startTime ?? undefined, durationMinutes)
+                  || "—"}
               </Detail>
             </div>
 
@@ -474,94 +483,92 @@ function ShiftBody({
               <p className="text-xs text-slate-400">No rooms on this shift.</p>
             ) : (
               <ul className="space-y-3">
-                {rooms.map((room) => {
-                  const roomTasks = tasks.filter((task) => task.room_id === room.id);
+                {rooms.map((room) => (
+                  <li
+                    key={room.id || room.name}
+                    className="rounded-xl border border-slate-200/80 bg-slate-50/50 p-3"
+                  >
+                    <div className="flex min-w-0 items-center gap-2.5">
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-sky-50 text-base text-sky-600 ring-1 ring-sky-100">
+                        <MdOutlineMeetingRoom />
+                      </span>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-slate-900">{room.name}</p>
+                        {room.room_type && <p className="text-xs text-slate-500">{room.room_type}</p>}
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Panel>
+
+          <Panel title={`${copy.tasks} (${tasks.length})${photoCount > 0 ? ` · ${photoCount} ${copy.photos}` : ""}`}>
+            {tasks.length === 0 ? (
+              <p className="text-xs text-slate-400">No tasks on this shift.</p>
+            ) : (
+              <ul className="space-y-2.5">
+                {tasks.map((task) => {
+                  const photos = (task.photo_requirements ?? []).filter((photo) => photo.title);
                   return (
-                    <li
-                      key={room.id || room.name}
-                      className="space-y-2.5 rounded-xl border border-slate-200/80 bg-slate-50/50 p-3 transition-colors hover:border-slate-300"
-                    >
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="flex min-w-0 items-center gap-2.5">
-                          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-sky-50 text-base text-sky-600 ring-1 ring-sky-100">
-                            <MdOutlineMeetingRoom />
-                          </span>
-                          <div className="min-w-0">
-                            <p className="truncate text-sm font-semibold text-slate-900">{room.name}</p>
-                            {room.room_type && <p className="text-xs text-slate-500">{room.room_type}</p>}
-                          </div>
-                        </div>
-                        {roomTasks.length > 0 && (
-                          <span className="shrink-0 rounded-full border border-sky-100 bg-sky-50 px-2.5 py-0.5 text-[11px] font-semibold text-sky-700">
-                            {roomTasks.length} {roomTasks.length === 1 ? copy.task : copy.tasks}
+                    <li key={task.id || task.name} className="rounded-lg border border-slate-200 p-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <p className="min-w-0 flex-1 truncate text-sm font-medium text-slate-800">{task.name}</p>
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                            task.is_completed ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500"
+                          }`}
+                        >
+                          {task.is_completed ? "Completed" : "Incomplete"}
+                        </span>
+                      </div>
+                      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-400">
+                        {typeof task.duration_minutes === "number" && <span>{task.duration_minutes} min</span>}
+                        {task.is_photo_required && (
+                          <span className="inline-flex items-center gap-1 text-amber-600">
+                            <MdOutlinePhotoCamera className="text-xs" />
+                            {photos.length ? `${photos.length} ${copy.photos.toLowerCase()}` : copy.photoRequired}
                           </span>
                         )}
                       </div>
-                      {roomTasks.length > 0 && (
-                        <div className="mt-2 space-y-1.5 border-t border-slate-200/60 pt-2">
-                          {roomTasks.map((task) => (
-                            <div
-                              key={task.id || task.name}
-                              className="flex items-center justify-between gap-2 rounded-lg bg-white px-2.5 py-1.5 text-xs text-slate-700 ring-1 ring-slate-200/60"
+                      {photos.length > 0 ? (
+                        <ul className="mt-2 space-y-1">
+                          {photos.map((photo, photoIndex) => (
+                            <li
+                              key={`${photo.title}-${photoIndex}`}
+                              className="flex items-start gap-2 rounded bg-slate-50 px-2 py-1.5 text-[11px]"
                             >
-                              <span className="truncate font-medium">{task.name}</span>
-                              <div className="flex shrink-0 items-center gap-2 text-[10px] text-slate-500">
-                                {typeof task.duration_minutes === "number" && task.duration_minutes > 0 && (
-                                  <span>{task.duration_minutes}m</span>
-                                )}
-                                {task.is_photo_required && (
-                                  <span className="flex items-center gap-0.5 font-medium text-amber-600">
-                                    <MdOutlinePhotoCamera /> {copy.photo}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
+                              {photo.photo_url ? (
+                                <img
+                                  src={photo.photo_url}
+                                  alt={photo.title}
+                                  className="h-10 w-10 shrink-0 rounded object-cover"
+                                />
+                              ) : null}
+                              <span className="min-w-0 flex-1">
+                                <span className="font-medium text-slate-700">{photo.title}</span>
+                                {photo.description ? (
+                                  <span className="mt-0.5 block text-slate-500">{photo.description}</span>
+                                ) : null}
+                              </span>
+                              <span className={photo.is_uploaded ? "text-emerald-600" : "text-slate-400"}>
+                                {photo.is_uploaded ? "Uploaded" : "Pending"}
+                              </span>
+                            </li>
                           ))}
-                        </div>
-                      )}
+                        </ul>
+                      ) : null}
                     </li>
                   );
                 })}
               </ul>
             )}
           </Panel>
-
-          {extraTasks.length > 0 && (
-            <Panel title={`${copy.additionalTasks} (${extraTasks.length})`}>
-              <ul className="space-y-2.5">
-                {extraTasks.map((task) => (
-                  <li key={task.id || task.name} className="rounded-lg border border-slate-200 p-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <p className="min-w-0 flex-1 truncate text-sm font-medium text-slate-800">{task.name}</p>
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
-                          task.is_completed ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500"
-                        }`}
-                      >
-                        {task.is_completed ? "Completed" : "Incomplete"}
-                      </span>
-                    </div>
-                    <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-400">
-                      {typeof task.duration_minutes === "number" && <span>{task.duration_minutes} min</span>}
-                      {task.is_photo_required && (
-                        <span className="inline-flex items-center gap-1 text-amber-600">
-                          <MdOutlinePhotoCamera className="text-xs" />
-                          {task.photo_requirements?.length
-                            ? `${task.photo_requirements.length} ${copy.photos.toLowerCase()}`
-                            : copy.photoRequired}
-                        </span>
-                      )}
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </Panel>
-          )}
         </div>
 
         <Panel title={`${copy.assignedWorkers} (${crew.length})`}>
           {crew.length === 0 ? (
-            <p className="text-xs text-slate-400">Nobody assigned yet. Staff each due date from Shift Management.</p>
+            <p className="text-xs text-slate-400">Nobody assigned yet.</p>
           ) : (
             <ul className="space-y-2.5">
               {crew.map((assignment) => (
@@ -578,9 +585,9 @@ function ShiftBody({
             </ul>
           )}
           {onManage && (
-            <div className="mt-3 flex justify-center">
-              <Button size="sm" onClick={onManage}>
-                <MdOutlineGroupAdd className="text-sm" /> {manageLabel ?? "Assign workers"}
+            <div className="mt-3">
+              <Button size="sm" className="w-full" onClick={onManage}>
+                <MdOutlineGroupAdd className="text-sm" /> {manageLabel ?? "Manage workers"}
               </Button>
             </div>
           )}
@@ -593,6 +600,7 @@ function ShiftBody({
 export function PlanDetailModal({
   planId,
   shiftDate,
+  liveShiftId,
   onClose,
   onEdit,
   onEditShiftPlan,
@@ -605,6 +613,7 @@ export function PlanDetailModal({
 }: {
   planId: string;
   shiftDate?: string;
+  liveShiftId?: string;
   onClose: () => void;
   onEdit?: (plan: CleaningPlan) => void;
   onEditShiftPlan?: (planId: string) => void;
@@ -615,16 +624,21 @@ export function PlanDetailModal({
   shiftSchedule?: { date?: string; startTime?: string | null; endTime?: string | null };
   onAssigned?: () => void;
 }) {
-  const fromShift = Boolean(shiftDate);
+  const fromShift = Boolean(shiftDate || liveShiftId);
   const { data: plan, isLoading: planLoading, error: planError } = useGetCleaningPlanQuery(planId, {
-    skip: fromShift,
+    skip: fromShift || !planId,
   });
-  const { data: planShift, isLoading: shiftLoading, error: shiftError } = useGetPlanShiftQuery(
+  const { data: planShiftFromDate, isLoading: shiftLoading, error: shiftError } = useGetPlanShiftQuery(
     { planId, date: shiftDate ?? "" },
-    { skip: !shiftDate },
+    { skip: !shiftDate || Boolean(liveShiftId) },
   );
-  const isLoading = fromShift ? shiftLoading : planLoading;
-  const error = fromShift ? shiftError : planError;
+  const { data: liveShift, isLoading: liveLoading, error: liveError } = useGetSingleLiveShiftQuery(liveShiftId ?? "", {
+    skip: !liveShiftId,
+  });
+  const liveShiftDetail = liveShift ? normalizePlanShift(liveShift) : undefined;
+  const planShift: PlanShiftDetail | undefined = liveShiftDetail ?? planShiftFromDate;
+  const isLoading = liveShiftId ? liveLoading : fromShift ? shiftLoading : planLoading;
+  const error = liveShiftId ? liveError : fromShift ? shiftError : planError;
   const active = plan?.is_active ?? plan?.status === "active";
   const shiftStatus = statusLabel(planShift?.status);
   const { triggerJump, jumpClassName } = useModalJump();
@@ -641,9 +655,10 @@ export function PlanDetailModal({
       computedEndIso(startTime, durationMinutes, shiftDate ?? planShift?.date ?? shiftSchedule?.date ?? assignTarget?.date)
       ?? (durationMinutes ? undefined : planShift?.end_time ?? shiftSchedule?.endTime ?? assignTarget?.endTime),
   };
-  const liveAssignTarget = (assignTarget || shiftDate)
+  const resolvedPlanId = planShift?.plan_id || planId;
+  const liveAssignTarget = (assignTarget || shiftDate || liveShiftId)
     ? {
-        planId,
+        planId: resolvedPlanId,
         date: liveSchedule.date ?? shiftDate ?? assignTarget?.date ?? "",
         planTitle: assignTarget?.planTitle ?? planShift?.plan_title ?? plan?.title,
         locationName: assignTarget?.locationName ?? planShift?.location_name,
@@ -653,7 +668,13 @@ export function PlanDetailModal({
         assignedWorkers: liveWorkers,
       }
     : undefined;
-  const staffable = planShift ? canStaff(planShift) : Boolean(assignTarget) || Boolean(onAssign);
+  const staffable = fromShift
+    ? canReassign({
+        startTime,
+        date: liveSchedule.date,
+        status: planShift?.status,
+      })
+    : Boolean(assignTarget) || Boolean(onAssign);
   const canAssign = Boolean(staffable && (liveAssignTarget || onAssign));
   const title = assignTarget?.planTitle || planShift?.plan_title || planShift?.location_name || plan?.title || "Cleaning plan";
   const crewCount = (liveWorkers ?? []).length;
@@ -674,7 +695,7 @@ export function PlanDetailModal({
 
   useEffect(() => {
     setStep("details");
-  }, [planId, shiftDate]);
+  }, [planId, shiftDate, liveShiftId]);
 
   const goAssign = () => {
     if (liveAssignTarget) {

@@ -15,6 +15,7 @@ import { getDashboardTranslation, getUiTranslation } from "@/lib/translations";
 import { getScreenCopy } from "@/lib/screen-copy";
 import { apiError } from "@/redux/api/apiError";
 import { PlanDetailModal } from "@/components/cleaningPlans/PlanDetailModal";
+import type { Shift } from "@/components/roster/types";
 import type { PlanRosterAssignedWorker } from "@/redux/api/rosterApi";
 
 
@@ -58,10 +59,28 @@ function dateOfLiveShift(shift: TodayLiveShiftItem) {
 
 function crewOfLiveShift(shift: TodayLiveShiftItem): PlanRosterAssignedWorker[] {
   return (shift.assigned_workers ?? shift.workers ?? []).map((worker) => ({
-    worker_id: worker.worker_id,
+    worker_id: worker.worker_id || worker.worker || worker.name,
     name: worker.name,
     role: worker.shift_role || worker.worker_type,
   })).filter((worker) => worker.worker_id || worker.name);
+}
+
+function fallbackOfLiveShift(shift: TodayLiveShiftItem, workerName?: string): Shift {
+  const planTitle =
+    typeof shift.cleaning_plan === "object" ? shift.cleaning_plan?.title : "";
+  return {
+    id: shift._id,
+    workerName: workerName || shift.assigned_workers?.[0]?.name || planTitle || "Shift",
+    location: shift.location?.name || shift.client?.name || "",
+    date: dateOfLiveShift(shift),
+    startTime: formatTimeToHHMM(shift.date_time),
+    endTime: formatTimeToHHMM(shift.end_time),
+    startAt: shift.date_time,
+    theme: "blue",
+    planId: planIdOfLiveShift(shift),
+    status: shift.status,
+    isVirtual: shift.is_virtual,
+  };
 }
 
 function getInitials(name: string): string {
@@ -119,11 +138,8 @@ export default function DashboardPage() {
   const [liveTab, setLiveTab] = useState<"all" | "upcoming" | "in_progress" | "completed">("all");
   const [selectedLateWorker, setSelectedLateWorker] = useState<LateWorkerChip | null>(null);
   const [viewingLiveShift, setViewingLiveShift] = useState<{
-    planId: string;
-    date: string;
-    startTime?: string;
-    endTime?: string;
-    assignedWorkers?: PlanRosterAssignedWorker[];
+    shiftId: string;
+    fallback: Shift;
   } | null>(null);
   const {
     data: selectedWorkerDetails,
@@ -204,6 +220,7 @@ export default function DashboardPage() {
     if (todayLiveShifts.length > 0) {
       const rows: Array<{
         id: string;
+        shiftId: string;
         planId: string;
         date: string;
         startTime?: string;
@@ -216,6 +233,7 @@ export default function DashboardPage() {
         check_in_time: string;
         progress: number;
         status: "on_time" | "late" | "missing";
+        fallback: Shift;
       }> = [];
 
       for (const shift of todayLiveShifts) {
@@ -230,10 +248,11 @@ export default function DashboardPage() {
         const date = dateOfLiveShift(shift);
         const assignedWorkers = crewOfLiveShift(shift);
         const shiftFields = {
+          shiftId: shift._id,
           planId,
           date,
           startTime: shift.date_time,
-          endTime: undefined as string | undefined,
+          endTime: shift.end_time,
           assignedWorkers,
         };
 
@@ -265,6 +284,7 @@ export default function DashboardPage() {
               check_in_time: checkIn,
               progress,
               status,
+              fallback: fallbackOfLiveShift(shift, w.name),
             });
           }
         } else {
@@ -278,6 +298,7 @@ export default function DashboardPage() {
             check_in_time: shift.date_time ? formatTimeToHHMM(shift.date_time) : "---",
             progress,
             status: shift.status === "late" ? "late" : "on_time",
+            fallback: fallbackOfLiveShift(shift, planTitle || "Unassigned Shift"),
           });
         }
       }
@@ -390,19 +411,15 @@ export default function DashboardPage() {
               const locationName = shift.location?.name || shift.client?.name || "—";
               const startTime = formatTimeToHHMM(shift.date_time || shift.date);
               const endTime = formatTimeToHHMM(shift.end_time);
-              const planId = planIdOfLiveShift(shift);
               return (
                 <button
                   type="button"
                   key={shift._id}
                   onClick={() => {
-                    if (!planId) return;
+                    if (!shift._id) return;
                     setViewingLiveShift({
-                      planId,
-                      date: dateOfLiveShift(shift),
-                      startTime: shift.date_time,
-                      endTime: shift.end_time,
-                      assignedWorkers: crewOfLiveShift(shift),
+                      shiftId: shift._id,
+                      fallback: fallbackOfLiveShift(shift),
                     });
                   }}
                   className="cursor-pointer rounded-lg border border-sky-100 bg-white p-3 text-left shadow-2xs transition-colors hover:border-sky-200"
@@ -553,13 +570,10 @@ export default function DashboardPage() {
               type="button"
               key={row.id}
               onClick={() => {
-                if (!row.planId) return;
+                if (!row.shiftId) return;
                 setViewingLiveShift({
-                  planId: row.planId,
-                  date: row.date,
-                  startTime: row.startTime,
-                  endTime: row.endTime,
-                  assignedWorkers: row.assignedWorkers,
+                  shiftId: row.shiftId,
+                  fallback: row.fallback,
                 });
               }}
               className="group flex w-full cursor-pointer items-center justify-between gap-3 p-3.5 text-left sm:px-5 hover:bg-slate-50/70 transition-colors"
@@ -662,13 +676,20 @@ export default function DashboardPage() {
 
       {viewingLiveShift && (
         <PlanDetailModal
-          planId={viewingLiveShift.planId}
-          shiftDate={viewingLiveShift.date || undefined}
-          assignedWorkers={viewingLiveShift.assignedWorkers}
+          planId={viewingLiveShift.fallback.planId || viewingLiveShift.shiftId}
+          liveShiftId={viewingLiveShift.shiftId}
+          shiftDate={viewingLiveShift.fallback.date || undefined}
+          assignTarget={{
+            planId: viewingLiveShift.fallback.planId || viewingLiveShift.shiftId,
+            date: viewingLiveShift.fallback.date,
+            locationName: viewingLiveShift.fallback.location,
+            startTime: viewingLiveShift.fallback.startAt || viewingLiveShift.fallback.startTime,
+            endTime: viewingLiveShift.fallback.endTime,
+          }}
           shiftSchedule={{
-            date: viewingLiveShift.date,
-            startTime: viewingLiveShift.startTime,
-            endTime: viewingLiveShift.endTime,
+            date: viewingLiveShift.fallback.date,
+            startTime: viewingLiveShift.fallback.startAt || viewingLiveShift.fallback.startTime,
+            endTime: viewingLiveShift.fallback.endTime,
           }}
           onClose={() => setViewingLiveShift(null)}
           onAssigned={() => {

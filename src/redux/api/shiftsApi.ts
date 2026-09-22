@@ -506,20 +506,49 @@ export type TodayLiveShiftItem = {
     name?: string;
   };
   assigned_workers?: Array<{
-    worker_id: string;
+    worker_id?: string;
+    worker?: string;
     name: string;
     profile_photo?: string;
     profile_picture?: string;
     worker_type?: string;
     shift_role?: string;
+    role?: string;
+    assigned_with_conflict?: boolean;
     check_in_time?: string;
     checkin_time?: string;
+    check_in_at?: string | null;
+    check_out_at?: string | null;
     attendance_status?: string;
     status?: string;
     phone?: string;
     phone_number?: string;
   }>;
   workers?: TodayLiveShiftItem["assigned_workers"];
+  rooms?: Array<{
+    room?: string;
+    name: string;
+    room_type?: string;
+    total_task?: number;
+    completed_task?: number;
+    progress_percent?: number;
+  }>;
+  tasks?: Array<{
+    task?: string;
+    room?: string;
+    name: string;
+    duration_minutes?: number;
+    is_photo_required?: boolean;
+    photo_requirements?: Array<{
+      title: string;
+      description?: string;
+      photo_url?: string | null;
+      is_uploaded?: boolean;
+    }>;
+    is_completed?: boolean;
+    completed_at?: string | null;
+    source?: string;
+  }>;
 };
 
 export type TodayLiveShiftsResponse = {

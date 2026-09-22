@@ -25,6 +25,12 @@ export const formatHour12 = (hour: number) => {
   return `${hour12} ${period}`;
 };
 
+export const isShiftCompleted = (status?: string) =>
+  (status || "").toLowerCase() === "completed";
+
+export const isRealShiftId = (id?: string) =>
+  Boolean(id && !id.startsWith("virtual-"));
+
 export type ShiftTheme = 'blue' | 'pink' | 'orange' | 'purple' | 'green' | 'teal' | 'gray';
 
 export interface Shift {

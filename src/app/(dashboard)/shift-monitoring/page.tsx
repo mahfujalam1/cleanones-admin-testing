@@ -83,7 +83,7 @@ function dateOfLiveShift(shift: TodayLiveShiftItem) {
 function crewOfLiveShift(shift: TodayLiveShiftItem): PlanRosterAssignedWorker[] {
   return (shift.assigned_workers ?? shift.workers ?? [])
     .map((worker) => ({
-      worker_id: worker.worker_id,
+      worker_id: worker.worker_id || worker.worker || worker.name,
       name: worker.name,
       role: worker.shift_role || worker.worker_type,
     }))

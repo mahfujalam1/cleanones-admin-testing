@@ -2,10 +2,11 @@
 
 import React from "react";
 import { usePathname } from "next/navigation";
-import { MdLocationOn } from "react-icons/md";
-import { Shift, formatHour12, formatTime12 } from "./types";
+import { MdCheckCircle, MdLocationOn } from "react-icons/md";
+import { Shift, formatHour12, formatTime12, isShiftCompleted } from "./types";
 import { getLocale } from "@/lib/locale";
 import { getScreenCopy } from "@/lib/screen-copy";
+import { getUiTranslation } from "@/lib/translations";
 
 interface DayViewProps {
   currentDate: Date;
@@ -22,8 +23,12 @@ const EMPLOYEE_WIDTH = 220;
 const MIN_SHIFT_WIDTH = 104;
 const colors = ["#0ea5e9", "#0284c7", "#06a7df", "#0891b2", "#38a9db", "#0369a1", "#0b9fd3", "#0284c7"];
 
+const COMPLETED_COLOR = "#059669";
+
 export function DayView({ currentDate, shifts, teamMembers, onShiftClick }: DayViewProps) {
-  const copy = getScreenCopy(getLocale(usePathname()));
+  const locale = getLocale(usePathname());
+  const copy = getScreenCopy(locale);
+  const ui = getUiTranslation(locale);
   const dateKey = toDateKey(currentDate);
   const dayShifts = shifts.filter((shift) => shift.date === dateKey);
   const rows = teamMembers && teamMembers.length > 0
@@ -72,12 +77,13 @@ export function DayView({ currentDate, shifts, teamMembers, onShiftClick }: DayV
                   
                   
                   const width = Math.max(span, MIN_SHIFT_WIDTH);
-                  const color = colors[(rowIndex + shiftIndex) % colors.length];
+                  const completed = isShiftCompleted(shift.status);
+                  const color = completed ? COMPLETED_COLOR : colors[(rowIndex + shiftIndex) % colors.length];
                   const showLocation = span >= 150;
-                  return <button key={shift.id ? `${shift.id}-${shiftIndex}` : `shift-${rowIndex}-${shiftIndex}`} onClick={() => onShiftClick(shift)} title={`${shift.workerName}: ${formatTime12(shift.startTime)}–${formatTime12(shift.endTime)} · ${shift.location}`} className={`absolute top-3.5 flex h-[46px] items-center overflow-hidden rounded border border-white/25 text-left text-white transition-[filter,transform] hover:z-10 hover:brightness-95 active:scale-[.995] ${showLocation ? "px-3" : "justify-center px-2"}`} style={{ left, width, backgroundColor: color }}>
+                  return <button key={shift.id ? `${shift.id}-${shiftIndex}` : `shift-${rowIndex}-${shiftIndex}`} onClick={() => onShiftClick(shift)} title={`${shift.workerName}: ${formatTime12(shift.startTime)}–${formatTime12(shift.endTime)} · ${shift.location}${completed ? ` · ${ui.completed}` : ""}`} className={`absolute top-3.5 flex h-[46px] items-center overflow-hidden rounded border border-white/25 text-left text-white transition-[filter,transform] hover:z-10 hover:brightness-95 active:scale-[.995] ${showLocation ? "px-3" : "justify-center px-2"}`} style={{ left, width, backgroundColor: color }}>
                     {showLocation ? <>
-                      <span className="flex min-w-0 flex-1 items-center gap-2"><b className="shrink-0 text-xs tabular-nums">{formatTime12(shift.startTime)}</b><span className="h-5 w-px shrink-0 bg-white/25" /><span className="min-w-0 truncate text-[11px] font-medium"><MdLocationOn className="mr-1 inline text-sm text-white/80" />{shift.location}</span></span><b className="ml-2 shrink-0 text-xs tabular-nums">{formatTime12(shift.endTime)}</b>
-                    </> : <b className="truncate text-[11px] font-semibold tabular-nums">{formatTime12(shift.startTime)}–{formatTime12(shift.endTime)}</b>}
+                      <span className="flex min-w-0 flex-1 items-center gap-2">{completed ? <MdCheckCircle className="shrink-0 text-sm text-white" /> : null}<b className="shrink-0 text-xs tabular-nums">{formatTime12(shift.startTime)}</b><span className="h-5 w-px shrink-0 bg-white/25" /><span className="min-w-0 truncate text-[11px] font-medium"><MdLocationOn className="mr-1 inline text-sm text-white/80" />{shift.location}</span></span><b className="ml-2 shrink-0 text-xs tabular-nums">{formatTime12(shift.endTime)}</b>
+                    </> : <span className="flex min-w-0 items-center gap-1"><b className="truncate text-[11px] font-semibold tabular-nums">{formatTime12(shift.startTime)}–{formatTime12(shift.endTime)}</b>{completed ? <MdCheckCircle className="shrink-0 text-sm text-white" /> : null}</span>}
                   </button>;
                 })}
               </div>
@@ -96,7 +102,7 @@ export function DayView({ currentDate, shifts, teamMembers, onShiftClick }: DayV
         </div>
       </div>
     </div>
-    <div className="flex shrink-0 flex-wrap items-center gap-4 border-t border-slate-200 bg-slate-50 px-4 py-2 text-[10px] text-slate-500"><span className="flex items-center gap-1.5"><i className="h-2 w-2 rounded-full bg-sky-500" /> {copy.scheduledShift}</span>{isToday && <span className="flex items-center gap-1.5"><i className="h-3 w-0.5 bg-red-500" /> {copy.currentTime}</span>}<span className="ml-auto hidden text-slate-400 sm:block">{copy.scrollFullDay}</span></div>
+    <div className="flex shrink-0 flex-wrap items-center gap-4 border-t border-slate-200 bg-slate-50 px-4 py-2 text-[10px] text-slate-500"><span className="flex items-center gap-1.5"><i className="h-2 w-2 rounded-full bg-sky-500" /> {copy.scheduledShift}</span><span className="flex items-center gap-1.5"><i className="h-2 w-2 rounded-full bg-emerald-600" /> {ui.completed}</span>{isToday && <span className="flex items-center gap-1.5"><i className="h-3 w-0.5 bg-red-500" /> {copy.currentTime}</span>}<span className="ml-auto hidden text-slate-400 sm:block">{copy.scrollFullDay}</span></div>
   </section>;
 }
 

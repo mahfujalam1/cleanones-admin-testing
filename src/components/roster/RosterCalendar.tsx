@@ -6,9 +6,7 @@ import { DayView } from './DayView';
 import { WeekView } from './WeekView';
 import { MonthView } from './MonthView';
 import dynamic from 'next/dynamic';
-
-const ShiftModal = dynamic(() => import('./ShiftModal').then((mod) => mod.ShiftModal), { ssr: false });
-import { Shift, ShiftTheme, planIdFromShift } from './types';
+import { Shift, ShiftTheme, isRealShiftId, planIdFromShift } from './types';
 import { PlanDetailModal } from '@/components/cleaningPlans/PlanDetailModal';
 import { PlanForm } from '@/components/cleaningPlans/PlanForm';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
@@ -29,6 +27,12 @@ import { usePathname } from 'next/navigation';
 import { getLocale } from '@/lib/locale';
 import { getDashboardTranslation } from '@/lib/translations';
 
+const ShiftModal = dynamic(() => import('./ShiftModal').then((mod) => mod.ShiftModal), { ssr: false });
+const LiveShiftDetailModal = dynamic(
+  () => import('./LiveShiftDetailModal').then((mod) => mod.LiveShiftDetailModal),
+  { ssr: false },
+);
+
 export function RosterCalendar() {
   const pathname = usePathname();
   const locale = getLocale(pathname);
@@ -48,6 +52,9 @@ export function RosterCalendar() {
   
   
   const selectedPlanId = selectedShift ? (selectedShift.planId || planIdFromShift(selectedShift.id)) : '';
+  const showLiveShift = Boolean(
+    selectedShift && isRealShiftId(selectedShift.id) && !selectedShift.isVirtual,
+  );
 
   const handlePlanDelete = async (plan: CleaningPlan) => {
     try {
@@ -330,7 +337,18 @@ export function RosterCalendar() {
         />
       </div>
 
-      {selectedPlanId && (
+      {showLiveShift && selectedShift && (
+        <LiveShiftDetailModal
+          shiftId={selectedShift.id}
+          fallback={selectedShift}
+          onClose={() => setSelectedShift(null)}
+          onAssigned={() => {
+            void refetchCurrent();
+          }}
+        />
+      )}
+
+      {selectedPlanId && !showLiveShift && (
         <PlanDetailModal
           planId={selectedPlanId}
           assignTarget={canAssignSelected ? {
@@ -381,7 +399,7 @@ export function RosterCalendar() {
         />
       )}
 
-      {selectedShift && !selectedPlanId && (
+      {selectedShift && !selectedPlanId && !showLiveShift && (
         <ShiftModal shift={selectedShift} onClose={() => setSelectedShift(null)} />
       )}
 
