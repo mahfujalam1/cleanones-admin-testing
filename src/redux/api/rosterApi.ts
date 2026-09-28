@@ -88,6 +88,7 @@ export type PlanRosterPlan = {
   plan_title: string;
   location_name: string;
   total_shifts_in_range?: number;
+  unassigned_shift_count?: number;
   total_hours_in_range?: number;
   shifts: PlanRosterShift[];
 };
@@ -133,6 +134,64 @@ export type ShiftAssignWorkersInput = {
   start_time: string;
   end_time: string;
   force?: boolean;
+};
+
+export type BulkAssignRole = "Team leader" | "Co-leader" | "Normal worker";
+
+export type BulkAssignPreviewDate = {
+  date: string;
+  weekday: string;
+};
+
+export type BulkAssignPreviewParams = {
+  planId: string;
+  worker: string;
+  from: string;
+  to: string;
+};
+
+export type BulkAssignPreview = {
+  worker_id: string;
+  worker_name: string;
+  range: { from: string; to: string };
+  matching_dates: BulkAssignPreviewDate[];
+  other_gap_dates: BulkAssignPreviewDate[];
+  already_covered_count: number;
+};
+
+export type BulkAssignInput = {
+  planId: string;
+  worker: string;
+  role: BulkAssignRole;
+  dates: string[];
+  start_time: string;
+  end_time: string;
+  force?: boolean;
+};
+
+export type BulkAssignConflict = {
+  date: string;
+  reason: string;
+};
+
+export type BulkAssignFailure = {
+  date: string;
+  message: string;
+};
+
+export type BulkAssignCounts = {
+  assigned: number;
+  skipped_already_staffed: number;
+  ignored_due_to_conflict: number;
+  failed: number;
+};
+
+export type BulkAssignOutcome = {
+  assigned: string[];
+  skipped_already_staffed: string[];
+  ignored_due_to_conflict: BulkAssignConflict[];
+  failed: BulkAssignFailure[];
+  counts: BulkAssignCounts;
 };
 
 export type PlanShiftRoom = {
@@ -305,6 +364,85 @@ export function normalizePlanShift(raw: unknown): PlanShiftDetail {
   };
 }
 
+function asDateKey(value: unknown): string {
+  if (!value) return "";
+  const text = String(value);
+  return text.includes("T") ? text.slice(0, 10) : text;
+}
+
+function normalizePreviewDates(value: unknown): BulkAssignPreviewDate[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((entry) => {
+      if (typeof entry === "string") return { date: asDateKey(entry), weekday: "" };
+      const row = asRecord(entry) ?? {};
+      return {
+        date: asDateKey(row.date),
+        weekday: row.weekday != null ? String(row.weekday) : "",
+      };
+    })
+    .filter((item) => item.date);
+}
+
+function normalizeBulkAssignPreview(raw: unknown): BulkAssignPreview {
+  const data = asRecord(raw) ?? {};
+  const range = asRecord(data.range) ?? {};
+  return {
+    worker_id: String(data.worker_id ?? ""),
+    worker_name: String(data.worker_name ?? ""),
+    range: { from: asDateKey(range.from), to: asDateKey(range.to) },
+    matching_dates: normalizePreviewDates(data.matching_dates),
+    other_gap_dates: normalizePreviewDates(data.other_gap_dates),
+    already_covered_count: Number(data.already_covered_count ?? 0),
+  };
+}
+
+function normalizeBulkAssignOutcome(raw: unknown): BulkAssignOutcome {
+  const data = asRecord(raw) ?? {};
+  const assigned = Array.isArray(data.assigned) ? data.assigned.map(asDateKey).filter(Boolean) : [];
+  const skipped_already_staffed = Array.isArray(data.skipped_already_staffed)
+    ? data.skipped_already_staffed.map(asDateKey).filter(Boolean)
+    : [];
+  const ignoredRaw = data.ignored_due_to_conflict ?? data.conflicts;
+  const ignored_due_to_conflict = Array.isArray(ignoredRaw)
+    ? ignoredRaw
+        .map((entry) => {
+          if (typeof entry === "string") return { date: asDateKey(entry), reason: "double_booked" };
+          const row = asRecord(entry) ?? {};
+          return {
+            date: asDateKey(row.date),
+            reason: row.reason != null ? String(row.reason) : "double_booked",
+          };
+        })
+        .filter((item) => item.date)
+    : [];
+  const failed = Array.isArray(data.failed)
+    ? data.failed
+        .map((entry) => {
+          if (typeof entry === "string") return { date: asDateKey(entry), message: "Failed to assign" };
+          const row = asRecord(entry) ?? {};
+          return {
+            date: asDateKey(row.date),
+            message: row.message != null ? String(row.message) : "Failed to assign",
+          };
+        })
+        .filter((item) => item.date)
+    : [];
+  const countsRaw = asRecord(data.counts);
+  return {
+    assigned,
+    skipped_already_staffed,
+    ignored_due_to_conflict,
+    failed,
+    counts: {
+      assigned: Number(countsRaw?.assigned ?? assigned.length),
+      skipped_already_staffed: Number(countsRaw?.skipped_already_staffed ?? skipped_already_staffed.length),
+      ignored_due_to_conflict: Number(countsRaw?.ignored_due_to_conflict ?? ignored_due_to_conflict.length),
+      failed: Number(countsRaw?.failed ?? failed.length),
+    },
+  };
+}
+
 export const rosterApi = baseApi.injectEndpoints({
   overrideExisting: true,
   endpoints: (builder) => ({
@@ -385,6 +523,29 @@ export const rosterApi = baseApi.injectEndpoints({
         { type: tagTypes.cleaningPlans, id: planId },
       ],
     }),
+
+    getBulkAssignPreview: builder.query<BulkAssignPreview, BulkAssignPreviewParams>({
+      query: ({ planId, worker, from, to }) => {
+        const q = new URLSearchParams({ worker, from, to });
+        return `/shift/${encodeURIComponent(planId)}/bulk-assign/preview?${q.toString()}`;
+      },
+      transformResponse: (raw: unknown) => normalizeBulkAssignPreview(raw),
+    }),
+
+    bulkAssignShifts: builder.mutation<BulkAssignOutcome, BulkAssignInput>({
+      query: ({ planId, worker, role, dates, start_time, end_time, force }) => ({
+        url: `/shift/${encodeURIComponent(planId)}/bulk-assign`,
+        method: "POST",
+        body: { worker, role, dates, start_time, end_time, force: Boolean(force) },
+      }),
+      transformResponse: (raw: unknown) => normalizeBulkAssignOutcome(raw),
+      invalidatesTags: (_result, _error, { planId }) => [
+        { type: tagTypes.roster, id: "LIST" },
+        { type: tagTypes.shifts, id: "LIST" },
+        { type: tagTypes.cleaningPlans, id: "LIST" },
+        { type: tagTypes.cleaningPlans, id: planId },
+      ],
+    }),
   }),
 });
 
@@ -394,4 +555,6 @@ export const {
   useGetShiftRosterQuery,
   useGetShiftEligibleWorkersQuery,
   useAssignShiftWorkersMutation,
+  useLazyGetBulkAssignPreviewQuery,
+  useBulkAssignShiftsMutation,
 } = rosterApi;

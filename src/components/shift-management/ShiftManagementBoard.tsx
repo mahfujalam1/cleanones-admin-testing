@@ -1,12 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   MdAccessTime,
   MdCheckCircle,
   MdChevronLeft,
   MdChevronRight,
   MdEventNote,
+  MdWarningAmber,
 } from "react-icons/md";
 import type { ShiftAssignTarget } from "@/components/cleaningPlans/AssignWorkersModal";
 import { PlanDetailModal } from "@/components/cleaningPlans/PlanDetailModal";
@@ -30,10 +31,42 @@ import { getScreenCopy } from "@/lib/screen-copy";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import type { CleaningPlan } from "@/redux/api/endpoints/cleaningPlans.api";
 import { PlanShiftCell } from "./PlanShiftCell";
-import { canStaff, datesForView, shiftEndFromDuration, shiftDateKey, toDateKey } from "./planShift";
+import { BulkAssignModal, type BulkAssignTarget } from "./BulkAssignModal";
+import { canStaff, datesForView, isUnstaffed, shiftEndFromDuration, shiftDateKey, toDateKey } from "./planShift";
 
 const LIMIT = 10;
-const PLAN_COL = 200;
+const PLAN_COL = 228;
+
+function selectionKey(planId: string, date: string) {
+  return `${planId}:${date}`;
+}
+
+function PlanSelectCheckbox({
+  checked,
+  indeterminate,
+  onChange,
+  label,
+}: {
+  checked: boolean;
+  indeterminate: boolean;
+  onChange: () => void;
+  label: string;
+}) {
+  const ref = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (ref.current) ref.current.indeterminate = indeterminate && !checked;
+  }, [checked, indeterminate]);
+  return (
+    <input
+      ref={ref}
+      type="checkbox"
+      checked={checked}
+      onChange={onChange}
+      aria-label={label}
+      className="mt-1 h-3.5 w-3.5 shrink-0 cursor-pointer rounded border-slate-300 accent-primary"
+    />
+  );
+}
 
 export function ShiftManagementBoard() {
   const locale = getLocale(usePathname());
@@ -49,10 +82,11 @@ export function ShiftManagementBoard() {
   const [locationId, setLocationId] = useState("");
   const [viewing, setViewing] = useState<{ planId: string; shift?: PlanRosterShift } | null>(null);
   const [editingPlan, setEditingPlan] = useState<CleaningPlan | null>(null);
+  const [bulkAssign, setBulkAssign] = useState<BulkAssignTarget | null>(null);
+  const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
 
   const days = useMemo(() => datesForView(view, currentDate), [view, currentDate]);
-  const compact = view === "month";
-  const colWidth = view === "day" ? 360 : view === "week" ? 170 : 104;
+  const colWidth = view === "day" ? 360 : view === "week" ? 170 : 176;
 
   const params: PlanRosterParams = useMemo(() => {
     if (view === "month") {
@@ -85,9 +119,10 @@ export function ShiftManagementBoard() {
     (total, shift) => total + (shift.duration_minutes ?? 0) / 60,
     0,
   );
-  const unassignedCount = visibleShifts.filter(
-    (shift) => !shift.assigned_workers?.length,
-  ).length;
+  const reportedGaps = plans.some((plan) => typeof plan.unassigned_shift_count === "number");
+  const unassignedCount = reportedGaps
+    ? plans.reduce((total, plan) => total + (plan.unassigned_shift_count ?? 0), 0)
+    : visibleShifts.filter((shift) => !shift.assigned_workers?.length).length;
 
   const handlePrev = () => {
     const next = new Date(currentDate);
@@ -119,6 +154,87 @@ export function ShiftManagementBoard() {
 
   const openPlan = (planId: string, shift?: PlanRosterShift) => {
     setViewing({ planId, shift });
+  };
+
+  const unassignedDatesForPlan = (plan: (typeof plans)[number]) =>
+    days
+      .map((day) => {
+        const key = toDateKey(day);
+        const shift = (plan.shifts ?? []).find((item) => shiftDateKey(item.date) === key);
+        return shift && isUnstaffed(shift) ? key : "";
+      })
+      .filter(Boolean);
+
+  const staffedDatesForPlan = (plan: (typeof plans)[number]) =>
+    (plan.shifts ?? [])
+      .filter((shift) => (shift.assigned_workers ?? []).length > 0)
+      .map((shift) => shiftDateKey(shift.date))
+      .filter(Boolean);
+
+  const assignedWorkersForPlan = (plan: (typeof plans)[number]) => {
+    const seen = new Map<string, string>();
+    for (const shift of plan.shifts ?? []) {
+      for (const worker of shift.assigned_workers ?? []) {
+        if (worker.worker_id && !seen.has(worker.worker_id)) {
+          seen.set(worker.worker_id, worker.name);
+        }
+      }
+    }
+    return [...seen.entries()].map(([worker_id, name]) => ({ worker_id, name }));
+  };
+
+  const toggleDate = (planId: string, date: string) => {
+    const key = selectionKey(planId, date);
+    setSelectedKeys((current) => {
+      const next = new Set(current);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+
+  const togglePlanDates = (plan: (typeof plans)[number]) => {
+    const dates = unassignedDatesForPlan(plan);
+    setSelectedKeys((current) => {
+      const next = new Set(current);
+      const allSelected = dates.length > 0 && dates.every((date) => next.has(selectionKey(plan.plan_id, date)));
+      for (const date of dates) {
+        const key = selectionKey(plan.plan_id, date);
+        if (allSelected) next.delete(key);
+        else next.add(key);
+      }
+      return next;
+    });
+  };
+
+  const openBulkAssign = (plan: (typeof plans)[number], datesOverride?: string[]) => {
+    const unassigned = unassignedDatesForPlan(plan);
+    const picked = unassigned.filter((date) => selectedKeys.has(selectionKey(plan.plan_id, date)));
+    const dates = (datesOverride ?? (picked.length ? picked : unassigned)).slice().sort();
+    const durationMinutes =
+      (plan.shifts ?? []).find((shift) => isUnstaffed(shift) && shift.duration_minutes)?.duration_minutes ??
+      (plan.shifts ?? []).find((shift) => shift.duration_minutes)?.duration_minutes;
+    setBulkAssign({
+      planId: plan.plan_id,
+      planTitle: plan.plan_title,
+      locationName: plan.location_name,
+      from: dates[0] || toDateKey(days[0]),
+      to: dates[dates.length - 1] || toDateKey(days[days.length - 1]),
+      selectedDates: dates,
+      staffedDates: staffedDatesForPlan(plan),
+      assignedWorkers: assignedWorkersForPlan(plan),
+      durationMinutes,
+    });
+  };
+
+  const openPlanBulkAssign = (plan: (typeof plans)[number]) => {
+    const dates = unassignedDatesForPlan(plan);
+    setSelectedKeys((current) => {
+      const next = new Set(current);
+      for (const date of dates) next.add(selectionKey(plan.plan_id, date));
+      return next;
+    });
+    openBulkAssign(plan, dates);
   };
 
   const viewingShift = useMemo(() => {
@@ -286,7 +402,7 @@ export function ShiftManagementBoard() {
                           {day.toLocaleDateString("en-US", { weekday: "short" })}
                         </span>
                         <b className={`mt-0.5 text-xs font-semibold ${today ? "text-primary" : "text-slate-700"}`}>
-                          {day.toLocaleDateString("en-GB", { day: "numeric", month: compact ? undefined : "short" })}
+                          {day.toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
                         </b>
                       </div>
                     );
@@ -301,26 +417,51 @@ export function ShiftManagementBoard() {
                       key={plan.plan_id}
                       className={`flex min-h-[104px] border-b border-slate-100 last:border-b-0 ${rowIndex % 2 ? "bg-slate-50/30" : "bg-white"}`}
                     >
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const key = toDateKey(currentDate);
-                          const todayShift = (plan.shifts ?? []).find((item) => shiftDateKey(item.date) === key);
-                          openPlan(plan.plan_id, todayShift);
-                        }}
-                        className={`sticky left-0 z-20 flex shrink-0 flex-row items-center gap-2.5 border-r border-slate-200 px-3 text-left transition-colors hover:bg-sky-50 ${rowIndex % 2 ? "bg-[#fafbfc]" : "bg-white"}`}
+                      <div
+                        className={`sticky left-0 z-20 flex shrink-0 items-center gap-2 border-r border-slate-200 px-3 py-2 ${rowIndex % 2 ? "bg-[#fafbfc]" : "bg-white"}`}
                         style={{ width: PLAN_COL }}
                       >
-                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-sky-50 text-[9px] font-semibold text-sky-600 ring-1 ring-sky-100">
-                          {plan.plan_title.slice(0, 2).toUpperCase()}
-                        </span>
-                        <span className="min-w-0">
-                          <b className="block truncate text-[11px] font-semibold text-slate-800">{plan.plan_title}</b>
-                          <small className="mt-0.5 block truncate text-[9px] text-slate-400">
-                            {(plan.shifts ?? []).length} shifts this {view === "month" ? "month" : view === "day" ? "day" : "week"}
-                          </small>
-                        </span>
-                      </button>
+                        {unassignedDatesForPlan(plan).length > 0 && (
+                          <PlanSelectCheckbox
+                            checked={
+                              unassignedDatesForPlan(plan).length > 0 &&
+                              unassignedDatesForPlan(plan).every((date) =>
+                                selectedKeys.has(selectionKey(plan.plan_id, date)),
+                              )
+                            }
+                            indeterminate={unassignedDatesForPlan(plan).some((date) =>
+                              selectedKeys.has(selectionKey(plan.plan_id, date)),
+                            )}
+                            onChange={() => togglePlanDates(plan)}
+                            label={`Select all unassigned shifts for ${plan.plan_title}`}
+                          />
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => openPlanBulkAssign(plan)}
+                          className="flex min-h-[88px] min-w-0 flex-1 flex-col justify-center gap-1.5 rounded-lg px-1 py-1 text-left transition-colors hover:bg-sky-50"
+                        >
+                          <span className="flex min-w-0 items-center gap-2.5">
+                            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-sky-50 text-[9px] font-semibold text-sky-600 ring-1 ring-sky-100">
+                              {plan.plan_title.slice(0, 2).toUpperCase()}
+                            </span>
+                            <span className="min-w-0">
+                              <b className="block truncate text-[11px] font-semibold text-slate-800">{plan.plan_title}</b>
+                              <small className="mt-0.5 block truncate text-[9px] text-slate-400">
+                                {(plan.shifts ?? []).length} shifts this {view === "month" ? "month" : view === "day" ? "day" : "week"}
+                              </small>
+                            </span>
+                          </span>
+                          {(plan.unassigned_shift_count ?? 0) > 0 && (
+                            <span className="inline-flex max-w-full items-center gap-1 self-start rounded bg-amber-50 px-1.5 py-0.5 text-[9px] font-semibold text-amber-700 ring-1 ring-amber-200">
+                              <MdWarningAmber className="shrink-0 text-[11px]" />
+                              <span className="truncate">
+                                {plan.unassigned_shift_count} shift{plan.unassigned_shift_count === 1 ? "" : "s"} need staffing
+                              </span>
+                            </span>
+                          )}
+                        </button>
+                      </div>
                       {days.map((day) => {
                         const key = toDateKey(day);
                         const shift = (plan.shifts ?? []).find((item) => shiftDateKey(item.date) === key);
@@ -328,9 +469,12 @@ export function ShiftManagementBoard() {
                           <div key={`${plan.plan_id}-${key}`} className="flex shrink-0 items-center border-r border-slate-200 p-1.5 last:border-r-0" style={{ width: colWidth }}>
                             <PlanShiftCell
                               shift={shift}
-                              compact={compact}
                               planTitle={plan.plan_title}
                               locationName={plan.location_name}
+                              selected={Boolean(shift && selectedKeys.has(selectionKey(plan.plan_id, key)))}
+                              onToggleSelect={
+                                shift && isUnstaffed(shift) ? () => toggleDate(plan.plan_id, key) : undefined
+                              }
                               onView={(item) => openPlan(plan.plan_id, item)}
                             />
                           </div>
@@ -344,6 +488,7 @@ export function ShiftManagementBoard() {
             <div className="flex shrink-0 flex-wrap items-center gap-3 border-t border-slate-200 bg-slate-50 px-4 py-2 text-[9px] text-slate-400">
               <span className="flex items-center gap-1.5"><i className="h-2 w-2 rounded-full bg-amber-400" /> Worker not assigned</span>
               <span className="flex items-center gap-1.5"><i className="h-2 w-2 rounded-full bg-sky-500" /> Staffed</span>
+              <span className="flex items-center gap-1.5">☐ Tick cells, or click a plan card to bulk assign</span>
               <span className="ml-auto hidden items-center gap-1 sm:flex"><MdAccessTime /> {copy.scrollFullPeriod}</span>
             </div>
           </section>
@@ -394,6 +539,17 @@ export function ShiftManagementBoard() {
           plan={editingPlan}
           onClose={() => {
             setEditingPlan(null);
+            void refetch();
+          }}
+        />
+      )}
+
+      {bulkAssign && (
+        <BulkAssignModal
+          target={bulkAssign}
+          onClose={() => setBulkAssign(null)}
+          onAssigned={() => {
+            setSelectedKeys(new Set());
             void refetch();
           }}
         />

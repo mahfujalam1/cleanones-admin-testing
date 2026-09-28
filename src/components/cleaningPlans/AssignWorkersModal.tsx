@@ -393,7 +393,7 @@ export function AssignWorkersPanel({
                         <p className="truncate text-sm font-semibold text-slate-900">{name}</p>
                         {unavailable && (
                           <span className="shrink-0 rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-700">
-                            Not available
+                            Today not available
                           </span>
                         )}
                         {isConflict && (

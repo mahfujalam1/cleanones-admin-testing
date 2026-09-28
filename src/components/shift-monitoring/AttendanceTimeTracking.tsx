@@ -117,13 +117,12 @@ export function AttendanceTimeTracking({ onWorkerSelect, selectedWorkerId, timeR
   });
   const loading = loadingWorkerList || loadingSummary;
 
-  const directoryWorkers = workerListRes?.result ?? [];
-
   useEffect(() => {
     setPage(1);
   }, [search, roleFilter, sortBy, timeRange]);
 
   const workers: WorkerInfo[] = useMemo(() => {
+    const directoryWorkers = workerListRes?.result ?? [];
     let list = directoryWorkers.map(mapDirectoryWorker);
 
     if (roleFilter !== 'All') {
@@ -142,7 +141,7 @@ export function AttendanceTimeTracking({ onWorkerSelect, selectedWorkerId, timeR
       if (sortBy === 'name') return a.name.localeCompare(b.name);
       return 0;
     });
-  }, [directoryWorkers, roleFilter, search, sortBy]);
+  }, [workerListRes?.result, roleFilter, search, sortBy]);
 
   
   const summaryStats = useMemo(() => {

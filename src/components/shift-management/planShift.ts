@@ -28,6 +28,7 @@ export function shiftDateKey(value?: string | null) {
 
 export function isUnstaffed(shift?: PlanRosterShift | null) {
   if (!shift) return false;
+  if ((shift.assigned_workers ?? []).length > 0) return false;
   const status = (shift.status ?? "").toLowerCase();
   return Boolean(shift.is_virtual) || status === "unstaffed" || !shift.shift_id;
 }
