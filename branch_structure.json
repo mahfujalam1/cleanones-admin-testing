@@ -1,0 +1,24 @@
+{
+  "default_branch": "main",
+  "branches": [
+    "main",
+    "new-update",
+    "origin",
+    "task-assign",
+    "testing"
+  ],
+  "parent": {
+    "main": null,
+    "new-update": "main",
+    "origin": "main",
+    "task-assign": "main",
+    "testing": "main"
+  },
+  "order": [
+    "main",
+    "new-update",
+    "origin",
+    "task-assign",
+    "testing"
+  ]
+}

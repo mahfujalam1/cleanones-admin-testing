@@ -258,6 +258,7 @@ export function ShiftManagementBoard() {
       startTime: viewingShift.start_time ?? undefined,
       endTime: shiftEndFromDuration(viewingShift),
       durationMinutes: viewingShift.duration_minutes,
+      status: viewingShift.status,
       assignedWorkers: viewingShift.assigned_workers,
     };
   }, [viewing, viewingShift, plans]);
