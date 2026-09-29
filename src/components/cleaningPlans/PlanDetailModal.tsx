@@ -689,6 +689,7 @@ export function PlanDetailModal({
         startTime: liveSchedule.startTime ?? undefined,
         endTime: liveSchedule.endTime ?? undefined,
         durationMinutes: durationMinutes || undefined,
+        status: planShift?.status ?? assignTarget?.status,
         assignedWorkers: liveWorkers,
       }
     : undefined;
@@ -696,7 +697,7 @@ export function PlanDetailModal({
     ? canReassign({
         startTime,
         date: liveSchedule.date,
-        status: planShift?.status,
+        status: planShift?.status ?? assignTarget?.status,
       })
     : Boolean(assignTarget) || Boolean(onAssign);
   const canAssign = Boolean(staffable && (liveAssignTarget || onAssign));

@@ -70,6 +70,9 @@ export function LiveShiftDetailModal({
       worker_id: worker.worker_id || worker.worker || "",
       name: worker.name,
       role: worker.role || worker.shift_role,
+      check_in_at: worker.check_in_at || worker.check_in_time || worker.checkin_time || null,
+      check_out_at: worker.check_out_at || null,
+      check_in_time: worker.check_in_at || worker.check_in_time || worker.checkin_time || null,
     }))
     .filter((worker) => worker.worker_id);
   const photoCount = tasks.reduce((total, task) => {
@@ -95,6 +98,7 @@ export function LiveShiftDetailModal({
         startTime: startIso || fallback?.startTime,
         endTime: endIso || fallback?.endTime,
         durationMinutes: duration,
+        status,
         assignedWorkers,
       }
     : undefined;
