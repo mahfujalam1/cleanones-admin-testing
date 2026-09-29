@@ -6,6 +6,7 @@ import { MdOutlineClose, MdWarningAmber } from "react-icons/md";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
 import { SearchInput, ErrorNotice } from "@/components/shared/ListStates";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { FieldLabel } from "@/components/shared/Field";
 import { TimePicker } from "@/components/ui/time-picker";
 import { apiError } from "@/redux/api/apiError";
@@ -17,7 +18,7 @@ import {
   type PlanRosterAssignedWorker,
 } from "@/redux/api/rosterApi";
 import { useModalJump } from "@/hooks/useModalJump";
-import { endFromStart } from "@/components/shift-management/planShift";
+import { endFromStart, formatClock } from "@/components/shift-management/planShift";
 
 
 const ROLES = ["Team leader", "Co-leader", "Normal worker"] as const;
@@ -33,6 +34,7 @@ export type ShiftAssignTarget = {
   startTime?: string;
   endTime?: string;
   durationMinutes?: number;
+  status?: string;
   assignedWorkers?: PlanRosterAssignedWorker[];
 };
 
@@ -100,6 +102,22 @@ function workerIdOf(worker: { _id?: string; id?: string; worker_id?: string }) {
   return worker._id || worker.id || worker.worker_id || "";
 }
 
+function crewById(workers: PlanRosterAssignedWorker[] | undefined, id: string) {
+  return workers?.find((worker) => worker.worker_id === id);
+}
+
+function hasCheckedIn(worker?: PlanRosterAssignedWorker) {
+  return Boolean(worker?.check_in_at || worker?.check_in_time);
+}
+
+function attendanceLabel(worker?: PlanRosterAssignedWorker) {
+  const checkedOut = worker?.check_out_at;
+  const checkedIn = worker?.check_in_at || worker?.check_in_time;
+  if (checkedOut) return { text: `Checked out — ${formatClock(checkedOut)}`, tone: "slate" as const };
+  if (checkedIn) return { text: `Checked in — ${formatClock(checkedIn)}`, tone: "emerald" as const };
+  return { text: "Not checked in", tone: "amber" as const };
+}
+
 export function AssignWorkersPanel({
   target,
   onCancel,
@@ -113,8 +131,9 @@ export function AssignWorkersPanel({
   embedded?: boolean;
   active?: boolean;
 }) {
-  const lockTimes = Boolean(target.startTime && (target.assignedWorkers?.length ?? 0) > 0);
-  const [startTime, setStartTime] = useState(() => (lockTimes ? toTimeSlot(target.startTime) : ""));
+  const shiftStatus = (target.status ?? "").toLowerCase();
+  const lockTimes = shiftStatus === "in_progress" || shiftStatus === "completed";
+  const [startTime, setStartTime] = useState(() => toTimeSlot(target.startTime));
   const { data: plan } = useGetCleaningPlanQuery(target.planId, {
     skip: !target.planId || Boolean(target.durationMinutes),
   });
@@ -151,9 +170,10 @@ export function AssignWorkersPanel({
   const [workerType, setWorkerType] = useState<WorkerType | "">("");
   const [error, setError] = useState("");
   const [conflict, setConflict] = useState("");
+  const [pendingRemoveId, setPendingRemoveId] = useState("");
 
   useEffect(() => {
-    setStartTime(lockTimes ? toTimeSlot(target.startTime) : "");
+    setStartTime(toTimeSlot(target.startTime));
     setPicked(new Set((target.assignedWorkers ?? []).map((worker) => worker.worker_id).filter(Boolean)));
     setRoles(
       Object.fromEntries(
@@ -168,6 +188,7 @@ export function AssignWorkersPanel({
     setForcedWorkers({});
     setError("");
     setConflict("");
+    setPendingRemoveId("");
   }, [lockTimes, target.planId, target.date, target.startTime, target.endTime, target.assignedWorkers]);
 
   const visible = useMemo(() => {
@@ -179,10 +200,22 @@ export function AssignWorkersPanel({
     });
   }, [eligible, search, workerType]);
 
+  const unassign = (id: string) => {
+    setPicked((current) => {
+      const next = new Set(current);
+      next.delete(id);
+      return next;
+    });
+  };
+
   const toggle = (id: string) => {
     setPicked((current) => {
       const next = new Set(current);
       if (next.has(id)) {
+        if (hasCheckedIn(crewById(target.assignedWorkers, id))) {
+          setPendingRemoveId(id);
+          return current;
+        }
         next.delete(id);
       } else {
         next.add(id);
@@ -201,6 +234,10 @@ export function AssignWorkersPanel({
         setPicked((cur) => new Set(cur).add(id));
         setRoles((cur) => ({ ...cur, [id]: cur[id] || DEFAULT_ROLE }));
       } else {
+        if (hasCheckedIn(crewById(target.assignedWorkers, id))) {
+          setPendingRemoveId(id);
+          return prev;
+        }
         setPicked((cur) => {
           const nextPicked = new Set(cur);
           nextPicked.delete(id);
@@ -316,11 +353,11 @@ export function AssignWorkersPanel({
           {startTime && durationMinutes > 0 ? (
             <p className="mt-1.5 text-[11px] text-slate-400">
               {lockTimes
-                ? "Times are locked for this shift. You can still change workers."
+                ? "Times are locked after this shift starts. You can still change workers."
                 : `Fixed from the ${durationMinutes}m total duration.`}
             </p>
           ) : lockTimes ? (
-            <p className="mt-1.5 text-[11px] text-slate-400">Times are locked for this shift. You can still change workers.</p>
+            <p className="mt-1.5 text-[11px] text-slate-400">Times are locked after this shift starts. You can still change workers.</p>
           ) : null}
         </div>
       </div>
@@ -358,6 +395,8 @@ export function AssignWorkersPanel({
             const isForced = Boolean(forcedWorkers[id]);
             const unavailable = is_available === false;
             const needsForce = isConflict || unavailable;
+            const crew = crewById(target.assignedWorkers, id);
+            const attendance = checked && crew ? attendanceLabel(crew) : null;
 
             return (
               <div
@@ -411,6 +450,19 @@ export function AssignWorkersPanel({
                       <p className="truncate text-xs text-slate-500">
                         {worker.worker_type?.toLowerCase()} · {worker.email}
                       </p>
+                      {attendance && (
+                        <p
+                          className={`mt-1 text-[11px] font-medium ${
+                            attendance.tone === "emerald"
+                              ? "text-emerald-700"
+                              : attendance.tone === "amber"
+                                ? "text-amber-700"
+                                : "text-slate-500"
+                          }`}
+                        >
+                          {attendance.text}
+                        </p>
+                      )}
 
                       {unavailable && (
                         <p className="mt-1 text-xs font-medium text-red-700">
@@ -503,6 +555,20 @@ export function AssignWorkersPanel({
           </div>
         </div>
       </footer>
+      {pendingRemoveId ? (
+        <ConfirmDialog
+          title="Are you sure?"
+          description="This worker will not be paid for time already worked on this shift."
+          confirmText="Remove worker"
+          cancelText="Cancel"
+          onConfirm={() => {
+            unassign(pendingRemoveId);
+            setForcedWorkers((current) => ({ ...current, [pendingRemoveId]: false }));
+            setPendingRemoveId("");
+          }}
+          onClose={() => setPendingRemoveId("")}
+        />
+      ) : null}
     </div>
   );
 }

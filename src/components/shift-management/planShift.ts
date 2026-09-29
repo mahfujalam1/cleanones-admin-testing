@@ -51,8 +51,7 @@ export function canReassign(options: {
   status?: string | null;
 }) {
   const status = (options.status ?? "").toLowerCase();
-  if (status === "completed" || status === "cancelled") return false;
-  return !hasShiftStarted(options.startTime, options.date);
+  return status !== "completed" && status !== "cancelled";
 }
 
 export function canStaff(shift?: PlanRosterShift | null) {
