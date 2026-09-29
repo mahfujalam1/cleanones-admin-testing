@@ -68,6 +68,9 @@ export type PlanRosterAssignedWorker = {
   worker_id: string;
   name: string;
   role?: string;
+  check_in_at?: string | null;
+  check_out_at?: string | null;
+  check_in_time?: string | null;
 };
 
 export type PlanRosterShift = {
@@ -231,17 +234,33 @@ function asRecord(value: unknown): Record<string, unknown> | null {
     : null;
 }
 
+function attendanceStamp(row: Record<string, unknown>, nested?: Record<string, unknown> | null) {
+  const checkIn = row.check_in_at ?? row.check_in_time ?? row.checkin_time ?? nested?.check_in_at ?? nested?.check_in_time;
+  const checkOut = row.check_out_at ?? nested?.check_out_at;
+  return {
+    check_in_at: checkIn != null && String(checkIn) ? String(checkIn) : null,
+    check_out_at: checkOut != null && String(checkOut) ? String(checkOut) : null,
+    check_in_time: checkIn != null && String(checkIn) ? String(checkIn) : null,
+  };
+}
+
 function normalizeAssignedWorker(entry: unknown): PlanRosterAssignedWorker {
   const row = asRecord(entry) ?? {};
   const worker = row.worker;
   if (typeof worker === "string") {
-    return { worker_id: worker, name: String(row.name ?? ""), role: row.role as string | undefined };
+    return {
+      worker_id: worker,
+      name: String(row.name ?? ""),
+      role: row.role as string | undefined,
+      ...attendanceStamp(row),
+    };
   }
   const doc = asRecord(worker);
   return {
     worker_id: String(row.worker_id ?? doc?._id ?? ""),
     name: String(row.name ?? doc?.name ?? ""),
     role: (row.role as string) || undefined,
+    ...attendanceStamp(row, doc),
   };
 }
 

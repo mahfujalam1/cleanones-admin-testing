@@ -357,6 +357,7 @@ export function RosterCalendar() {
             locationName: selectedShift?.location,
             startTime: selectedShift?.startTime,
             endTime: selectedShift?.endTime,
+            status: selectedShift?.status,
             assignedWorkers: selectedShiftWorkers,
           } : undefined}
           assignedWorkers={selectedShiftWorkers}
