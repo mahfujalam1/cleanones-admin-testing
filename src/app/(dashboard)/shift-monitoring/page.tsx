@@ -86,6 +86,9 @@ function crewOfLiveShift(shift: TodayLiveShiftItem): PlanRosterAssignedWorker[] 
       worker_id: worker.worker_id || worker.worker || worker.name,
       name: worker.name,
       role: worker.shift_role || worker.worker_type,
+      check_in_at: worker.check_in_at || worker.check_in_time || worker.checkin_time || null,
+      check_out_at: worker.check_out_at || null,
+      check_in_time: worker.check_in_at || worker.check_in_time || worker.checkin_time || null,
     }))
     .filter((worker) => worker.worker_id || worker.name);
 }
@@ -128,6 +131,7 @@ export default function LiveStatusPage() {
     date: string;
     startTime?: string;
     endTime?: string;
+    status?: string;
     assignedWorkers?: PlanRosterAssignedWorker[];
   } | null>(null);
   const [search, setSearch] = useState("");
@@ -395,6 +399,7 @@ export default function LiveStatusPage() {
                     planId: item.plan_id,
                     date: item.date_key,
                     startTime: item.rawItem?.date_time,
+                    status: item.status,
                     assignedWorkers: item.assignedWorkers,
                   });
                 }}
@@ -513,6 +518,14 @@ export default function LiveStatusPage() {
         <PlanDetailModal
           planId={viewingLiveShift.planId}
           shiftDate={viewingLiveShift.date || undefined}
+          assignTarget={{
+            planId: viewingLiveShift.planId,
+            date: viewingLiveShift.date,
+            startTime: viewingLiveShift.startTime,
+            endTime: viewingLiveShift.endTime,
+            status: viewingLiveShift.status,
+            assignedWorkers: viewingLiveShift.assignedWorkers,
+          }}
           assignedWorkers={viewingLiveShift.assignedWorkers}
           shiftSchedule={{
             date: viewingLiveShift.date,
