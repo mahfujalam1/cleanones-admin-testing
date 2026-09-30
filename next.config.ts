@@ -38,7 +38,7 @@ const nextConfig: NextConfig = {
       },
     ];
   },
-  allowedDevOrigins: ["10.10.28.194", "10.10.28.195", "cleanones.vercel.app", "https://cleanones-admin-testing.vercel.app"],
+  allowedDevOrigins: ["10.10.28.194", "10.10.28.195", "https://cleanones.vercel.app", "https://cleanones-admin-testing.vercel.app"],
   images: {
     remotePatterns: [
       ...(targetUrl
