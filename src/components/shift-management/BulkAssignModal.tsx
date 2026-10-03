@@ -397,6 +397,7 @@ export function BulkAssignModal({
   };
 
   const pickWorker = (id: string) => {
+    if (assignedWorkerIds.has(id)) return;
     setWorkerId(id);
     void runPreview(id);
   };
@@ -591,17 +592,19 @@ export function BulkAssignModal({
                 visibleWorkers.map(({ worker, is_conflict, conflict_reason, alreadyAssigned }) => {
                   const id = workerIdOf(worker);
                   const name = workerName(worker);
-                  const picked = workerId === id;
+                  const isDisabled = Boolean(alreadyAssigned);
+                  const picked = !isDisabled && workerId === id;
                   return (
                     <button
                       key={id}
                       type="button"
-                      onClick={() => pickWorker(id)}
+                      disabled={isDisabled}
+                      onClick={() => !isDisabled && pickWorker(id)}
                       className={`flex w-full items-center gap-3 rounded-lg border p-3 text-left transition-colors ${
-                        picked
-                          ? "border-primary/40 bg-sky-50/70"
-                          : alreadyAssigned
-                            ? "border-emerald-200 bg-emerald-50/40 hover:border-emerald-300"
+                        isDisabled
+                          ? "cursor-not-allowed border-slate-200 bg-slate-50/70 opacity-60"
+                          : picked
+                            ? "border-primary/40 bg-sky-50/70"
                             : is_conflict
                               ? "border-red-200 bg-red-50/40 hover:border-red-300"
                               : "border-slate-200 hover:border-slate-300"
@@ -609,9 +612,11 @@ export function BulkAssignModal({
                     >
                       <input
                         type="radio"
+                        name="bulk-assign-worker"
+                        disabled={isDisabled}
                         checked={picked}
-                        onChange={() => pickWorker(id)}
-                        className="h-4 w-4 accent-primary"
+                        onChange={() => !isDisabled && pickWorker(id)}
+                        className="h-4 w-4 accent-primary disabled:cursor-not-allowed"
                       />
                       <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-100 text-[11px] font-semibold text-slate-500 ring-1 ring-slate-200">
                         {initials(name)}
