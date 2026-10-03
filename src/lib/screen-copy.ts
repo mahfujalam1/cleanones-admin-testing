@@ -117,6 +117,12 @@ export type ScreenCopy = {
   notNow: string;
   deleteCleaningPlan: string;
   planWillBeRemoved: string;
+  tasksForSelectedRooms: string;
+  noTasksSelectedWarning: string;
+  selectAllTasks: string;
+  deselectAllTasks: string;
+  noActiveTasksInRoom: string;
+  loadingRoomTasks: string;
 };
 
 const en: ScreenCopy = {
@@ -237,6 +243,12 @@ const en: ScreenCopy = {
   notNow: "Not now",
   deleteCleaningPlan: "Delete cleaning plan?",
   planWillBeRemoved: "{title} will be removed.",
+  tasksForSelectedRooms: "Tasks for Selected Rooms",
+  noTasksSelectedWarning: "No tasks are selected. Shifts generated from this plan will not have any tasks.",
+  selectAllTasks: "Select all",
+  deselectAllTasks: "Deselect all",
+  noActiveTasksInRoom: "No active tasks in this room",
+  loadingRoomTasks: "Loading tasks…",
 };
 
 const nl: ScreenCopy = {
@@ -358,6 +370,12 @@ const nl: ScreenCopy = {
   notNow: "Niet nu",
   deleteCleaningPlan: "Schoonmaakplan verwijderen?",
   planWillBeRemoved: "{title} wordt verwijderd.",
+  tasksForSelectedRooms: "Taken voor geselecteerde kamers",
+  noTasksSelectedWarning: "Er zijn geen taken geselecteerd. Diensten die op basis van dit plan worden gegenereerd, bevatten geen taken.",
+  selectAllTasks: "Alles selecteren",
+  deselectAllTasks: "Alles deselecteren",
+  noActiveTasksInRoom: "Geen actieve taken in deze kamer",
+  loadingRoomTasks: "Taken laden…",
 };
 
 const fr: ScreenCopy = {
@@ -479,6 +497,12 @@ const fr: ScreenCopy = {
   notNow: "Pas maintenant",
   deleteCleaningPlan: "Supprimer le plan de nettoyage ?",
   planWillBeRemoved: "{title} sera supprimé.",
+  tasksForSelectedRooms: "Tâches pour les pièces sélectionnées",
+  noTasksSelectedWarning: "Aucune tâche n'est sélectionnée. Les vacations générées à partir de ce plan n'auront aucune tâche.",
+  selectAllTasks: "Tout sélectionner",
+  deselectAllTasks: "Tout désélectionner",
+  noActiveTasksInRoom: "Aucune tâche active dans cette pièce",
+  loadingRoomTasks: "Chargement des tâches…",
 };
 
 const es: ScreenCopy = {
@@ -600,6 +624,12 @@ const es: ScreenCopy = {
   notNow: "Ahora no",
   deleteCleaningPlan: "¿Eliminar plan de limpieza?",
   planWillBeRemoved: "{title} se eliminará.",
+  tasksForSelectedRooms: "Tareas para las habitaciones seleccionadas",
+  noTasksSelectedWarning: "No hay tareas seleccionadas. Los turnos generados a partir de este plan no tendrán tareas.",
+  selectAllTasks: "Seleccionar todo",
+  deselectAllTasks: "Deseleccionar todo",
+  noActiveTasksInRoom: "No hay tareas activas en esta habitación",
+  loadingRoomTasks: "Cargando tareas…",
 };
 
 const pl: ScreenCopy = {
@@ -721,6 +751,12 @@ const pl: ScreenCopy = {
   notNow: "Nie teraz",
   deleteCleaningPlan: "Usunąć plan sprzątania?",
   planWillBeRemoved: "{title} zostanie usunięty.",
+  tasksForSelectedRooms: "Zadania dla wybranych pomieszczeń",
+  noTasksSelectedWarning: "Nie wybrano żadnych zadań. Zmiany wygenerowane z tego planu nie będą miały zadań.",
+  selectAllTasks: "Zaznacz wszystko",
+  deselectAllTasks: "Odznacz wszystko",
+  noActiveTasksInRoom: "Brak aktywnych zadań w tym pomieszczeniu",
+  loadingRoomTasks: "Ładowanie zadań…",
 };
 
 const uk: ScreenCopy = {
@@ -842,6 +878,12 @@ const uk: ScreenCopy = {
   notNow: "Не зараз",
   deleteCleaningPlan: "Видалити план прибирання?",
   planWillBeRemoved: "{title} буде видалено.",
+  tasksForSelectedRooms: "Завдання для вибраних кімнат",
+  noTasksSelectedWarning: "Не вибрано жодного завдання. Зміни, створені на основі цього плану, не матимуть завдань.",
+  selectAllTasks: "Вибрати все",
+  deselectAllTasks: "Зняти вибір",
+  noActiveTasksInRoom: "Немає активних завдань у цій кімнаті",
+  loadingRoomTasks: "Завантаження завдань…",
 };
 
 const pt: ScreenCopy = {
@@ -963,6 +1005,12 @@ const pt: ScreenCopy = {
   notNow: "Agora não",
   deleteCleaningPlan: "Eliminar plano de limpeza?",
   planWillBeRemoved: "{title} será removido.",
+  tasksForSelectedRooms: "Tarefas para as salas selecionadas",
+  noTasksSelectedWarning: "Nenhuma tarefa selecionada. Os turnos gerados a partir deste plano não terão tarefas.",
+  selectAllTasks: "Selecionar tudo",
+  deselectAllTasks: "Desmarcar tudo",
+  noActiveTasksInRoom: "Nenhuma tarefa ativa nesta sala",
+  loadingRoomTasks: "A carregar tarefas…",
 };
 
 const ar: ScreenCopy = {
@@ -1083,6 +1131,12 @@ const ar: ScreenCopy = {
   notNow: "ليس الآن",
   deleteCleaningPlan: "حذف خطة التنظيف؟",
   planWillBeRemoved: "سيتم حذف {title}.",
+  tasksForSelectedRooms: "مهام الغرف المحددة",
+  noTasksSelectedWarning: "لم يتم تحديد أي مهام. لن تتضمن الورديات المنشأة من هذه الخطة أي مهام.",
+  selectAllTasks: "تحديد الكل",
+  deselectAllTasks: "إلغاء تحديد الكل",
+  noActiveTasksInRoom: "لا توجد مهام نشطة في هذه الغرفة",
+  loadingRoomTasks: "جارٍ تحميل المهام…",
 };
 
 const screenCopy: Record<SupportedLocale, ScreenCopy> = { en, nl, pl, uk, pt, ar, fr, es };

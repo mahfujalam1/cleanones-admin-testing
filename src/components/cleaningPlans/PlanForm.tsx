@@ -1,7 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { MdAdd, MdDeleteOutline } from "react-icons/md";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  MdAdd,
+  MdChevronRight,
+  MdDeleteOutline,
+  MdExpandMore,
+  MdOutlineWarningAmber,
+} from "react-icons/md";
 import { FormModal } from "@/components/shared/FormModal";
 import {
   CheckboxField,
@@ -12,7 +18,8 @@ import {
 } from "@/components/shared/Field";
 import { ClientLocationPicker, ClientPicker } from "@/components/shared/Pickers";
 import { apiError } from "@/redux/api/apiError";
-import { roomTaskCount, useGetRoomsQuery } from "@/redux/api/endpoints/rooms.api";
+import { roomTaskCount, useGetRoomsQuery, type Room } from "@/redux/api/endpoints/rooms.api";
+import { useGetTasksQuery } from "@/redux/api/endpoints/tasks.api";
 import {
   useCreateCleaningPlanMutation,
   useGetCleaningPlanQuery,
@@ -31,7 +38,7 @@ import { refDoc, refId } from "@/redux/api/types";
 import { todayIso } from "@/components/ui/date-picker";
 import { usePathname } from "next/navigation";
 import { getLocale } from "@/lib/locale";
-import { getScreenCopy } from "@/lib/screen-copy";
+import { getScreenCopy, type ScreenCopy } from "@/lib/screen-copy";
 
 
 const toTimestamp = (date: string, time: string) => {
@@ -102,6 +109,131 @@ function photoProblem(draft: TaskDraft): string | null {
   return null;
 }
 
+function RoomTaskPicker({
+  roomId,
+  roomName,
+  roomType,
+  selectedTaskIds,
+  onToggleTask,
+  onSelectAll,
+  onDeselectAll,
+  onTasksLoaded,
+  copy,
+}: {
+  roomId: string;
+  roomName: string;
+  roomType?: string;
+  selectedTaskIds: string[];
+  onToggleTask: (taskId: string) => void;
+  onSelectAll: (taskIds: string[]) => void;
+  onDeselectAll: (taskIds: string[]) => void;
+  onTasksLoaded: (roomId: string, taskIds: string[]) => void;
+  copy: ScreenCopy;
+}) {
+  const [isOpen, setIsOpen] = useState(true);
+  const { data, isFetching } = useGetTasksQuery({ roomId, limit: 100 });
+  const tasks = useMemo(
+    () => (data?.result ?? []).filter((task) => task.is_active),
+    [data?.result],
+  );
+
+  const taskIds = useMemo(() => tasks.map((t) => t._id), [tasks]);
+
+  useEffect(() => {
+    if (!isFetching && data?.result) {
+      onTasksLoaded(roomId, taskIds);
+    }
+  }, [roomId, taskIds, isFetching, data?.result, onTasksLoaded]);
+
+  const selectedInThisRoom = useMemo(
+    () => taskIds.filter((id) => selectedTaskIds.includes(id)),
+    [taskIds, selectedTaskIds],
+  );
+
+  const allSelected = taskIds.length > 0 && selectedInThisRoom.length === taskIds.length;
+
+  return (
+    <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-xs">
+      <div className="flex items-center justify-between gap-2 border-b border-slate-100 bg-slate-50/80 px-3 py-2">
+        <button
+          type="button"
+          onClick={() => setIsOpen((prev) => !prev)}
+          className="flex min-w-0 flex-1 cursor-pointer items-center gap-2 text-left"
+        >
+          {isOpen ? (
+            <MdExpandMore className="h-4 w-4 shrink-0 text-slate-500" />
+          ) : (
+            <MdChevronRight className="h-4 w-4 shrink-0 text-slate-500" />
+          )}
+          <span className="truncate text-xs font-semibold text-slate-800">{roomName}</span>
+          {roomType && (
+            <span className="rounded bg-slate-200/70 px-1.5 py-0.5 text-[10px] capitalize text-slate-600">
+              {roomType}
+            </span>
+          )}
+          <span className="text-[11px] text-slate-400">
+            ({selectedInThisRoom.length}/{taskIds.length})
+          </span>
+        </button>
+
+        <div className="flex shrink-0 items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => (allSelected ? onDeselectAll(taskIds) : onSelectAll(taskIds))}
+            disabled={taskIds.length === 0}
+            className="cursor-pointer text-[11px] font-medium text-primary hover:underline disabled:cursor-not-allowed disabled:text-slate-300"
+          >
+            {allSelected ? copy.deselectAllTasks : copy.selectAllTasks}
+          </button>
+        </div>
+      </div>
+
+      {isOpen && (
+        <div className="p-2">
+          {isFetching ? (
+            <p className="px-2 py-3 text-center text-xs text-slate-400">{copy.loadingRoomTasks}</p>
+          ) : tasks.length === 0 ? (
+            <p className="px-2 py-3 text-center text-xs text-slate-400">{copy.noActiveTasksInRoom}</p>
+          ) : (
+            <div className="space-y-1">
+              {tasks.map((task) => {
+                const isChecked = selectedTaskIds.includes(task._id);
+                return (
+                  <label
+                    key={task._id}
+                    className="flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-1.5 transition-colors hover:bg-slate-50"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isChecked}
+                      onChange={() => onToggleTask(task._id)}
+                      className="h-3.5 w-3.5 rounded border-slate-300 accent-primary"
+                    />
+                    <span className="min-w-0 flex-1 truncate text-xs text-slate-700">
+                      {task.name}
+                    </span>
+                    <div className="flex shrink-0 items-center gap-2 text-[10px] text-slate-400">
+                      {task.frequency_type && (
+                        <span className="capitalize">{task.frequency_type}</span>
+                      )}
+                      {typeof task.duration_minutes === "number" && task.duration_minutes > 0 && (
+                        <span>{task.duration_minutes}m</span>
+                      )}
+                      {task.is_photo_required && (
+                        <span className="font-medium text-amber-600">📷</span>
+                      )}
+                    </div>
+                  </label>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function PlanForm({ plan, onClose, onCreated }: {
   plan?: CleaningPlan;
   onClose: () => void;
@@ -120,6 +252,11 @@ export function PlanForm({ plan, onClose, onCreated }: {
   const [client, setClient] = useState(() => refId(plan?.client));
   const [location, setLocation] = useState(() => refId(plan?.location));
   const [rooms, setRooms] = useState<string[]>(() => (plan?.rooms ?? []).map(refId).filter(Boolean));
+  const [selectedTasks, setSelectedTasks] = useState<string[]>(() => plan?.tasks ?? []);
+  const [roomTasksMap, setRoomTasksMap] = useState<Record<string, string[]>>({});
+  const initializedRoomsRef = useRef<Set<string>>(
+    new Set(isEdit && plan?.rooms ? plan.rooms.map(refId).filter(Boolean) : []),
+  );
   const [title, setTitle] = useState(plan?.title ?? "");
   const [description, setDescription] = useState(plan?.description ?? "");
   const [drafts, setDrafts] = useState<TaskDraft[]>([]);
@@ -135,6 +272,17 @@ export function PlanForm({ plan, onClose, onCreated }: {
     const roomIds = (singlePlan.rooms ?? []).map(refId).filter(Boolean);
     if (roomIds.length > 0) {
       setRooms(roomIds);
+      roomIds.forEach((id) => initializedRoomsRef.current.add(id));
+    }
+    if (Array.isArray(singlePlan.tasks)) {
+      setSelectedTasks(singlePlan.tasks);
+    } else if (singlePlan.rooms) {
+      const fallbackTasks = (singlePlan.rooms as any[]).flatMap((r) =>
+        (r?.tasks ?? []).map((t: any) => t?._id).filter(Boolean),
+      );
+      if (fallbackTasks.length > 0) {
+        setSelectedTasks(fallbackTasks);
+      }
     }
     if (singlePlan.description) setDescription(singlePlan.description);
   }, [singlePlan]);
@@ -161,8 +309,62 @@ export function PlanForm({ plan, onClose, onCreated }: {
   const editDraft = (key: string, patch: Partial<TaskDraft>) =>
     setDrafts((current) => current.map((item) => (item.key === key ? { ...item, ...patch } : item)));
 
-  const toggleRoom = (id: string) =>
-    setRooms((current) => (current.includes(id) ? current.filter((item) => item !== id) : [...current, id]));
+  const handleRoomTasksLoaded = useCallback((roomId: string, activeTaskIds: string[]) => {
+    setRoomTasksMap((prev) => ({ ...prev, [roomId]: activeTaskIds }));
+    if (!initializedRoomsRef.current.has(roomId)) {
+      initializedRoomsRef.current.add(roomId);
+      setSelectedTasks((prev) => {
+        const next = new Set(prev);
+        activeTaskIds.forEach((id) => next.add(id));
+        return Array.from(next);
+      });
+    }
+  }, []);
+
+  const toggleRoom = (id: string) => {
+    setRooms((current) => {
+      const isRemoving = current.includes(id);
+      if (isRemoving) {
+        const tasksInThisRoom = roomTasksMap[id] ?? [];
+        if (tasksInThisRoom.length > 0) {
+          setSelectedTasks((prev) => prev.filter((taskId) => !tasksInThisRoom.includes(taskId)));
+        }
+        initializedRoomsRef.current.delete(id);
+        return current.filter((item) => item !== id);
+      } else {
+        return [...current, id];
+      }
+    });
+  };
+
+  const handleToggleTask = useCallback((taskId: string) => {
+    setSelectedTasks((prev) =>
+      prev.includes(taskId) ? prev.filter((id) => id !== taskId) : [...prev, taskId],
+    );
+  }, []);
+
+  const handleSelectAllRoomTasks = useCallback((taskIds: string[]) => {
+    setSelectedTasks((prev) => {
+      const next = new Set(prev);
+      taskIds.forEach((id) => next.add(id));
+      return Array.from(next);
+    });
+  }, []);
+
+  const handleDeselectAllRoomTasks = useCallback((taskIds: string[]) => {
+    const toRemove = new Set(taskIds);
+    setSelectedTasks((prev) => prev.filter((id) => !toRemove.has(id)));
+  }, []);
+
+  const getRoomDoc = (roomId: string) => {
+    const fromAvailable = available.find((r) => r._id === roomId);
+    if (fromAvailable) return fromAvailable;
+    const fromSingle = (singlePlan?.rooms ?? [])
+      .map((r) => refDoc<Room>(r))
+      .find((r) => r?._id === roomId);
+    if (fromSingle) return fromSingle;
+    return { _id: roomId, name: "Room", room_type: "" };
+  };
 
   
   const existingTasks = (singlePlan?.additional_tasks ?? [])
@@ -268,6 +470,7 @@ export function PlanForm({ plan, onClose, onCreated }: {
       client,
       location,
       rooms,
+      tasks: selectedTasks,
       description: description.trim(),
     };
 
@@ -344,6 +547,8 @@ export function PlanForm({ plan, onClose, onCreated }: {
                 setClient(value);
                 setLocation("");
                 setRooms([]);
+                setSelectedTasks([]);
+                initializedRoomsRef.current.clear();
                 setError("");
               }}
               required
@@ -358,6 +563,8 @@ export function PlanForm({ plan, onClose, onCreated }: {
               onChange={(value) => {
                 setLocation(value);
                 setRooms([]);
+                setSelectedTasks([]);
+                initializedRoomsRef.current.clear();
                 setError("");
               }}
               required
@@ -403,6 +610,44 @@ export function PlanForm({ plan, onClose, onCreated }: {
               )}
             </div>
           </div>
+
+          {rooms.length > 0 && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <FieldLabel htmlFor="plan-selected-tasks" label={copy.tasksForSelectedRooms} required={false} />
+                <span className="text-[11px] font-medium text-slate-500">
+                  {selectedTasks.length} {selectedTasks.length === 1 ? copy.task : copy.tasks} selected
+                </span>
+              </div>
+
+              {selectedTasks.length === 0 && (
+                <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-xs text-amber-800">
+                  <MdOutlineWarningAmber className="h-4 w-4 shrink-0 text-amber-600" />
+                  <span>{copy.noTasksSelectedWarning}</span>
+                </div>
+              )}
+
+              <div id="plan-selected-tasks" className="max-h-60 space-y-2 overflow-y-auto pr-0.5">
+                {rooms.map((roomId) => {
+                  const roomDoc = getRoomDoc(roomId);
+                  return (
+                    <RoomTaskPicker
+                      key={roomId}
+                      roomId={roomId}
+                      roomName={roomDoc?.name || "Room"}
+                      roomType={roomDoc?.room_type}
+                      selectedTaskIds={selectedTasks}
+                      onToggleTask={handleToggleTask}
+                      onSelectAll={handleSelectAllRoomTasks}
+                      onDeselectAll={handleDeselectAllRoomTasks}
+                      onTasksLoaded={handleRoomTasksLoaded}
+                      copy={copy}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           <TextField label={copy.planName} value={title} onChange={setTitle} required />
 
