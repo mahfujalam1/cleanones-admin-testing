@@ -25,6 +25,7 @@ export type CleaningPlan = {
   location: Ref<Location>;
   
   rooms?: Ref<Room>[];
+  tasks?: string[];
   assigned_workers?: AssignedWorker[];
   additional_tasks?: Ref<AdditionalTask>[];
   date_time?: string;
@@ -109,6 +110,7 @@ export type CreatePlanInput = {
   client: string;
   location: string;
   rooms: string[];
+  tasks?: string[];
   description?: string;
   note?: string;
   status?: PlanStatus;
