@@ -175,13 +175,11 @@ export function LocationForm({
         />
       )}
 
-      <div>
+      <div className="relative z-50">
         <FieldLabel htmlFor={addressId} label={copy.address} required />
         <AddressAutocompleteInput
           value={address}
           onChange={setAddress}
-          
-          
           onPlaceSelect={({ address: picked, latitude, longitude, name: placeName }) => {
             setAddress(picked);
             setPin({ latitude, longitude });
@@ -190,10 +188,9 @@ export function LocationForm({
             }
             setError("");
           }}
-          
           onCoordinatesCleared={() => setPin(null)}
           required
-          placeholder={copy.searchAddress}
+          placeholder="Search for an address…"
           className={CONTROL_CLASS}
         />
 

@@ -170,14 +170,21 @@ export function AssignWorkersPanel({
     setConflict("");
   }, [lockTimes, target.planId, target.date, target.startTime, target.endTime, target.assignedWorkers]);
 
+  const alreadyAssignedIds = useMemo(
+    () => new Set((target.assignedWorkers ?? []).map((worker) => worker.worker_id).filter(Boolean)),
+    [target.assignedWorkers],
+  );
+
   const visible = useMemo(() => {
     const term = search.trim().toLowerCase();
-    return eligible.filter(({ worker }) => {
+    return eligible.filter(({ worker, is_available }) => {
+      const id = workerIdOf(worker);
+      if (is_available === false && !alreadyAssignedIds.has(id)) return false;
       if (workerType && worker.worker_type !== workerType) return false;
       if (!term) return true;
       return `${workerName(worker)} ${worker.email ?? ""} ${worker.phone ?? ""}`.toLowerCase().includes(term);
     });
-  }, [eligible, search, workerType]);
+  }, [eligible, search, workerType, alreadyAssignedIds]);
 
   const toggle = (id: string) => {
     setPicked((current) => {
@@ -236,7 +243,7 @@ export function AssignWorkersPanel({
 
     const hasForced =
       [...picked].some((id) => forcedWorkers[id]) ||
-      visible.some(({ worker, is_conflict, is_available }) => {
+      eligible.some(({ worker, is_conflict, is_available }) => {
         const id = workerIdOf(worker);
         return picked.has(id) && (Boolean(is_conflict) || is_available === false);
       });
@@ -260,7 +267,7 @@ export function AssignWorkersPanel({
     }
   };
 
-  const chosenOverrides = visible.filter(({ worker, is_conflict, is_available }) => {
+  const chosenOverrides = eligible.filter(({ worker, is_conflict, is_available }) => {
     const id = workerIdOf(worker);
     return picked.has(id) && (Boolean(is_conflict) || is_available === false);
   });

@@ -152,7 +152,8 @@ export function WorkerForm({ worker, onClose }: { worker?: Worker; onClose: () =
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <TextField
+        {/* Hourly Rate field temporarily commented out as requested */}
+        {/* <TextField
           label="Hourly Rate (€/hr)"
           placeholder="25"
           type="number"
@@ -160,9 +161,8 @@ export function WorkerForm({ worker, onClose }: { worker?: Worker; onClose: () =
           value={hourlyRate}
           onChange={setHourlyRate}
           required
-        />
-        <div>
-          
+        /> */}
+        <div className="sm:col-span-2">
           <FieldLabel htmlFor={locationId} label="Base Location" required />
           <PlaceSearchSelect value={baseLocation} onValueChange={setBaseLocation} placeholder="Search Base Location…" />
         </div>

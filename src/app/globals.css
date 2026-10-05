@@ -572,7 +572,7 @@ input:disabled,
 =========================== */
 
 .pac-container {
-  z-index: 9999;
+  z-index: 100000 !important;
   margin-top: 4px;
   border: 1px solid #e2e8f0;
   border-radius: 0.5rem;
@@ -609,3 +609,94 @@ input:disabled,
 
 .pac-matched { font-weight: 700; }
 .pac-icon { margin-top: 3px; }
+
+/* Google Maps Place Autocomplete Component - Matches other form inputs (CONTROL_CLASS) */
+gmp-place-autocomplete {
+  color-scheme: light !important;
+  --gmp-mat-color-surface: #ffffff !important;
+  --gmp-mat-color-on-surface: #0f172a !important;
+  --gmp-mat-color-surface-container: #ffffff !important;
+  --gmp-mat-color-surface-container-high: #f8fafc !important;
+  --gmp-mat-color-surface-container-highest: #f1f5f9 !important;
+  --gmp-mat-color-primary: #0ea5e9 !important;
+  --gmp-mat-color-on-surface-variant: #64748b !important;
+  --gmp-mat-color-outline: #cbd5e1 !important;
+  --gmp-mat-color-outline-variant: #e2e8f0 !important;
+  width: 100% !important;
+  display: block !important;
+  height: 40px !important;
+  min-height: 40px !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 0.5rem !important;
+  background-color: #ffffff !important;
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out !important;
+  box-sizing: border-box !important;
+  position: relative !important;
+}
+
+gmp-place-autocomplete:focus-within {
+  border-color: #0ea5e9 !important;
+  box-shadow: 0 0 0 1px #0ea5e9 !important;
+  outline: none !important;
+}
+
+/* Hide Google's thick internal Material focus ring */
+gmp-place-autocomplete::part(focus-ring) {
+  display: none !important;
+}
+
+gmp-place-autocomplete::part(input) {
+  color-scheme: light !important;
+  background-color: transparent !important;
+  color: #0f172a !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  height: 38px !important;
+  padding: 0 8px 0 2px !important;
+  margin-left: 0 !important;
+  font-size: 0.875rem !important;
+  font-family: inherit !important;
+}
+
+gmp-place-autocomplete::part(input):focus,
+gmp-place-autocomplete::part(input):focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+/* Dropdown list with dedicated scrollbar, compact height and high z-index */
+gmp-place-autocomplete::part(prediction-list) {
+  color-scheme: light !important;
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 0.5rem !important;
+  box-shadow: 0 12px 24px -4px rgba(0, 0, 0, 0.15), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+  margin-top: 4px !important;
+  max-height: 175px !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain !important;
+  z-index: 999999 !important;
+}
+
+/* Slim compact prediction items ("cikon & cuto") */
+gmp-place-autocomplete::part(prediction-item) {
+  padding: 3px 6px !important;
+  min-height: 28px !important;
+}
+
+/* Hide Google logo / attribution footer */
+gmp-place-autocomplete::part(attribution),
+gmp-place-autocomplete::part(footer) {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  max-height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: none !important;
+  overflow: hidden !important;
+  opacity: 0 !important;
+}
