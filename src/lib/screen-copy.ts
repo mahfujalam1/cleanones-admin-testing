@@ -123,6 +123,8 @@ export type ScreenCopy = {
   deselectAllTasks: string;
   noActiveTasksInRoom: string;
   loadingRoomTasks: string;
+  duplicatePlan: string;
+  duplicateCleaningPlan: string;
 };
 
 const en: ScreenCopy = {
@@ -249,6 +251,8 @@ const en: ScreenCopy = {
   deselectAllTasks: "Deselect all",
   noActiveTasksInRoom: "No active tasks in this room",
   loadingRoomTasks: "Loading tasks…",
+  duplicatePlan: "Duplicate plan",
+  duplicateCleaningPlan: "Duplicate cleaning plan",
 };
 
 const nl: ScreenCopy = {
@@ -376,6 +380,8 @@ const nl: ScreenCopy = {
   deselectAllTasks: "Alles deselecteren",
   noActiveTasksInRoom: "Geen actieve taken in deze kamer",
   loadingRoomTasks: "Taken laden…",
+  duplicatePlan: "Plan dupliceren",
+  duplicateCleaningPlan: "Schoonmaakplan dupliceren",
 };
 
 const fr: ScreenCopy = {
@@ -503,6 +509,8 @@ const fr: ScreenCopy = {
   deselectAllTasks: "Tout désélectionner",
   noActiveTasksInRoom: "Aucune tâche active dans cette pièce",
   loadingRoomTasks: "Chargement des tâches…",
+  duplicatePlan: "Dupliquer le plan",
+  duplicateCleaningPlan: "Dupliquer le plan de nettoyage",
 };
 
 const es: ScreenCopy = {
@@ -630,6 +638,8 @@ const es: ScreenCopy = {
   deselectAllTasks: "Deseleccionar todo",
   noActiveTasksInRoom: "No hay tareas activas en esta habitación",
   loadingRoomTasks: "Cargando tareas…",
+  duplicatePlan: "Duplicar plan",
+  duplicateCleaningPlan: "Duplicar plan de limpieza",
 };
 
 const pl: ScreenCopy = {
@@ -757,6 +767,8 @@ const pl: ScreenCopy = {
   deselectAllTasks: "Odznacz wszystko",
   noActiveTasksInRoom: "Brak aktywnych zadań w tym pomieszczeniu",
   loadingRoomTasks: "Ładowanie zadań…",
+  duplicatePlan: "Duplikuj plan",
+  duplicateCleaningPlan: "Duplikuj plan sprzątania",
 };
 
 const uk: ScreenCopy = {
@@ -884,6 +896,8 @@ const uk: ScreenCopy = {
   deselectAllTasks: "Зняти вибір",
   noActiveTasksInRoom: "Немає активних завдань у цій кімнаті",
   loadingRoomTasks: "Завантаження завдань…",
+  duplicatePlan: "Дублювати план",
+  duplicateCleaningPlan: "Дублювати план прибирання",
 };
 
 const pt: ScreenCopy = {
@@ -1011,6 +1025,8 @@ const pt: ScreenCopy = {
   deselectAllTasks: "Desmarcar tudo",
   noActiveTasksInRoom: "Nenhuma tarefa ativa nesta sala",
   loadingRoomTasks: "A carregar tarefas…",
+  duplicatePlan: "Duplicar plano",
+  duplicateCleaningPlan: "Duplicar plano de limpeza",
 };
 
 const ar: ScreenCopy = {
@@ -1137,6 +1153,8 @@ const ar: ScreenCopy = {
   deselectAllTasks: "إلغاء تحديد الكل",
   noActiveTasksInRoom: "لا توجد مهام نشطة في هذه الغرفة",
   loadingRoomTasks: "جارٍ تحميل المهام…",
+  duplicatePlan: "تكرار الخطة",
+  duplicateCleaningPlan: "تكرار خطة التنظيف",
 };
 
 const screenCopy: Record<SupportedLocale, ScreenCopy> = { en, nl, pl, uk, pt, ar, fr, es };

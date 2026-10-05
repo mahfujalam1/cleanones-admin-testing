@@ -46,6 +46,7 @@ function CleaningPlansView() {
   const searchTerm = useDebouncedValue(search.trim());
   const [page, setPage] = useState(1);
   const [formTarget, setFormTarget] = useState<CleaningPlan | "new" | null>(null);
+  const [duplicateTarget, setDuplicateTarget] = useState<CleaningPlan | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<CleaningPlan | null>(null);
   const [justCreated, setJustCreated] = useState<CleaningPlan | null>(null);
   const [viewTarget, setViewTarget] = useState<CleaningPlan | null>(null);
@@ -179,6 +180,7 @@ function CleaningPlansView() {
               plan={plan}
               onSelect={setViewTarget}
               onEdit={setFormTarget}
+              onDuplicate={setDuplicateTarget}
               onDelete={setDeleteTarget}
             />
           ))}
@@ -215,6 +217,17 @@ function CleaningPlansView() {
           
           onCreated={(created) => {
             setFormTarget(null);
+            setJustCreated(created);
+          }}
+        />
+      )}
+
+      {duplicateTarget && (
+        <PlanForm
+          duplicateFrom={duplicateTarget}
+          onClose={() => setDuplicateTarget(null)}
+          onCreated={(created) => {
+            setDuplicateTarget(null);
             setJustCreated(created);
           }}
         />

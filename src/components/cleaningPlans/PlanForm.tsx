@@ -234,31 +234,42 @@ function RoomTaskPicker({
   );
 }
 
-export function PlanForm({ plan, onClose, onCreated }: {
+export function PlanForm({
+  plan,
+  duplicateFrom,
+  onClose,
+  onCreated,
+}: {
   plan?: CleaningPlan;
+  duplicateFrom?: CleaningPlan;
   onClose: () => void;
-  
   onCreated?: (plan: CleaningPlan) => void;
 }) {
   const copy = getScreenCopy(getLocale(usePathname()));
   const isEdit = plan !== undefined;
+  const isDuplicate = duplicateFrom !== undefined;
 
-  
   const { data: singlePlan, isLoading: loadingSinglePlan } = useGetCleaningPlanQuery(
     plan?._id ?? "",
     { skip: !isEdit || !plan?._id }
   );
 
-  const [client, setClient] = useState(() => refId(plan?.client));
-  const [location, setLocation] = useState(() => refId(plan?.location));
-  const [rooms, setRooms] = useState<string[]>(() => (plan?.rooms ?? []).map(refId).filter(Boolean));
-  const [selectedTasks, setSelectedTasks] = useState<string[]>(() => plan?.tasks ?? []);
+  const [client, setClient] = useState(() => refId(plan?.client) || refId(duplicateFrom?.client));
+  const [location, setLocation] = useState(() => refId(plan?.location) || refId(duplicateFrom?.location));
+  const [rooms, setRooms] = useState<string[]>(() =>
+    isEdit ? (plan?.rooms ?? []).map(refId).filter(Boolean) : []
+  );
+  const [selectedTasks, setSelectedTasks] = useState<string[]>(() =>
+    isEdit ? (plan?.tasks ?? []) : []
+  );
   const [roomTasksMap, setRoomTasksMap] = useState<Record<string, string[]>>({});
   const initializedRoomsRef = useRef<Set<string>>(
     new Set(isEdit && plan?.rooms ? plan.rooms.map(refId).filter(Boolean) : []),
   );
-  const [title, setTitle] = useState(plan?.title ?? "");
-  const [description, setDescription] = useState(plan?.description ?? "");
+  const [title, setTitle] = useState(() =>
+    plan?.title ?? (duplicateFrom?.title ? `${duplicateFrom.title} (Copy)` : "")
+  );
+  const [description, setDescription] = useState(() => plan?.description ?? duplicateFrom?.description ?? "");
   const [drafts, setDrafts] = useState<TaskDraft[]>([]);
   const [error, setError] = useState("");
   const [savingTasks, setSavingTasks] = useState(false);
@@ -515,8 +526,8 @@ export function PlanForm({ plan, onClose, onCreated }: {
 
   return (
     <FormModal
-      title={isEdit ? copy.editCleaningPlan : copy.addCleaningPlan}
-      subtitle={isEdit ? (singlePlan?.title || plan?.title || copy.addCleaningPlan) : copy.addCleaningPlan}
+      title={isEdit ? copy.editCleaningPlan : isDuplicate ? copy.duplicateCleaningPlan : copy.addCleaningPlan}
+      subtitle={isEdit ? (singlePlan?.title || plan?.title || copy.addCleaningPlan) : isDuplicate ? (duplicateFrom?.title || copy.duplicatePlan) : copy.addCleaningPlan}
       submitLabel={isEdit ? copy.saveChanges : copy.createPlan}
       saving={creating || updating || savingTasks}
       error={error}

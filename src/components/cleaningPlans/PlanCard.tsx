@@ -1,7 +1,9 @@
 "use client";
 
 import React from "react";
+import { usePathname } from "next/navigation";
 import {
+  MdContentCopy,
   MdDeleteOutline,
   MdModeEditOutline,
   MdOutlineAssignment,
@@ -13,6 +15,8 @@ import { planCounts, type CleaningPlan } from "@/redux/api/endpoints/cleaningPla
 import { refDoc, refId } from "@/redux/api/types";
 import { clientCompanyLabel, CLIENT_LOOKUP_ARGS, useGetClientsQuery, type Client } from "@/redux/api/endpoints/clients.api";
 import type { Location } from "@/redux/api/endpoints/locations.api";
+import { getLocale } from "@/lib/locale";
+import { getScreenCopy } from "@/lib/screen-copy";
 
 function MetaLine({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {
   if (!children) return null;
@@ -39,14 +43,16 @@ export function PlanCard({
   onEdit,
   onDelete,
   onAssign,
+  onDuplicate,
 }: {
   plan: CleaningPlan;
   onSelect?: (plan: CleaningPlan) => void;
   onEdit?: (plan: CleaningPlan) => void;
   onDelete?: (plan: CleaningPlan) => void;
   onAssign?: (plan: CleaningPlan) => void;
+  onDuplicate?: (plan: CleaningPlan) => void;
 }) {
-
+  const copy = getScreenCopy(getLocale(usePathname()));
   const { data: clientPage } = useGetClientsQuery(CLIENT_LOOKUP_ARGS);
   const populatedClient = refDoc<Client>(plan.client);
   const client =
@@ -121,8 +127,22 @@ export function PlanCard({
         )}
       </article>
 
-      {(onEdit || onDelete) && (
+      {(onEdit || onDuplicate || onDelete) && (
         <div className="absolute right-2.5 top-2.5 flex items-center gap-0.5 transition-opacity lg:opacity-0 lg:group-hover:opacity-100 lg:group-focus-within:opacity-100">
+          {onDuplicate && (
+            <button
+              type="button"
+              aria-label={`Duplicate ${plan.title}`}
+              title={copy.duplicatePlan}
+              onClick={(event) => {
+                event.stopPropagation();
+                onDuplicate(plan);
+              }}
+              className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md bg-white/90 text-slate-400 ring-1 ring-slate-200 backdrop-blur transition-colors hover:text-slate-800"
+            >
+              <MdContentCopy className="text-[14px]" />
+            </button>
+          )}
           {onEdit && (
             <button
               type="button"
