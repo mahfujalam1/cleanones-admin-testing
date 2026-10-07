@@ -134,7 +134,7 @@ export function workerPhoto(worker?: Pick<Worker, "profile_image" | "profile_pho
 export function withWorkingDays<T extends { worker_type?: WorkerType; working_days?: WorkingDay[] }>(
   input: T,
 ): T {
-  if (input.worker_type === "Employee") return input;
+  if (input.worker_type === "Freelancer") return input;
   const { working_days: _omitted, ...rest } = input;
   return rest as T;
 }

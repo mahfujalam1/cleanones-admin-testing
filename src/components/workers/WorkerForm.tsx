@@ -42,7 +42,7 @@ function WeeklyAvailability({
     <fieldset>
       <div className="mb-2 flex items-baseline justify-between gap-3">
         <legend className="text-xs font-semibold text-slate-700">Weekly Availability</legend>
-        <span className="text-[11px] text-slate-400">Select Working Days for Employee</span>
+        <span className="text-[11px] text-slate-400">Select Working Days for Freelancer</span>
       </div>
       <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-7">
         {WORKING_DAYS.map((day) => {
@@ -108,7 +108,7 @@ export function WorkerForm({ worker, onClose }: { worker?: Worker; onClose: () =
       hourly_rate: hourlyRate.trim() ? Number(hourlyRate) : undefined,
       languages,
       
-      working_days: workingDays.length ? workingDays : undefined,
+      working_days: workerType === "Freelancer" && workingDays.length ? workingDays : undefined,
     };
 
     try {
@@ -177,7 +177,7 @@ export function WorkerForm({ worker, onClose }: { worker?: Worker; onClose: () =
       />
 
       
-      {workerType === "Employee" && (
+      {workerType === "Freelancer" && (
         <WeeklyAvailability
           selected={workingDays}
           onToggle={(day) => setWorkingDays((current) => toggle(current, day))}
