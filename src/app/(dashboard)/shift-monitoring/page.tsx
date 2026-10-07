@@ -102,6 +102,7 @@ type UnifiedLiveShift = {
   worker_type?: string;
   worker_id?: string;
   profile_picture?: string;
+  company_name?: string;
   client_name?: string;
   location_name?: string;
   plan_title?: string;
@@ -220,6 +221,7 @@ export default function LiveStatusPage() {
         plan_id: planIdOfLiveShift(s),
         date_key: dateOfLiveShift(s),
         assignedWorkers: crewOfLiveShift(s),
+        company_name: s.client?.company_name,
         client_name: s.client?.name,
         location_name: s.location?.name,
         plan_title: typeof s.cleaning_plan === "object" ? s.cleaning_plan?.title : undefined,
@@ -268,6 +270,7 @@ export default function LiveStatusPage() {
         const q = search.trim().toLowerCase();
         const matchesSearch =
           item.worker_name?.toLowerCase().includes(q) ||
+          item.company_name?.toLowerCase().includes(q) ||
           item.location_name?.toLowerCase().includes(q) ||
           item.plan_title?.toLowerCase().includes(q) ||
           item.client_name?.toLowerCase().includes(q);
@@ -418,7 +421,7 @@ export default function LiveStatusPage() {
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <b className="truncate text-sm font-bold text-slate-900 transition-colors group-hover:text-primary">
-                        {item.worker_name || item.client_name || item.location_name || "Live Shift"}
+                        {item.company_name || item.worker_name || item.client_name || item.location_name || "Live Shift"}
                       </b>
                       <span
                         className={`inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-semibold capitalize ring-1 ring-inset ${tone.chip}`}

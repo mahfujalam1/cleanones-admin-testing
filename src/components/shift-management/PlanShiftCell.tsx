@@ -11,6 +11,7 @@ export function PlanShiftCell({
   selected = false,
   onToggleSelect,
   onView,
+  workerNotAssignedLabel,
 }: {
   shift?: PlanRosterShift;
   compact?: boolean;
@@ -19,6 +20,7 @@ export function PlanShiftCell({
   selected?: boolean;
   onToggleSelect?: () => void;
   onView: (shift: PlanRosterShift) => void;
+  workerNotAssignedLabel?: string;
 }) {
   if (!shift) {
     return <span className="block w-full text-center text-[10px] text-slate-300">—</span>;
@@ -73,7 +75,7 @@ export function PlanShiftCell({
             <div className="flex items-center justify-between gap-2">
               <span className="inline-flex min-w-0 items-center gap-1 rounded bg-amber-50 px-1.5 py-0.5 text-[9px] font-semibold text-amber-700">
                 <i className="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-400" />
-                <span className="truncate">Worker Not Assigned</span>
+                <span className="truncate">{workerNotAssignedLabel ?? "Worker Not Assigned"}</span>
               </span>
               {durationHours && <span className="shrink-0 text-[9px] text-slate-400">{durationHours}</span>}
             </div>

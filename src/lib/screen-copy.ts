@@ -125,6 +125,17 @@ export type ScreenCopy = {
   loadingRoomTasks: string;
   duplicatePlan: string;
   duplicateCleaningPlan: string;
+  shiftNeedsStaffing: string;
+  shiftsNeedStaffing: string;
+  unassigned: string;
+  searchPlanTitle: string;
+  dailyRoster: string;
+  weeklyRoster: string;
+  monthlyRoster: string;
+  scheduled: string;
+  workerNotAssigned: string;
+  staffed: string;
+  bulkAssignHint: string;
 };
 
 const en: ScreenCopy = {
@@ -253,6 +264,17 @@ const en: ScreenCopy = {
   loadingRoomTasks: "Loading tasks…",
   duplicatePlan: "Duplicate plan",
   duplicateCleaningPlan: "Duplicate cleaning plan",
+  shiftNeedsStaffing: "{count} shift needs staffing",
+  shiftsNeedStaffing: "{count} shifts need staffing",
+  unassigned: "unassigned",
+  searchPlanTitle: "Search plan title…",
+  dailyRoster: "Daily roster",
+  weeklyRoster: "Weekly roster",
+  monthlyRoster: "Monthly roster",
+  scheduled: "scheduled",
+  workerNotAssigned: "Worker Not Assigned",
+  staffed: "Staffed",
+  bulkAssignHint: "Tick cells, or click a plan card to bulk assign",
 };
 
 const nl: ScreenCopy = {
@@ -382,6 +404,17 @@ const nl: ScreenCopy = {
   loadingRoomTasks: "Taken laden…",
   duplicatePlan: "Plan dupliceren",
   duplicateCleaningPlan: "Schoonmaakplan dupliceren",
+  shiftNeedsStaffing: "{count} dienst heeft personeel nodig",
+  shiftsNeedStaffing: "{count} diensten hebben personeel nodig",
+  unassigned: "niet toegewezen",
+  searchPlanTitle: "Zoek plantitel…",
+  dailyRoster: "Dagelijks rooster",
+  weeklyRoster: "Wekelijks rooster",
+  monthlyRoster: "Maandelijks rooster",
+  scheduled: "ingepland",
+  workerNotAssigned: "Medewerker niet toegewezen",
+  staffed: "Toegewezen",
+  bulkAssignHint: "Vink cellen aan of klik op een plankaart om bulksgewijs toe te wijzen",
 };
 
 const fr: ScreenCopy = {
@@ -511,6 +544,17 @@ const fr: ScreenCopy = {
   loadingRoomTasks: "Chargement des tâches…",
   duplicatePlan: "Dupliquer le plan",
   duplicateCleaningPlan: "Dupliquer le plan de nettoyage",
+  shiftNeedsStaffing: "{count} vacation à pourvoir",
+  shiftsNeedStaffing: "{count} vacations à pourvoir",
+  unassigned: "non assigné(s)",
+  searchPlanTitle: "Rechercher un titre de plan…",
+  dailyRoster: "Planning journalier",
+  weeklyRoster: "Planning hebdomadaire",
+  monthlyRoster: "Planning mensuel",
+  scheduled: "planifié",
+  workerNotAssigned: "Agent non assigné",
+  staffed: "Pourvu",
+  bulkAssignHint: "Cochez des cases ou cliquez sur une carte de plan pour une affectation groupée",
 };
 
 const es: ScreenCopy = {
@@ -640,6 +684,17 @@ const es: ScreenCopy = {
   loadingRoomTasks: "Cargando tareas…",
   duplicatePlan: "Duplicar plan",
   duplicateCleaningPlan: "Duplicar plan de limpieza",
+  shiftNeedsStaffing: "{count} turno necesita personal",
+  shiftsNeedStaffing: "{count} turnos necesitan personal",
+  unassigned: "sin asignar",
+  searchPlanTitle: "Buscar título del plan…",
+  dailyRoster: "Planificación diaria",
+  weeklyRoster: "Planificación semanal",
+  monthlyRoster: "Planificación mensual",
+  scheduled: "programado",
+  workerNotAssigned: "Trabajador no asignado",
+  staffed: "Asignado",
+  bulkAssignHint: "Marque casillas o haga clic en una tarjeta de plan para asignar en lote",
 };
 
 const pl: ScreenCopy = {
@@ -769,6 +824,17 @@ const pl: ScreenCopy = {
   loadingRoomTasks: "Ładowanie zadań…",
   duplicatePlan: "Duplikuj plan",
   duplicateCleaningPlan: "Duplikuj plan sprzątania",
+  shiftNeedsStaffing: "{count} zmiana wymaga obsady",
+  shiftsNeedStaffing: "{count} zmian wymaga obsady",
+  unassigned: "nieprzypisane",
+  searchPlanTitle: "Szukaj tytułu planu…",
+  dailyRoster: "Grafik dzienny",
+  weeklyRoster: "Grafik tygodniowy",
+  monthlyRoster: "Grafik miesięczny",
+  scheduled: "zaplanowane",
+  workerNotAssigned: "Pracownik nieprzypisany",
+  staffed: "Obsadzony",
+  bulkAssignHint: "Zaznacz komórki lub kliknij kartę planu, aby przypisać zbiorczo",
 };
 
 const uk: ScreenCopy = {
@@ -898,6 +964,17 @@ const uk: ScreenCopy = {
   loadingRoomTasks: "Завантаження завдань…",
   duplicatePlan: "Дублювати план",
   duplicateCleaningPlan: "Дублювати план прибирання",
+  shiftNeedsStaffing: "{count} зміна потребує персоналу",
+  shiftsNeedStaffing: "{count} змін потребують персоналу",
+  unassigned: "непризначено",
+  searchPlanTitle: "Пошук назви плану…",
+  dailyRoster: "Денний розклад",
+  weeklyRoster: "Тижневий розклад",
+  monthlyRoster: "Місячний розклад",
+  scheduled: "заплановано",
+  workerNotAssigned: "Працівника не призначено",
+  staffed: "Укомплектовано",
+  bulkAssignHint: "Позначте клітинки або натисніть картку плану для масового призначення",
 };
 
 const pt: ScreenCopy = {
@@ -1027,6 +1104,17 @@ const pt: ScreenCopy = {
   loadingRoomTasks: "A carregar tarefas…",
   duplicatePlan: "Duplicar plano",
   duplicateCleaningPlan: "Duplicar plano de limpeza",
+  shiftNeedsStaffing: "{count} turno precisa de funcionários",
+  shiftsNeedStaffing: "{count} turnos precisam de funcionários",
+  unassigned: "não atribuído(s)",
+  searchPlanTitle: "Pesquisar título do plano…",
+  dailyRoster: "Escala diária",
+  weeklyRoster: "Escala semanal",
+  monthlyRoster: "Escala mensal",
+  scheduled: "agendado",
+  workerNotAssigned: "Trabalhador não atribuído",
+  staffed: "Com equipe",
+  bulkAssignHint: "Marque células ou clique num cartão de plano para atribuição em massa",
 };
 
 const ar: ScreenCopy = {
@@ -1155,6 +1243,17 @@ const ar: ScreenCopy = {
   loadingRoomTasks: "جارٍ تحميل المهام…",
   duplicatePlan: "تكرار الخطة",
   duplicateCleaningPlan: "تكرار خطة التنظيف",
+  shiftNeedsStaffing: "{count} وردية بحاجة لتعيين",
+  shiftsNeedStaffing: "{count} ورديات بحاجة لتعيين",
+  unassigned: "غير معين",
+  searchPlanTitle: "البحث في عنوان الخطة…",
+  dailyRoster: "جدول الورديات اليومي",
+  weeklyRoster: "جدول الورديات الأسبوعي",
+  monthlyRoster: "جدول الورديات الشهري",
+  scheduled: "مجدول",
+  workerNotAssigned: "لم يتم تعيين عامل",
+  staffed: "تم التعيين",
+  bulkAssignHint: "حدد الخلايا، أو انقر فوق بطاقة الخطة للتعيين الجماعي",
 };
 
 const screenCopy: Record<SupportedLocale, ScreenCopy> = { en, nl, pl, uk, pt, ar, fr, es };

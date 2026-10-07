@@ -88,6 +88,9 @@ export function ShiftManagementBoard() {
   const days = useMemo(() => datesForView(view, currentDate), [view, currentDate]);
   const colWidth = view === "day" ? 360 : view === "week" ? 170 : 176;
 
+  const formatStaffingNeed = (count: number) =>
+    (count === 1 ? copy.shiftNeedsStaffing : copy.shiftsNeedStaffing).replace("{count}", String(count));
+
   const params: PlanRosterParams = useMemo(() => {
     if (view === "month") {
       return {
@@ -273,7 +276,7 @@ export function ShiftManagementBoard() {
             <h1 className="text-lg font-semibold tracking-tight text-slate-800">{t.nav.shiftManagement}</h1>
             <p className={`flex items-center gap-1 text-xs ${unassignedCount === 0 ? "text-emerald-600" : "text-amber-600"}`}>
               <MdCheckCircle />
-              {unassignedCount === 0 ? "All shifts on schedule" : `${unassignedCount} shifts need staffing`}
+              {unassignedCount === 0 ? t.dashboard.allShiftsOnSchedule : formatStaffingNeed(unassignedCount)}
             </p>
           </div>
         </div>
@@ -282,7 +285,7 @@ export function ShiftManagementBoard() {
             <b className="text-slate-700">{data?.meta.total_shifts ?? visibleShifts.length}</b> shifts
           </span>
           <span className="rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-[10px] text-slate-500">
-            <b className="text-slate-700">{scheduledHours.toFixed(1)}h</b> duration
+            <b className="text-slate-700">{scheduledHours.toFixed(1)}h</b> {copy.duration.toLowerCase()}
           </span>
           <span className="rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-[10px] text-slate-500">
             <b className="text-slate-700">{data?.meta.total ?? plans.length}</b> plans
@@ -295,7 +298,7 @@ export function ShiftManagementBoard() {
           <span className={`rounded-md px-2.5 py-1 text-[10px] font-semibold ${
             unassignedCount === 0 ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"
           }`}>
-            {unassignedCount === 0 ? "On time" : `${unassignedCount} unassigned`}
+            {unassignedCount === 0 ? t.dashboard.onTime : `${unassignedCount} ${copy.unassigned}`}
           </span>
           <div className="flex shrink-0 overflow-hidden rounded-md border border-slate-200 bg-white">
             <button type="button" onClick={handlePrev} aria-label="Previous period" className="flex h-8 w-8 items-center justify-center border-r border-gray-300 text-gray-500 hover:bg-gray-50">
@@ -343,7 +346,7 @@ export function ShiftManagementBoard() {
                 setSearch(value);
                 setPage(1);
               }}
-              placeholder="Search plan title…"
+              placeholder={copy.searchPlanTitle}
             />
           </div>
           <SlidingTabs
@@ -374,14 +377,14 @@ export function ShiftManagementBoard() {
             <div className="flex min-h-16 shrink-0 items-center justify-between border-b border-sky-600 bg-primary px-5 text-white">
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-[.18em] text-white/75">
-                  {view === "day" ? "Daily" : view === "week" ? "Weekly" : "Monthly"} roster
+                  {view === "day" ? copy.dailyRoster : view === "week" ? copy.weeklyRoster : copy.monthlyRoster}
                 </p>
                 <h2 className="mt-0.5 text-xl font-semibold tracking-tight">{rangeLabel()}</h2>
               </div>
               <div className="hidden items-center gap-4 text-[10px] text-white/75 sm:flex">
                 <span><b className="text-sm text-white">{data?.meta.total_shifts ?? visibleShifts.length}</b> shifts</span>
                 <span className="h-6 w-px bg-white/25" />
-                <span><b className="text-sm text-white">{scheduledHours.toFixed(1)}h</b> scheduled</span>
+                <span><b className="text-sm text-white">{scheduledHours.toFixed(1)}h</b> {copy.scheduled}</span>
               </div>
             </div>
             <div className="min-h-0 flex-1 overflow-auto">
@@ -456,7 +459,7 @@ export function ShiftManagementBoard() {
                             <span className="inline-flex max-w-full items-center gap-1 self-start rounded bg-amber-50 px-1.5 py-0.5 text-[9px] font-semibold text-amber-700 ring-1 ring-amber-200">
                               <MdWarningAmber className="shrink-0 text-[11px]" />
                               <span className="truncate">
-                                {plan.unassigned_shift_count} shift{plan.unassigned_shift_count === 1 ? "" : "s"} need staffing
+                                {formatStaffingNeed(plan.unassigned_shift_count ?? 0)}
                               </span>
                             </span>
                           )}
@@ -476,6 +479,7 @@ export function ShiftManagementBoard() {
                                 shift && isUnstaffed(shift) ? () => toggleDate(plan.plan_id, key) : undefined
                               }
                               onView={(item) => openPlan(plan.plan_id, item)}
+                              workerNotAssignedLabel={copy.workerNotAssigned}
                             />
                           </div>
                         );
@@ -486,9 +490,9 @@ export function ShiftManagementBoard() {
               </div>
             </div>
             <div className="flex shrink-0 flex-wrap items-center gap-3 border-t border-slate-200 bg-slate-50 px-4 py-2 text-[9px] text-slate-400">
-              <span className="flex items-center gap-1.5"><i className="h-2 w-2 rounded-full bg-amber-400" /> Worker not assigned</span>
-              <span className="flex items-center gap-1.5"><i className="h-2 w-2 rounded-full bg-sky-500" /> Staffed</span>
-              <span className="flex items-center gap-1.5">☐ Tick cells, or click a plan card to bulk assign</span>
+              <span className="flex items-center gap-1.5"><i className="h-2 w-2 rounded-full bg-amber-400" /> {copy.workerNotAssigned}</span>
+              <span className="flex items-center gap-1.5"><i className="h-2 w-2 rounded-full bg-sky-500" /> {copy.staffed}</span>
+              <span className="flex items-center gap-1.5">☐ {copy.bulkAssignHint}</span>
               <span className="ml-auto hidden items-center gap-1 sm:flex"><MdAccessTime /> {copy.scrollFullPeriod}</span>
             </div>
           </section>

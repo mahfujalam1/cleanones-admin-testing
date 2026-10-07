@@ -504,6 +504,7 @@ export type TodayLiveShiftItem = {
   client?: {
     _id?: string;
     name?: string;
+    company_name?: string;
   };
   assigned_workers?: Array<{
     worker_id?: string;
