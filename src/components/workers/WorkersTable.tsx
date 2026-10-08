@@ -76,7 +76,7 @@ export function WorkersTable({
 
                 <div className="text-sm text-gray-700">
                   {(() => {
-                    const hours = worker.total_completed_work_hours ?? worker.worked_hours;
+                    const hours = worker.total_working_hours ?? worker.total_completed_work_hours ?? worker.worked_hours;
                     if (typeof hours === "number") {
                       return (
                         <>

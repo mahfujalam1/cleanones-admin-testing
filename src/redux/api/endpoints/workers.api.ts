@@ -76,6 +76,7 @@ export type Worker = {
   isDeleted?: boolean;
   worked_hours?: number;
   total_completed_work_hours?: number | string;
+  total_working_hours?: number | string;
   total_shift?: number;
   total_late_check_ins?: number;
   total_on_time_check_ins?: number;

@@ -78,7 +78,7 @@ function mapDirectoryWorker(worker: Worker): WorkerInfo {
     color: 'bg-sky-500',
     statusColor: 'text-sky-500',
     profilePicture: workerPhoto(worker),
-    hoursWorked: asHours(worker.total_completed_work_hours ?? worker.worked_hours),
+    hoursWorked: asHours(worker.total_working_hours ?? worker.total_completed_work_hours ?? worker.worked_hours),
     totalShifts: Number(worker.total_shift ?? 0),
     lateDays,
     onTimeCheckIns: Number(worker.total_on_time_check_ins ?? 0),
