@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import { MdAdd } from "react-icons/md";
+import { MdAdd, MdUploadFile } from "react-icons/md";
 import { WorkersTable } from "@/components/workers/WorkersTable";
 import { WorkerForm } from "@/components/workers/WorkerForm";
 import { WorkerDetailModal } from "@/components/workers/WorkerDetailModal";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
+import { BulkUploadModal, type BulkUploadColumn } from "@/components/shared/BulkUploadModal";
 import { BackendPagination } from "@/components/shared/BackendPagination";
 import { ErrorNotice, SearchInput } from "@/components/shared/ListStates";
 import { TableSkeleton } from "@/components/shared/SkeletonLoader";
@@ -17,6 +18,7 @@ import {
   workerName,
   useDeleteWorkerMutation,
   useGetWorkerListQuery,
+  useBulkUploadWorkersMutation,
   type Worker,
   type WorkerSort,
   type WorkerType,
@@ -27,6 +29,32 @@ import { getUiTranslation } from "@/lib/translations";
 import { getDashboardTranslation } from "@/lib/translations";
 
 const LIMIT = 10;
+
+const WORKER_BULK_COLUMNS: BulkUploadColumn[] = [
+  { name: "name", required: true },
+  { name: "email", required: true, notes: "Must be unique" },
+  { name: "phone", required: true, notes: "Must be unique" },
+  { name: "worker_type", required: true, notes: "Employee or Freelancer" },
+  { name: "password", required: true, notes: "Min 6 characters" },
+  { name: "position", required: false },
+  { name: "address", required: false },
+  { name: "nationality", required: false },
+  { name: "base_location", required: false },
+  { name: "national_id", required: false },
+  { name: "dob", required: false, notes: "e.g. 1995-04-20" },
+  { name: "hourly_rate", required: false, notes: "Defaults to 25" },
+  { name: "languages", required: false, notes: "Separate with ; or |, e.g. en;da" },
+  { name: "working_days", required: false, notes: "Separate with ; or |, e.g. monday;tuesday" },
+];
+
+const SAMPLE_WORKERS_CSV = `name,email,phone,worker_type,password,hourly_rate,languages,working_days
+Ann Lee,ann@example.com,+4511111111,Employee,secret123,30,en;da,monday;tuesday;friday
+Bob Ray,bob@example.com,+4522222222,Freelancer,secret456,,en,`;
+
+const WORKER_BULK_NOTES = [
+  "Use ';' or '|' to separate multiple values in languages or working_days (e.g. 'en;da' or 'monday;tuesday'). Do NOT use commas inside a column.",
+  "worker_type must be either 'Employee' or 'Freelancer'.",
+];
 
 const SORT_LABELS: Array<{ value: WorkerSort; label: string }> = [
   { value: "-createdAt", label: "Newest First" },
@@ -51,6 +79,7 @@ export default function WorkersPage() {
   const [formTarget, setFormTarget] = useState<Worker | "new" | null>(null);
   const [viewTarget, setViewTarget] = useState<Worker | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Worker | null>(null);
+  const [showBulkUpload, setShowBulkUpload] = useState(false);
   const [actionError, setActionError] = useState("");
 
   useEffect(() => setPage(1), [searchTerm, workerType, sort]);
@@ -63,6 +92,7 @@ export default function WorkersPage() {
     sort,
   });
   const [deleteWorker, { isLoading: deleting }] = useDeleteWorkerMutation();
+  const [bulkUploadWorkers] = useBulkUploadWorkersMutation();
 
   const workers = data?.result ?? [];
   const total = data?.meta.total ?? 0;
@@ -102,13 +132,22 @@ export default function WorkersPage() {
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={() => setFormTarget("new")}
-          className="inline-flex h-9 shrink-0 cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-md bg-primary px-4 text-sm font-medium text-white transition-colors hover:bg-[#0284c7]"
-        >
-          <MdAdd className="text-base" /> {t.workers.addWorker}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setShowBulkUpload(true)}
+            className="inline-flex h-9 shrink-0 cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-md border border-slate-200 bg-white px-3.5 text-sm font-semibold text-slate-700 shadow-2xs transition-all hover:bg-slate-50 hover:text-slate-900 active:scale-[0.98]"
+          >
+            <MdUploadFile className="text-base text-slate-500" /> Bulk Upload
+          </button>
+          <button
+            type="button"
+            onClick={() => setFormTarget("new")}
+            className="inline-flex h-9 shrink-0 cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-md bg-primary px-4 text-sm font-medium text-white transition-colors hover:bg-[#0284c7]"
+          >
+            <MdAdd className="text-base" /> {t.workers.addWorker}
+          </button>
+        </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-3 rounded-lg border border-slate-200 bg-white p-2.5">
@@ -182,6 +221,21 @@ export default function WorkersPage() {
           loading={deleting}
           onConfirm={() => void confirmDelete()}
           onClose={() => !deleting && setDeleteTarget(null)}
+        />
+      )}
+
+      {showBulkUpload && (
+        <BulkUploadModal
+          title="Bulk Upload Workers"
+          entityName="Workers"
+          columns={WORKER_BULK_COLUMNS}
+          sampleCsvFilename="workers_template.csv"
+          sampleCsvContent={SAMPLE_WORKERS_CSV}
+          notes={WORKER_BULK_NOTES}
+          onUpload={async (formData) => {
+            return await bulkUploadWorkers(formData).unwrap();
+          }}
+          onClose={() => setShowBulkUpload(false)}
         />
       )}
     </div>

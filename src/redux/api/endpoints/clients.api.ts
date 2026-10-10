@@ -67,6 +67,26 @@ export type CreateContactInput = {
   phone: string;
 };
 
+export type BulkUploadItemCreated = {
+  row: number;
+  email: string;
+  id?: string;
+};
+
+export type BulkUploadItemFailed = {
+  row: number;
+  email: string;
+  error: string;
+};
+
+export type BulkUploadResult = {
+  total: number;
+  created_count: number;
+  failed_count: number;
+  created: BulkUploadItemCreated[];
+  failed: BulkUploadItemFailed[];
+};
+
 export const clientsApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getClients: builder.query<Paginated<Client>, ListParams | void>({
@@ -80,6 +100,11 @@ export const clientsApi = baseApi.injectEndpoints({
 
     createClient: builder.mutation<Client, CreateClientInput>({
       query: (body) => ({ url: "/client/create-client", method: "POST", body }),
+      invalidatesTags: [{ type: tagTypes.clients, id: "LIST" }],
+    }),
+
+    bulkUploadClients: builder.mutation<BulkUploadResult, FormData>({
+      query: (body) => ({ url: "/client/bulk-upload", method: "POST", body }),
       invalidatesTags: [{ type: tagTypes.clients, id: "LIST" }],
     }),
 
@@ -172,6 +197,7 @@ export function useClientById(id: string) {
 export const {
   useGetClientsQuery,
   useCreateClientMutation,
+  useBulkUploadClientsMutation,
   useUpdateClientMutation,
   useDeleteClientMutation,
   useGetClientContactsQuery,

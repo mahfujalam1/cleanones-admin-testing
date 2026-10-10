@@ -1,6 +1,7 @@
 import { baseApi } from "../baseApi";
 import { listQuery, type ListParams, type Paginated } from "../types";
 import { tagTypes } from "../../tagTypes";
+import type { BulkUploadResult } from "./clients.api";
 
 export const WORKER_TYPES = ["Employee", "Freelancer"] as const;
 export type WorkerType = (typeof WORKER_TYPES)[number];
@@ -164,6 +165,11 @@ export const workersApi = baseApi.injectEndpoints({
       invalidatesTags: [{ type: tagTypes.workers, id: "LIST" }],
     }),
 
+    bulkUploadWorkers: builder.mutation<BulkUploadResult, FormData>({
+      query: (body) => ({ url: "/worker/bulk-upload", method: "POST", body }),
+      invalidatesTags: [{ type: tagTypes.workers, id: "LIST" }],
+    }),
+
     updateWorker: builder.mutation<Worker, { id: string; body: UpdateWorkerInput }>({
       query: ({ id, body }) => ({
         url: `/worker/update-worker/${encodeURIComponent(id)}`,
@@ -191,6 +197,7 @@ export const {
   useGetWorkerListQuery,
   useGetWorkerQuery,
   useCreateWorkerMutation,
+  useBulkUploadWorkersMutation,
   useUpdateWorkerMutation,
   useDeleteWorkerMutation,
 } = workersApi;
