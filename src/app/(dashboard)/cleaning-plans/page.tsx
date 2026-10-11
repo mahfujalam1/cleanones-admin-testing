@@ -7,6 +7,7 @@ import { PlanCard } from "@/components/cleaningPlans/PlanCard";
 import { PlanForm } from "@/components/cleaningPlans/PlanForm";
 import { PlanDetailModal } from "@/components/cleaningPlans/PlanDetailModal";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
+import { Toast } from "@/components/shared/Toast";
 import { BackendPagination } from "@/components/shared/BackendPagination";
 import { CardGridSkeleton, ErrorNotice, SearchInput } from "@/components/shared/ListStates";
 import { Select } from "@/components/ui/select";
@@ -14,11 +15,15 @@ import { Button } from "@/components/ui/button";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { clientCompanyLabel, CLIENT_LOOKUP_ARGS, useGetClientsQuery } from "@/redux/api/endpoints/clients.api";
 import { useGetClientLocationsQuery, useGetLocationsQuery } from "@/redux/api/endpoints/locations.api";
+import { refId } from "@/redux/api/types";
 import {
+  useCreateCleaningPlanMutation,
   useDeleteCleaningPlanMutation,
   useGetCleaningPlanListQuery,
   useGetCleaningPlanQuery,
+  useLazyGetCleaningPlanQuery,
   type CleaningPlan,
+  type CreatePlanInput,
 } from "@/redux/api/endpoints/cleaningPlans.api";
 import { apiError } from "@/redux/api/apiError";
 import { getLocale, localizePath } from "@/lib/locale";
@@ -46,10 +51,11 @@ function CleaningPlansView() {
   const searchTerm = useDebouncedValue(search.trim());
   const [page, setPage] = useState(1);
   const [formTarget, setFormTarget] = useState<CleaningPlan | "new" | null>(null);
-  const [duplicateTarget, setDuplicateTarget] = useState<CleaningPlan | null>(null);
+  const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<CleaningPlan | null>(null);
   const [justCreated, setJustCreated] = useState<CleaningPlan | null>(null);
   const [viewTarget, setViewTarget] = useState<CleaningPlan | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [actionError, setActionError] = useState("");
 
   useEffect(() => setPage(1), [searchTerm, clientId, locationId]);
@@ -103,6 +109,8 @@ function CleaningPlansView() {
   }, [isFetching, data, plans.length, page]);
 
   const [deletePlan, { isLoading: deleting }] = useDeleteCleaningPlanMutation();
+  const [createPlan] = useCreateCleaningPlanMutation();
+  const [fetchSinglePlan] = useLazyGetCleaningPlanQuery();
 
   const confirmDelete = async () => {
     if (!deleteTarget) return;
@@ -112,6 +120,63 @@ function CleaningPlansView() {
       setDeleteTarget(null);
     } catch (cause) {
       setActionError(apiError(cause));
+    }
+  };
+
+  const handleDuplicate = async (plan: CleaningPlan) => {
+    if (duplicatingId) return;
+    setDuplicatingId(plan._id);
+    setActionError("");
+
+    try {
+      let sourcePlan: CleaningPlan = plan;
+      try {
+        const fullPlan = await fetchSinglePlan(plan._id, true).unwrap();
+        if (fullPlan) sourcePlan = fullPlan;
+      } catch {
+        // Fallback to plan from list
+      }
+
+      const client = refId(sourcePlan.client);
+      const location = refId(sourcePlan.location);
+      const rooms = (sourcePlan.rooms ?? []).map(refId).filter(Boolean);
+
+      let tasks: string[] = [];
+      if (Array.isArray(sourcePlan.tasks) && sourcePlan.tasks.length > 0) {
+        tasks = sourcePlan.tasks
+          .map((t) => (typeof t === "string" ? t : (t as { _id?: string })?._id || ""))
+          .filter(Boolean);
+      } else if (sourcePlan.rooms) {
+        tasks = (sourcePlan.rooms as any[]).flatMap((r) =>
+          (r?.tasks ?? []).map((t: any) => (typeof t === "string" ? t : t?._id || "")).filter(Boolean),
+        );
+      }
+
+      if (!client || !location) {
+        setActionError(copy.pickCompanyAndLocation);
+        return;
+      }
+      if (rooms.length === 0) {
+        setActionError("Cannot copy a plan with no rooms assigned.");
+        return;
+      }
+
+      const body: CreatePlanInput = {
+        title: `${sourcePlan.title || "Cleaning Plan"} (Copy)`.trim(),
+        client,
+        location,
+        rooms,
+        tasks: tasks.length > 0 ? tasks : undefined,
+        description: sourcePlan.description?.trim() || "Cleaning plan duplicate",
+        note: sourcePlan.note?.trim() || undefined,
+      };
+
+      await createPlan(body).unwrap();
+      setToastMessage(`"${body.title}" copied successfully!`);
+    } catch (cause) {
+      setActionError(apiError(cause));
+    } finally {
+      setDuplicatingId(null);
     }
   };
 
@@ -178,9 +243,10 @@ function CleaningPlansView() {
             <PlanCard
               key={plan._id}
               plan={plan}
+              isDuplicating={duplicatingId === plan._id}
               onSelect={setViewTarget}
               onEdit={setFormTarget}
-              onDuplicate={setDuplicateTarget}
+              onDuplicate={handleDuplicate}
               onDelete={setDeleteTarget}
             />
           ))}
@@ -222,17 +288,6 @@ function CleaningPlansView() {
         />
       )}
 
-      {duplicateTarget && (
-        <PlanForm
-          duplicateFrom={duplicateTarget}
-          onClose={() => setDuplicateTarget(null)}
-          onCreated={(created) => {
-            setDuplicateTarget(null);
-            setJustCreated(created);
-          }}
-        />
-      )}
-
       {justCreated && (
         <ConfirmDialog
           title={copy.planCreated}
@@ -257,6 +312,13 @@ function CleaningPlansView() {
           loading={deleting}
           onConfirm={() => void confirmDelete()}
           onClose={() => !deleting && setDeleteTarget(null)}
+        />
+      )}
+
+      {toastMessage && (
+        <Toast
+          message={toastMessage}
+          onClose={() => setToastMessage(null)}
         />
       )}
     </div>

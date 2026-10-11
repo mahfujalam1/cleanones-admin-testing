@@ -183,6 +183,7 @@ export const {
   useGetCleaningPlanListQuery,
   useLazyGetCleaningPlanListQuery,
   useGetCleaningPlanQuery,
+  useLazyGetCleaningPlanQuery,
   useCreateCleaningPlanMutation,
   useUpdateCleaningPlanMutation,
   useDeleteCleaningPlanMutation,

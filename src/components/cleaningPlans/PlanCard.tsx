@@ -44,6 +44,7 @@ export function PlanCard({
   onDelete,
   onAssign,
   onDuplicate,
+  isDuplicating,
 }: {
   plan: CleaningPlan;
   onSelect?: (plan: CleaningPlan) => void;
@@ -51,6 +52,7 @@ export function PlanCard({
   onDelete?: (plan: CleaningPlan) => void;
   onAssign?: (plan: CleaningPlan) => void;
   onDuplicate?: (plan: CleaningPlan) => void;
+  isDuplicating?: boolean;
 }) {
   const copy = getScreenCopy(getLocale(usePathname()));
   const { data: clientPage } = useGetClientsQuery(CLIENT_LOOKUP_ARGS);
@@ -132,15 +134,23 @@ export function PlanCard({
           {onDuplicate && (
             <button
               type="button"
+              disabled={isDuplicating}
               aria-label={`Duplicate ${plan.title}`}
               title={copy.duplicatePlan}
               onClick={(event) => {
                 event.stopPropagation();
                 onDuplicate(plan);
               }}
-              className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md bg-white/90 text-slate-400 ring-1 ring-slate-200 backdrop-blur transition-colors hover:text-slate-800"
+              className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md bg-white/90 text-slate-400 ring-1 ring-slate-200 backdrop-blur transition-colors hover:text-slate-800 disabled:opacity-60"
             >
-              <MdContentCopy className="text-[14px]" />
+              {isDuplicating ? (
+                <svg className="animate-spin h-3.5 w-3.5 text-slate-600" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+              ) : (
+                <MdContentCopy className="text-[14px]" />
+              )}
             </button>
           )}
           {onEdit && (
