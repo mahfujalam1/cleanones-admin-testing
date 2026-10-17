@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { usePathname } from "next/navigation";
 import {
   MdAdd,
   MdBlock,
@@ -28,10 +29,76 @@ import { BackendPagination } from "@/components/shared/BackendPagination";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { TableSkeleton } from "@/components/shared/SkeletonLoader";
 import { apiError } from "@/redux/api/apiError";
+import { getLocale } from "@/lib/locale";
+import { getDashboardTranslation, getUiTranslation } from "@/lib/translations";
 
 const LIMIT = 10;
 
 export default function ManagersPage() {
+  const pathname = usePathname();
+  const locale = getLocale(pathname);
+  const t = getDashboardTranslation(locale);
+  const ui = getUiTranslation(locale);
+  const tm = t.managers || {
+    title: "Managers",
+    subtitle: "Create, view and manage managers in your company.",
+    addManager: "Add Manager",
+    searchPlaceholder: "Search managers by name, email or phone...",
+    failedToLoad: "Failed to load managers.",
+    tryAgain: "Try Again",
+    noManagersFound: "No managers found",
+    noManagersMatch: "No managers matched your search query.",
+    noManagersCompany: "You have not added any managers to your company yet.",
+    createFirstManager: "Create your first manager",
+    name: "Name",
+    email: "Email",
+    phone: "Phone",
+    address: "Address",
+    status: "Status",
+    actions: "Actions",
+    active: "Active",
+    blocked: "Blocked",
+    editManager: "Edit Manager",
+    blockManager: "Block Manager",
+    unblockManager: "Unblock Manager",
+    addNewManager: "Add New Manager",
+    nameRequired: "Name *",
+    emailRequired: "Email *",
+    phoneRequired: "Phone *",
+    addressLabel: "Address",
+    passwordRequired: "Password *",
+    confirmPasswordRequired: "Confirm Password *",
+    enterFullName: "Enter full name",
+    enterEmail: "Enter email",
+    enterPhone: "Enter phone",
+    enterAddress: "Enter address",
+    enterPassword: "Enter password (min 8 chars)",
+    enterConfirmPassword: "Enter confirm password",
+    cancel: "Cancel",
+    createManager: "Create Manager",
+    creating: "Creating...",
+    emailReadOnly: "Email (Read-only)",
+    saveChanges: "Save Changes",
+    saving: "Saving...",
+    createdSuccessfully: "Manager Created Successfully!",
+    saveCredentialsNotice: "Save these login credentials now. Pass them to the manager to log in.",
+    copyCredentials: "Copy Credentials",
+    copied: "Copied",
+    done: "Done",
+    blockTitle: "Block Manager",
+    blockDesc: "Are you sure you want to block {name}? They will no longer be able to log in, but their business records will remain preserved.",
+    unblockTitle: "Unblock Manager",
+    unblockDesc: "Are you sure you want to unblock {name}? They will regain access to their dashboard.",
+    managerProfile: "Manager Profile",
+    passwordMinLength: "Password must be at least 8 characters long.",
+    passwordsDoNotMatch: "Passwords do not match.",
+    failedToCreate: "Failed to create manager.",
+    failedToUpdate: "Failed to update manager.",
+    allManagers: "All Managers",
+    filterByManager: "Filter by Manager",
+    loadingManagers: "Loading managers...",
+  };
+
   const [searchTerm, setSearchTerm] = useState("");
   const [page, setPage] = useState(1);
   const debouncedSearch = useDebouncedValue(searchTerm, 400);
@@ -97,11 +164,11 @@ export default function ManagersPage() {
     setFormError(null);
 
     if (createForm.password.length < 8) {
-      setFormError("Password must be at least 8 characters long.");
+      setFormError(tm.passwordMinLength);
       return;
     }
     if (createForm.password !== createForm.confirmPassword) {
-      setFormError("Passwords do not match.");
+      setFormError(tm.passwordsDoNotMatch);
       return;
     }
 
@@ -111,7 +178,7 @@ export default function ManagersPage() {
       setIsCreateOpen(false);
       setCreatedCredentials(savedCreds);
     } catch (err: unknown) {
-      setFormError(apiError(err) || "Failed to create manager.");
+      setFormError(apiError(err) || tm.failedToCreate);
     }
   };
 
@@ -135,7 +202,7 @@ export default function ManagersPage() {
       await updateManager(editForm).unwrap();
       setEditingManager(null);
     } catch (err: unknown) {
-      setFormError(apiError(err) || "Failed to update manager.");
+      setFormError(apiError(err) || tm.failedToUpdate);
     }
   };
 
@@ -169,16 +236,15 @@ export default function ManagersPage() {
 
   const managersList = data?.result || [];
   const totalItems = data?.meta?.total || 0;
-  const totalPages = data?.meta?.totalPage || 1;
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Managers</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900">{tm.title}</h1>
           <p className="mt-1 text-sm text-slate-500">
-            Create, view and manage managers in your company.
+            {tm.subtitle}
           </p>
         </div>
         <button
@@ -187,7 +253,7 @@ export default function ManagersPage() {
           className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
         >
           <MdAdd className="text-lg" />
-          <span>Add Manager</span>
+          <span>{tm.addManager}</span>
         </button>
       </div>
 
@@ -202,7 +268,7 @@ export default function ManagersPage() {
               setSearchTerm(e.target.value);
               setPage(1);
             }}
-            placeholder="Search managers by name, email or phone..."
+            placeholder={tm.searchPlaceholder}
             className="w-full rounded-lg border border-slate-200 bg-white py-2 pl-10 pr-4 text-sm text-slate-800 placeholder-slate-400 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
           />
         </div>
@@ -214,12 +280,12 @@ export default function ManagersPage() {
           <TableSkeleton rows={5} columns={6} />
         ) : isError ? (
           <div className="p-8 text-center">
-            <p className="text-sm text-red-500">Failed to load managers.</p>
+            <p className="text-sm text-red-500">{tm.failedToLoad}</p>
             <button
               onClick={() => refetch()}
               className="mt-3 text-sm font-medium text-primary hover:underline"
             >
-              Try Again
+              {tm.tryAgain}
             </button>
           </div>
         ) : managersList.length === 0 ? (
@@ -227,11 +293,11 @@ export default function ManagersPage() {
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-400">
               <MdPerson className="text-2xl" />
             </div>
-            <h3 className="mt-4 text-base font-semibold text-slate-900">No managers found</h3>
+            <h3 className="mt-4 text-base font-semibold text-slate-900">{tm.noManagersFound}</h3>
             <p className="mt-1 text-sm text-slate-500">
               {searchTerm
-                ? "No managers matched your search query."
-                : "You have not added any managers to your company yet."}
+                ? tm.noManagersMatch
+                : tm.noManagersCompany}
             </p>
             {!searchTerm && (
               <button
@@ -240,7 +306,7 @@ export default function ManagersPage() {
                 className="mt-4 inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition hover:bg-primary/90"
               >
                 <MdAdd className="text-lg" />
-                <span>Create your first manager</span>
+                <span>{tm.createFirstManager}</span>
               </button>
             )}
           </div>
@@ -249,12 +315,12 @@ export default function ManagersPage() {
             <table className="w-full text-left text-sm text-slate-600">
               <thead className="border-b border-slate-200 bg-slate-50/75 text-xs font-semibold uppercase tracking-wider text-slate-500">
                 <tr>
-                  <th scope="col" className="px-6 py-3.5">Name</th>
-                  <th scope="col" className="px-6 py-3.5">Email</th>
-                  <th scope="col" className="px-6 py-3.5">Phone</th>
-                  <th scope="col" className="px-6 py-3.5">Address</th>
-                  <th scope="col" className="px-6 py-3.5">Status</th>
-                  <th scope="col" className="px-6 py-3.5 text-right">Actions</th>
+                  <th scope="col" className="px-6 py-3.5">{tm.name}</th>
+                  <th scope="col" className="px-6 py-3.5">{tm.email}</th>
+                  <th scope="col" className="px-6 py-3.5">{tm.phone}</th>
+                  <th scope="col" className="px-6 py-3.5">{tm.address}</th>
+                  <th scope="col" className="px-6 py-3.5">{tm.status}</th>
+                  <th scope="col" className="px-6 py-3.5 text-right">{tm.actions}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -272,7 +338,7 @@ export default function ManagersPage() {
                                   type="button"
                                   onClick={() => setPreviewPhoto({ url: photo, name: mgr.name })}
                                   className="group/avatar shrink-0 cursor-pointer rounded-full transition hover:scale-105 hover:ring-2 hover:ring-primary/40 focus:outline-none"
-                                  title={`Click to view ${mgr.name}'s profile photo`}
+                                  title={photo ? `${tm.editManager}: ${mgr.name}` : mgr.name}
                                 >
                                   <img
                                     src={photo}
@@ -302,12 +368,12 @@ export default function ManagersPage() {
                         {isBlocked ? (
                           <span className="inline-flex items-center gap-1.5 rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-medium text-red-700">
                             <span className="h-1.5 w-1.5 rounded-full bg-red-600" />
-                            Blocked
+                            {tm.blocked}
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700">
                             <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" />
-                            Active
+                            {tm.active}
                           </span>
                         )}
                       </td>
@@ -316,7 +382,7 @@ export default function ManagersPage() {
                           <button
                             type="button"
                             onClick={() => handleOpenEdit(mgr)}
-                            title="Edit Manager"
+                            title={tm.editManager}
                             className="rounded p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
                           >
                             <MdEdit className="text-lg" />
@@ -325,7 +391,7 @@ export default function ManagersPage() {
                             <button
                               type="button"
                               onClick={() => setUnblockingManager(mgr)}
-                              title="Unblock Manager"
+                              title={tm.unblockManager}
                               className="rounded p-1.5 text-emerald-600 hover:bg-emerald-50"
                             >
                               <MdCheckCircle className="text-lg" />
@@ -334,7 +400,7 @@ export default function ManagersPage() {
                             <button
                               type="button"
                               onClick={() => setBlockingManager(mgr)}
-                              title="Block Manager"
+                              title={tm.blockManager}
                               className="rounded p-1.5 text-red-500 hover:bg-red-50"
                             >
                               <MdBlock className="text-lg" />
@@ -368,7 +434,7 @@ export default function ManagersPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="w-full max-w-md overflow-hidden rounded-xl bg-white shadow-xl">
             <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
-              <h3 className="text-lg font-semibold text-slate-900">Add New Manager</h3>
+              <h3 className="text-lg font-semibold text-slate-900">{tm.addNewManager}</h3>
               <button
                 type="button"
                 onClick={() => setIsCreateOpen(false)}
@@ -382,63 +448,63 @@ export default function ManagersPage() {
                 <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600">{formError}</div>
               )}
               <div>
-                <label className="block text-xs font-medium text-slate-700">Name *</label>
+                <label className="block text-xs font-medium text-slate-700">{tm.nameRequired}</label>
                 <input
                   type="text"
                   required
                   value={createForm.name}
                   onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
-                  placeholder="Enter full name"
+                  placeholder={tm.enterFullName}
                   className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-700">Email *</label>
+                <label className="block text-xs font-medium text-slate-700">{tm.emailRequired}</label>
                 <input
                   type="email"
                   required
                   value={createForm.email}
                   onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })}
-                  placeholder="Enter email"
+                  placeholder={tm.enterEmail}
                   className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-700">Phone *</label>
+                <label className="block text-xs font-medium text-slate-700">{tm.phoneRequired}</label>
                 <input
                   type="tel"
                   required
                   value={createForm.phone}
                   onChange={(e) => setCreateForm({ ...createForm, phone: e.target.value })}
-                  placeholder="Enter phone"
+                  placeholder={tm.enterPhone}
                   className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-700">Address</label>
+                <label className="block text-xs font-medium text-slate-700">{tm.addressLabel}</label>
                 <input
                   type="text"
                   value={createForm.address}
                   onChange={(e) => setCreateForm({ ...createForm, address: e.target.value })}
-                  placeholder="Enter address"
+                  placeholder={tm.enterAddress}
                   className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                 />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-slate-700">Password *</label>
+                  <label className="block text-xs font-medium text-slate-700">{tm.passwordRequired}</label>
                   <input
                     type="password"
                     required
                     minLength={8}
                     value={createForm.password}
                     onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
-                    placeholder="Enter password (min 8 chars)"
+                    placeholder={tm.enterPassword}
                     className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-700">Confirm Password *</label>
+                  <label className="block text-xs font-medium text-slate-700">{tm.confirmPasswordRequired}</label>
                   <input
                     type="password"
                     required
@@ -447,7 +513,7 @@ export default function ManagersPage() {
                     onChange={(e) =>
                       setCreateForm({ ...createForm, confirmPassword: e.target.value })
                     }
-                    placeholder="Enter confirm password"
+                    placeholder={tm.enterConfirmPassword}
                     className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                   />
                 </div>
@@ -458,14 +524,14 @@ export default function ManagersPage() {
                   onClick={() => setIsCreateOpen(false)}
                   className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
                 >
-                  Cancel
+                  {ui.cancel || tm.cancel}
                 </button>
                 <button
                   type="submit"
                   disabled={isCreating}
                   className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90 disabled:opacity-50"
                 >
-                  {isCreating ? "Creating..." : "Create Manager"}
+                  {isCreating ? tm.creating : tm.createManager}
                 </button>
               </div>
             </form>
@@ -478,7 +544,7 @@ export default function ManagersPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="w-full max-w-md overflow-hidden rounded-xl bg-white shadow-xl">
             <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
-              <h3 className="text-lg font-semibold text-slate-900">Edit Manager</h3>
+              <h3 className="text-lg font-semibold text-slate-900">{tm.editManager}</h3>
               <button
                 type="button"
                 onClick={() => setEditingManager(null)}
@@ -492,7 +558,7 @@ export default function ManagersPage() {
                 <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600">{formError}</div>
               )}
               <div>
-                <label className="block text-xs font-medium text-slate-700">Email (Read-only)</label>
+                <label className="block text-xs font-medium text-slate-700">{tm.emailReadOnly}</label>
                 <input
                   type="email"
                   disabled
@@ -501,32 +567,32 @@ export default function ManagersPage() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-700">Name</label>
+                <label className="block text-xs font-medium text-slate-700">{tm.name}</label>
                 <input
                   type="text"
                   value={editForm.name}
                   onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                  placeholder="Enter full name"
+                  placeholder={tm.enterFullName}
                   className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-700">Phone</label>
+                <label className="block text-xs font-medium text-slate-700">{tm.phone}</label>
                 <input
                   type="tel"
                   value={editForm.phone}
                   onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
-                  placeholder="Enter phone"
+                  placeholder={tm.enterPhone}
                   className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-700">Address</label>
+                <label className="block text-xs font-medium text-slate-700">{tm.addressLabel}</label>
                 <input
                   type="text"
                   value={editForm.address}
                   onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
-                  placeholder="Enter address"
+                  placeholder={tm.enterAddress}
                   className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                 />
               </div>
@@ -536,14 +602,14 @@ export default function ManagersPage() {
                   onClick={() => setEditingManager(null)}
                   className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
                 >
-                  Cancel
+                  {ui.cancel || tm.cancel}
                 </button>
                 <button
                   type="submit"
                   disabled={isUpdating}
                   className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90 disabled:opacity-50"
                 >
-                  {isUpdating ? "Saving..." : "Save Changes"}
+                  {isUpdating ? tm.saving : tm.saveChanges}
                 </button>
               </div>
             </form>
@@ -561,21 +627,21 @@ export default function ManagersPage() {
               </div>
               <div>
                 <h3 className="text-base font-semibold text-slate-900">
-                  Manager Created Successfully!
+                  {tm.createdSuccessfully}
                 </h3>
                 <p className="text-xs text-slate-500">
-                  Save these login credentials now. Pass them to the manager to log in.
+                  {tm.saveCredentialsNotice}
                 </p>
               </div>
             </div>
 
             <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-3.5 text-sm space-y-1.5">
               <div className="flex justify-between">
-                <span className="text-slate-500 font-medium">Email:</span>
+                <span className="text-slate-500 font-medium">{tm.email}:</span>
                 <span className="font-mono text-slate-900">{createdCredentials.email}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500 font-medium">Password:</span>
+                <span className="text-slate-500 font-medium">{tm.passwordRequired.replace(" *", "")}:</span>
                 <span className="font-mono text-slate-900">{createdCredentials.password}</span>
               </div>
             </div>
@@ -587,14 +653,14 @@ export default function ManagersPage() {
                 className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
               >
                 {copied ? <MdCheck className="text-emerald-600 text-base" /> : <MdContentCopy className="text-base" />}
-                <span>{copied ? "Copied" : "Copy Credentials"}</span>
+                <span>{copied ? tm.copied : tm.copyCredentials}</span>
               </button>
               <button
                 type="button"
                 onClick={() => setCreatedCredentials(null)}
                 className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90"
               >
-                Done
+                {tm.done}
               </button>
             </div>
           </div>
@@ -604,9 +670,9 @@ export default function ManagersPage() {
       {/* Block Confirmation Dialog */}
       {blockingManager && (
         <ConfirmDialog
-          title="Block Manager"
-          description={`Are you sure you want to block ${blockingManager?.name}? They will no longer be able to log in, but their business records will remain preserved.`}
-          confirmText="Block Manager"
+          title={tm.blockTitle}
+          description={tm.blockDesc.replace("{name}", blockingManager?.name || "")}
+          confirmText={tm.blockManager}
           destructive
           loading={isBlocking}
           onClose={() => setBlockingManager(null)}
@@ -617,9 +683,9 @@ export default function ManagersPage() {
       {/* Unblock Confirmation Dialog */}
       {unblockingManager && (
         <ConfirmDialog
-          title="Unblock Manager"
-          description={`Are you sure you want to unblock ${unblockingManager?.name}? They will regain access to their dashboard.`}
-          confirmText="Unblock Manager"
+          title={tm.unblockTitle}
+          description={tm.unblockDesc.replace("{name}", unblockingManager?.name || "")}
+          confirmText={tm.unblockManager}
           destructive={false}
           loading={isUnblocking}
           onClose={() => setUnblockingManager(null)}
@@ -649,7 +715,7 @@ export default function ManagersPage() {
               className="h-40 w-40 rounded-full border-2 border-slate-200 object-cover shadow-xs"
             />
             <h3 className="mt-3.5 text-base font-semibold text-slate-900">{previewPhoto.name}</h3>
-            <p className="text-xs text-slate-500">Manager Profile</p>
+            <p className="text-xs text-slate-500">{tm.managerProfile}</p>
           </div>
         </div>
       )}

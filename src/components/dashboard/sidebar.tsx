@@ -40,7 +40,7 @@ export default function Sidebar() {
 
   const mainLinks: Array<{ name: string; href: string; icon: React.ComponentType<{ className?: string }> }> = [
     { name: t.nav.dashboard, href: '/', icon: MdDashboard },
-    { name: 'Managers', href: '/managers', icon: MdSupervisorAccount },
+    { name: t.nav.managers || 'Managers', href: '/managers', icon: MdSupervisorAccount },
     { name: t.nav.roster, href: '/roster', icon: MdCalendarToday },
     { name: t.nav.shiftMonitoring, href: '/shift-monitoring', icon: MdAccessTime },
     { name: t.nav.shiftManagement, href: '/shift-management', icon: MdEventNote },
@@ -72,7 +72,13 @@ export default function Sidebar() {
   const allowedRoutes = user?.role === 'ADMIN' ? null : isCompanyAdmin ? null : getStoredManagerAccess();
 
   const visibleMainLinks = isCompanyAdmin
-    ? mainLinks.filter((link) => link.href !== '/shift-management' && isCompanyAdminRouteAllowed(link.href))
+    ? mainLinks.filter(
+        (link) =>
+          link.href !== '/shift-management' &&
+          link.href !== '/shift-monitoring' && // Shift monitoring commented out for company role
+          link.href !== '/extra-services' && // Extra services commented out for company role
+          isCompanyAdminRouteAllowed(link.href)
+      )
     : allowedRoutes
       ? mainLinks.filter((link) => link.href !== '/managers' && routeIsAllowed(link.href, allowedRoutes))
       : mainLinks;

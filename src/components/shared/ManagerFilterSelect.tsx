@@ -1,9 +1,12 @@
 "use client";
 
 import { useMemo } from "react";
+import { usePathname } from "next/navigation";
 import { Select } from "@/components/ui/select";
 import { useGetAllManagersQuery } from "@/redux/api/endpoints/manager.api";
 import { useAppSelector } from "@/redux/hooks";
+import { getLocale } from "@/lib/locale";
+import { getDashboardTranslation } from "@/lib/translations";
 
 interface ManagerFilterSelectProps {
   value: string;
@@ -12,6 +15,9 @@ interface ManagerFilterSelectProps {
 }
 
 export function ManagerFilterSelect({ value, onChange, className }: ManagerFilterSelectProps) {
+  const pathname = usePathname();
+  const locale = getLocale(pathname);
+  const t = getDashboardTranslation(locale);
   const user = useAppSelector((state) => state.auth.user);
   const isCompanyAdmin = user?.role === "COMPANY_ADMIN" || (user?.role as string)?.toUpperCase() === "COMPANY";
 
@@ -20,16 +26,20 @@ export function ManagerFilterSelect({ value, onChange, className }: ManagerFilte
     { skip: !isCompanyAdmin }
   );
 
+  const allManagersLabel = t.managers?.allManagers || t.common?.allManagers || "All Managers";
+  const filterByManagerPlaceholder = t.managers?.filterByManager || t.common?.filterByManager || "Filter by Manager";
+  const loadingManagersPlaceholder = t.managers?.loadingManagers || t.common?.loadingManagers || "Loading managers...";
+
   const options = useMemo(() => {
     const list = data?.result || [];
     return [
-      { value: "ALL", label: "All Managers" },
+      { value: "ALL", label: allManagersLabel },
       ...list.map((m) => ({
         value: m._id,
         label: `${m.name} (${m.email})`,
       })),
     ];
-  }, [data]);
+  }, [data, allManagersLabel]);
 
   if (!isCompanyAdmin) return null;
 
@@ -39,7 +49,7 @@ export function ManagerFilterSelect({ value, onChange, className }: ManagerFilte
         value={value || "ALL"}
         onValueChange={(val) => onChange(val === "ALL" ? "" : val)}
         options={options}
-        placeholder={isLoading ? "Loading managers..." : "Filter by Manager"}
+        placeholder={isLoading ? loadingManagersPlaceholder : filterByManagerPlaceholder}
         disabled={isLoading}
       />
     </div>
