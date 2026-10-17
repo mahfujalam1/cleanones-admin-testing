@@ -11,6 +11,8 @@ import { skipToken } from "@reduxjs/toolkit/query";
 import { useGetLegalDocumentQuery } from "@/redux/api/endpoints/legal.api";
 import { apiError } from "@/redux/api/apiError";
 import { DetailSkeleton } from "@/components/shared/SkeletonLoader";
+import { useAppSelector } from "@/redux/hooks";
+import { isCurrentCompanyAdmin } from "@/lib/auth/isCompanyAdmin";
 
 const formatUpdated = (value?: string) => {
   if (!value) return "";
@@ -25,6 +27,11 @@ export default function LegalDocumentPage() {
   const fallback = valid ? legalDocuments[slug] : null;
   const ui = getUiTranslation(getLocale(usePathname()));
   const labels = valid ? legalLabelKeys[slug] : null;
+  const authUser = useAppSelector((state) => state.auth.user);
+  const isCompanyAdmin =
+    authUser?.role === "COMPANY_ADMIN" ||
+    (authUser?.role as string)?.toUpperCase() === "COMPANY" ||
+    isCurrentCompanyAdmin();
 
   
   const title = labels ? ui[labels.title] : "";
@@ -43,7 +50,9 @@ export default function LegalDocumentPage() {
   return <div className="w-full space-y-4 pb-10">
     <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
       <div><Link href="/settings" className="mb-3 inline-flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-sky-600"><MdArrowBack /> {ui.backToSettings}</Link><h1 className="text-xl font-semibold text-slate-800">{title}</h1><p className="mt-1 text-xs text-slate-500">{labels ? ui[labels.subtitle] : ""}</p></div>
-      <Link href={`/settings/legal/${slug}/edit`} className="flex h-9 items-center justify-center gap-1.5 rounded border border-sky-500 bg-sky-500 px-4 text-xs font-semibold text-white hover:bg-sky-600"><MdEdit /> {ui.editDocument}</Link>
+      {!isCompanyAdmin && (
+        <Link href={`/settings/legal/${slug}/edit`} className="flex h-9 items-center justify-center gap-1.5 rounded border border-sky-500 bg-sky-500 px-4 text-xs font-semibold text-white hover:bg-sky-600"><MdEdit /> {ui.editDocument}</Link>
+      )}
     </div>
 
     {error && <p className="rounded border border-red-200 bg-red-50 p-3 text-xs text-red-700">{error}</p>}

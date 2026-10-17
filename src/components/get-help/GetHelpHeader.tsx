@@ -8,7 +8,7 @@ import { getHelpTranslation } from "@/lib/translations";
 
 interface GetHelpHeaderProps {
   total: number;
-  onAddClick: () => void;
+  onAddClick?: () => void;
 }
 
 export function GetHelpHeader({ total, onAddClick }: GetHelpHeaderProps) {
@@ -29,14 +29,16 @@ export function GetHelpHeader({ total, onAddClick }: GetHelpHeaderProps) {
         </div>
       </div>
 
-      <button
-        type="button"
-        onClick={onAddClick}
-        className="inline-flex shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-sky-500 px-4 py-2 text-sm font-semibold text-white shadow-2xs transition-colors hover:bg-sky-600 active:scale-[0.98]"
-      >
-        <MdAdd className="text-lg" />
-        <span>{t.addQuestion}</span>
-      </button>
+      {onAddClick && (
+        <button
+          type="button"
+          onClick={onAddClick}
+          className="inline-flex shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-sky-500 px-4 py-2 text-sm font-semibold text-white shadow-2xs transition-colors hover:bg-sky-600 active:scale-[0.98]"
+        >
+          <MdAdd className="text-lg" />
+          <span>{t.addQuestion}</span>
+        </button>
+      )}
     </div>
   );
 }

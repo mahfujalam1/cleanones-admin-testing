@@ -19,9 +19,17 @@ import { MdSearch, MdLiveHelp, MdAdd, MdClose } from "react-icons/md";
 import { usePathname } from "next/navigation";
 import { getLocale } from "@/lib/locale";
 import { getHelpTranslation } from "@/lib/translations";
+import { useAppSelector } from "@/redux/hooks";
+import { isCurrentCompanyAdmin } from "@/lib/auth/isCompanyAdmin";
 
 export default function SettingsFaqsPage() {
   const t = getHelpTranslation(getLocale(usePathname()));
+  const authUser = useAppSelector((state) => state.auth.user);
+  const isCompanyAdmin =
+    authUser?.role === "COMPANY_ADMIN" ||
+    (authUser?.role as string)?.toUpperCase() === "COMPANY" ||
+    isCurrentCompanyAdmin();
+
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const LIMIT = 8;
@@ -101,7 +109,7 @@ export default function SettingsFaqsPage() {
     <div className="space-y-4 pb-12">
       <FaqHeader
         total={mappedFaqs.length}
-        onAddClick={() => setFormModal({ isOpen: true, mode: "create" })}
+        onAddClick={isCompanyAdmin ? undefined : () => setFormModal({ isOpen: true, mode: "create" })}
         backHref="/settings"
       />
 
@@ -154,7 +162,7 @@ export default function SettingsFaqsPage() {
             >
               {t.clear}
             </button>
-          ) : (
+          ) : !isCompanyAdmin ? (
             <button
               type="button"
               onClick={() => setFormModal({ isOpen: true, mode: "create" })}
@@ -163,7 +171,7 @@ export default function SettingsFaqsPage() {
               <MdAdd className="text-base" />
               <span>{t.addFirstFaq}</span>
             </button>
-          )}
+          ) : null}
         </div>
       ) : (
         <div className={`grid gap-4 md:grid-cols-2 transition-opacity ${isFetching ? "opacity-60" : "opacity-100"}`}>
@@ -172,8 +180,8 @@ export default function SettingsFaqsPage() {
               key={faq._id}
               item={faq}
               serialNo={(page - 1) * LIMIT + index + 1}
-              onEdit={(item) => setFormModal({ isOpen: true, mode: "edit", faq: item })}
-              onDelete={(item) => setDeleteModal({ isOpen: true, faq: item })}
+              onEdit={isCompanyAdmin ? undefined : (item) => setFormModal({ isOpen: true, mode: "edit", faq: item })}
+              onDelete={isCompanyAdmin ? undefined : (item) => setDeleteModal({ isOpen: true, faq: item })}
             />
           ))}
         </div>
