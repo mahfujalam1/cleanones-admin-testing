@@ -7,8 +7,8 @@ import type { SuggestedQuestion } from "@/services/actions/suggestedQuestions";
 interface QuestionCardProps {
   item: SuggestedQuestion;
   serialNo?: number;
-  onEdit: (item: SuggestedQuestion) => void;
-  onDelete: (item: SuggestedQuestion) => void;
+  onEdit?: (item: SuggestedQuestion) => void;
+  onDelete?: (item: SuggestedQuestion) => void;
 }
 
 export function QuestionCard({ item, serialNo, onEdit, onDelete }: QuestionCardProps) {
@@ -35,24 +35,30 @@ export function QuestionCard({ item, serialNo, onEdit, onDelete }: QuestionCardP
             </h3>
           </div>
 
-          <div className="flex shrink-0 items-center gap-1.5">
-            <button
-              type="button"
-              title="Edit Question"
-              onClick={() => onEdit(item)}
-              className="flex h-7 w-7 cursor-pointer items-center justify-center rounded border border-slate-200 text-slate-500 transition-colors hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700"
-            >
-              <FiEdit2 className="text-xs" />
-            </button>
-            <button
-              type="button"
-              title="Delete Question"
-              onClick={() => onDelete(item)}
-              className="flex h-7 w-7 cursor-pointer items-center justify-center rounded border border-slate-200 text-slate-500 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-600"
-            >
-              <FiTrash2 className="text-xs" />
-            </button>
-          </div>
+          {(onEdit || onDelete) && (
+            <div className="flex shrink-0 items-center gap-1.5">
+              {onEdit && (
+                <button
+                  type="button"
+                  title="Edit Question"
+                  onClick={() => onEdit(item)}
+                  className="flex h-7 w-7 cursor-pointer items-center justify-center rounded border border-slate-200 text-slate-500 transition-colors hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700"
+                >
+                  <FiEdit2 className="text-xs" />
+                </button>
+              )}
+              {onDelete && (
+                <button
+                  type="button"
+                  title="Delete Question"
+                  onClick={() => onDelete(item)}
+                  className="flex h-7 w-7 cursor-pointer items-center justify-center rounded border border-slate-200 text-slate-500 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-600"
+                >
+                  <FiTrash2 className="text-xs" />
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
         
