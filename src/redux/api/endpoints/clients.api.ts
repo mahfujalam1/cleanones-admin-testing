@@ -238,7 +238,7 @@ export const clientsApi = baseApi.injectEndpoints({
   }),
 });
 
-export const CLIENT_LOOKUP_ARGS = { limit: 100, sort: "name" } as const;
+export const CLIENT_LOOKUP_ARGS = { limit: 100 } as const;
 
 export function useClientById(id: string, isCompanyAdmin?: boolean) {
   const isCompany = isCurrentCompanyAdmin(isCompanyAdmin);

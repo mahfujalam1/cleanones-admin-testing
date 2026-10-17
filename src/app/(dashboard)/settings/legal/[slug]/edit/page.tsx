@@ -4,9 +4,11 @@ import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MdArrowBack, MdCheckCircle, MdHistory, MdSave, MdWarningAmber } from "react-icons/md";
 import { isLegalSlug, legalDocuments, legalLabelKeys, legalStorageKey } from "@/lib/legal-content";
-import { getLocale } from "@/lib/locale";
+import { getLocale, localizePath } from "@/lib/locale";
 import { getUiTranslation } from "@/lib/translations";
 import { usePathname } from "next/navigation";
+import { useAppSelector } from "@/redux/hooks";
+import { isCurrentCompanyAdmin } from "@/lib/auth/isCompanyAdmin";
 import { RichTextEditor } from "@/components/legal/RichTextEditor";
 import { skipToken } from "@reduxjs/toolkit/query";
 import {
@@ -33,11 +35,24 @@ const formatTime = (value: number) => new Date(value).toLocaleString();
 export default function EditLegalDocumentPage() {
   const params = useParams<{ slug: string }>();
   const router = useRouter();
+  const pathname = usePathname();
   const slug = params.slug;
   const valid = isLegalSlug(slug);
   const fallback = valid ? legalDocuments[slug] : null;
-  const ui = getUiTranslation(getLocale(usePathname()));
+  const ui = getUiTranslation(getLocale(pathname));
   const labels = valid ? legalLabelKeys[slug] : null;
+
+  const authUser = useAppSelector((state) => state.auth.user);
+  const isCompanyAdmin =
+    authUser?.role === "COMPANY_ADMIN" ||
+    (authUser?.role as string)?.toUpperCase() === "COMPANY" ||
+    isCurrentCompanyAdmin();
+
+  useEffect(() => {
+    if (isCompanyAdmin && valid) {
+      router.replace(localizePath(`/settings/legal/${slug}`, getLocale(pathname)));
+    }
+  }, [isCompanyAdmin, router, slug, valid, pathname]);
 
   const [content, setContent] = useState("");
   

@@ -9,7 +9,7 @@ import { getHelpTranslation } from "@/lib/translations";
 
 interface FaqHeaderProps {
   total: number;
-  onAddClick: () => void;
+  onAddClick?: () => void;
   backHref?: string;
 }
 
@@ -41,14 +41,16 @@ export function FaqHeader({ total, onAddClick, backHref = "/settings" }: FaqHead
         </div>
       </div>
 
-      <button
-        type="button"
-        onClick={onAddClick}
-        className="inline-flex shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-sky-500 px-4 py-2 text-sm font-semibold text-white shadow-2xs transition-colors hover:bg-sky-600 active:scale-[0.98]"
-      >
-        <MdAdd className="text-lg" />
-        <span>{t.addFaq}</span>
-      </button>
+      {onAddClick && (
+        <button
+          type="button"
+          onClick={onAddClick}
+          className="inline-flex shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-sky-500 px-4 py-2 text-sm font-semibold text-white shadow-2xs transition-colors hover:bg-sky-600 active:scale-[0.98]"
+        >
+          <MdAdd className="text-lg" />
+          <span>{t.addFaq}</span>
+        </button>
+      )}
     </div>
   );
 }

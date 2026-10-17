@@ -1,3 +1,63 @@
+export interface ManagersTranslationDict {
+  title: string;
+  subtitle: string;
+  addManager: string;
+  searchPlaceholder: string;
+  failedToLoad: string;
+  tryAgain: string;
+  noManagersFound: string;
+  noManagersMatch: string;
+  noManagersCompany: string;
+  createFirstManager: string;
+  name: string;
+  email: string;
+  phone: string;
+  address: string;
+  status: string;
+  actions: string;
+  active: string;
+  blocked: string;
+  editManager: string;
+  blockManager: string;
+  unblockManager: string;
+  addNewManager: string;
+  nameRequired: string;
+  emailRequired: string;
+  phoneRequired: string;
+  addressLabel: string;
+  passwordRequired: string;
+  confirmPasswordRequired: string;
+  enterFullName: string;
+  enterEmail: string;
+  enterPhone: string;
+  enterAddress: string;
+  enterPassword: string;
+  enterConfirmPassword: string;
+  cancel: string;
+  createManager: string;
+  creating: string;
+  emailReadOnly: string;
+  saveChanges: string;
+  saving: string;
+  createdSuccessfully: string;
+  saveCredentialsNotice: string;
+  copyCredentials: string;
+  copied: string;
+  done: string;
+  blockTitle: string;
+  blockDesc: string;
+  unblockTitle: string;
+  unblockDesc: string;
+  managerProfile: string;
+  passwordMinLength: string;
+  passwordsDoNotMatch: string;
+  failedToCreate: string;
+  failedToUpdate: string;
+  allManagers: string;
+  filterByManager: string;
+  loadingManagers: string;
+}
+
 export interface DashboardTranslationDict {
   auth?: {
     welcome: string; subtitle: string; email: string; password: string; rememberMe: string;
@@ -15,6 +75,7 @@ export interface DashboardTranslationDict {
     extraServices: string; qualityControl: string; photoReviews: string;
     escalations: string; reports: string; notifications: string; getHelp: string; settings: string;
     administration: string; managerAccess: string; signOut: string;
+    managers?: string;
   };
   topbar: {
     notifications: string; viewAll: string; noNotifications: string;
@@ -29,6 +90,7 @@ export interface DashboardTranslationDict {
     required: string; previous: string; next: string; showing: string; of: string;
     total: string; cancel: string; save: string; delete: string; edit: string; status: string;
     actions: string;
+    allManagers?: string; filterByManager?: string; loadingManagers?: string;
   };
   plans: {
     title: string; addPlan: string; searchPlaceholder: string; noPlansFound: string;
@@ -119,6 +181,7 @@ export interface DashboardTranslationDict {
   chat: {
     title: string; typeMessage: string; send: string; noMessages: string; activeChats: string; allChats: string;
   };
+  managers?: ManagersTranslationDict;
 }
 
 export const placeholderTranslations = {
@@ -145,6 +208,7 @@ export const translations: Record<string, DashboardTranslationDict> = {
       extraServices: "Extra Services", qualityControl: "Quality Control", photoReviews: "Photo Reviews",
       escalations: "Escalations", reports: "Reports", notifications: "Notifications", getHelp: "Get Help", settings: "Settings",
       administration: "Administration", managerAccess: "Manager Access", signOut: "Sign Out",
+      managers: "Managers",
     },
     topbar: {
       notifications: "Notifications", viewAll: "View all", noNotifications: "No notifications",
@@ -159,6 +223,7 @@ export const translations: Record<string, DashboardTranslationDict> = {
       required: "Required", previous: "Previous", next: "Next", showing: "Showing", of: "of",
       total: "Total", cancel: "Cancel", save: "Save", delete: "Delete", edit: "Edit", status: "Status",
       actions: "Actions",
+      allManagers: "All Managers", filterByManager: "Filter by Manager", loadingManagers: "Loading managers...",
     },
     plans: {
       title: "Cleaning Plans", addPlan: "Add Cleaning Plan", searchPlaceholder: "Search cleaning plans...",
@@ -259,6 +324,65 @@ export const translations: Record<string, DashboardTranslationDict> = {
     chat: {
       title: "Live Operations Chat", typeMessage: "Type a message...", send: "Send", noMessages: "No messages yet", activeChats: "Active Conversations", allChats: "All",
     },
+    managers: {
+      title: "Managers",
+      subtitle: "Create, view and manage managers in your company.",
+      addManager: "Add Manager",
+      searchPlaceholder: "Search managers by name, email or phone...",
+      failedToLoad: "Failed to load managers.",
+      tryAgain: "Try Again",
+      noManagersFound: "No managers found",
+      noManagersMatch: "No managers matched your search query.",
+      noManagersCompany: "You have not added any managers to your company yet.",
+      createFirstManager: "Create your first manager",
+      name: "Name",
+      email: "Email",
+      phone: "Phone",
+      address: "Address",
+      status: "Status",
+      actions: "Actions",
+      active: "Active",
+      blocked: "Blocked",
+      editManager: "Edit Manager",
+      blockManager: "Block Manager",
+      unblockManager: "Unblock Manager",
+      addNewManager: "Add New Manager",
+      nameRequired: "Name *",
+      emailRequired: "Email *",
+      phoneRequired: "Phone *",
+      addressLabel: "Address",
+      passwordRequired: "Password *",
+      confirmPasswordRequired: "Confirm Password *",
+      enterFullName: "Enter full name",
+      enterEmail: "Enter email",
+      enterPhone: "Enter phone",
+      enterAddress: "Enter address",
+      enterPassword: "Enter password (min 8 chars)",
+      enterConfirmPassword: "Enter confirm password",
+      cancel: "Cancel",
+      createManager: "Create Manager",
+      creating: "Creating...",
+      emailReadOnly: "Email (Read-only)",
+      saveChanges: "Save Changes",
+      saving: "Saving...",
+      createdSuccessfully: "Manager Created Successfully!",
+      saveCredentialsNotice: "Save these login credentials now. Pass them to the manager to log in.",
+      copyCredentials: "Copy Credentials",
+      copied: "Copied",
+      done: "Done",
+      blockTitle: "Block Manager",
+      blockDesc: "Are you sure you want to block {name}? They will no longer be able to log in, but their business records will remain preserved.",
+      unblockTitle: "Unblock Manager",
+      unblockDesc: "Are you sure you want to unblock {name}? They will regain access to their dashboard.",
+      managerProfile: "Manager Profile",
+      passwordMinLength: "Password must be at least 8 characters long.",
+      passwordsDoNotMatch: "Passwords do not match.",
+      failedToCreate: "Failed to create manager.",
+      failedToUpdate: "Failed to update manager.",
+      allManagers: "All Managers",
+      filterByManager: "Filter by Manager",
+      loadingManagers: "Loading managers...",
+    },
   },
   nl: {
     nav: {
@@ -267,6 +391,7 @@ export const translations: Record<string, DashboardTranslationDict> = {
       extraServices: "Extra Services", qualityControl: "Kwaliteitscontrole", photoReviews: "Fotobeoordelingen",
       escalations: "Escalaties", reports: "Rapporten", notifications: "Meldingen", getHelp: "Hulp Krijgen", settings: "Instellingen",
       administration: "Beheer", managerAccess: "Manager Toegang", signOut: "Uitloggen",
+      managers: "Managers",
     },
     topbar: {
       notifications: "Meldingen", viewAll: "Alles bekijken", noNotifications: "Geen meldingen",
@@ -281,6 +406,7 @@ export const translations: Record<string, DashboardTranslationDict> = {
       required: "Vereist", previous: "Vorige", next: "Volgende", showing: "Toont", of: "van",
       total: "Totaal", cancel: "Annuleren", save: "Opslaan", delete: "Verwijderen", edit: "Bewerken", status: "Status",
       actions: "Acties",
+      allManagers: "Alle Managers", filterByManager: "Filter op manager", loadingManagers: "Managers laden...",
     },
     plans: {
       title: "Schoonmaakplannen", addPlan: "Schoonmaakplan toevoegen", searchPlaceholder: "Zoek schoonmaakplannen...",
@@ -381,6 +507,65 @@ export const translations: Record<string, DashboardTranslationDict> = {
     chat: {
       title: "Live Operations Chat", typeMessage: "Typ een bericht...", send: "Versturen", noMessages: "Nog geen berichten", activeChats: "Actieve Gesprekken", allChats: "Alle",
     },
+    managers: {
+      title: "Managers",
+      subtitle: "Beheer, bekijk en maak managers aan voor uw bedrijf.",
+      addManager: "Manager toevoegen",
+      searchPlaceholder: "Zoek managers op naam, e-mail of telefoon...",
+      failedToLoad: "Laden van managers mislukt.",
+      tryAgain: "Opnieuw proberen",
+      noManagersFound: "Geen managers gevonden",
+      noManagersMatch: "Geen managers gevonden voor uw zoekopdracht.",
+      noManagersCompany: "U heeft nog geen managers toegevoegd aan uw bedrijf.",
+      createFirstManager: "Maak uw eerste manager aan",
+      name: "Naam",
+      email: "E-mail",
+      phone: "Telefoon",
+      address: "Adres",
+      status: "Status",
+      actions: "Acties",
+      active: "Actief",
+      blocked: "Geblokkeerd",
+      editManager: "Manager bewerken",
+      blockManager: "Manager blokkeren",
+      unblockManager: "Manager deblokkeren",
+      addNewManager: "Nieuwe manager toevoegen",
+      nameRequired: "Naam *",
+      emailRequired: "E-mail *",
+      phoneRequired: "Telefoon *",
+      addressLabel: "Adres",
+      passwordRequired: "Wachtwoord *",
+      confirmPasswordRequired: "Wachtwoord bevestigen *",
+      enterFullName: "Volledige naam invoeren",
+      enterEmail: "E-mail invoeren",
+      enterPhone: "Telefoon invoeren",
+      enterAddress: "Adres invoeren",
+      enterPassword: "Wachtwoord invoeren (min 8 tekens)",
+      enterConfirmPassword: "Wachtwoord bevestigen invoeren",
+      cancel: "Annuleren",
+      createManager: "Manager aanmaken",
+      creating: "Aanmaken...",
+      emailReadOnly: "E-mail (Alleen-lezen)",
+      saveChanges: "Wijzigingen opslaan",
+      saving: "Opslaan...",
+      createdSuccessfully: "Manager succesvol aangemaakt!",
+      saveCredentialsNotice: "Sla deze inloggegevens nu op. Deel ze met de manager om in te loggen.",
+      copyCredentials: "Inloggegevens kopiëren",
+      copied: "Gekopieerd",
+      done: "Klaar",
+      blockTitle: "Manager blokkeren",
+      blockDesc: "Weet u zeker dat u {name} wilt blokkeren? Zij kunnen niet meer inloggen, maar bedrijfsgegevens blijven bewaard.",
+      unblockTitle: "Manager deblokkeren",
+      unblockDesc: "Weet u zeker dat u {name} wilt deblokkeren? Zij krijgen weer toegang tot het dashboard.",
+      managerProfile: "Managerprofiel",
+      passwordMinLength: "Wachtwoord moet minimaal 8 tekens lang zijn.",
+      passwordsDoNotMatch: "Wachtwoorden komen niet overeen.",
+      failedToCreate: "Aanmaken van manager mislukt.",
+      failedToUpdate: "Bijwerken van manager mislukt.",
+      allManagers: "Alle Managers",
+      filterByManager: "Filter op manager",
+      loadingManagers: "Managers laden...",
+    },
   },
   pl: {
     nav: {
@@ -389,6 +574,7 @@ export const translations: Record<string, DashboardTranslationDict> = {
       extraServices: "Usługi Dodatkowe", qualityControl: "Kontrola Jakości", photoReviews: "Recenzje Zdjęć",
       escalations: "Eskalacje", reports: "Raporty", notifications: "Powiadomienia", getHelp: "Pomoc", settings: "Ustawienia",
       administration: "Administracja", managerAccess: "Dostęp Menedżera", signOut: "Wyloguj się",
+      managers: "Menedżerowie",
     },
     topbar: {
       notifications: "Powiadomienia", viewAll: "Zobacz wszystkie", noNotifications: "Brak powiadomień",
@@ -403,6 +589,7 @@ export const translations: Record<string, DashboardTranslationDict> = {
       required: "Wymagane", previous: "Poprzedni", next: "Następny", showing: "Wyświetlanie", of: "z",
       total: "Łącznie", cancel: "Anuluj", save: "Zapisz", delete: "Usuń", edit: "Edytuj", status: "Status",
       actions: "Akcje",
+      allManagers: "Wszyscy Menedżerowie", filterByManager: "Filtruj według menedżera", loadingManagers: "Ładowanie menedżerów...",
     },
     plans: {
       title: "Plany Sprzątania", addPlan: "Dodaj Plan Sprzątania", searchPlaceholder: "Szukaj planów sprzątania...",
@@ -503,6 +690,65 @@ export const translations: Record<string, DashboardTranslationDict> = {
     chat: {
       title: "Czat Operacji na Żywo", typeMessage: "Wpisz wiadomość...", send: "Wyślij", noMessages: "Brak wiadomości", activeChats: "Aktywne Rozmowy", allChats: "Wszystkie",
     },
+    managers: {
+      title: "Menedżerowie",
+      subtitle: "Twórz, przeglądaj i zarządzaj menedżerami w Twojej firmie.",
+      addManager: "Dodaj Menedżera",
+      searchPlaceholder: "Szukaj menedżerów po nazwisku, e-mailu lub telefonie...",
+      failedToLoad: "Nie udało się załadować menedżerów.",
+      tryAgain: "Spróbuj ponownie",
+      noManagersFound: "Nie znaleziono menedżerów",
+      noManagersMatch: "Żaden menedżer nie pasuje do Twojego zapytania.",
+      noManagersCompany: "Nie dodałeś jeszcze żadnych menedżerów do swojej firmy.",
+      createFirstManager: "Utwórz pierwszego menedżera",
+      name: "Imię i nazwisko",
+      email: "E-mail",
+      phone: "Telefon",
+      address: "Adres",
+      status: "Status",
+      actions: "Akcje",
+      active: "Aktywny",
+      blocked: "Zablokowany",
+      editManager: "Edytuj Menedżera",
+      blockManager: "Zablokuj Menedżera",
+      unblockManager: "Odblokuj Menedżera",
+      addNewManager: "Dodaj Nowego Menedżera",
+      nameRequired: "Imię i nazwisko *",
+      emailRequired: "E-mail *",
+      phoneRequired: "Telefon *",
+      addressLabel: "Adres",
+      passwordRequired: "Hasło *",
+      confirmPasswordRequired: "Potwierdź hasło *",
+      enterFullName: "Wpisz pełne imię i nazwisko",
+      enterEmail: "Wpisz e-mail",
+      enterPhone: "Wpisz telefon",
+      enterAddress: "Wpisz adres",
+      enterPassword: "Wpisz hasło (min 8 znaków)",
+      enterConfirmPassword: "Wpisz potwierdzenie hasła",
+      cancel: "Anuluj",
+      createManager: "Utwórz Menedżera",
+      creating: "Tworzenie...",
+      emailReadOnly: "E-mail (Tylko do odczytu)",
+      saveChanges: "Zapisz zmiany",
+      saving: "Zapisywanie...",
+      createdSuccessfully: "Menedżer utworzony pomyślnie!",
+      saveCredentialsNotice: "Zapisz te dane logowania teraz. Przekaż je menedżerowi, aby mógł się zalogować.",
+      copyCredentials: "Kopiuj dane logowania",
+      copied: "Skopiowano",
+      done: "Gotowe",
+      blockTitle: "Zablokuj Menedżera",
+      blockDesc: "Czy na pewno chcesz zablokować użytkownika {name}? Nie będzie mógł się zalogować, ale dane pozostaną nienaruszone.",
+      unblockTitle: "Odblokuj Menedżera",
+      unblockDesc: "Czy na pewno chcesz odblokować użytkownika {name}? Odzyska dostęp do swojego panelu.",
+      managerProfile: "Profil Menedżera",
+      passwordMinLength: "Hasło musi mieć co najmniej 8 znaków.",
+      passwordsDoNotMatch: "Hasła nie są zgodne.",
+      failedToCreate: "Nie udało się utworzyć menedżera.",
+      failedToUpdate: "Nie udało się zaktualizować menedżera.",
+      allManagers: "Wszyscy Menedżerowie",
+      filterByManager: "Filtruj według menedżera",
+      loadingManagers: "Ładowanie menedżerów...",
+    },
   },
   uk: {
     nav: {
@@ -511,6 +757,7 @@ export const translations: Record<string, DashboardTranslationDict> = {
       extraServices: "Додаткові Послуги", qualityControl: "Контроль Якості", photoReviews: "Фотозвіти",
       escalations: "Ескалації", reports: "Звіти", notifications: "Сповіщення", getHelp: "Допомога", settings: "Налаштування",
       administration: "Адміністрування", managerAccess: "Доступ Менеджера", signOut: "Вийти",
+      managers: "Менеджери",
     },
     topbar: {
       notifications: "Сповіщення", viewAll: "Переглянути все", noNotifications: "Немає сповіщень",
@@ -525,6 +772,7 @@ export const translations: Record<string, DashboardTranslationDict> = {
       required: "Обов'язково", previous: "Назад", next: "Далі", showing: "Показано", of: "з",
       total: "Всього", cancel: "Скасувати", save: "Зберегти", delete: "Видалити", edit: "Редагувати", status: "Статус",
       actions: "Дії",
+      allManagers: "Усі Менеджери", filterByManager: "Фільтр за менеджером", loadingManagers: "Завантаження менеджерів...",
     },
     plans: {
       title: "Плани Прибирання", addPlan: "Додати План Прибирання", searchPlaceholder: "Пошук планів прибирання...",
@@ -625,6 +873,65 @@ export const translations: Record<string, DashboardTranslationDict> = {
     chat: {
       title: "Онлайн Чат Операцій", typeMessage: "Введіть повідомлення...", send: "Надіслати", noMessages: "Повідомлень ще немає", activeChats: "Активні Діалоги", allChats: "Усі",
     },
+    managers: {
+      title: "Менеджери",
+      subtitle: "Створюйте, переглядайте та керуйте менеджерами вашої компанії.",
+      addManager: "Додати Менеджера",
+      searchPlaceholder: "Пошук менеджерів за ім'ям, email або телефоном...",
+      failedToLoad: "Не вдалося завантажити менеджерів.",
+      tryAgain: "Спробувати знову",
+      noManagersFound: "Менеджерів не знайдено",
+      noManagersMatch: "Жодного менеджера не знайдено за вашим запитом.",
+      noManagersCompany: "Ви ще не додали жодного менеджера до своєї компанії.",
+      createFirstManager: "Створіть першого менеджера",
+      name: "Ім'я",
+      email: "Email",
+      phone: "Телефон",
+      address: "Адреса",
+      status: "Статус",
+      actions: "Дії",
+      active: "Активний",
+      blocked: "Заблокований",
+      editManager: "Редагувати Менеджера",
+      blockManager: "Заблокувати Менеджера",
+      unblockManager: "Розблокувати Менеджера",
+      addNewManager: "Додати Нового Менеджера",
+      nameRequired: "Ім'я *",
+      emailRequired: "Email *",
+      phoneRequired: "Телефон *",
+      addressLabel: "Адреса",
+      passwordRequired: "Пароль *",
+      confirmPasswordRequired: "Підтвердіть пароль *",
+      enterFullName: "Введіть повне ім'я",
+      enterEmail: "Введіть email",
+      enterPhone: "Введіть телефон",
+      enterAddress: "Введіть адресу",
+      enterPassword: "Введіть пароль (мін. 8 символів)",
+      enterConfirmPassword: "Введіть підтвердження пароля",
+      cancel: "Скасувати",
+      createManager: "Створити Менеджера",
+      creating: "Створення...",
+      emailReadOnly: "Email (Тільки для читання)",
+      saveChanges: "Зберегти зміни",
+      saving: "Збереження...",
+      createdSuccessfully: "Менеджера успішно створено!",
+      saveCredentialsNotice: "Збережіть ці облікові дані зараз. Передайте їх менеджеру для входу.",
+      copyCredentials: "Копіювати облікові дані",
+      copied: "Скопійовано",
+      done: "Готово",
+      blockTitle: "Заблокувати Менеджера",
+      blockDesc: "Ви впевнені, що хочете заблокувати {name}? Вони більше не зможуть увійти, але бізнес-записи збережуться.",
+      unblockTitle: "Розблокувати Менеджера",
+      unblockDesc: "Ви впевнені, що хочете розблокувати {name}? Вони відновлять доступ до своєї панелі.",
+      managerProfile: "Профіль Менеджера",
+      passwordMinLength: "Пароль має містити щонайменше 8 символів.",
+      passwordsDoNotMatch: "Паролі не збігаються.",
+      failedToCreate: "Не вдалося створити менеджера.",
+      failedToUpdate: "Не вдалося оновити менеджера.",
+      allManagers: "Усі Менеджери",
+      filterByManager: "Фільтр за менеджером",
+      loadingManagers: "Завантаження менеджерів...",
+    },
   },
   pt: {
     nav: {
@@ -633,6 +940,7 @@ export const translations: Record<string, DashboardTranslationDict> = {
       extraServices: "Serviços Extra", qualityControl: "Controlo de Qualidade", photoReviews: "Avaliações de Fotos",
       escalations: "Escalações", reports: "Relatórios", notifications: "Notificações", getHelp: "Obter Ajuda", settings: "Definições",
       administration: "Administração", managerAccess: "Acesso de Gestor", signOut: "Sair",
+      managers: "Gestores",
     },
     topbar: {
       notifications: "Notificações", viewAll: "Ver tudo", noNotifications: "Sem notificações",
@@ -647,6 +955,7 @@ export const translations: Record<string, DashboardTranslationDict> = {
       required: "Obrigatório", previous: "Anterior", next: "Seguinte", showing: "A mostrar", of: "de",
       total: "Total", cancel: "Cancelar", save: "Guardar", delete: "Eliminar", edit: "Editar", status: "Estado",
       actions: "Ações",
+      allManagers: "Todos os Gestores", filterByManager: "Filtrar por gestor", loadingManagers: "A carregar gestores...",
     },
     plans: {
       title: "Planos de Limpeza", addPlan: "Adicionar Plano de Limpeza", searchPlaceholder: "Pesquisar planos...",
@@ -747,6 +1056,65 @@ export const translations: Record<string, DashboardTranslationDict> = {
     chat: {
       title: "Chat de Operações ao Vivo", typeMessage: "Escreva uma mensagem...", send: "Enviar", noMessages: "Ainda sem mensagens", activeChats: "Conversas Ativas", allChats: "Todos",
     },
+    managers: {
+      title: "Gestores",
+      subtitle: "Crie, visualize e gira os gestores da sua empresa.",
+      addManager: "Adicionar Gestor",
+      searchPlaceholder: "Pesquisar gestores por nome, email ou telefone...",
+      failedToLoad: "Falha ao carregar gestores.",
+      tryAgain: "Tentar Novamente",
+      noManagersFound: "Nenhum gestor encontrado",
+      noManagersMatch: "Nenhum gestor corresponde à sua pesquisa.",
+      noManagersCompany: "Ainda não adicionou gestores à sua empresa.",
+      createFirstManager: "Crie o seu primeiro gestor",
+      name: "Nome",
+      email: "Email",
+      phone: "Telefone",
+      address: "Morada",
+      status: "Estado",
+      actions: "Ações",
+      active: "Ativo",
+      blocked: "Bloqueado",
+      editManager: "Editar Gestor",
+      blockManager: "Bloquear Gestor",
+      unblockManager: "Desbloquear Gestor",
+      addNewManager: "Adicionar Novo Gestor",
+      nameRequired: "Nome *",
+      emailRequired: "Email *",
+      phoneRequired: "Telefone *",
+      addressLabel: "Morada",
+      passwordRequired: "Palavra-passe *",
+      confirmPasswordRequired: "Confirmar Palavra-passe *",
+      enterFullName: "Introduza o nome completo",
+      enterEmail: "Introduza o email",
+      enterPhone: "Introduza o telefone",
+      enterAddress: "Introduza a morada",
+      enterPassword: "Introduza a palavra-passe (mín. 8 carateres)",
+      enterConfirmPassword: "Confirme a palavra-passe",
+      cancel: "Cancelar",
+      createManager: "Criar Gestor",
+      creating: "A criar...",
+      emailReadOnly: "Email (Apenas leitura)",
+      saveChanges: "Guardar Alterações",
+      saving: "A guardar...",
+      createdSuccessfully: "Gestor criado com sucesso!",
+      saveCredentialsNotice: "Guarde estas credenciais agora. Forneça-as ao gestor para iniciar sessão.",
+      copyCredentials: "Copiar Credenciais",
+      copied: "Copiado",
+      done: "Concluído",
+      blockTitle: "Bloquear Gestor",
+      blockDesc: "Tem a certeza de que pretende bloquear {name}? Já não poderá iniciar sessão, mas os registos comerciais serão mantidos.",
+      unblockTitle: "Desbloquear Gestor",
+      unblockDesc: "Tem a certeza de que pretende desbloquear {name}? Recuperará o acesso ao painel.",
+      managerProfile: "Perfil do Gestor",
+      passwordMinLength: "A palavra-passe deve ter pelo menos 8 carateres.",
+      passwordsDoNotMatch: "As palavras-passe não coincidem.",
+      failedToCreate: "Falha ao criar gestor.",
+      failedToUpdate: "Falha ao atualizar gestor.",
+      allManagers: "Todos os Gestores",
+      filterByManager: "Filtrar por gestor",
+      loadingManagers: "A carregar gestores...",
+    },
   },
   ar: {
     nav: {
@@ -755,6 +1123,7 @@ export const translations: Record<string, DashboardTranslationDict> = {
       extraServices: "خدمات إضافية", qualityControl: "مراقبة الجودة", photoReviews: "مراجعات الصور",
       escalations: "التصعيدات", reports: "التقارير", notifications: "الإشعارات", getHelp: "الحصول على المساعدة", settings: "الإعدادات",
       administration: "الإدارة", managerAccess: "صلاحيات المدراء", signOut: "تسجيل الخروج",
+      managers: "المديرون",
     },
     topbar: {
       notifications: "الإشعارات", viewAll: "عرض الكل", noNotifications: "لا توجد إشعارات",
@@ -769,6 +1138,7 @@ export const translations: Record<string, DashboardTranslationDict> = {
       required: "مطلوب", previous: "السابق", next: "التالي", showing: "عرض", of: "من",
       total: "الإجمالي", cancel: "إلغاء", save: "حفظ", delete: "حذف", edit: "تعديل", status: "الحالة",
       actions: "الإجراءات",
+      allManagers: "جميع المديرين", filterByManager: "تصفية حسب المدير", loadingManagers: "جارٍ تحميل المديرين...",
     },
     plans: {
       title: "خطط التنظيف", addPlan: "إضافة خطة تنظيف", searchPlaceholder: "البحث في خطط التنظيف...",
@@ -869,6 +1239,65 @@ export const translations: Record<string, DashboardTranslationDict> = {
     chat: {
       title: "محادثة العمليات المباشرة", typeMessage: "اكتب رسالة...", send: "إرسال", noMessages: "لا توجد رسائل بعد", activeChats: "المحادثات النشطة", allChats: "الكل",
     },
+    managers: {
+      title: "المديرون",
+      subtitle: "إنشاء وعرض وإدارة مديري شركتك.",
+      addManager: "إضافة مدير",
+      searchPlaceholder: "البحث عن المديرين بالاسم أو البريد أو الهاتف...",
+      failedToLoad: "فشل في تحميل المديرين.",
+      tryAgain: "إعادة المحاولة",
+      noManagersFound: "لم يتم العثور على مديرين",
+      noManagersMatch: "لا يوجد مديرين يطابقون بحثك.",
+      noManagersCompany: "لم تقم بإضافة أي مديرين إلى شركتك بعد.",
+      createFirstManager: "أنشئ أول مدير لك",
+      name: "الاسم",
+      email: "البريد الإلكتروني",
+      phone: "الهاتف",
+      address: "العنوان",
+      status: "الحالة",
+      actions: "الإجراءات",
+      active: "نشط",
+      blocked: "محظور",
+      editManager: "تعديل المدير",
+      blockManager: "حظر المدير",
+      unblockManager: "إلغاء حظر المدير",
+      addNewManager: "إضافة مدير جديد",
+      nameRequired: "الاسم *",
+      emailRequired: "البريد الإلكتروني *",
+      phoneRequired: "الهاتف *",
+      addressLabel: "العنوان",
+      passwordRequired: "كلمة المرور *",
+      confirmPasswordRequired: "تأكيد كلمة المرور *",
+      enterFullName: "أدخل الاسم الكامل",
+      enterEmail: "أدخل البريد الإلكتروني",
+      enterPhone: "أدخل رقم الهاتف",
+      enterAddress: "أدخل العنوان",
+      enterPassword: "أدخل كلمة المرور (8 أحرف على الأقل)",
+      enterConfirmPassword: "أدخل تأكيد كلمة المرور",
+      cancel: "إلغاء",
+      createManager: "إنشاء مدير",
+      creating: "جارٍ الإنشاء...",
+      emailReadOnly: "البريد الإلكتروني (للقراءة فقط)",
+      saveChanges: "حفظ التغييرات",
+      saving: "جارٍ الحفظ...",
+      createdSuccessfully: "تم إنشاء المدير بنجاح!",
+      saveCredentialsNotice: "احفظ بيانات تسجيل الدخول هذه الآن وزود المدير بها لتسجيل الدخول.",
+      copyCredentials: "نسخ بيانات الدخول",
+      copied: "تم النسخ",
+      done: "تم",
+      blockTitle: "حظر المدير",
+      blockDesc: "هل أنت متأكد من رغبتك في حظر {name}؟ لن يتمكن من تسجيل الدخول ولكن سيتم الاحتفاظ ببياناته.",
+      unblockTitle: "إلغاء حظر المدير",
+      unblockDesc: "هل أنت متأكد من رغبتك في إلغاء حظر {name}؟ سيستعيد الوصول إلى لوحة التحكم.",
+      managerProfile: "ملف المدير",
+      passwordMinLength: "يجب ألا تقل كلمة المرور عن 8 أحرف.",
+      passwordsDoNotMatch: "كلمات المرور غير متطابقة.",
+      failedToCreate: "فشل إنشاء المدير.",
+      failedToUpdate: "فشل تحديث المدير.",
+      allManagers: "جميع المديرين",
+      filterByManager: "تصفية حسب المدير",
+      loadingManagers: "جارٍ تحميل المديرين...",
+    },
   },
   fr: {
     nav: {
@@ -877,6 +1306,7 @@ export const translations: Record<string, DashboardTranslationDict> = {
       extraServices: "Services Extras", qualityControl: "Contrôle Qualité", photoReviews: "Revues Photos",
       escalations: "Escalades", reports: "Rapports", notifications: "Notifications", getHelp: "Obtenir de l'Aide", settings: "Paramètres",
       administration: "Administration", managerAccess: "Accès Managers", signOut: "Se Déconnecter",
+      managers: "Managers",
     },
     topbar: {
       notifications: "Notifications", viewAll: "Tout voir", noNotifications: "Aucune notification",
@@ -891,6 +1321,7 @@ export const translations: Record<string, DashboardTranslationDict> = {
       required: "Requis", previous: "Précédent", next: "Suivant", showing: "Affichage de", of: "sur",
       total: "Total", cancel: "Annuler", save: "Enregistrer", delete: "Supprimer", edit: "Modifier", status: "Statut",
       actions: "Actions",
+      allManagers: "Tous les Managers", filterByManager: "Filtrar par manager", loadingManagers: "Chargement des managers...",
     },
     plans: {
       title: "Plans de Nettoyage", addPlan: "Ajouter un Plan", searchPlaceholder: "Rechercher des plans...",
@@ -991,6 +1422,65 @@ export const translations: Record<string, DashboardTranslationDict> = {
     chat: {
       title: "Chat des Opérations en Direct", typeMessage: "Écrivez un message...", send: "Envoyer", noMessages: "Pas encore de messages", activeChats: "Conversations Actives", allChats: "Tous",
     },
+    managers: {
+      title: "Managers",
+      subtitle: "Créez, consultez et gérez les managers de votre entreprise.",
+      addManager: "Ajouter un Manager",
+      searchPlaceholder: "Rechercher des managers par nom, email ou téléphone...",
+      failedToLoad: "Échec du chargement des managers.",
+      tryAgain: "Réessayer",
+      noManagersFound: "Aucun manager trouvé",
+      noManagersMatch: "Aucun manager ne correspond à votre recherche.",
+      noManagersCompany: "Vous n'avez pas encore ajouté de managers à votre entreprise.",
+      createFirstManager: "Créez votre premier manager",
+      name: "Nom",
+      email: "Email",
+      phone: "Téléphone",
+      address: "Adresse",
+      status: "Statut",
+      actions: "Actions",
+      active: "Actif",
+      blocked: "Bloqué",
+      editManager: "Modifier le Manager",
+      blockManager: "Bloquer le Manager",
+      unblockManager: "Débloquer le Manager",
+      addNewManager: "Ajouter un Nouveau Manager",
+      nameRequired: "Nom *",
+      emailRequired: "Email *",
+      phoneRequired: "Téléphone *",
+      addressLabel: "Adresse",
+      passwordRequired: "Mot de passe *",
+      confirmPasswordRequired: "Confirmer le mot de passe *",
+      enterFullName: "Saisir le nom complet",
+      enterEmail: "Saisir l'email",
+      enterPhone: "Saisir le téléphone",
+      enterAddress: "Saisir l'adresse",
+      enterPassword: "Saisir le mot de passe (min 8 caractères)",
+      enterConfirmPassword: "Confirmer le mot de passe",
+      cancel: "Annuler",
+      createManager: "Créer le Manager",
+      creating: "Création...",
+      emailReadOnly: "Email (Lecture seule)",
+      saveChanges: "Enregistrer les modifications",
+      saving: "Enregistrement...",
+      createdSuccessfully: "Manager créé avec succès !",
+      saveCredentialsNotice: "Enregistrez ces identifiants dès maintenant. Transmettez-les au manager pour qu'il puisse se connecter.",
+      copyCredentials: "Copier les identifiants",
+      copied: "Copié",
+      done: "Terminé",
+      blockTitle: "Bloquer le Manager",
+      blockDesc: "Êtes-vous sûr de vouloir bloquer {name} ? Il ne pourra plus se connecter, mais les enregistrements professionnels seront conservés.",
+      unblockTitle: "Débloquer le Manager",
+      unblockDesc: "Êtes-vous sûr de vouloir débloquer {name} ? Il retrouvera l'accès à son tableau de bord.",
+      managerProfile: "Profil du Manager",
+      passwordMinLength: "Le mot de passe doit comporter au moins 8 caractères.",
+      passwordsDoNotMatch: "Les mots de passe ne correspondent pas.",
+      failedToCreate: "Échec de la création du manager.",
+      failedToUpdate: "Échec de la mise à jour du manager.",
+      allManagers: "Tous les Managers",
+      filterByManager: "Filtrer par manager",
+      loadingManagers: "Chargement des managers...",
+    },
   },
   es: {
     nav: {
@@ -999,6 +1489,7 @@ export const translations: Record<string, DashboardTranslationDict> = {
       extraServices: "Servicios Extras", qualityControl: "Control de Calidad", photoReviews: "Revisiones de Fotos",
       escalations: "Escalaciones", reports: "Reportes", notifications: "Notificaciones", getHelp: "Obtener Ayuda", settings: "Ajustes",
       administration: "Administración", managerAccess: "Acceso de Gerentes", signOut: "Cerrar Sesión",
+      managers: "Gestores",
     },
     topbar: {
       notifications: "Notificaciones", viewAll: "Ver todo", noNotifications: "Sin notificaciones",
@@ -1013,6 +1504,7 @@ export const translations: Record<string, DashboardTranslationDict> = {
       required: "Requerido", previous: "Anterior", next: "Siguiente", showing: "Mostrando", of: "de",
       total: "Total", cancel: "Cancelar", save: "Guardar", delete: "Eliminar", edit: "Editar", status: "Estado",
       actions: "Acciones",
+      allManagers: "Todos los Gestores", filterByManager: "Filtrar por gestor", loadingManagers: "Cargando gestores...",
     },
     plans: {
       title: "Planes de Limpieza", addPlan: "+ Agregar Plan de Limpieza", searchPlaceholder: "Buscar planes...",
@@ -1112,6 +1604,65 @@ export const translations: Record<string, DashboardTranslationDict> = {
     },
     chat: {
       title: "Chat de Operaciones en Vivo", typeMessage: "Escriba un mensaje...", send: "Enviar", noMessages: "Aún no hay mensajes", activeChats: "Conversaciones Activas", allChats: "Todos",
+    },
+    managers: {
+      title: "Gestores",
+      subtitle: "Cree, visualice y gestione los gestores de su empresa.",
+      addManager: "Agregar Gestor",
+      searchPlaceholder: "Buscar gestores por nombre, email o teléfono...",
+      failedToLoad: "Error al cargar los gestores.",
+      tryAgain: "Reintentar",
+      noManagersFound: "No se encontraron gestores",
+      noManagersMatch: "Ningún gestor coincide con su búsqueda.",
+      noManagersCompany: "Aún no ha agregado gestores a su empresa.",
+      createFirstManager: "Cree su primer gestor",
+      name: "Nombre",
+      email: "Email",
+      phone: "Teléfono",
+      address: "Dirección",
+      status: "Estado",
+      actions: "Acciones",
+      active: "Activo",
+      blocked: "Bloqueado",
+      editManager: "Editar Gestor",
+      blockManager: "Bloquear Gestor",
+      unblockManager: "Desbloquear Gestor",
+      addNewManager: "Agregar Nuevo Gestor",
+      nameRequired: "Nombre *",
+      emailRequired: "Email *",
+      phoneRequired: "Teléfono *",
+      addressLabel: "Dirección",
+      passwordRequired: "Contraseña *",
+      confirmPasswordRequired: "Confirmar Contraseña *",
+      enterFullName: "Introducir nombre completo",
+      enterEmail: "Introducir email",
+      enterPhone: "Introducir teléfono",
+      enterAddress: "Introducir dirección",
+      enterPassword: "Introducir contraseña (mín 8 caracteres)",
+      enterConfirmPassword: "Confirmar contraseña",
+      cancel: "Cancelar",
+      createManager: "Crear Gestor",
+      creating: "Creando...",
+      emailReadOnly: "Email (Solo lectura)",
+      saveChanges: "Guardar Cambios",
+      saving: "Guardando...",
+      createdSuccessfully: "¡Gestor creado con éxito!",
+      saveCredentialsNotice: "Guarde estas credenciales ahora. Compártalas con el gestor para iniciar sesión.",
+      copyCredentials: "Copiar Credenciales",
+      copied: "Copiado",
+      done: "Listo",
+      blockTitle: "Bloquear Gestor",
+      blockDesc: "¿Está seguro de que desea bloquear a {name}? Ya no podrá iniciar sesión, pero sus registros comerciales se conservarán.",
+      unblockTitle: "Desbloquear Gestor",
+      unblockDesc: "¿Está seguro de que desea desbloquear a {name}? Recuperará el acceso a su panel.",
+      managerProfile: "Perfil del Gestor",
+      passwordMinLength: "La contraseña debe tener al menos 8 caracteres.",
+      passwordsDoNotMatch: "Las contraseñas no coinciden.",
+      failedToCreate: "Error al crear el gestor.",
+      failedToUpdate: "Error al actualizar el gestor.",
+      allManagers: "Todos los Gestores",
+      filterByManager: "Filtrar por gestor",
+      loadingManagers: "Cargando gestores...",
     },
   },
 };
