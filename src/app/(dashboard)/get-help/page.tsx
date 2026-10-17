@@ -20,6 +20,8 @@ import { MdHelpOutline, MdAdd } from "react-icons/md";
 import { usePathname } from "next/navigation";
 import { getLocale } from "@/lib/locale";
 import { getHelpTranslation } from "@/lib/translations";
+import { useAppSelector } from "@/redux/hooks";
+import { isCurrentCompanyAdmin } from "@/lib/auth/isCompanyAdmin";
 
 function toCardItem(item: QuestionSuggestion): SuggestedQuestion {
   return {
@@ -34,6 +36,12 @@ function toCardItem(item: QuestionSuggestion): SuggestedQuestion {
 
 export default function GetHelpPage() {
   const t = getHelpTranslation(getLocale(usePathname()));
+  const authUser = useAppSelector((state) => state.auth.user);
+  const isCompanyAdmin =
+    authUser?.role === "COMPANY_ADMIN" ||
+    (authUser?.role as string)?.toUpperCase() === "COMPANY" ||
+    isCurrentCompanyAdmin();
+
   const [filters, setFilters] = useState<GetHelpFilterState>({ search: "" });
   const [page, setPage] = useState(1);
   const LIMIT = 8;
@@ -96,7 +104,10 @@ export default function GetHelpPage() {
 
   return (
     <div className="space-y-4 pb-12">
-      <GetHelpHeader total={total} onAddClick={() => setFormModal({ isOpen: true, mode: "create" })} />
+      <GetHelpHeader
+        total={total}
+        onAddClick={isCompanyAdmin ? undefined : () => setFormModal({ isOpen: true, mode: "create" })}
+      />
       <GetHelpFilters filters={filters} onChange={setFilters} resultCount={filteredQuestions.length} />
 
       {message && (
@@ -126,7 +137,7 @@ export default function GetHelpPage() {
             >
               {t.clear}
             </button>
-          ) : (
+          ) : !isCompanyAdmin ? (
             <button
               type="button"
               onClick={() => setFormModal({ isOpen: true, mode: "create" })}
@@ -135,7 +146,7 @@ export default function GetHelpPage() {
               <MdAdd className="text-base" />
               <span>{t.addFirstQuestion}</span>
             </button>
-          )}
+          ) : null}
         </div>
       ) : (
         <div className={`grid gap-4 md:grid-cols-2 transition-opacity ${isFetching ? "opacity-60" : "opacity-100"}`}>
@@ -144,8 +155,8 @@ export default function GetHelpPage() {
               key={item.id}
               item={item}
               serialNo={(page - 1) * LIMIT + index + 1}
-              onEdit={(q) => setFormModal({ isOpen: true, mode: "edit", question: q })}
-              onDelete={(q) => setDeleteModal({ isOpen: true, question: q })}
+              onEdit={isCompanyAdmin ? undefined : (q) => setFormModal({ isOpen: true, mode: "edit", question: q })}
+              onDelete={isCompanyAdmin ? undefined : (q) => setDeleteModal({ isOpen: true, question: q })}
             />
           ))}
         </div>

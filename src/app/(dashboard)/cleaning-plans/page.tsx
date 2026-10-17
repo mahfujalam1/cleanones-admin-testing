@@ -13,7 +13,7 @@ import { CardGridSkeleton, ErrorNotice, SearchInput } from "@/components/shared/
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
-import { clientCompanyLabel, CLIENT_LOOKUP_ARGS, useGetClientsQuery } from "@/redux/api/endpoints/clients.api";
+import { ClientSearchSelect } from "@/components/shared/ClientSearchSelect";
 import { useGetClientLocationsQuery, useGetLocationsQuery } from "@/redux/api/endpoints/locations.api";
 import { refId } from "@/redux/api/types";
 import {
@@ -96,7 +96,6 @@ function CleaningPlansView() {
     isCompanyAdmin,
   });
 
-  const { data: clientPage } = useGetClientsQuery(CLIENT_LOOKUP_ARGS);
   const scopedLocations = useGetClientLocationsQuery(
     { clientId, limit: PICKER_LIMIT, sort: "name" },
     { skip: !clientId },
@@ -209,17 +208,14 @@ function CleaningPlansView() {
           />
         )}
 
-        <Select
+        <ClientSearchSelect
           value={clientId}
-          onValueChange={(value) => applyScope({ client: value })}
+          onChange={(value) => applyScope({ client: value })}
           placeholder={ui.allClients}
-          options={[
-            { value: "", label: ui.allClients },
-            ...(clientPage?.result ?? []).map((client) => ({
-              value: client._id,
-              label: clientCompanyLabel(client),
-            })),
-          ]}
+          showAllOption
+          allOptionLabel={ui.allClients}
+          showCompanyName
+          isCompanyAdmin={isCompanyAdmin}
         />
 
         <Select
