@@ -211,7 +211,7 @@ export default function ManagersPage() {
       {/* Table */}
       <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
         {isLoading ? (
-          <TableSkeleton rows={5} columns={5} />
+          <TableSkeleton rows={5} columns={6} />
         ) : isError ? (
           <div className="p-8 text-center">
             <p className="text-sm text-red-500">Failed to load managers.</p>
@@ -253,6 +253,7 @@ export default function ManagersPage() {
                   <th scope="col" className="px-6 py-3.5">Email</th>
                   <th scope="col" className="px-6 py-3.5">Phone</th>
                   <th scope="col" className="px-6 py-3.5">Address</th>
+                  <th scope="col" className="px-6 py-3.5">Status</th>
                   <th scope="col" className="px-6 py-3.5 text-right">Actions</th>
                 </tr>
               </thead>
@@ -297,6 +298,19 @@ export default function ManagersPage() {
                       <td className="whitespace-nowrap px-6 py-4">{mgr.email}</td>
                       <td className="whitespace-nowrap px-6 py-4">{mgr.phone}</td>
                       <td className="px-6 py-4">{mgr.address || "—"}</td>
+                      <td className="whitespace-nowrap px-6 py-4">
+                        {isBlocked ? (
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-medium text-red-700">
+                            <span className="h-1.5 w-1.5 rounded-full bg-red-600" />
+                            Blocked
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700">
+                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" />
+                            Active
+                          </span>
+                        )}
+                      </td>
                       <td className="whitespace-nowrap px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-2">
                           <button
@@ -374,7 +388,7 @@ export default function ManagersPage() {
                   required
                   value={createForm.name}
                   onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
-                  placeholder="e.g. Rahim Uddin"
+                  placeholder="Enter full name"
                   className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                 />
               </div>
@@ -385,7 +399,7 @@ export default function ManagersPage() {
                   required
                   value={createForm.email}
                   onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })}
-                  placeholder="rahim@example.com"
+                  placeholder="Enter email"
                   className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                 />
               </div>
@@ -396,7 +410,7 @@ export default function ManagersPage() {
                   required
                   value={createForm.phone}
                   onChange={(e) => setCreateForm({ ...createForm, phone: e.target.value })}
-                  placeholder="01700000000"
+                  placeholder="Enter phone"
                   className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                 />
               </div>
@@ -406,7 +420,7 @@ export default function ManagersPage() {
                   type="text"
                   value={createForm.address}
                   onChange={(e) => setCreateForm({ ...createForm, address: e.target.value })}
-                  placeholder="Dhaka, Bangladesh"
+                  placeholder="Enter address"
                   className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                 />
               </div>
@@ -419,7 +433,7 @@ export default function ManagersPage() {
                     minLength={8}
                     value={createForm.password}
                     onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
-                    placeholder="Min 8 chars"
+                    placeholder="Enter password (min 8 chars)"
                     className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                   />
                 </div>
@@ -433,7 +447,7 @@ export default function ManagersPage() {
                     onChange={(e) =>
                       setCreateForm({ ...createForm, confirmPassword: e.target.value })
                     }
-                    placeholder="Confirm password"
+                    placeholder="Enter confirm password"
                     className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                   />
                 </div>
@@ -492,6 +506,7 @@ export default function ManagersPage() {
                   type="text"
                   value={editForm.name}
                   onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                  placeholder="Enter full name"
                   className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                 />
               </div>
@@ -501,6 +516,7 @@ export default function ManagersPage() {
                   type="tel"
                   value={editForm.phone}
                   onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                  placeholder="Enter phone"
                   className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                 />
               </div>
@@ -510,6 +526,7 @@ export default function ManagersPage() {
                   type="text"
                   value={editForm.address}
                   onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
+                  placeholder="Enter address"
                   className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                 />
               </div>
