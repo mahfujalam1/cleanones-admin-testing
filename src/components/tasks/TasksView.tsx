@@ -19,6 +19,7 @@ import TaskCard from "./TaskCard";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { TaskForm } from "./TaskForm";
 import { TaskViewModal } from "./TaskViewModal";
+import { useAppSelector } from "@/redux/hooks";
 
 interface TasksViewProps {
   scopedClientId?: string;
@@ -35,6 +36,8 @@ export function TasksView({
   const ui = getUiTranslation(getLocale(usePathname()));
   const router = useRouter();
   const query = useSearchParams();
+  const currentUser = useAppSelector((state) => state.auth.user);
+  const isCompanyAdmin = currentUser?.role === "COMPANY_ADMIN";
 
   const activeTab = query.get("tab") || "All";
   const searchText = query.get("search") || "";
@@ -68,6 +71,7 @@ export function TasksView({
       page,
       limit,
       searchTerm: searchText || undefined,
+      isCompanyAdmin,
     },
     {
       skip: !scopedRoomId,
@@ -139,7 +143,7 @@ export function TasksView({
           </div>
         </div>
 
-        {scopedRoomId && (
+        {scopedRoomId && !isCompanyAdmin && (
           <button
             onClick={() => setTaskModalTarget("new")}
             className="inline-flex items-center gap-2 rounded border border-primary bg-primary px-3 py-2 text-xs text-white hover:bg-primary-dark transition-colors"
@@ -176,8 +180,8 @@ export function TasksView({
                     key={task._id}
                     task={task}
                     onSelect={() => setViewTarget(task)}
-                    onEdit={() => setTaskModalTarget(task)}
-                    onDelete={() => setDeleteTarget(task._id)}
+                    onEdit={isCompanyAdmin ? undefined : () => setTaskModalTarget(task)}
+                    onDelete={isCompanyAdmin ? undefined : () => setDeleteTarget(task._id)}
                   />
                 ))}
               </div>

@@ -63,8 +63,8 @@ export default function TaskCard({
 }: {
   task: Task;
   onSelect?: (task: Task) => void;
-  onEdit: (task: Task) => void;
-  onDelete: (task: Task) => void;
+  onEdit?: (task: Task) => void;
+  onDelete?: (task: Task) => void;
 }) {
   const room = refDoc<Room>(task.room);
   const location = room ? refDoc<Location>(room.location) : null;
@@ -108,6 +108,11 @@ export default function TaskCard({
                 >
                   {task.is_active ? "Active" : "Inactive"}
                 </span>
+                {task.manager && (
+                  <span className="shrink-0 rounded-md bg-purple-50 px-1.5 py-0.5 text-[10px] font-semibold text-purple-700 border border-purple-200/60">
+                    Managed by: {task.manager.name}
+                  </span>
+                )}
               </div>
 
               <div className="mt-2 space-y-1">
@@ -129,30 +134,36 @@ export default function TaskCard({
         </div>
       </article>
 
-      <div className="absolute right-2.5 top-2.5 flex items-center gap-0.5 transition-opacity lg:opacity-0 lg:group-hover:opacity-100 lg:group-focus-within:opacity-100">
-        <button
-          type="button"
-          aria-label={`Edit ${task.name}`}
-          onClick={(event) => {
-            event.stopPropagation();
-            onEdit(task);
-          }}
-          className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md bg-white/90 text-slate-400 ring-1 ring-slate-200 backdrop-blur transition-colors hover:text-slate-800"
-        >
-          <MdModeEditOutline className="text-[15px]" />
-        </button>
-        <button
-          type="button"
-          aria-label={`Delete ${task.name}`}
-          onClick={(event) => {
-            event.stopPropagation();
-            onDelete(task);
-          }}
-          className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md bg-white/90 text-slate-400 ring-1 ring-slate-200 backdrop-blur transition-colors hover:text-red-600"
-        >
-          <MdDeleteOutline className="text-[15px]" />
-        </button>
-      </div>
+      {(onEdit || onDelete) && (
+        <div className="absolute right-2.5 top-2.5 flex items-center gap-0.5 transition-opacity lg:opacity-0 lg:group-hover:opacity-100 lg:group-focus-within:opacity-100">
+          {onEdit && (
+            <button
+              type="button"
+              aria-label={`Edit ${task.name}`}
+              onClick={(event) => {
+                event.stopPropagation();
+                onEdit(task);
+              }}
+              className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md bg-white/90 text-slate-400 ring-1 ring-slate-200 backdrop-blur transition-colors hover:text-slate-800"
+            >
+              <MdModeEditOutline className="text-[15px]" />
+            </button>
+          )}
+          {onDelete && (
+            <button
+              type="button"
+              aria-label={`Delete ${task.name}`}
+              onClick={(event) => {
+                event.stopPropagation();
+                onDelete(task);
+              }}
+              className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md bg-white/90 text-slate-400 ring-1 ring-slate-200 backdrop-blur transition-colors hover:text-red-600"
+            >
+              <MdDeleteOutline className="text-[15px]" />
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

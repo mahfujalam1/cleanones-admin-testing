@@ -18,6 +18,8 @@ import {
   type Client,
 } from "@/redux/api/endpoints/clients.api";
 import { apiError } from "@/redux/api/apiError";
+import { useAppSelector } from "@/redux/hooks";
+import { ManagerFilterSelect } from "@/components/shared/ManagerFilterSelect";
 import { getLocale, localizePath } from "@/lib/locale";
 import { getDashboardTranslation } from "@/lib/translations";
 
@@ -41,9 +43,12 @@ export default function ClientsPage() {
   const locale = getLocale(usePathname());
   const t = getDashboardTranslation(locale);
   const ui = getUiTranslation(locale);
+  const user = useAppSelector((state) => state.auth.user);
+  const isCompanyAdmin = user?.role === "COMPANY_ADMIN" || (user?.role as string)?.toUpperCase() === "COMPANY";
 
   const [search, setSearch] = useState("");
   const searchTerm = useDebouncedValue(search.trim());
+  const [managerId, setManagerId] = useState("");
   const [page, setPage] = useState(1);
   const [formTarget, setFormTarget] = useState<Client | "new" | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Client | null>(null);
@@ -51,12 +56,14 @@ export default function ClientsPage() {
   const [actionError, setActionError] = useState("");
 
   
-  useEffect(() => setPage(1), [searchTerm]);
+  useEffect(() => setPage(1), [searchTerm, managerId]);
 
   const { data, isFetching, error } = useGetClientsQuery({
     page,
     limit: LIMIT,
     searchTerm: searchTerm || undefined,
+    manager: managerId || undefined,
+    isCompanyAdmin,
   });
   const [deleteClient, { isLoading: deleting }] = useDeleteClientMutation();
   const [bulkUploadClients] = useBulkUploadClientsMutation();
@@ -108,20 +115,30 @@ export default function ClientsPage() {
             <p className="truncate text-xs text-slate-500">{ui.clientAccountsSubtitle}</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setShowBulkUpload(true)}
-            className="inline-flex shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-semibold text-slate-700 shadow-2xs transition-all hover:bg-slate-50 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200 active:scale-[0.98]"
-          >
-            <MdUploadFile className="text-lg text-slate-500" /> Bulk Upload
-          </button>
-          {addButton}
-        </div>
+        {!isCompanyAdmin && (
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setShowBulkUpload(true)}
+              className="inline-flex shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-semibold text-slate-700 shadow-2xs transition-all hover:bg-slate-50 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200 active:scale-[0.98]"
+            >
+              <MdUploadFile className="text-lg text-slate-500" /> Bulk Upload
+            </button>
+            {addButton}
+          </div>
+        )}
       </div>
 
       <div className="flex flex-col gap-2.5 rounded-xl border border-slate-200 bg-white p-2.5 shadow-2xs sm:flex-row sm:items-center">
-        <SearchInput value={search} onChange={setSearch} placeholder={t.clients.searchPlaceholder} />
+        <div className="flex-1">
+          <SearchInput value={search} onChange={setSearch} placeholder={t.clients.searchPlaceholder} />
+        </div>
+        {isCompanyAdmin && (
+          <ManagerFilterSelect
+            value={managerId}
+            onChange={setManagerId}
+          />
+        )}
       </div>
 
       {message && <ErrorNotice message={message} />}
@@ -135,9 +152,11 @@ export default function ClientsPage() {
           description={
             searchTerm
               ? t.common.adjustFilters
-              : "Add your first client to start managing their locations and rooms."
+              : isCompanyAdmin
+                ? "No clients found in the company."
+                : "Add your first client to start managing their locations and rooms."
           }
-          action={searchTerm ? undefined : addButton}
+          action={searchTerm || isCompanyAdmin ? undefined : addButton}
         />
       ) : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -148,6 +167,7 @@ export default function ClientsPage() {
               href={localizePath(`/clients/${client._id}`, locale)}
               onEdit={setFormTarget}
               onDelete={setDeleteTarget}
+              isReadOnly={isCompanyAdmin}
             />
           ))}
         </div>

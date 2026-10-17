@@ -24,6 +24,8 @@ import {
   type WorkerType,
 } from "@/redux/api/endpoints/workers.api";
 import { apiError } from "@/redux/api/apiError";
+import { useAppSelector } from "@/redux/hooks";
+import { ManagerFilterSelect } from "@/components/shared/ManagerFilterSelect";
 import { getLocale } from "@/lib/locale";
 import { getUiTranslation } from "@/lib/translations";
 import { getDashboardTranslation } from "@/lib/translations";
@@ -69,10 +71,13 @@ export default function WorkersPage() {
   const locale = getLocale(usePathname());
   const ui = getUiTranslation(getLocale(usePathname()));
   const t = getDashboardTranslation(locale);
+  const user = useAppSelector((state) => state.auth.user);
+  const isCompanyAdmin = user?.role === "COMPANY_ADMIN";
 
   const [search, setSearch] = useState("");
   const searchTerm = useDebouncedValue(search.trim());
   const [workerType, setWorkerType] = useState<WorkerType | "">("");
+  const [managerId, setManagerId] = useState("");
   const [sort, setSort] = useState<WorkerSort>("-createdAt");
   const [page, setPage] = useState(1);
 
@@ -82,7 +87,7 @@ export default function WorkersPage() {
   const [showBulkUpload, setShowBulkUpload] = useState(false);
   const [actionError, setActionError] = useState("");
 
-  useEffect(() => setPage(1), [searchTerm, workerType, sort]);
+  useEffect(() => setPage(1), [searchTerm, workerType, sort, managerId]);
 
   const { data, isFetching, error } = useGetWorkerListQuery({
     page,
@@ -90,6 +95,8 @@ export default function WorkersPage() {
     searchTerm: searchTerm || undefined,
     worker_type: workerType || undefined,
     sort,
+    manager: managerId || undefined,
+    isCompanyAdmin,
   });
   const [deleteWorker, { isLoading: deleting }] = useDeleteWorkerMutation();
   const [bulkUploadWorkers] = useBulkUploadWorkersMutation();
@@ -132,28 +139,37 @@ export default function WorkersPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setShowBulkUpload(true)}
-            className="inline-flex h-9 shrink-0 cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-md border border-slate-200 bg-white px-3.5 text-sm font-semibold text-slate-700 shadow-2xs transition-all hover:bg-slate-50 hover:text-slate-900 active:scale-[0.98]"
-          >
-            <MdUploadFile className="text-base text-slate-500" /> Bulk Upload
-          </button>
-          <button
-            type="button"
-            onClick={() => setFormTarget("new")}
-            className="inline-flex h-9 shrink-0 cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-md bg-primary px-4 text-sm font-medium text-white transition-colors hover:bg-[#0284c7]"
-          >
-            <MdAdd className="text-base" /> {t.workers.addWorker}
-          </button>
-        </div>
+        {!isCompanyAdmin && (
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setShowBulkUpload(true)}
+              className="inline-flex h-9 shrink-0 cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-md border border-slate-200 bg-white px-3.5 text-sm font-semibold text-slate-700 shadow-2xs transition-all hover:bg-slate-50 hover:text-slate-900 active:scale-[0.98]"
+            >
+              <MdUploadFile className="text-base text-slate-500" /> Bulk Upload
+            </button>
+            <button
+              type="button"
+              onClick={() => setFormTarget("new")}
+              className="inline-flex h-9 shrink-0 cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-md bg-primary px-4 text-sm font-medium text-white transition-colors hover:bg-[#0284c7]"
+            >
+              <MdAdd className="text-base" /> {t.workers.addWorker}
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="flex flex-wrap items-center gap-3 rounded-lg border border-slate-200 bg-white p-2.5">
         <div className="w-full min-w-0 sm:w-64">
           <SearchInput value={search} onChange={setSearch} placeholder={t.workers.searchPlaceholder} />
         </div>
+
+        {isCompanyAdmin && (
+          <ManagerFilterSelect
+            value={managerId}
+            onChange={setManagerId}
+          />
+        )}
 
         <SlidingTabs
           compact
@@ -183,6 +199,8 @@ export default function WorkersPage() {
           onViewWorker={setViewTarget}
           onEditWorker={setFormTarget}
           onDeleteWorker={setDeleteTarget}
+          isReadOnly={isCompanyAdmin}
+          showManager={isCompanyAdmin}
         />
       )}
       </div>

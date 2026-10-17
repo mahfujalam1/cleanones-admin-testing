@@ -26,13 +26,16 @@ export function ClientCard({
   href,
   onEdit,
   onDelete,
+  isReadOnly = false,
 }: {
   client: Client;
   href: string;
-  onEdit: (client: Client) => void;
-  onDelete: (client: Client) => void;
+  onEdit?: (client: Client) => void;
+  onDelete?: (client: Client) => void;
+  isReadOnly?: boolean;
 }) {
   const expiry = formatDate(client.licence_expiration_date);
+  const managerObj = typeof client.manager === "object" && client.manager !== null ? client.manager : null;
 
   return (
     
@@ -76,6 +79,13 @@ export function ClientCard({
                 {expiry ? `Licence expires ${expiry}` : "No licence expiry"}
               </dd>
             </div>
+            {managerObj && (
+              <div className="pt-1">
+                <span className="inline-flex items-center rounded bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-700">
+                  Managed by: {managerObj.name}
+                </span>
+              </div>
+            )}
           </dl>
         </div>
 
@@ -84,25 +94,26 @@ export function ClientCard({
         </div>
       </Link>
 
-      
-      <div className="absolute right-2.5 top-2.5 flex items-center gap-0.5 transition-opacity lg:opacity-0 lg:group-hover:opacity-100 lg:group-focus-within:opacity-100">
-        <button
-          type="button"
-          aria-label={`Edit ${clientLabel(client)}`}
-          onClick={() => onEdit(client)}
-          className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md bg-white/90 text-slate-400 ring-1 ring-slate-200 backdrop-blur transition-colors hover:text-slate-800"
-        >
-          <MdEdit className="text-[15px]" />
-        </button>
-        <button
-          type="button"
-          aria-label={`Delete ${clientLabel(client)}`}
-          onClick={() => onDelete(client)}
-          className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md bg-white/90 text-slate-400 ring-1 ring-slate-200 backdrop-blur transition-colors hover:text-red-600"
-        >
-          <MdDelete className="text-[15px]" />
-        </button>
-      </div>
+      {!isReadOnly && onEdit && onDelete && (
+        <div className="absolute right-2.5 top-2.5 flex items-center gap-0.5 transition-opacity lg:opacity-0 lg:group-hover:opacity-100 lg:group-focus-within:opacity-100">
+          <button
+            type="button"
+            aria-label={`Edit ${clientLabel(client)}`}
+            onClick={() => onEdit(client)}
+            className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md bg-white/90 text-slate-400 ring-1 ring-slate-200 backdrop-blur transition-colors hover:text-slate-800"
+          >
+            <MdEdit className="text-[15px]" />
+          </button>
+          <button
+            type="button"
+            aria-label={`Delete ${clientLabel(client)}`}
+            onClick={() => onDelete(client)}
+            className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md bg-white/90 text-slate-400 ring-1 ring-slate-200 backdrop-blur transition-colors hover:text-red-600"
+          >
+            <MdDelete className="text-[15px]" />
+          </button>
+        </div>
+      )}
     </div>
   );
 }

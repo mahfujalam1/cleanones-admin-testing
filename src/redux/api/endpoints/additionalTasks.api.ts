@@ -2,6 +2,7 @@ import { baseApi } from "../baseApi";
 import { tagTypes } from "../../tagTypes";
 import type { Ref } from "../types";
 import type { CleaningPlan } from "./cleaningPlans.api";
+import { isCurrentCompanyAdmin } from "@/lib/auth/isCompanyAdmin";
 
 
 export type AdditionalTaskDecision = "Approved" | "Rejected";
@@ -43,6 +44,12 @@ export type AdditionalTask = {
   is_completed?: boolean;
   status?: AdditionalTaskDecision | "Pending";
   reject_reason?: string | null;
+  manager?: {
+    _id: string;
+    name: string;
+    email: string;
+    phone: string;
+  };
   createdAt?: string;
   updatedAt?: string;
 };
@@ -104,6 +111,8 @@ export type AdditionalTasksQuery = {
   status?: AdditionalTaskDecision | "Pending";
   is_completed?: boolean;
   is_photo_required?: boolean;
+  manager?: string;
+  isCompanyAdmin?: boolean;
 };
 
 export const additionalTasksApi = baseApi.injectEndpoints({
@@ -127,10 +136,12 @@ export const additionalTasksApi = baseApi.injectEndpoints({
     getAdditionalTasks: builder.query<AdditionalTaskListResponse, AdditionalTasksQuery | void>({
       query: (args) => {
         const params = new URLSearchParams();
-        const { planId, client, page, limit, searchTerm, sort, status, ...flags } = args ?? {};
+        const { planId, client, page, limit, searchTerm, sort, status, manager, isCompanyAdmin: override, ...flags } = args ?? {};
+        const isCompanyAdmin = isCurrentCompanyAdmin(override);
         if (planId) params.set("planId", planId);
         if (client) params.set("client", client);
         if (status) params.set("status", status);
+        if (manager) params.set("manager", manager);
         params.set("page", String(page ?? 1));
         params.set("limit", String(limit ?? 10));
         if (searchTerm?.trim()) params.set("searchTerm", searchTerm.trim());
@@ -138,7 +149,10 @@ export const additionalTasksApi = baseApi.injectEndpoints({
         for (const [key, value] of Object.entries(flags)) {
           if (typeof value === "boolean") params.set(key, String(value));
         }
-        return { url: `/additional-task/all-additional-tasks?${params.toString()}` };
+        const endpoint = isCompanyAdmin
+          ? "/additional-task/company-admin/get-all-additional-tasks"
+          : "/additional-task/all-additional-tasks";
+        return { url: `${endpoint}?${params.toString()}` };
       },
       
       transformResponse: (response: Partial<AdditionalTaskListResponse> | null) => ({
@@ -151,9 +165,18 @@ export const additionalTasksApi = baseApi.injectEndpoints({
       ],
     }),
 
-    getAdditionalTask: builder.query<AdditionalTask, string>({
-      query: (id) => ({ url: `/additional-task/single-additional-task/${encodeURIComponent(id)}` }),
-      providesTags: (_result, _error, id) => [{ type: tagTypes.tasks, id }],
+    getAdditionalTask: builder.query<AdditionalTask, { id: string; isCompanyAdmin?: boolean } | string>({
+      query: (arg) => {
+        const id = typeof arg === "string" ? arg : arg.id;
+        const isCompanyAdmin = isCurrentCompanyAdmin(typeof arg === "object" ? arg.isCompanyAdmin : undefined);
+        const endpoint = isCompanyAdmin
+          ? `/additional-task/company-admin/get-single-additional-task/${encodeURIComponent(id)}`
+          : `/additional-task/single-additional-task/${encodeURIComponent(id)}`;
+        return { url: endpoint };
+      },
+      providesTags: (_result, _error, arg) => [
+        { type: tagTypes.tasks, id: typeof arg === "string" ? arg : arg.id },
+      ],
     }),
 
 

@@ -3,6 +3,7 @@ import { catalogApi } from "./catalog.api";
 import { listQuery, type ListParams, type Paginated, type Ref } from "../types";
 import { tagTypes } from "../../tagTypes";
 import type { Location } from "./locations.api";
+import { isCurrentCompanyAdmin } from "@/lib/auth/isCompanyAdmin";
 
 
 
@@ -68,6 +69,12 @@ export type Room = {
 
   total_task?: number;
   total_tasks?: number;
+  manager?: {
+    _id: string;
+    name: string;
+    email: string;
+    phone: string;
+  };
   createdAt?: string;
   updatedAt?: string;
 };
@@ -101,9 +108,33 @@ export const roomsApi = baseApi.injectEndpoints({
       ],
     }),
 
-    getRoom: builder.query<Room, string>({
-      query: (id) => `/room/single-room/${encodeURIComponent(id)}`,
-      providesTags: (_response, _error, id) => [{ type: tagTypes.rooms, id }],
+    getCompanyAdminRooms: builder.query<
+      Paginated<Room>,
+      (ListParams & { location?: string; manager?: string }) | void
+    >({
+      query: (params) => {
+        const query = listQuery(params ?? {});
+        const locationParam = params?.location ? `&location=${encodeURIComponent(params.location)}` : "";
+        const managerParam = params?.manager ? `&manager=${encodeURIComponent(params.manager)}` : "";
+        return `/room/company-admin/get-all-rooms?${query}${locationParam}${managerParam}`;
+      },
+      providesTags: (response) => [
+        { type: tagTypes.rooms, id: "LIST" },
+        ...(response?.result ?? []).map(({ _id }) => ({ type: tagTypes.rooms, id: _id })),
+      ],
+    }),
+
+    getRoom: builder.query<Room, { id: string; isCompanyAdmin?: boolean } | string>({
+      query: (arg) => {
+        const id = typeof arg === "string" ? arg : arg.id;
+        const isCompanyAdmin = isCurrentCompanyAdmin(typeof arg === "object" ? arg.isCompanyAdmin : undefined);
+        return isCompanyAdmin
+          ? `/room/company-admin/get-single-room/${encodeURIComponent(id)}`
+          : `/room/single-room/${encodeURIComponent(id)}`;
+      },
+      providesTags: (_response, _error, arg) => [
+        { type: tagTypes.rooms, id: typeof arg === "string" ? arg : arg.id },
+      ],
     }),
 
     createRoom: builder.mutation<Room, CreateRoomInput>({
@@ -174,6 +205,7 @@ export const roomsApi = baseApi.injectEndpoints({
 
 export const {
   useGetRoomsQuery,
+  useGetCompanyAdminRoomsQuery,
   useGetRoomQuery,
   useCreateRoomMutation,
   useUpdateRoomMutation,

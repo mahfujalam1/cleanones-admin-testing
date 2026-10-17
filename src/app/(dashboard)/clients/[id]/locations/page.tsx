@@ -20,6 +20,7 @@ import {
 import { apiError } from "@/redux/api/apiError";
 import { getLocale, localizePath } from "@/lib/locale";
 import { getUiTranslation } from "@/lib/translations";
+import { useAppSelector } from "@/redux/hooks";
 
 const LIMIT = 9;
 
@@ -27,7 +28,9 @@ export default function ClientLocationsPage({ params }: { params: Promise<{ id: 
   const { id } = use(params);
   const router = useRouter();
   const locale = getLocale(usePathname());
-  const ui = getUiTranslation(getLocale(usePathname()));
+  const ui = getUiTranslation(locale);
+  const currentUser = useAppSelector((state) => state.auth.user);
+  const isCompanyAdmin = currentUser?.role === "COMPANY_ADMIN" || (currentUser?.role as string)?.toUpperCase() === "COMPANY";
 
   const [search, setSearch] = useState("");
   const searchTerm = useDebouncedValue(search.trim());
@@ -41,6 +44,7 @@ export default function ClientLocationsPage({ params }: { params: Promise<{ id: 
 
   const { data, isFetching, error } = useGetClientLocationsQuery({
     clientId: id,
+    isCompanyAdmin,
     page,
     limit: LIMIT,
     searchTerm: searchTerm || undefined,
@@ -51,7 +55,6 @@ export default function ClientLocationsPage({ params }: { params: Promise<{ id: 
   const total = data?.meta.total ?? 0;
   const message = actionError || (error ? apiError(error) : "");
 
-  
   useEffect(() => {
     if (!isFetching && data && locations.length === 0 && page > 1) {
       setPage((prev) => Math.max(1, prev - 1));
@@ -86,7 +89,7 @@ export default function ClientLocationsPage({ params }: { params: Promise<{ id: 
           <h2 className="text-base font-bold text-slate-900">{ui.locations}</h2>
           <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-bold text-slate-600">{total}</span>
         </div>
-        {addButton}
+        {!isCompanyAdmin && addButton}
       </div>
 
       <div className="rounded-xl border border-slate-200 bg-white p-2.5 shadow-2xs">
@@ -102,9 +105,13 @@ export default function ClientLocationsPage({ params }: { params: Promise<{ id: 
           icon={<MdPlace />}
           title={ui.noLocationsYet}
           description={
-            searchTerm ? ui.noLocationMatchesSearch : ui.addFirstLocation
+            searchTerm
+              ? ui.noLocationMatchesSearch
+              : isCompanyAdmin
+                ? "No locations found in the company."
+                : ui.addFirstLocation
           }
-          action={searchTerm ? undefined : addButton}
+          action={searchTerm || isCompanyAdmin ? undefined : addButton}
         />
       ) : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -113,8 +120,8 @@ export default function ClientLocationsPage({ params }: { params: Promise<{ id: 
               key={location._id}
               location={location}
               onSelect={() => router.push(localizePath(`/clients/${id}/locations/${location._id}`, locale))}
-              onEdit={setEditTarget}
-              onDelete={setDeleteTarget}
+              onEdit={isCompanyAdmin ? undefined : setEditTarget}
+              onDelete={isCompanyAdmin ? undefined : setDeleteTarget}
             />
           ))}
         </div>
@@ -128,10 +135,10 @@ export default function ClientLocationsPage({ params }: { params: Promise<{ id: 
         onPageChange={setPage}
       />
 
-      {creating && <LocationForm clientId={id} onClose={() => setCreating(false)} />}
-      {editTarget && <LocationForm location={editTarget} onClose={() => setEditTarget(null)} />}
+      {!isCompanyAdmin && creating && <LocationForm clientId={id} onClose={() => setCreating(false)} />}
+      {!isCompanyAdmin && editTarget && <LocationForm location={editTarget} onClose={() => setEditTarget(null)} />}
 
-      {deleteTarget && (
+      {!isCompanyAdmin && deleteTarget && (
         <ConfirmDialog
           title={ui.deleteLocation}
           description={`Are you sure you want to delete ${deleteTarget.name}? This action cannot be undone.`}

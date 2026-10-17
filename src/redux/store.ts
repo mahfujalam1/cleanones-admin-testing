@@ -1,4 +1,3 @@
-
 import { configureStore } from '@reduxjs/toolkit';
 import authReducer from './slices/auth.slice';
 import uiReducer from './slices/ui.slice';
@@ -13,6 +12,10 @@ export const store = configureStore({
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(baseApi.middleware),
 });
+
+if (typeof window !== 'undefined') {
+  (window as unknown as { __CLEANONES_STORE__: typeof store }).__CLEANONES_STORE__ = store;
+}
 
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;

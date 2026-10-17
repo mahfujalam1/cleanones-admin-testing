@@ -5,10 +5,10 @@ export const REFRESH_COOKIE = "refreshToken";
 export const SESSION_COOKIE = "cleanones_session";
 
 
-export type ServiceRole = "admin" | "manager";
+export type ServiceRole = "admin" | "manager" | "company_admin" | "company";
 
 
-export type DashboardRole = "ADMIN" | "MANAGER";
+export type DashboardRole = "ADMIN" | "MANAGER" | "COMPANY_ADMIN";
 
 
 export type DashboardUser = {
@@ -19,9 +19,11 @@ export type DashboardUser = {
   profilePhoto?: string;
 };
 
-const DASHBOARD_ROLE_BY_SERVICE_ROLE: Record<ServiceRole, DashboardRole> = {
+const DASHBOARD_ROLE_BY_SERVICE_ROLE: Record<string, DashboardRole> = {
   admin: "ADMIN",
   manager: "MANAGER",
+  company_admin: "COMPANY_ADMIN",
+  company: "COMPANY_ADMIN",
 };
 
 

@@ -68,11 +68,16 @@ export function ExtraServiceCard({ item, onClick }: ExtraServiceCardProps) {
             </span>
           </div>
         )}
-        <div className="flex items-center pt-1 text-[11px] text-slate-400">
+        <div className="flex items-center justify-between pt-1 text-[11px] text-slate-400">
           <div className="flex items-center gap-1">
             <TbCalendar className="text-slate-400" />
             <span>{item.preferred_date || item.date_submitted || "On demand"}</span>
           </div>
+          {item.rawAdditionalTask?.manager && (
+            <span className="inline-flex items-center rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-600">
+              {item.rawAdditionalTask.manager.name}
+            </span>
+          )}
         </div>
       </div>
     </button>

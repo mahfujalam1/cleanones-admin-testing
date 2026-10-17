@@ -68,6 +68,11 @@ export function RoomCard({
               {roomTaskCount(room)} {roomTaskCount(room) === 1 ? "task" : "tasks"}
             </span>
           )}
+          {room.manager && (
+            <span className="ml-auto inline-flex items-center rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-600">
+              {room.manager.name}
+            </span>
+          )}
         </div>
       </div>
 

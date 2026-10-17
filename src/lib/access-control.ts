@@ -47,6 +47,39 @@ export const routePermissions: RoutePermission[] = [
 
 export const defaultManagerAccess = routePermissions.map((route) => route.href);
 
+export const companyAdminAllowedRoutes: string[] = [
+  "/",
+  "/managers",
+  "/workers",
+  "/clients",
+  "/locations",
+  "/rooms",
+  "/cleaning-plans",
+  "/extra-services",
+  "/shift-monitoring",
+  "/escalations",
+  "/notifications",
+  "/settings",
+  "/profile",
+  "/get-help",
+];
+
+export function isCompanyAdminRouteAllowed(pathname: string): boolean {
+  if (
+    pathname === "/profile" ||
+    pathname === "/settings" ||
+    pathname === "/get-help" ||
+    pathname.startsWith("/profile/") ||
+    pathname.startsWith("/settings/") ||
+    pathname.startsWith("/get-help/")
+  ) {
+    return true;
+  }
+  return companyAdminAllowedRoutes.some((route) =>
+    route === "/" ? pathname === "/" : pathname === route || pathname.startsWith(`${route}/`)
+  );
+}
+
 export function getStoredManagerAccess(): string[] {
   if (typeof window === "undefined") return defaultManagerAccess;
   const saved = window.localStorage.getItem(MANAGER_ACCESS_STORAGE_KEY);

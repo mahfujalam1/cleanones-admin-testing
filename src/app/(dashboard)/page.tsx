@@ -3,7 +3,7 @@ import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useGetWorkerQuery } from "@/redux/api/endpoints/workers.api";
-import { MdAccessTime, MdAdd, MdArrowForward, MdAssessment, MdBusiness, MdCalendarToday, MdCheckCircle, MdChevronRight, MdClose, MdEmail, MdGroups, MdLocationOn, MdPerson, MdPhone, MdPhotoCamera, MdReportProblem, MdViewWeek, MdWarningAmber } from "react-icons/md";
+import { MdAccessTime, MdAdd, MdArrowForward, MdAssessment, MdBusiness, MdCalendarToday, MdCheckCircle, MdChevronRight, MdClose, MdEmail, MdGroups, MdLocationOn, MdPerson, MdPhone, MdPhotoCamera, MdReportProblem, MdViewWeek, MdWarningAmber, MdChecklist } from "react-icons/md";
 import {
   useGetTodayLiveShiftMetaQuery,
   useGetTodayLiveShiftsQuery,
@@ -17,6 +17,8 @@ import { apiError } from "@/redux/api/apiError";
 import { PlanDetailModal } from "@/components/cleaningPlans/PlanDetailModal";
 import type { Shift } from "@/components/roster/types";
 import type { PlanRosterAssignedWorker } from "@/redux/api/rosterApi";
+import { useAppSelector } from "@/redux/hooks";
+import { isCompanyAdminRouteAllowed } from "@/lib/access-control";
 
 
 
@@ -149,13 +151,19 @@ export default function DashboardPage() {
     skip: !selectedLateWorker?.id || selectedLateWorker.id.startsWith("name:"),
   });
 
-  const { data: todayLiveMeta, isFetching: loadingLiveMeta } = useGetTodayLiveShiftMetaQuery();
+  const currentUser = useAppSelector((state) => state.auth.user);
+  const isCompanyAdmin = currentUser?.role === "COMPANY_ADMIN" || (currentUser?.role as string)?.toUpperCase() === "COMPANY";
+
+  const { data: todayLiveMeta, isFetching: loadingLiveMeta } = useGetTodayLiveShiftMetaQuery(
+    isCompanyAdmin ? { isCompanyAdmin: true } : undefined
+  );
   const { data: issueReports = [] } = useGetEscalationsQuery();
   const { data: inProgressRes } = useGetTodayLiveShiftsQuery({
     status: "in_progress",
     page: 1,
     limit: 10,
     sort: "-date_time",
+    isCompanyAdmin,
   });
   
   
@@ -164,6 +172,7 @@ export default function DashboardPage() {
     page: 1,
     sort: "-date_time",
     status: liveTab === "all" ? undefined : liveTab,
+    isCompanyAdmin,
   });
 
   
@@ -499,23 +508,40 @@ export default function DashboardPage() {
         </div>
         <div className="flex w-full flex-wrap gap-2">
           {[
-            { label: t.plans.createPlan, href: "/cleaning-plans", icon: <MdAdd />, tone: "bg-sky-500 hover:bg-sky-600" },
+            {
+              label: isCompanyAdmin ? t.nav.cleaningPlans : t.plans.createPlan,
+              href: "/cleaning-plans",
+              icon: isCompanyAdmin ? <MdChecklist /> : <MdAdd />,
+              tone: "bg-sky-500 hover:bg-sky-600",
+            },
             { label: t.nav.clients, href: "/clients", icon: <MdBusiness />, tone: "bg-violet-500 hover:bg-violet-600" },
             { label: t.nav.locations, href: "/locations", icon: <MdLocationOn />, tone: "bg-cyan-500 hover:bg-cyan-600" },
             { label: t.nav.photoReviews, href: "/photo-reviews", icon: <MdPhotoCamera />, tone: "bg-pink-500 hover:bg-pink-600" },
             { label: t.nav.roster, href: "/roster", icon: <MdViewWeek />, tone: "bg-emerald-500 hover:bg-emerald-600" },
             { label: t.nav.workers, href: "/workers", icon: <MdGroups />, tone: "bg-amber-500 hover:bg-amber-600" },
             { label: t.nav.reports, href: "/reports", icon: <MdAssessment />, tone: "bg-slate-600 hover:bg-slate-700" },
-          ].map((action) => (
-            <Link
-              key={action.label}
-              href={action.href}
-              className={`inline-flex h-9 min-w-[120px] flex-1 items-center justify-center gap-1.5 rounded-lg px-3.5 text-xs font-semibold text-white shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md ${action.tone}`}
-            >
-              <span className="text-sm">{action.icon}</span>
-              {action.label}
-            </Link>
-          ))}
+          ]
+            .filter((action) => {
+              if (isCompanyAdmin) {
+                return (
+                  isCompanyAdminRouteAllowed(action.href) &&
+                  action.href !== "/photo-reviews" &&
+                  action.href !== "/roster" &&
+                  action.href !== "/reports"
+                );
+              }
+              return true;
+            })
+            .map((action) => (
+              <Link
+                key={action.label}
+                href={action.href}
+                className={`inline-flex h-9 min-w-[120px] flex-1 items-center justify-center gap-1.5 rounded-lg px-3.5 text-xs font-semibold text-white shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md ${action.tone}`}
+              >
+                <span className="text-sm">{action.icon}</span>
+                {action.label}
+              </Link>
+            ))}
         </div>
       </section>
 
@@ -679,7 +705,8 @@ export default function DashboardPage() {
           planId={viewingLiveShift.fallback.planId || viewingLiveShift.shiftId}
           liveShiftId={viewingLiveShift.shiftId}
           shiftDate={viewingLiveShift.fallback.date || undefined}
-          assignTarget={{
+          isReadOnly={isCompanyAdmin}
+          assignTarget={isCompanyAdmin ? undefined : {
             planId: viewingLiveShift.fallback.planId || viewingLiveShift.shiftId,
             date: viewingLiveShift.fallback.date,
             locationName: viewingLiveShift.fallback.location,
@@ -692,7 +719,7 @@ export default function DashboardPage() {
             endTime: viewingLiveShift.fallback.endTime,
           }}
           onClose={() => setViewingLiveShift(null)}
-          onAssigned={() => {
+          onAssigned={isCompanyAdmin ? undefined : () => {
             void refetchLiveShifts();
           }}
         />

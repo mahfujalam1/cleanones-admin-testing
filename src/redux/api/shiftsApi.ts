@@ -1,4 +1,5 @@
 import { baseApi } from "./baseApi";
+import { isCurrentCompanyAdmin } from "@/lib/auth/isCompanyAdmin";
 
 export type Period = "today" | "weekly" | "monthly";
 
@@ -144,12 +145,21 @@ export type DashboardLateWorker = {
 export const shiftsApi = baseApi.injectEndpoints({
   overrideExisting: true,
   endpoints: (builder) => ({
-    getTodayLiveShiftMeta: builder.query<TodayLiveShiftMeta, void>({
-      query: () => "/shift/today-live-shift-meta",
+    getTodayLiveShiftMeta: builder.query<TodayLiveShiftMeta, { manager?: string; isCompanyAdmin?: boolean } | void>({
+      query: (arg) => {
+        const isCompanyAdmin = isCurrentCompanyAdmin(typeof arg === "object" ? arg?.isCompanyAdmin : undefined);
+        const manager = typeof arg === "object" ? arg?.manager : undefined;
+        if (isCompanyAdmin) {
+          const qs = manager ? `?manager=${encodeURIComponent(manager)}` : "";
+          return `/shift/company-admin/get-today-shift-meta${qs}`;
+        }
+        return "/shift/today-live-shift-meta";
+      },
       providesTags: ["shifts" as never, "shiftMonitoring" as never],
     }),
     getTodayLiveShifts: builder.query<TodayLiveShiftsResponse, TodayLiveShiftsParams | void>({
       query: (params) => {
+        const isCompanyAdmin = isCurrentCompanyAdmin(params?.isCompanyAdmin);
         const q = new URLSearchParams();
         if (params?.location) q.set("location", params.location);
         if (params?.client) q.set("client", params.client);
@@ -157,14 +167,31 @@ export const shiftsApi = baseApi.injectEndpoints({
         if (params?.page) q.set("page", String(params.page));
         if (params?.limit) q.set("limit", String(params.limit));
         if (params?.sort) q.set("sort", params.sort);
+        if (params?.manager) q.set("manager", params.manager);
+        if (params?.date) q.set("date", params.date);
+        if (params?.cleaning_plan) q.set("cleaning_plan", params.cleaning_plan);
+
+        if (isCompanyAdmin) {
+          // Company admin endpoint requires date or range, default to today if not passed
+          if (!params?.date && !q.has("date") && !q.has("from")) {
+            q.set("date", new Date().toISOString().slice(0, 10));
+          }
+          return `/shift/company-admin/get-all-shifts?${q.toString()}`;
+        }
         const qs = q.toString();
         return `/shift/today-live-shifts${qs ? `?${qs}` : ""}`;
       },
       providesTags: ["shifts" as never, "shiftMonitoring" as never],
     }),
-    getSingleLiveShift: builder.query<TodayLiveShiftItem, string>({
-      query: (id) => `/shift/single-live-shift/${encodeURIComponent(id)}`,
-      providesTags: (_res, _err, id) => [{ type: "shifts" as never, id }],
+    getSingleLiveShift: builder.query<TodayLiveShiftItem, { id: string; isCompanyAdmin?: boolean } | string>({
+      query: (arg) => {
+        const id = typeof arg === "string" ? arg : arg.id;
+        const isCompanyAdmin = isCurrentCompanyAdmin(typeof arg === "object" ? arg.isCompanyAdmin : undefined);
+        return isCompanyAdmin
+          ? `/shift/company-admin/get-single-shift/${encodeURIComponent(id)}`
+          : `/shift/single-live-shift/${encodeURIComponent(id)}`;
+      },
+      providesTags: (_res, _err, arg) => [{ type: "shifts" as never, id: typeof arg === "string" ? arg : arg.id }],
     }),
     getWorkerPerformance: builder.query<WorkerPerformance, WorkerPerformanceParams>({
       query: ({ workerId, month, year }) => {
@@ -550,6 +577,12 @@ export type TodayLiveShiftItem = {
     completed_at?: string | null;
     source?: string;
   }>;
+  manager?: {
+    _id: string;
+    name: string;
+    email: string;
+    phone?: string;
+  };
 };
 
 export type TodayLiveShiftsResponse = {
@@ -569,6 +602,10 @@ export type TodayLiveShiftsParams = {
   page?: number;
   limit?: number;
   sort?: string;
+  manager?: string;
+  date?: string;
+  cleaning_plan?: string;
+  isCompanyAdmin?: boolean;
 };
 
 export type WorkerPerformance = {

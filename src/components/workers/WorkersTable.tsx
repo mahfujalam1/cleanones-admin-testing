@@ -19,25 +19,34 @@ export function WorkersTable({
   onViewWorker,
   onEditWorker,
   onDeleteWorker,
+  isReadOnly = false,
+  showManager = false,
 }: {
   workers: Worker[];
   onViewWorker: (worker: Worker) => void;
-  onEditWorker: (worker: Worker) => void;
-  onDeleteWorker: (worker: Worker) => void;
+  onEditWorker?: (worker: Worker) => void;
+  onDeleteWorker?: (worker: Worker) => void;
+  isReadOnly?: boolean;
+  showManager?: boolean;
 }) {
   const t = getDashboardTranslation(getLocale(usePathname()));
   const ui = getUiTranslation(getLocale(usePathname()));
+
+  const gridCols = showManager
+    ? "grid-cols-[2fr_1fr_1fr_1fr_1.1fr_1.2fr_0.8fr]"
+    : "grid-cols-[2fr_1fr_1fr_1fr_1.1fr_1fr]";
 
   return (
     <div className="dashboard-card overflow-hidden rounded-lg border border-slate-200 bg-white">
       <div className="w-full overflow-x-auto">
         <div className="min-w-[820px]">
-          <div className="grid grid-cols-[2fr_1fr_1fr_1fr_1.1fr_1fr] gap-2 border-b border-gray-100 px-6 py-3 text-[10px] font-bold uppercase tracking-wider text-gray-400">
+          <div className={`grid ${gridCols} gap-2 border-b border-gray-100 px-6 py-3 text-[10px] font-bold uppercase tracking-wider text-gray-400`}>
             <div>{t.managerAccess.name}</div>
             <div>{t.managerAccess.role}</div>
             <div>{ui.hourlyRate}</div>
             <div>{ui.workingHours}</div>
             <div>{ui.totalEarning}</div>
+            {showManager && <div>Managed By</div>}
             <div className="text-right">{ui.actions}</div>
           </div>
 
@@ -45,7 +54,7 @@ export function WorkersTable({
             {workers.map((worker) => (
               <div
                 key={worker._id}
-                className="group grid grid-cols-[2fr_1fr_1fr_1fr_1.1fr_1fr] items-center gap-2 px-6 py-4 transition-colors hover:bg-gray-50/60"
+                className={`group grid ${gridCols} items-center gap-2 px-6 py-4 transition-colors hover:bg-gray-50/60`}
               >
                 <div className="flex min-w-0 items-center gap-3">
                   <WorkerAvatar name={workerName(worker)} src={workerPhoto(worker)} />
@@ -104,6 +113,18 @@ export function WorkersTable({
                   )}
                 </div>
 
+                {showManager && (
+                  <div className="min-w-0 text-xs">
+                    {worker.manager ? (
+                      <span className="inline-flex max-w-full items-center truncate rounded bg-slate-100 px-2 py-0.5 font-medium text-slate-700" title={`${worker.manager.name} (${worker.manager.email})`}>
+                        {worker.manager.name}
+                      </span>
+                    ) : (
+                      <Unavailable />
+                    )}
+                  </div>
+                )}
+
                 <div className="flex items-center justify-end gap-1">
                   <button
                     onClick={() => onViewWorker(worker)}
@@ -113,22 +134,26 @@ export function WorkersTable({
                   >
                     <MdVisibility className="text-base" />
                   </button>
-                  <button
-                    onClick={() => onEditWorker(worker)}
-                    title={ui.editWorker}
-                    aria-label={`Edit ${workerName(worker)}`}
-                    className="cursor-pointer rounded p-1 text-gray-400 transition-colors hover:bg-sky-50 hover:text-[#0ea5e9]"
-                  >
-                    <MdEdit className="text-base" />
-                  </button>
-                  <button
-                    onClick={() => onDeleteWorker(worker)}
-                    title={ui.deleteWorker}
-                    aria-label={`Delete ${workerName(worker)}`}
-                    className="cursor-pointer rounded p-1 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600"
-                  >
-                    <MdDeleteOutline className="text-base" />
-                  </button>
+                  {!isReadOnly && onEditWorker && (
+                    <button
+                      onClick={() => onEditWorker(worker)}
+                      title={ui.editWorker}
+                      aria-label={`Edit ${workerName(worker)}`}
+                      className="cursor-pointer rounded p-1 text-gray-400 transition-colors hover:bg-sky-50 hover:text-[#0ea5e9]"
+                    >
+                      <MdEdit className="text-base" />
+                    </button>
+                  )}
+                  {!isReadOnly && onDeleteWorker && (
+                    <button
+                      onClick={() => onDeleteWorker(worker)}
+                      title={ui.deleteWorker}
+                      aria-label={`Delete ${workerName(worker)}`}
+                      className="cursor-pointer rounded p-1 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600"
+                    >
+                      <MdDeleteOutline className="text-base" />
+                    </button>
+                  )}
                 </div>
               </div>
             ))}

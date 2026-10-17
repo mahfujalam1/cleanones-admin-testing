@@ -21,6 +21,8 @@ import {
 } from "@/redux/api/endpoints/locations.api";
 import { refId } from "@/redux/api/types";
 import { apiError } from "@/redux/api/apiError";
+import { useAppSelector } from "@/redux/hooks";
+import { ManagerFilterSelect } from "@/components/shared/ManagerFilterSelect";
 import { getLocale, localizePath } from "@/lib/locale";
 
 const LIMIT = 16;
@@ -29,18 +31,27 @@ function LocationsView() {
   const router = useRouter();
   const locale = getLocale(usePathname());
   const ui = getUiTranslation(locale);
+  const user = useAppSelector((state) => state.auth.user);
+  const isCompanyAdmin = user?.role === "COMPANY_ADMIN";
   const clientId = useSearchParams().get("client") ?? "";
 
   const [search, setSearch] = useState("");
   const searchTerm = useDebouncedValue(search.trim());
+  const [managerId, setManagerId] = useState("");
   const [page, setPage] = useState(1);
   const [creating, setCreating] = useState(false);
   const [editTarget, setEditTarget] = useState<Location | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Location | null>(null);
   const [actionError, setActionError] = useState("");
 
-  useEffect(() => setPage(1), [searchTerm, clientId]);
-  const args = { page, limit: LIMIT, searchTerm: searchTerm || undefined };
+  useEffect(() => setPage(1), [searchTerm, clientId, managerId]);
+  const args = {
+    page,
+    limit: LIMIT,
+    searchTerm: searchTerm || undefined,
+    manager: managerId || undefined,
+    isCompanyAdmin,
+  };
   const scoped = useGetClientLocationsQuery({ clientId, ...args }, { skip: !clientId });
   const all = useGetLocationsQuery(args, { skip: Boolean(clientId) });
   const { data, isFetching, error } = clientId ? scoped : all;
@@ -96,8 +107,15 @@ function LocationsView() {
 
 
 
-      <div className="grid gap-2 rounded-xl bg-white p-2 ring-1 ring-slate-200/70 md:grid-cols-2 xl:grid-cols-[1.4fr_1fr_auto]">
+      <div className={`grid gap-2 rounded-xl bg-white p-2 ring-1 ring-slate-200/70 ${isCompanyAdmin ? "md:grid-cols-3" : "md:grid-cols-2 xl:grid-cols-[1.4fr_1fr_auto]"}`}>
         <SearchInput value={search} onChange={setSearch} placeholder={ui.searchLocations} />
+
+        {isCompanyAdmin && (
+          <ManagerFilterSelect
+            value={managerId}
+            onChange={setManagerId}
+          />
+        )}
 
         <Select
           value={clientId}
@@ -112,9 +130,11 @@ function LocationsView() {
           ]}
         />
 
-        <Button onClick={addLocation} className="md:col-span-2 xl:col-span-1">
-          <MdAdd className="text-base" /> {ui.addLocation}
-        </Button>
+        {!isCompanyAdmin && (
+          <Button onClick={addLocation} className="md:col-span-2 xl:col-span-1">
+            <MdAdd className="text-base" /> {ui.addLocation}
+          </Button>
+        )}
       </div>
 
       {message && <ErrorNotice message={message} />}
@@ -127,9 +147,11 @@ function LocationsView() {
           <p className="mx-auto mt-1.5 max-w-sm text-sm leading-relaxed text-slate-500">
             {searchTerm
               ? ui.nothingMatchesSearch
-              : ui.addLocationHint}
+              : isCompanyAdmin
+                ? "No locations found in the company."
+                : ui.addLocationHint}
           </p>
-          {!searchTerm && (
+          {!searchTerm && !isCompanyAdmin && (
             <Button variant="secondary" onClick={addLocation} className="mt-5">
               <MdAdd className="text-base" /> {ui.addLocation}
             </Button>
@@ -149,8 +171,8 @@ function LocationsView() {
                   ),
                 )
               }
-              onEdit={setEditTarget}
-              onDelete={setDeleteTarget}
+              onEdit={isCompanyAdmin ? undefined : setEditTarget}
+              onDelete={isCompanyAdmin ? undefined : setDeleteTarget}
             />
           ))}
         </div>

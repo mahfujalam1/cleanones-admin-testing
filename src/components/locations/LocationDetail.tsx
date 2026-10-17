@@ -15,22 +15,25 @@ import { apiError } from "@/redux/api/apiError";
 import { refId } from "@/redux/api/types";
 import { getLocale, localizePath } from "@/lib/locale";
 import { getUiTranslation } from "@/lib/translations";
+import { useAppSelector } from "@/redux/hooks";
 
 export function LocationDetail({ clientId, locationId }: { clientId: string; locationId: string }) {
   const locale = getLocale(usePathname());
   const ui = getUiTranslation(getLocale(usePathname()));
   const router = useRouter();
   const query = useSearchParams();
+  const user = useAppSelector((state) => state.auth.user);
+  const isCompanyAdmin = user?.role === "COMPANY_ADMIN" || (user?.role as string)?.toUpperCase() === "COMPANY";
   const tab = query.get('tab') === 'rooms' ? 'Rooms' : query.get('tab') === 'cleaning-plan' ? 'Cleaning plan' : 'Overview';
   const setTab = (name: string) => router.replace(localizePath(`/clients/${clientId}/locations/${locationId}?tab=${name.toLowerCase().replace(' ', '-')}`, locale));
   const [editing, setEditing] = useState(false);
   const [viewPlan, setViewPlan] = useState<CleaningPlan | null>(null);
-  const { data: location, isLoading, error } = useGetLocationQuery(locationId);
+  const { data: location, isLoading, error } = useGetLocationQuery({ id: locationId, isCompanyAdmin });
   const { currentData: rooms = [] } = useGetRoomCatalogQuery({ clientId, locationId }, { refetchOnMountOrArgChange: false });
   
   
   const { data: planPage, isFetching: loadingPlans, error: plansError } = useGetCleaningPlanListQuery(
-    { client: clientId, location: locationId, limit: 50 },
+    { client: clientId, location: locationId, limit: 50, isCompanyAdmin },
     { skip: tab !== 'Cleaning plan' },
   );
   const plans = planPage?.result ?? [];
@@ -41,7 +44,7 @@ export function LocationDetail({ clientId, locationId }: { clientId: string; loc
   return <div className="space-y-4">
     <nav aria-label={ui.breadcrumb} className="flex gap-2 text-xs text-slate-500"><Link href={localizePath(base, locale)}>{ui.locations}</Link><span>›</span><span className="text-primary">{location.name}</span></nav>
     <header className="flex items-center gap-3 rounded border border-slate-200 bg-white p-5">
-      <Link aria-label={ui.backToClientLocations} href={localizePath(base, locale)} className="rounded border border-slate-200 p-2"><MdArrowBack /></Link><MdBusiness className="text-3xl text-primary" /><div className="flex-1"><h2 className="font-bold">{location.name}</h2><p className="mt-1 text-xs text-slate-400">{location.address}</p></div><button onClick={() => setEditing(true)} className="rounded border border-slate-200 px-3 py-2 text-xs text-primary">{ui.editLocation}</button>
+      <Link aria-label={ui.backToClientLocations} href={localizePath(base, locale)} className="rounded border border-slate-200 p-2"><MdArrowBack /></Link><MdBusiness className="text-3xl text-primary" /><div className="flex-1"><h2 className="font-bold">{location.name}</h2><p className="mt-1 text-xs text-slate-400">{location.address}</p></div>{!isCompanyAdmin && <button onClick={() => setEditing(true)} className="rounded border border-slate-200 px-3 py-2 text-xs text-primary">{ui.editLocation}</button>}
     </header>
     <nav aria-label={ui.locationSections} className="flex border-b border-slate-200">{[['Overview', ui.overview], ['Rooms', ui.rooms], ['Cleaning plan', ui.cleaningPlan]].map(([name, label]) => <button key={name} onClick={() => setTab(name)} aria-pressed={tab === name} className={`border-b-2 px-4 py-3 text-xs ${tab === name ? 'border-primary text-primary' : 'border-transparent text-slate-500'}`}>{label}{name === 'Rooms' ? ` (${rooms.length})` : ''}</button>)}</nav>
     {tab === 'Overview' && <div className="grid gap-4 sm:grid-cols-3">{[[ui.address, location.address], [ui.rooms, rooms.length], [ui.type, location.type === "Other" ? (location.other_type || "Custom") : (location.type || "—")], [ui.description, location.description || "—"]].map(([label, value]) => <div key={label} className="rounded border border-slate-200 bg-white p-5"><p className="text-xs uppercase text-slate-400">{label}</p><p className="mt-2 text-sm font-medium">{value}</p></div>)}</div>}

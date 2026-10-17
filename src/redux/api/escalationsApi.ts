@@ -1,6 +1,7 @@
 import { baseApi } from "./baseApi";
 import { tagTypes } from "../tagTypes";
 import { listQuery, type ListParams, type Paginated } from "./types";
+import { isCurrentCompanyAdmin } from "@/lib/auth/isCompanyAdmin";
 
 export type IssueReport = {
   _id: string;
@@ -11,6 +12,12 @@ export type IssueReport = {
   description: string;
   status: "PENDING" | "IN_PROGRESS" | "RESOLVED" | string;
   resolution_note?: string | null;
+  manager?: {
+    _id: string;
+    name: string;
+    email: string;
+    phone?: string;
+  };
   createdAt: string;
   updatedAt: string;
 };
@@ -34,8 +41,15 @@ export function isPendingIssue(status?: string) {
 export const escalationsApi = baseApi.injectEndpoints({
   overrideExisting: true,
   endpoints: (builder) => ({
-    getEscalations: builder.query<IssueReport[], ListParams | void>({
-      query: (params) => `/issue-report/all-issue-reports?${listQuery({ limit: 200, ...params })}`,
+    getEscalations: builder.query<IssueReport[], (ListParams & { isCompanyAdmin?: boolean; manager?: string }) | void>({
+      query: (params) => {
+        const isCompanyAdmin = isCurrentCompanyAdmin(params?.isCompanyAdmin);
+        if (isCompanyAdmin) {
+          const m = params?.manager ? `&manager=${encodeURIComponent(params.manager)}` : "";
+          return `/issue-report/company-admin/get-all-issue-reports?${listQuery({ limit: 200, ...params })}${m}`;
+        }
+        return `/issue-report/all-issue-reports?${listQuery({ limit: 200, ...params })}`;
+      },
       transformResponse: (response: IssueReport[] | Paginated<IssueReport> | { data?: IssueReport[] } | null) =>
         asIssueReports(response),
       providesTags: (result) => [

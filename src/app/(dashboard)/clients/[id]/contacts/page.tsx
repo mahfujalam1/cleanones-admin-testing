@@ -12,14 +12,18 @@ import { apiError } from "@/redux/api/apiError";
 import { usePathname } from "next/navigation";
 import { getLocale } from "@/lib/locale";
 import { getUiTranslation } from "@/lib/translations";
+import { useAppSelector } from "@/redux/hooks";
 
 export default function ClientContacts({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const ui = getUiTranslation(getLocale(usePathname()));
+  const currentUser = useAppSelector((state) => state.auth.user);
+  const isCompanyAdmin = currentUser?.role === "COMPANY_ADMIN" || (currentUser?.role as string)?.toUpperCase() === "COMPANY";
+
   const [creating, setCreating] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
-  const { data, isLoading, error } = useGetClientContactsQuery({ clientId: id });
+  const { data, isLoading, error } = useGetClientContactsQuery({ clientId: id, isCompanyAdmin });
   const [deleteContact, { isLoading: deleting }] = useDeleteClientContactMutation();
 
   const contacts = data ?? [];
@@ -39,33 +43,44 @@ export default function ClientContacts({ params }: { params: Promise<{ id: strin
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-end">
-        <button
-          onClick={() => setCreating(true)}
-          className="inline-flex items-center gap-1.5 rounded bg-primary px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-primary-dark"
-        >
-          <MdAdd className="text-lg" /> {ui.addContact}
-        </button>
-      </div>
+      {!isCompanyAdmin && (
+        <div className="flex items-center justify-end">
+          <button
+            onClick={() => setCreating(true)}
+            className="inline-flex items-center gap-1.5 rounded bg-primary px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-primary-dark"
+          >
+            <MdAdd className="text-lg" /> {ui.addContact}
+          </button>
+        </div>
+      )}
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {contacts.map((contact) => (
           <div key={contact._id} className="relative rounded border border-slate-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md">
             <div className="pr-8">
-              <h3 className="font-semibold text-slate-900">{contact.name}</h3>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="font-semibold text-slate-900">{contact.name}</h3>
+                {contact.manager && (
+                  <span className="shrink-0 rounded-md bg-purple-50 px-1.5 py-0.5 text-[10px] font-semibold text-purple-700 border border-purple-200/60">
+                    Managed by: {contact.manager.name}
+                  </span>
+                )}
+              </div>
               <p className="mt-1 text-sm font-medium text-primary">{contact.role}</p>
               <div className="mt-3 space-y-1 text-sm text-slate-500">
                 {contact.email && <p>{contact.email}</p>}
                 {contact.phone && <p>{contact.phone}</p>}
               </div>
             </div>
-            <button
-              onClick={() => setDeleteTarget(contact._id)}
-              className="absolute right-3 top-3 rounded p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-500"
-              title={ui.removeContact}
-            >
-              <MdDeleteOutline className="text-lg" />
-            </button>
+            {!isCompanyAdmin && (
+              <button
+                onClick={() => setDeleteTarget(contact._id)}
+                className="absolute right-3 top-3 rounded p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-500"
+                title={ui.removeContact}
+              >
+                <MdDeleteOutline className="text-lg" />
+              </button>
+            )}
           </div>
         ))}
 

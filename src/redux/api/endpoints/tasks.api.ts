@@ -2,6 +2,7 @@ import { baseApi } from "../baseApi";
 import { listQuery, type ListParams, type Paginated, type Ref } from "../types";
 import { tagTypes } from "../../tagTypes";
 import type { Room } from "./rooms.api";
+import { isCurrentCompanyAdmin } from "@/lib/auth/isCompanyAdmin";
 
 export const FREQUENCY_TYPES = ["daily", "weekly", "monthly"] as const;
 export type FrequencyType = (typeof FREQUENCY_TYPES)[number];
@@ -33,6 +34,12 @@ export type Task = {
   days_of_week?: WeekDay[];
   days_of_month?: number[];
   is_active: boolean;
+  manager?: {
+    _id: string;
+    name: string;
+    email: string;
+    phone?: string;
+  };
   createdAt?: string;
   updatedAt?: string;
 };
@@ -108,18 +115,34 @@ function withEmptyPhotoStrings<T extends {
 export const tasksApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     
-    getTasks: builder.query<Paginated<Task>, { roomId: string } & ListParams>({
-      query: ({ roomId, ...params }) =>
-        `/task/all-tasks/${encodeURIComponent(roomId)}?${listQuery(params)}`,
+    getTasks: builder.query<
+      Paginated<Task>,
+      { roomId: string; isCompanyAdmin?: boolean; manager?: string } & ListParams
+    >({
+      query: ({ roomId, isCompanyAdmin: override, manager, ...params }) => {
+        const isCompanyAdmin = isCurrentCompanyAdmin(override);
+        if (isCompanyAdmin) {
+          const m = manager ? `&manager=${encodeURIComponent(manager)}` : "";
+          const r = roomId ? `&room=${encodeURIComponent(roomId)}` : "";
+          return `/task/company-admin/get-all-tasks?${listQuery(params)}${r}${m}`;
+        }
+        return `/task/all-tasks/${encodeURIComponent(roomId)}?${listQuery(params)}`;
+      },
       providesTags: (response, _error, { roomId }) => [
         { type: tagTypes.tasks, id: `ROOM-${roomId}` },
         ...(response?.result ?? []).map(({ _id }) => ({ type: tagTypes.tasks, id: _id })),
       ],
     }),
 
-    getTask: builder.query<Task, string>({
-      query: (id) => `/task/single-task/${encodeURIComponent(id)}`,
-      providesTags: (_response, _error, id) => [{ type: tagTypes.tasks, id }],
+    getTask: builder.query<Task, { id: string; isCompanyAdmin?: boolean } | string>({
+      query: (arg) => {
+        const id = typeof arg === "string" ? arg : arg.id;
+        const isCompanyAdmin = isCurrentCompanyAdmin(typeof arg === "object" ? arg.isCompanyAdmin : undefined);
+        return isCompanyAdmin
+          ? `/task/company-admin/get-single-task/${encodeURIComponent(id)}`
+          : `/task/single-task/${encodeURIComponent(id)}`;
+      },
+      providesTags: (_response, _error, arg) => [{ type: tagTypes.tasks, id: typeof arg === "string" ? arg : arg.id }],
     }),
 
     createTask: builder.mutation<Task, CreateTaskInput>({

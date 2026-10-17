@@ -273,7 +273,7 @@ export default function Topbar() {
                 <div className="text-xs font-semibold leading-none text-foreground">
                   {user?.name ?? 'User'}
                 </div>
-                <div className="mt-1 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">{user?.role === 'ADMIN' ? 'Admin' : 'Manager'}</div>
+                <div className="mt-1 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">{user?.role === 'ADMIN' ? 'Admin' : (user?.role === 'COMPANY_ADMIN' || (user?.role as string)?.toUpperCase() === 'COMPANY') ? 'Company' : 'Manager'}</div>
               </div>
               <MdKeyboardArrowDown className="hidden text-sm text-muted-foreground sm:block" />
             </button>

@@ -23,6 +23,8 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { getLocale } from "@/lib/locale";
 import { getDashboardTranslation } from "@/lib/translations";
 import { getUiTranslation } from "@/lib/translations";
+import { useAppSelector } from "@/redux/hooks";
+import { ManagerFilterSelect } from "@/components/shared/ManagerFilterSelect";
 
 const formatShiftTime = (dateTimeStr?: string) => {
   if (!dateTimeStr) return "--:--";
@@ -123,6 +125,9 @@ export default function LiveStatusPage() {
   const locale = getLocale(pathname);
   const ui = getUiTranslation(getLocale(usePathname()));
   const t = getDashboardTranslation(locale);
+  const currentUser = useAppSelector((state) => state.auth.user);
+  const isCompanyAdmin = currentUser?.role === "COMPANY_ADMIN" || (currentUser?.role as string)?.toUpperCase() === "COMPANY";
+  const [selectedManager, setSelectedManager] = useState("");
 
   const [viewingLiveShift, setViewingLiveShift] = useState<{
     planId: string;
@@ -143,7 +148,7 @@ export default function LiveStatusPage() {
 
   useEffect(() => {
     setPage(1);
-  }, [search, statusFilter]);
+  }, [search, statusFilter, selectedManager]);
 
   const filterTabs: Array<{ value: LiveStatusFilter; label: string }> = [
     { value: "", label: ui.all },
@@ -153,7 +158,9 @@ export default function LiveStatusPage() {
   ];
 
   
-  const { data: todayMeta, refetch: refetchMeta } = useGetTodayLiveShiftMetaQuery();
+  const { data: todayMeta, refetch: refetchMeta } = useGetTodayLiveShiftMetaQuery(
+    isCompanyAdmin ? { isCompanyAdmin: true, manager: selectedManager || undefined } : undefined
+  );
 
   
   const statusParam =
@@ -172,6 +179,8 @@ export default function LiveStatusPage() {
   } = useGetTodayLiveShiftsQuery({
     status: statusParam,
     limit: 100,
+    isCompanyAdmin,
+    manager: selectedManager || undefined,
   });
 
   
@@ -338,31 +347,43 @@ export default function LiveStatusPage() {
 
       
       <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center">
+        {isCompanyAdmin && (
+          <ManagerFilterSelect
+            className="sm:w-60"
+            value={selectedManager}
+            onChange={(val) => {
+              setSelectedManager(val);
+              setPage(1);
+            }}
+          />
+        )}
         <div className="relative min-w-0 flex-1">
-          <MdSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-lg text-slate-400" />
+          <MdSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-lg text-slate-400" />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={t.shiftMonitoring.searchPlaceholder || "Search worker or location..."}
-            className="h-11 w-full rounded-xl border border-slate-200/80 bg-white pl-10 pr-9 text-sm text-slate-800 placeholder:text-slate-400 shadow-2xs outline-none transition-all focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+            className="h-10 w-full rounded-lg border border-slate-300 bg-white pl-9 pr-9 text-sm text-slate-800 placeholder:text-slate-400 shadow-2xs outline-none transition-all focus:border-primary focus:ring-1 focus:ring-primary"
           />
           {search && (
             <button
               type="button"
               aria-label={ui.clearSearch}
               onClick={() => setSearch("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer rounded p-0.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 cursor-pointer rounded p-0.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
             >
               <MdClose />
             </button>
           )}
         </div>
 
-        <SlidingTabs
-          value={statusFilter}
-          options={filterTabs.map((tab) => ({ value: tab.value, label: tab.label }))}
-          onValueChange={(next) => setStatusFilter(next as LiveStatusFilter)}
-        />
+        <div className="shrink-0">
+          <SlidingTabs
+            value={statusFilter}
+            options={filterTabs.map((tab) => ({ value: tab.value, label: tab.label }))}
+            onValueChange={(next) => setStatusFilter(next as LiveStatusFilter)}
+          />
+        </div>
       </div>
 
       
@@ -437,6 +458,11 @@ export default function LiveStatusPage() {
                       {item.plan_title && (
                         <span className="shrink-0 rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
                           {item.plan_title}
+                        </span>
+                      )}
+                      {item.rawItem?.manager && (
+                        <span className="shrink-0 rounded-md bg-purple-50 px-2 py-0.5 text-[11px] font-semibold text-purple-700 border border-purple-200/60">
+                          Managed by: {item.rawItem.manager.name}
                         </span>
                       )}
                     </div>
@@ -516,6 +542,7 @@ export default function LiveStatusPage() {
         <PlanDetailModal
           planId={viewingLiveShift.planId}
           shiftDate={viewingLiveShift.date || undefined}
+          isReadOnly={isCompanyAdmin}
           assignedWorkers={viewingLiveShift.assignedWorkers}
           shiftSchedule={{
             date: viewingLiveShift.date,
@@ -523,7 +550,7 @@ export default function LiveStatusPage() {
             endTime: viewingLiveShift.endTime,
           }}
           onClose={() => setViewingLiveShift(null)}
-          onAssigned={() => {
+          onAssigned={isCompanyAdmin ? undefined : () => {
             refetchAll();
           }}
         />

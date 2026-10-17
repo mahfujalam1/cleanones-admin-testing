@@ -2,6 +2,7 @@ import { baseApi } from "../baseApi";
 import { listQuery, type ListParams, type Paginated } from "../types";
 import { tagTypes } from "../../tagTypes";
 import type { BulkUploadResult } from "./clients.api";
+import { isCurrentCompanyAdmin } from "@/lib/auth/isCompanyAdmin";
 
 export const WORKER_TYPES = ["Employee", "Freelancer"] as const;
 export type WorkerType = (typeof WORKER_TYPES)[number];
@@ -85,6 +86,12 @@ export type Worker = {
   total_earning?: number;
   total_paid?: number;
   pending_amount?: number;
+  manager?: {
+    _id: string;
+    name: string;
+    email: string;
+    phone: string;
+  };
   createdAt?: string;
   updatedAt?: string;
 };
@@ -118,7 +125,11 @@ export type CreateWorkerInput = {
 
 export type UpdateWorkerInput = Partial<Omit<CreateWorkerInput, "password" | "confirmPassword">>;
 
-export type WorkerListParams = ListParams & { worker_type?: WorkerType };
+export type WorkerListParams = ListParams & {
+  worker_type?: WorkerType;
+  manager?: string;
+  isCompanyAdmin?: boolean;
+};
 
 
 export function workerName(worker: Pick<Worker, "name" | "email">): string {
@@ -145,9 +156,14 @@ export const workersApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getWorkerList: builder.query<Paginated<Worker>, WorkerListParams | void>({
       query: (params) => {
+        const isCompanyAdmin = isCurrentCompanyAdmin(params?.isCompanyAdmin);
         const query = listQuery(params ?? {});
         const type = params?.worker_type;
-        return `/worker/all-workers?${query}${type ? `&worker_type=${type}` : ""}`;
+        const managerParam = params?.manager ? `&manager=${encodeURIComponent(params.manager)}` : "";
+        const endpoint = isCompanyAdmin
+          ? `/worker/company-admin/get-all-workers?${query}${type ? `&worker_type=${type}` : ""}${managerParam}`
+          : `/worker/all-workers?${query}${type ? `&worker_type=${type}` : ""}`;
+        return endpoint;
       },
       providesTags: (response) => [
         { type: tagTypes.workers, id: "LIST" },
@@ -155,9 +171,17 @@ export const workersApi = baseApi.injectEndpoints({
       ],
     }),
 
-    getWorker: builder.query<Worker, string>({
-      query: (id) => `/worker/single-worker/${encodeURIComponent(id)}`,
-      providesTags: (_response, _error, id) => [{ type: tagTypes.workers, id }],
+    getWorker: builder.query<Worker, { id: string; isCompanyAdmin?: boolean } | string>({
+      query: (arg) => {
+        const id = typeof arg === "string" ? arg : arg.id;
+        const isCompanyAdmin = isCurrentCompanyAdmin(typeof arg === "object" ? arg.isCompanyAdmin : undefined);
+        return isCompanyAdmin
+          ? `/worker/company-admin/get-single-worker/${encodeURIComponent(id)}`
+          : `/worker/single-worker/${encodeURIComponent(id)}`;
+      },
+      providesTags: (_response, _error, arg) => [
+        { type: tagTypes.workers, id: typeof arg === "string" ? arg : arg.id },
+      ],
     }),
 
     createWorker: builder.mutation<Worker, CreateWorkerInput>({

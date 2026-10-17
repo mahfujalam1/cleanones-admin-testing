@@ -28,6 +28,8 @@ import {
 } from "@/redux/api/escalationsApi";
 import { useGetLocationCatalogQuery } from "@/redux/api/endpoints/catalog.api";
 import { useGetWorkerListQuery, workerName } from "@/redux/api/endpoints/workers.api";
+import { useAppSelector } from "@/redux/hooks";
+import { ManagerFilterSelect } from "@/components/shared/ManagerFilterSelect";
 
 const SEVERITY_CONFIG: Record<string, { border: string; text: string; bg: string; badge: string }> = {
   emergency: {
@@ -76,6 +78,9 @@ const STATUS_CONFIG: Record<string, { label: string; badge: string; dot: string 
 
 export default function EscalationsPage() {
   const ui = getUiTranslation(getLocale(usePathname()));
+  const currentUser = useAppSelector((state) => state.auth.user);
+  const isCompanyAdmin = currentUser?.role === "COMPANY_ADMIN";
+  const [selectedManager, setSelectedManager] = useState("");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [severityFilter, setSeverityFilter] = useState("");
@@ -87,9 +92,12 @@ export default function EscalationsPage() {
 
   useEffect(() => {
     setPage(1);
-  }, [search, statusFilter, severityFilter]);
+  }, [search, statusFilter, severityFilter, selectedManager]);
 
-  const { data: rawIssues = [], isLoading, isFetching, refetch } = useGetEscalationsQuery();
+  const { data: rawIssues = [], isLoading, isFetching, refetch } = useGetEscalationsQuery({
+    isCompanyAdmin,
+    manager: selectedManager || undefined,
+  });
   const { data: locations = [] } = useGetLocationCatalogQuery(undefined, { refetchOnMountOrArgChange: false });
   const { data: workersData } = useGetWorkerListQuery({ limit: 100 });
 
@@ -258,7 +266,16 @@ export default function EscalationsPage() {
       </div>
 
       
-      <div className="grid gap-2 rounded-xl bg-white p-2.5 ring-1 ring-slate-200/70 md:grid-cols-[1.5fr_1fr_1fr]">
+      <div className={`grid gap-2 rounded-xl bg-white p-2.5 ring-1 ring-slate-200/70 ${isCompanyAdmin ? "md:grid-cols-[1fr_1.5fr_1fr_1fr]" : "md:grid-cols-[1.5fr_1fr_1fr]"}`}>
+        {isCompanyAdmin && (
+          <ManagerFilterSelect
+            value={selectedManager}
+            onChange={(val) => {
+              setSelectedManager(val);
+              setPage(1);
+            }}
+          />
+        )}
         <div className="relative">
           <MdSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-base" />
           <input
@@ -343,9 +360,16 @@ export default function EscalationsPage() {
                 <div>
                   
                   <div className="flex items-center justify-between gap-2">
-                    <span className={`rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${sevStyle.badge}`}>
-                      {issue.severity || "Medium"}
-                    </span>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className={`rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${sevStyle.badge}`}>
+                        {issue.severity || "Medium"}
+                      </span>
+                      {issue.manager && (
+                        <span className="shrink-0 rounded-md bg-purple-50 px-2 py-0.5 text-[10px] font-semibold text-purple-700 border border-purple-200/60">
+                          Managed by: {issue.manager.name}
+                        </span>
+                      )}
+                    </div>
                     <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${statusStyle.badge}`}>
                       <span className={`h-1.5 w-1.5 rounded-full ${statusStyle.dot}`} />
                       {statusStyle.label}
@@ -405,6 +429,7 @@ export default function EscalationsPage() {
           locationMap={locationMap}
           workerMap={workerMap}
           updating={updating}
+          isReadOnly={isCompanyAdmin}
           onClose={() => setSelectedIssue(null)}
           onUpdateStatus={(status, resolutionNote) =>
             handleUpdateStatus(selectedIssue._id, status, resolutionNote)
@@ -434,6 +459,7 @@ function IssueDetailModal({
   locationMap,
   workerMap,
   updating,
+  isReadOnly,
   onClose,
   onUpdateStatus,
   onDelete,
@@ -442,6 +468,7 @@ function IssueDetailModal({
   locationMap: Map<string, string>;
   workerMap: Map<string, string>;
   updating: boolean;
+  isReadOnly?: boolean;
   onClose: () => void;
   onUpdateStatus: (
     status: "PENDING" | "IN_PROGRESS" | "RESOLVED",
@@ -545,107 +572,118 @@ function IssueDetailModal({
           </div>
 
           
-          <div className="rounded-xl border border-primary/20 bg-sky-50/40 p-4 space-y-3">
-            <div>
-              <h3 className="text-xs font-bold text-slate-900">{ui.managerStatusAction}</h3>
-              <p className="text-[11px] text-slate-500 mt-0.5">
-                {ui.updateResolutionHint}
-              </p>
-            </div>
-
-            <div className="grid grid-cols-3 gap-2">
-              <button
-                type="button"
-                onClick={() => setSelectedStatus("PENDING")}
-                className={`flex flex-col items-center justify-center rounded-lg border p-2.5 text-xs font-semibold transition-all cursor-pointer ${
-                  selectedStatus === "PENDING"
-                    ? "border-amber-400 bg-amber-50 text-amber-800 shadow-xs ring-1 ring-amber-300"
-                    : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
-                }`}
-              >
-                <MdPendingActions className="text-base text-amber-600 mb-0.5" />
-                <span>{ui.pending}</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setSelectedStatus("IN_PROGRESS")}
-                className={`flex flex-col items-center justify-center rounded-lg border p-2.5 text-xs font-semibold transition-all cursor-pointer ${
-                  selectedStatus === "IN_PROGRESS"
-                    ? "border-primary bg-sky-50 text-primary shadow-xs ring-1 ring-primary/40"
-                    : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
-                }`}
-              >
-                <MdSync className="text-base text-primary mb-0.5" />
-                <span>{ui.inProgress}</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedStatus("RESOLVED");
-                  setNoteError("");
-                }}
-                className={`flex flex-col items-center justify-center rounded-lg border p-2.5 text-xs font-semibold transition-all cursor-pointer ${
-                  selectedStatus === "RESOLVED"
-                    ? "border-emerald-400 bg-emerald-50 text-emerald-800 shadow-xs ring-1 ring-emerald-300"
-                    : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
-                }`}
-              >
-                <MdCheckCircle className="text-base text-emerald-600 mb-0.5" />
-                <span>Resolved</span>
-              </button>
-            </div>
-
-            {selectedStatus === "RESOLVED" && (
+          {isReadOnly ? (
+            issue.resolution_note ? (
+              <div className="rounded-xl border border-slate-200/80 bg-slate-50/60 p-3.5 space-y-1">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Resolution note</span>
+                <p className="text-xs text-slate-700 leading-relaxed whitespace-pre-wrap">{issue.resolution_note}</p>
+              </div>
+            ) : null
+          ) : (
+            <div className="rounded-xl border border-primary/20 bg-sky-50/40 p-4 space-y-3">
               <div>
-                <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                  Resolution note <span className="text-red-500">*</span>
-                </label>
-                <textarea
-                  value={resolutionNote}
-                  onChange={(event) => {
-                    setResolutionNote(event.target.value);
+                <h3 className="text-xs font-bold text-slate-900">{ui.managerStatusAction}</h3>
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  {ui.updateResolutionHint}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSelectedStatus("PENDING")}
+                  className={`flex flex-col items-center justify-center rounded-lg border p-2.5 text-xs font-semibold transition-all cursor-pointer ${
+                    selectedStatus === "PENDING"
+                      ? "border-amber-400 bg-amber-50 text-amber-800 shadow-xs ring-1 ring-amber-300"
+                      : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                  }`}
+                >
+                  <MdPendingActions className="text-base text-amber-600 mb-0.5" />
+                  <span>{ui.pending}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setSelectedStatus("IN_PROGRESS")}
+                  className={`flex flex-col items-center justify-center rounded-lg border p-2.5 text-xs font-semibold transition-all cursor-pointer ${
+                    selectedStatus === "IN_PROGRESS"
+                      ? "border-primary bg-sky-50 text-primary shadow-xs ring-1 ring-primary/40"
+                      : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                  }`}
+                >
+                  <MdSync className="text-base text-primary mb-0.5" />
+                  <span>{ui.inProgress}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedStatus("RESOLVED");
                     setNoteError("");
                   }}
-                  rows={3}
-                  placeholder="e.g. Replaced the leaking hose and tested the scrubber."
-                  className="h-auto w-full resize-y rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm leading-relaxed text-slate-900 placeholder:text-slate-400 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                />
-                {noteError ? <p className="mt-1.5 text-[11px] font-medium text-red-600">{noteError}</p> : null}
+                  className={`flex flex-col items-center justify-center rounded-lg border p-2.5 text-xs font-semibold transition-all cursor-pointer ${
+                    selectedStatus === "RESOLVED"
+                      ? "border-emerald-400 bg-emerald-50 text-emerald-800 shadow-xs ring-1 ring-emerald-300"
+                      : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                  }`}
+                >
+                  <MdCheckCircle className="text-base text-emerald-600 mb-0.5" />
+                  <span>Resolved</span>
+                </button>
               </div>
-            )}
 
-            <button
-              type="button"
-              disabled={updating || selectedStatus === currentStatus}
-              onClick={() => {
-                if (selectedStatus === "RESOLVED" && !resolutionNote.trim()) {
-                  setNoteError("Add a resolution note before marking this resolved.");
-                  return;
-                }
-                void onUpdateStatus(
-                  selectedStatus,
-                  selectedStatus === "RESOLVED" ? resolutionNote.trim() : undefined,
-                );
-              }}
-              className="mt-2 flex h-9.5 w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-primary text-xs font-semibold text-white shadow-xs transition-colors hover:bg-primary/90 disabled:opacity-50"
-            >
-              {updating ? "Saving Changes..." : "Apply Status Update"}
-            </button>
-          </div>
+              {selectedStatus === "RESOLVED" && (
+                <div>
+                  <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                    Resolution note <span className="text-red-500">*</span>
+                  </label>
+                  <textarea
+                    value={resolutionNote}
+                    onChange={(event) => {
+                      setResolutionNote(event.target.value);
+                      setNoteError("");
+                    }}
+                    rows={3}
+                    placeholder="e.g. Replaced the leaking hose and tested the scrubber."
+                    className="h-auto w-full resize-y rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm leading-relaxed text-slate-900 placeholder:text-slate-400 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                  />
+                  {noteError ? <p className="mt-1.5 text-[11px] font-medium text-red-600">{noteError}</p> : null}
+                </div>
+              )}
+
+              <button
+                type="button"
+                disabled={updating || selectedStatus === currentStatus}
+                onClick={() => {
+                  if (selectedStatus === "RESOLVED" && !resolutionNote.trim()) {
+                    setNoteError("Add a resolution note before marking this resolved.");
+                    return;
+                  }
+                  void onUpdateStatus(
+                    selectedStatus,
+                    selectedStatus === "RESOLVED" ? resolutionNote.trim() : undefined,
+                  );
+                }}
+                className="mt-2 flex h-9.5 w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-primary text-xs font-semibold text-white shadow-xs transition-colors hover:bg-primary/90 disabled:opacity-50"
+              >
+                {updating ? "Saving Changes..." : "Apply Status Update"}
+              </button>
+            </div>
+          )}
         </div>
 
         
-        <footer className="flex items-center justify-between border-t border-slate-100 p-4 bg-slate-50/50">
-          <button
-            type="button"
-            onClick={onDelete}
-            className="flex items-center gap-1.5 rounded-lg border border-red-200 bg-white px-3.5 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 hover:border-red-300 transition-colors cursor-pointer shadow-2xs"
-          >
-            <MdDeleteOutline className="text-base" />
-            <span>Delete Report</span>
-          </button>
+        <footer className={`flex items-center ${isReadOnly ? "justify-end" : "justify-between"} border-t border-slate-100 p-4 bg-slate-50/50`}>
+          {!isReadOnly && (
+            <button
+              type="button"
+              onClick={onDelete}
+              className="flex items-center gap-1.5 rounded-lg border border-red-200 bg-white px-3.5 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 hover:border-red-300 transition-colors cursor-pointer shadow-2xs"
+            >
+              <MdDeleteOutline className="text-base" />
+              <span>Delete Report</span>
+            </button>
+          )}
 
           <button
             type="button"

@@ -11,14 +11,14 @@ import {
   MdBusinessCenter, MdLocationOn,
   MdPhotoCamera, MdWarning, MdAssessment, MdNotifications, MdSettings,
   MdChevronLeft, MdChevronRight, MdLogout, MdChatBubbleOutline,
-  MdHelpOutline
+  MdHelpOutline, MdSupervisorAccount
 } from 'react-icons/md';
 import { MdMeetingRoom, MdChecklist, MdEventNote } from 'react-icons/md';
 import { notificationsApi } from '@/redux/api/endpoints/notifications.api';
 import { shiftsApi } from '@/redux/api/shiftsApi';
 import { reportsApi } from '@/redux/api/reportsApi';
 import { getDashboardTranslation } from '@/lib/translations';
-import { getStoredManagerAccess, routeIsAllowed } from '@/lib/access-control';
+import { getStoredManagerAccess, isCompanyAdminRouteAllowed, routeIsAllowed } from '@/lib/access-control';
 
 const prefetchRoutes = process.env.NODE_ENV === 'production';
 
@@ -40,6 +40,7 @@ export default function Sidebar() {
 
   const mainLinks: Array<{ name: string; href: string; icon: React.ComponentType<{ className?: string }> }> = [
     { name: t.nav.dashboard, href: '/', icon: MdDashboard },
+    { name: 'Managers', href: '/managers', icon: MdSupervisorAccount },
     { name: t.nav.roster, href: '/roster', icon: MdCalendarToday },
     { name: t.nav.shiftMonitoring, href: '/shift-monitoring', icon: MdAccessTime },
     { name: t.nav.shiftManagement, href: '/shift-management', icon: MdEventNote },
@@ -66,9 +67,21 @@ export default function Sidebar() {
   const mobileSidebarOpen = useAppSelector((state) => state.ui.mobileSidebarOpen);
   const user = useAppSelector((state) => state.auth.user);
   const collapsed = !sidebarOpen;
-  const allowedRoutes = user?.role === 'ADMIN' ? null : getStoredManagerAccess();
-  const visibleMainLinks = allowedRoutes ? mainLinks.filter((link) => routeIsAllowed(link.href, allowedRoutes)) : mainLinks;
-  const visibleQcLinks = allowedRoutes ? qcLinks.filter((link) => routeIsAllowed(link.href, allowedRoutes)) : qcLinks;
+
+  const isCompanyAdmin = user?.role === 'COMPANY_ADMIN' || (user?.role as string)?.toUpperCase() === 'COMPANY';
+  const allowedRoutes = user?.role === 'ADMIN' ? null : isCompanyAdmin ? null : getStoredManagerAccess();
+
+  const visibleMainLinks = isCompanyAdmin
+    ? mainLinks.filter((link) => link.href !== '/shift-management' && isCompanyAdminRouteAllowed(link.href))
+    : allowedRoutes
+      ? mainLinks.filter((link) => link.href !== '/managers' && routeIsAllowed(link.href, allowedRoutes))
+      : mainLinks;
+
+  const visibleQcLinks = isCompanyAdmin
+    ? qcLinks.filter((link) => isCompanyAdminRouteAllowed(link.href))
+    : allowedRoutes
+      ? qcLinks.filter((link) => routeIsAllowed(link.href, allowedRoutes))
+      : qcLinks;
 
   return (
     <>

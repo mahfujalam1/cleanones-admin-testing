@@ -1,10 +1,11 @@
 import { baseApi } from "./baseApi";
 import { tagTypes } from "../tagTypes";
+import { isCurrentCompanyAdmin } from "@/lib/auth/isCompanyAdmin";
 
 export type InvoiceItem = {
   _id: string;
-  manager: string;
-  worker: string;
+  manager: string | { _id: string; name: string; email: string; phone?: string };
+  worker: string | { _id: string; name: string; email?: string; phone?: string; worker_type?: string; hourly_rate?: number };
   amount: number;
   payment_method: string;
   transaction_id: string;
@@ -30,6 +31,8 @@ export type AllInvoicesParams = {
   searchTerm?: string;
   sort?: string;
   fields?: string;
+  manager?: string;
+  isCompanyAdmin?: boolean;
 };
 
 export type CreateInvoiceInput = {
@@ -52,7 +55,12 @@ export const invoicesApi = baseApi.injectEndpoints({
         if (params?.searchTerm) q.set("searchTerm", params.searchTerm);
         if (params?.sort) q.set("sort", params.sort);
         if (params?.fields) q.set("fields", params.fields);
+        if (params?.manager) q.set("manager", params.manager);
         const qs = q.toString();
+        const isCompanyAdmin = isCurrentCompanyAdmin(params?.isCompanyAdmin);
+        if (isCompanyAdmin) {
+          return `/invoice/company-admin/get-all-invoices${qs ? `?${qs}` : ""}`;
+        }
         return `/invoice/all-invoices${qs ? `?${qs}` : ""}`;
       },
       providesTags: (response) => [

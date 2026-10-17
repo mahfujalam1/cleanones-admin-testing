@@ -26,6 +26,8 @@ import {
   type CreatePlanInput,
 } from "@/redux/api/endpoints/cleaningPlans.api";
 import { apiError } from "@/redux/api/apiError";
+import { useAppSelector } from "@/redux/hooks";
+import { ManagerFilterSelect } from "@/components/shared/ManagerFilterSelect";
 import { getLocale, localizePath } from "@/lib/locale";
 import { getUiTranslation } from "@/lib/translations";
 import { getScreenCopy } from "@/lib/screen-copy";
@@ -39,6 +41,8 @@ function CleaningPlansView() {
   const ui = getUiTranslation(locale);
   const copy = getScreenCopy(locale);
   const query = useSearchParams();
+  const user = useAppSelector((state) => state.auth.user);
+  const isCompanyAdmin = user?.role === "COMPANY_ADMIN";
 
   const clientId = query.get("client") ?? "";
   const locationId = query.get("location") ?? "";
@@ -49,6 +53,7 @@ function CleaningPlansView() {
 
   const [search, setSearch] = useState("");
   const searchTerm = useDebouncedValue(search.trim());
+  const [managerId, setManagerId] = useState("");
   const [page, setPage] = useState(1);
   const [formTarget, setFormTarget] = useState<CleaningPlan | "new" | null>(null);
   const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
@@ -58,7 +63,7 @@ function CleaningPlansView() {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [actionError, setActionError] = useState("");
 
-  useEffect(() => setPage(1), [searchTerm, clientId, locationId]);
+  useEffect(() => setPage(1), [searchTerm, clientId, locationId, managerId]);
 
   const { data: deepLinkPlan } = useGetCleaningPlanQuery(deepLinkPlanId, { skip: !deepLinkPlanId });
 
@@ -87,6 +92,8 @@ function CleaningPlansView() {
     searchTerm: searchTerm || undefined,
     client: clientId || undefined,
     location: locationId || undefined,
+    manager: managerId || undefined,
+    isCompanyAdmin,
   });
 
   const { data: clientPage } = useGetClientsQuery(CLIENT_LOOKUP_ARGS);
@@ -192,8 +199,15 @@ function CleaningPlansView() {
         <p className="mt-1 text-xs text-slate-500">{ui.cleaningPlansSubtitle}</p>
       </header>
 
-      <div className="grid gap-2 rounded-xl bg-white p-2 ring-1 ring-slate-200/70 md:grid-cols-2 xl:grid-cols-[1.4fr_1fr_1fr_auto]">
+      <div className={`grid gap-2 rounded-xl bg-white p-2 ring-1 ring-slate-200/70 ${isCompanyAdmin ? "md:grid-cols-2 xl:grid-cols-[1.4fr_1fr_1fr_1fr]" : "md:grid-cols-2 xl:grid-cols-[1.4fr_1fr_1fr_auto]"}`}>
         <SearchInput value={search} onChange={setSearch} placeholder={ui.searchCleaningPlans} />
+
+        {isCompanyAdmin && (
+          <ManagerFilterSelect
+            value={managerId}
+            onChange={setManagerId}
+          />
+        )}
 
         <Select
           value={clientId}
@@ -218,9 +232,11 @@ function CleaningPlansView() {
           ]}
         />
 
-        <Button className="md:col-span-2 xl:col-span-1" onClick={() => setFormTarget("new")}>
-          <MdAdd className="text-base" /> {ui.addCleaningPlan}
-        </Button>
+        {!isCompanyAdmin && (
+          <Button className="md:col-span-2 xl:col-span-1" onClick={() => setFormTarget("new")}>
+            <MdAdd className="text-base" /> {ui.addCleaningPlan}
+          </Button>
+        )}
       </div>
 
       {message && <ErrorNotice message={message} />}
@@ -234,7 +250,9 @@ function CleaningPlansView() {
           <p className="mx-auto mt-1 max-w-sm text-xs leading-relaxed text-slate-500">
             {searchTerm || clientId || locationId
               ? ui.nothingMatchesFilters
-              : ui.noPlansScheduled}
+              : isCompanyAdmin
+                ? "No cleaning plans found in the company."
+                : ui.noPlansScheduled}
           </p>
         </div>
       ) : (
@@ -245,9 +263,9 @@ function CleaningPlansView() {
               plan={plan}
               isDuplicating={duplicatingId === plan._id}
               onSelect={setViewTarget}
-              onEdit={setFormTarget}
-              onDuplicate={handleDuplicate}
-              onDelete={setDeleteTarget}
+              onEdit={isCompanyAdmin ? undefined : setFormTarget}
+              onDuplicate={isCompanyAdmin ? undefined : handleDuplicate}
+              onDelete={isCompanyAdmin ? undefined : setDeleteTarget}
             />
           ))}
         </div>

@@ -17,10 +17,13 @@ import {
 import { useGetRoomCatalogQuery } from "@/redux/api/endpoints/catalog.api";
 import {
   useDeleteRoomMutation,
+  useGetCompanyAdminRoomsQuery,
   type Room,
 } from "@/redux/api/endpoints/rooms.api";
 import { refId, refDoc } from "@/redux/api/types";
 import { apiError } from "@/redux/api/apiError";
+import { useAppSelector } from "@/redux/hooks";
+import { ManagerFilterSelect } from "@/components/shared/ManagerFilterSelect";
 import { getLocale, localizePath } from "@/lib/locale";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
@@ -32,10 +35,13 @@ export function RoomsView({
   const router = useRouter();
   const locale = getLocale(usePathname());
   const ui = getUiTranslation(locale);
+  const user = useAppSelector((state) => state.auth.user);
+  const isCompanyAdmin = user?.role === "COMPANY_ADMIN" || (user?.role as string)?.toUpperCase() === "COMPANY";
   
   
   const [clientId, setClientId] = useState(scopedClientId ?? "");
   const [locationId, setLocationId] = useState(scopedLocationId ?? "");
+  const [managerId, setManagerId] = useState("");
   const [roomId, setRoomId] = useState("");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -52,14 +58,21 @@ export function RoomsView({
     }
   }, [scopedLocationId, router, locale]);
 
-  const {
-    currentData: rooms = [],
-    isFetching,
-    error,
-  } = useGetRoomCatalogQuery(
+  const catalogQuery = useGetRoomCatalogQuery(
     { clientId: clientId || undefined, locationId: locationId || undefined },
-    { refetchOnMountOrArgChange: false },
+    { refetchOnMountOrArgChange: false, skip: isCompanyAdmin },
   );
+
+  const companyAdminQuery = useGetCompanyAdminRoomsQuery(
+    { location: locationId || undefined, manager: managerId || undefined, limit: 100 },
+    { skip: !isCompanyAdmin },
+  );
+
+  const rooms = isCompanyAdmin
+    ? companyAdminQuery.data?.result ?? []
+    : catalogQuery.currentData ?? [];
+  const isFetching = isCompanyAdmin ? companyAdminQuery.isFetching : catalogQuery.isFetching;
+  const error = isCompanyAdmin ? companyAdminQuery.error : catalogQuery.error;
   const [deleteRoom, { isLoading: deleting }] = useDeleteRoomMutation();
   const filtered = rooms.filter(
     (room) =>
@@ -119,7 +132,7 @@ export function RoomsView({
       )}
 
       <div
-        className={`grid gap-2 rounded-xl bg-white p-2 ring-1 ring-slate-200/70 ${scopedLocationId ? "sm:grid-cols-[1fr_auto]" : "md:grid-cols-2 xl:grid-cols-[1.2fr_1fr_1fr_1fr_auto]"}`}
+        className={`grid gap-2 rounded-xl bg-white p-2 ring-1 ring-slate-200/70 ${scopedLocationId ? (isCompanyAdmin ? "grid-cols-1" : "sm:grid-cols-[1fr_auto]") : isCompanyAdmin ? "md:grid-cols-2 xl:grid-cols-[1.2fr_1fr_1fr_1fr_1fr]" : "md:grid-cols-2 xl:grid-cols-[1.2fr_1fr_1fr_1fr_auto]"}`}
       >
         <SearchInput
           value={search}
@@ -129,6 +142,12 @@ export function RoomsView({
           }}
           placeholder={ui.searchRooms}
         />
+        {isCompanyAdmin && (
+          <ManagerFilterSelect
+            value={managerId}
+            onChange={setManagerId}
+          />
+        )}
         {!scopedLocationId && (
           <>
             <CatalogFilters
@@ -148,7 +167,7 @@ export function RoomsView({
             />
           </>
         )}
-        {add}
+        {!isCompanyAdmin && add}
       </div>
       {(error || actionError) && (
         <ErrorNotice message={actionError || apiError(error)} />
@@ -163,8 +182,8 @@ export function RoomsView({
               <RoomCard
                 key={room._id}
                 room={room}
-                onEdit={setEdit}
-                onDelete={setRemove}
+                onEdit={isCompanyAdmin ? undefined : setEdit}
+                onDelete={isCompanyAdmin ? undefined : setRemove}
                 onSelect={() => {
                   const location = refDoc(room.location);
                   const client = scopedClientId || refId(location?.client);
@@ -185,7 +204,7 @@ export function RoomsView({
             icon={<MdMeetingRoom />}
             title={ui.noRoomsFound}
             description={ui.tryAnotherFilter}
-            action={add}
+            action={isCompanyAdmin ? undefined : add}
           />
         )
       )}

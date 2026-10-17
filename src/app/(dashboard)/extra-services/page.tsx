@@ -22,6 +22,9 @@ import type { UnifiedServiceRequest } from "@/components/extra-services/types";
 import { Select } from "@/components/ui/select";
 
 
+import { useAppSelector } from "@/redux/hooks";
+import { ManagerFilterSelect } from "@/components/shared/ManagerFilterSelect";
+
 const TASK_PAGE_SIZE = 100;
 const LIMIT = 12;
 
@@ -29,16 +32,20 @@ type TaskStatusFilter = "" | "Pending" | AdditionalTaskDecision;
 
 export default function ExtraServicesPage() {
   const ui = getUiTranslation(getLocale(usePathname()));
+  const user = useAppSelector((state) => state.auth.user);
+  const isCompanyAdmin = user?.role === "COMPANY_ADMIN";
+
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<TaskStatusFilter>("");
   const [clientId, setClientId] = useState("");
+  const [managerId, setManagerId] = useState("");
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<UnifiedServiceRequest | null>(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
     setPage(1);
-  }, [search, status, clientId]);
+  }, [search, status, clientId, managerId]);
 
   const { data: clientsRes } = useGetClientsQuery(CLIENT_LOOKUP_ARGS);
 
@@ -46,7 +53,11 @@ export default function ExtraServicesPage() {
     data: plansRes,
     isLoading: loadingPlans,
     refetch: refetchPlans,
-  } = useGetCleaningPlanListQuery({ limit: 50 });
+  } = useGetCleaningPlanListQuery({
+    limit: 50,
+    isCompanyAdmin,
+    manager: managerId || undefined,
+  });
 
   const {
     data: tasksRes,
@@ -58,6 +69,8 @@ export default function ExtraServicesPage() {
     sort: "-createdAt",
     status: status || undefined,
     client: clientId || undefined,
+    manager: managerId || undefined,
+    isCompanyAdmin,
   });
 
   const refetchAll = () => {
@@ -124,6 +137,13 @@ export default function ExtraServicesPage() {
             className="h-10 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-sm outline-none transition-colors focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
           />
         </div>
+
+        {isCompanyAdmin && (
+          <ManagerFilterSelect
+            value={managerId}
+            onChange={setManagerId}
+          />
+        )}
 
         
         <div className="w-full sm:w-52">

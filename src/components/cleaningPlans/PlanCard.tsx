@@ -102,6 +102,13 @@ export function PlanCard({
             <MetaLine icon={<MdOutlineMeetingRoom />}>
               {counts.rooms ? `${counts.rooms} ${counts.rooms === 1 ? "room" : "rooms"}` : null}
             </MetaLine>
+            {typeof plan.manager === "object" && plan.manager !== null && (
+              <div className="pt-1">
+                <span className="inline-flex items-center rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-600">
+                  Managed by: {plan.manager.name}
+                </span>
+              </div>
+            )}
           </div>
         </div>
 

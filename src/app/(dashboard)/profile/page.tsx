@@ -12,6 +12,7 @@ import {
   MdShield,
   MdUpdate,
   MdVerifiedUser,
+  MdBusiness,
 } from "react-icons/md";
 import {
   useGetUserProfileQuery,
@@ -351,6 +352,17 @@ export default function ProfilePage() {
                 </dt>
                 <dd className="rounded-md bg-sky-50 px-2 py-0.5 text-[11px] font-semibold text-sky-700">{roleTitle}</dd>
               </div>
+
+              {Boolean(profile?.company_name) && (
+                <div className="flex items-center justify-between gap-3 py-2.5">
+                  <dt className="flex items-center gap-1.5 text-slate-400">
+                    <MdBusiness className="text-sm" /> Company
+                  </dt>
+                  <dd className="text-right font-medium text-slate-700">
+                    {String(profile?.company_name)}
+                  </dd>
+                </div>
+              )}
 
               {profile?.createdAt && (
                 <div className="flex items-center justify-between gap-3 py-2.5">

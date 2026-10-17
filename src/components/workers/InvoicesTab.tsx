@@ -4,12 +4,15 @@ import React, { useState } from "react";
 import { MdPayments } from "react-icons/md";
 import { useGetAllInvoicesQuery } from "@/redux/api/invoicesApi";
 import type { Worker } from "@/redux/api/endpoints/workers.api";
+import { useAppSelector } from "@/redux/hooks";
 import { RecordPaymentModal } from "./RecordPaymentModal";
 
 const money = (value?: number) => `€${(value ?? 0).toFixed(2)}`;
 
 export function InvoicesTab({ worker }: { worker: Worker }) {
   const [recording, setRecording] = useState(false);
+  const currentUser = useAppSelector((state) => state.auth.user);
+  const isCompanyAdmin = currentUser?.role === "COMPANY_ADMIN";
 
   const {
     data: invoicesData,
@@ -18,6 +21,7 @@ export function InvoicesTab({ worker }: { worker: Worker }) {
   } = useGetAllInvoicesQuery({
     worker: worker._id,
     limit: 100,
+    isCompanyAdmin,
   });
 
   const invoices = invoicesData?.result ?? [];
@@ -81,22 +85,24 @@ export function InvoicesTab({ worker }: { worker: Worker }) {
       </div>
 
       
-      {fullyPaid ? (
-        <button
-          type="button"
-          disabled
-          className="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-xs font-semibold text-slate-400 cursor-not-allowed"
-        >
-          <MdPayments className="text-base" /> Fully paid for this period
-        </button>
-      ) : (
-        <button
-          type="button"
-          onClick={() => setRecording(true)}
-          className="flex w-full items-center justify-center gap-2 rounded-lg border border-[#0ea5e9] bg-white px-4 py-2 text-xs font-semibold text-[#0ea5e9] transition-all hover:bg-[#0ea5e9] hover:text-white cursor-pointer shadow-2xs active:scale-[0.99]"
-        >
-          <MdPayments className="text-base" /> Record payment
-        </button>
+      {!isCompanyAdmin && (
+        fullyPaid ? (
+          <button
+            type="button"
+            disabled
+            className="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-xs font-semibold text-slate-400 cursor-not-allowed"
+          >
+            <MdPayments className="text-base" /> Fully paid for this period
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setRecording(true)}
+            className="flex w-full items-center justify-center gap-2 rounded-lg border border-[#0ea5e9] bg-white px-4 py-2 text-xs font-semibold text-[#0ea5e9] transition-all hover:bg-[#0ea5e9] hover:text-white cursor-pointer shadow-2xs active:scale-[0.99]"
+          >
+            <MdPayments className="text-base" /> Record payment
+          </button>
+        )
       )}
 
       

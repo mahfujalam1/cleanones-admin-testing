@@ -28,6 +28,7 @@ import { ExtraServicePlanSection } from "./ExtraServicePlanSection";
 import { ExtraServiceActionFooter } from "./ExtraServiceActionFooter";
 import { getLocale } from "@/lib/locale";
 import { getDashboardTranslation } from "@/lib/translations";
+import { useAppSelector } from "@/redux/hooks";
 
 function getClientInitials(name: string) {
   const words = name.trim().split(/\s+/).filter(Boolean);
@@ -58,6 +59,8 @@ function additionalTaskToDetail(task: AdditionalTask): ExtraServiceTaskDetail {
 
 export function ExtraServiceModal({ request, onClose, onDone, onError }: ExtraServiceModalProps) {
   const t = getDashboardTranslation(getLocale(usePathname()));
+  const user = useAppSelector((state) => state.auth.user);
+  const isCompanyAdmin = user?.role === "COMPANY_ADMIN";
   const listedTask = request.rawAdditionalTask;
   const taskId = listedTask?._id || request.taskId || request.id;
   const { data: fetchedTask, isFetching: loadingTask } = useGetAdditionalTaskQuery(taskId, {
@@ -331,25 +334,27 @@ export function ExtraServiceModal({ request, onClose, onDone, onError }: ExtraSe
           <ExtraServicePlanSection plan={plan} loading={loadingTask && !plan} planId={planId} />
         </div>
 
-        <ExtraServiceActionFooter
-          request={{
-            ...request,
-            planId,
-            status: displayStatus,
-            rawAdditionalTask: taskRecord,
-            taskIds: taskRecord
-              ? [taskRecord._id]
-              : (Array.from(
-                  new Set([
-                    ...(request.taskId ? [request.taskId] : []),
-                    ...rawTasks.map((item) => item.id).filter(Boolean),
-                    ...(plan?.pending_additional_tasks || []).map((pt) => pt.id).filter(Boolean),
-                  ])
-                ) as string[]),
-          }}
-          onDone={onDone}
-          onError={onError}
-        />
+        {!isCompanyAdmin && (
+          <ExtraServiceActionFooter
+            request={{
+              ...request,
+              planId,
+              status: displayStatus,
+              rawAdditionalTask: taskRecord,
+              taskIds: taskRecord
+                ? [taskRecord._id]
+                : (Array.from(
+                    new Set([
+                      ...(request.taskId ? [request.taskId] : []),
+                      ...rawTasks.map((item) => item.id).filter(Boolean),
+                      ...(plan?.pending_additional_tasks || []).map((pt) => pt.id).filter(Boolean),
+                    ])
+                  ) as string[]),
+            }}
+            onDone={onDone}
+            onError={onError}
+          />
+        )}
       </div>
     </div>
   );

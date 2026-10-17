@@ -6,6 +6,7 @@ import type { Location } from "./locations.api";
 import type { Room } from "./rooms.api";
 import type { AdditionalTask } from "./additionalTasks.api";
 import type { Worker } from "./workers.api";
+import { isCurrentCompanyAdmin } from "@/lib/auth/isCompanyAdmin";
 
 export type PlanStatus = "active" | "inactive";
 
@@ -38,7 +39,7 @@ export type CleaningPlan = {
   total_task?: number;
   status?: PlanStatus;
   is_active?: boolean;
-  manager?: string;
+  manager?: string | { _id: string; name: string; email: string; phone: string };
   last_updated_by?: string;
 
 
@@ -93,14 +94,18 @@ export type PlanListParams = ListParams & {
   client?: string;
   location?: string;
   status?: PlanStatus;
+  manager?: string;
+  isCompanyAdmin?: boolean;
 };
 
 
 
 const ROUTES = {
   list: "/cleaning-plan/all-cleaning-plans",
+  companyAdminList: "/cleaning-plan/company-admin/get-all-cleaning-plans",
   create: "/cleaning-plan/create-cleaning-plan",
   single: (id: string) => `/cleaning-plan/single-cleaning-plan/${encodeURIComponent(id)}`,
+  companyAdminSingle: (id: string) => `/cleaning-plan/company-admin/get-single-cleaning-plan/${encodeURIComponent(id)}`,
   update: (id: string) => `/cleaning-plan/update-cleaning-plan/${encodeURIComponent(id)}`,
   remove: (id: string) => `/cleaning-plan/delete-cleaning-plan/${encodeURIComponent(id)}`,
 };
@@ -134,11 +139,14 @@ export const cleaningPlansApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getCleaningPlanList: builder.query<Paginated<CleaningPlan>, PlanListParams | void>({
       query: (params) => {
+        const isCompanyAdmin = isCurrentCompanyAdmin(params?.isCompanyAdmin);
         const search = new URLSearchParams(listQuery(params ?? {}));
         if (params?.client) search.set("client", params.client);
         if (params?.location) search.set("location", params.location);
         if (params?.status) search.set("status", params.status);
-        return `${ROUTES.list}?${search.toString()}`;
+        if (params?.manager) search.set("manager", params.manager);
+        const endpoint = isCompanyAdmin ? ROUTES.companyAdminList : ROUTES.list;
+        return `${endpoint}?${search.toString()}`;
       },
       providesTags: (response) => [
         { type: tagTypes.cleaningPlans, id: "LIST" },
@@ -146,9 +154,15 @@ export const cleaningPlansApi = baseApi.injectEndpoints({
       ],
     }),
 
-    getCleaningPlan: builder.query<CleaningPlan, string>({
-      query: (id) => ROUTES.single(id),
-      providesTags: (_response, _error, id) => [{ type: tagTypes.cleaningPlans, id }],
+    getCleaningPlan: builder.query<CleaningPlan, { id: string; isCompanyAdmin?: boolean } | string>({
+      query: (arg) => {
+        const id = typeof arg === "string" ? arg : arg.id;
+        const isCompanyAdmin = isCurrentCompanyAdmin(typeof arg === "object" ? arg.isCompanyAdmin : undefined);
+        return isCompanyAdmin ? ROUTES.companyAdminSingle(id) : ROUTES.single(id);
+      },
+      providesTags: (_response, _error, arg) => [
+        { type: tagTypes.cleaningPlans, id: typeof arg === "string" ? arg : arg.id },
+      ],
     }),
 
     createCleaningPlan: builder.mutation<CleaningPlan, CreatePlanInput>({

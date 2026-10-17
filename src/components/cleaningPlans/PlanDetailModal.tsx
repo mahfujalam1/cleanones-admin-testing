@@ -625,6 +625,7 @@ export function PlanDetailModal({
   planId,
   shiftDate,
   liveShiftId,
+  isReadOnly,
   onClose,
   onEdit,
   onEditShiftPlan,
@@ -638,6 +639,7 @@ export function PlanDetailModal({
   planId: string;
   shiftDate?: string;
   liveShiftId?: string;
+  isReadOnly?: boolean;
   onClose: () => void;
   onEdit?: (plan: CleaningPlan) => void;
   onEditShiftPlan?: (planId: string) => void;
@@ -699,13 +701,14 @@ export function PlanDetailModal({
         status: planShift?.status,
       })
     : Boolean(assignTarget) || Boolean(onAssign);
-  const canAssign = Boolean(staffable && (liveAssignTarget || onAssign));
+  const canAssign = Boolean(!isReadOnly && staffable && (liveAssignTarget || onAssign));
   const title = assignTarget?.planTitle || planShift?.plan_title || planShift?.location_name || plan?.title || "Cleaning plan";
   const crewCount = (liveWorkers ?? []).length;
   const isStaffed = crewCount > 0;
   const schedule = liveSchedule;
   const canEditShiftPlan = Boolean(
-    fromShift
+    !isReadOnly
+      && fromShift
       && onEditShiftPlan
       && !isStaffed
       && !hasShiftStarted(schedule.startTime, schedule.date),

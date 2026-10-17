@@ -75,6 +75,11 @@ export function LocationCard({
             ) : (
               <span className="truncate text-slate-400">{client ? clientCompanyLabel(client) : "—"}</span>
             )}
+            {location.manager && (
+              <span className="ml-auto inline-flex items-center rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-600">
+                {location.manager.name}
+              </span>
+            )}
           </span>
         </footer>
       </article>

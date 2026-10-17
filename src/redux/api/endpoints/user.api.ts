@@ -33,6 +33,17 @@ export type UpdateProfileInput = {
   website?: string;
 };
 
+export type UpdateCompanyInput = {
+  name?: string;
+  phone?: string;
+  company_name?: string;
+  address?: string;
+  website?: string;
+  profile_image?: string;
+  profile_photo?: string;
+  logo?: string;
+};
+
 function normaliseProfile(raw: UserProfile | null | undefined): UserProfile {
   const data = raw ?? {};
   return {
@@ -97,6 +108,17 @@ export const userApi = baseApi.injectEndpoints({
       invalidatesTags: [{ type: tagTypes.profile, id: "ME" }],
     }),
 
+    updateMyCompany: builder.mutation<UserProfile, UpdateCompanyInput>({
+      query: (body) => ({
+        url: "/company/update-my-company",
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body,
+      }),
+      transformResponse: normaliseProfile,
+      invalidatesTags: [{ type: tagTypes.profile, id: "ME" }],
+    }),
+
     uploadProfilePhoto: builder.mutation<
       { profile_photo: string },
       { file: File; currentPhotoUrl?: string }
@@ -143,5 +165,6 @@ export const userApi = baseApi.injectEndpoints({
 export const {
   useGetUserProfileQuery,
   useUpdateUserProfileMutation,
+  useUpdateMyCompanyMutation,
   useUploadProfilePhotoMutation,
 } = userApi;
